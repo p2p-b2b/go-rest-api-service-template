@@ -1,11 +1,13 @@
 package version
 
+import "runtime"
+
 var (
 	// Version is the current version of the application
 	Version = "0.0.1"
 
 	// BuildDate is the date the application was built
-	BuildDate = "2020-01-01T00:00:00Z"
+	BuildDate = "1970-01-01T00:00:00Z"
 
 	// GitCommit is the commit hash the application was built from
 	GitCommit = ""
@@ -17,8 +19,11 @@ var (
 	BuildUser = ""
 
 	// GoVersion is the version of Go used to build the application
-	GoVersion = ""
+	GoVersion = runtime.Version()
 
 	// GoVersionArch is the architecture of Go used to build the application
-	GoVersionArch = ""
+	GoVersionArch = runtime.GOARCH
+
+	// GoVersionOS is the operating system of Go used to build the application
+	GoVersionOS = runtime.GOOS
 )

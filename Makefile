@@ -24,8 +24,6 @@ GIT_BRANCH      ?= $(shell git rev-parse --abbrev-ref HEAD | tr -d '\040\011\012
 GIT_USER        := $(shell git config --get user.name | tr -d '\040\011\012\015\n')
 GIT_USER_EMAIL  := $(shell git config --get user.email | tr -d '\040\011\012\015\n')
 BUILD_DATE      := $(shell date +'%Y-%m-%dT%H:%M:%S')
-GO_VERSION      := $(shell go version | cut -d ' ' -f 3)
-GO_VERSION_ARCH := $(shell go version | cut -d ' ' -f 4)
 
 GO_LDFLAGS_OPTIONS ?= -s -w
 define EXTRA_GO_LDFLAGS_OPTIONS
@@ -33,9 +31,7 @@ define EXTRA_GO_LDFLAGS_OPTIONS
 -X '"'github.com/$(PROJECT_NAMESPACE)/$(PROJECT_NAME)/internal/version.BuildDate=$(BUILD_DATE)'"' \
 -X '"'github.com/$(PROJECT_NAMESPACE)/$(PROJECT_NAME)/internal/version.GitCommit=$(GIT_COMMIT)'"' \
 -X '"'github.com/$(PROJECT_NAMESPACE)/$(PROJECT_NAME)/internal/version.GitBranch=$(GIT_BRANCH)'"' \
--X '"'github.com/$(PROJECT_NAMESPACE)/$(PROJECT_NAME)/internal/version.BuildUser=$(GIT_USER) <$(GIT_USER_EMAIL)>'"' \
--X '"'github.com/$(PROJECT_NAMESPACE)/$(PROJECT_NAME)/internal/version.GoVersion=$(GO_VERSION)'"' \
--X '"'github.com/$(PROJECT_NAMESPACE)/$(PROJECT_NAME)/internal/version.GoVersionArch=$(GO_VERSION_ARCH)'"'
+-X '"'github.com/$(PROJECT_NAMESPACE)/$(PROJECT_NAME)/internal/version.BuildUser=$(GIT_USER) <$(GIT_USER_EMAIL)>'"'
 endef
 
 GO_LDFLAGS     := -ldflags "$(GO_LDFLAGS_OPTIONS) $(EXTRA_GO_LDFLAGS_OPTIONS)"

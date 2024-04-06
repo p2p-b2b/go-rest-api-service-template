@@ -9,6 +9,14 @@ import (
 
 func GetVersion(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+	fmt.Fprintf(w, `{"version":"%s","buildDate":"%s","gitCommit":"%s","gitBranch":"%s","goVersion":"%s","goVersionArch":"%s","goVersionOS":"%s"}`,
+		version.Version,
+		version.BuildDate,
+		version.GitCommit,
+		version.GitBranch,
+		version.GoVersion,
+		version.GoVersionArch,
+		version.GoVersionOS,
+	)
 	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, `{"version":"%s","buildDate":"%s","gitCommit":"%s","gitBranch":"%s","goVersion":"%s"}`, version.Version, version.BuildDate, version.GitCommit, version.GitBranch, version.GoVersion)
 }
