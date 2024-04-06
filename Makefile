@@ -31,7 +31,7 @@ define EXTRA_GO_LDFLAGS_OPTIONS
 -X '"'github.com/$(PROJECT_NAMESPACE)/$(PROJECT_NAME)/internal/version.BuildDate=$(BUILD_DATE)'"' \
 -X '"'github.com/$(PROJECT_NAMESPACE)/$(PROJECT_NAME)/internal/version.GitCommit=$(GIT_COMMIT)'"' \
 -X '"'github.com/$(PROJECT_NAMESPACE)/$(PROJECT_NAME)/internal/version.GitBranch=$(GIT_BRANCH)'"' \
--X '"'github.com/$(PROJECT_NAMESPACE)/$(PROJECT_NAME)/internal/version.BuildUser=$(GIT_USER) <$(GIT_USER_EMAIL)>'"'
+-X '"'github.com/$(PROJECT_NAMESPACE)/$(PROJECT_NAME)/internal/version.BuildUser=$(GIT_USER_EMAIL)'"'
 endef
 
 GO_LDFLAGS     := -ldflags "$(GO_LDFLAGS_OPTIONS) $(EXTRA_GO_LDFLAGS_OPTIONS)"
@@ -343,7 +343,7 @@ container-publish-aws-ecr: ## Publish the container image to AWS ECR
 clean: ## Clean the environment
 	@printf "👉 Cleaning environment...\n"
 	$(call exec_cmd, go clean -n -x -i)
-	$(call exec_cmd, rm -rf $(BUILD_DIR) $(DIST_DIR) .aws-sam ./build.toml ./packaged.yaml )
+	$(call exec_cmd, rm -rf $(BUILD_DIR) $(DIST_DIR) )
 
 .PHONY: help
 help: ## Display this help
