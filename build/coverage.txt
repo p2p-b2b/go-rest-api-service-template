@@ -1,0 +1,5 @@
+mode: atomic
+github.com/wereweare/go-service-template/internal/handler/handler.go:10.57,14.2 3 0
+github.com/wereweare/go-service-template/internal/config/database.go:34.42,48.2 1 0
+github.com/wereweare/go-service-template/cmd/go-service-template/main.go:9.13,19.36 4 0
+github.com/wereweare/go-service-template/cmd/go-service-template/main.go:19.36,20.34 1 0
