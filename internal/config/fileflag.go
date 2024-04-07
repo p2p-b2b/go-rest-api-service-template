@@ -2,23 +2,24 @@ package config
 
 import "os"
 
-// FileFlag is a custom flag type for files
+// FileVar is a custom flag type for files
+// This should implement the Value interface of the flag package
 // Reference: https://pkg.go.dev/gg-scm.io/tool/internal/flag#FlagSet.Var
-type FileFlag struct {
+type FileVar struct {
 	*os.File
 }
 
 // String presents the current value as a string.
-func (f *FileFlag) String() string {
+func (f *FileVar) String() string {
 	if f.File == nil {
 		return ""
 	}
 
-	return f.File.Name()
+	return f.Name()
 }
 
 // Set is called once, in command line order, for each flag present.
-func (f *FileFlag) Set(value string) error {
+func (f *FileVar) Set(value string) error {
 	file, err := os.OpenFile(value, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
 	if err != nil {
 		return err
@@ -29,11 +30,11 @@ func (f *FileFlag) Set(value string) error {
 }
 
 // Get returns the contents of the Value.
-func (f *FileFlag) Get() interface{} {
+func (f *FileVar) Get() interface{} {
 	return f.File
 }
 
 // IsBoolFlag returns true if the flag is a boolean flag
-func (f *FileFlag) IsBoolFlag() bool {
+func (f *FileVar) IsBoolFlag() bool {
 	return false
 }

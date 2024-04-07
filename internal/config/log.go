@@ -2,25 +2,6 @@ package config
 
 import "os"
 
-type WriteCloserVar interface {
-	WriteCloser()
-
-	// https://pkg.go.dev/gg-scm.io/tool/internal/flag#FlagSet.Var
-	// String presents the current value as a string.
-	String() string
-
-	// Set is called once, in command line order, for each flag present.
-	Set(string) error
-
-	// Get returns the contents of the Value.
-	Get() interface{}
-
-	// If IsBoolFlag returns true, then the command-line parser makes
-	// -name equivalent to -name=true rather than using the next
-	// command-line argument.
-	IsBoolFlag() bool
-}
-
 var (
 	// DefaultLogLevel is the default log level
 	DefaultLogLevel = "info"
@@ -28,9 +9,8 @@ var (
 	// DefaultLogFormat is the default log format
 	DefaultLogFormat = "text"
 
-	// DefaultLogOutput is the default log output
-	// DefaultLogOutput = "stdout"
-	DefaultLogOutput = FileFlag{os.Stdout}
+	// DefaultLogOutput is the default log output destination
+	DefaultLogOutput = FileVar{os.Stdout}
 )
 
 // LogConfig is the configuration for the logger
@@ -38,7 +18,7 @@ type LogConfig struct {
 	Level  Item[string]
 	Format Item[string]
 	// Output Item[string]
-	Output Item[FileFlag]
+	Output Item[FileVar]
 }
 
 // NewLogConfig creates a new logger configuration
