@@ -125,11 +125,12 @@ func main() {
 			case sig := <-osSigChan:
 				slog.Debug("received signal", "signal", sig)
 
+				// Handle the signal to shutdown the server or reload
 				switch sig {
 				case os.Interrupt, syscall.SIGINT, syscall.SIGTERM:
 					slog.Warn("shutting down server...")
 					if err := server.Shutdown(ctx); err != nil {
-						slog.Error("server shutdown error", "error", err)
+						slog.Error("server shutdown with error", "error", err)
 					}
 					close(stopChan)
 					return
