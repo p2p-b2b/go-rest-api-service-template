@@ -40,12 +40,12 @@ func NewDatabaseConfig() *DatabaseConfig {
 		Username:        NewField("database.username", "DATABASE_USERNAME", "Database Username", DefaultDatabaseUsername),
 		Password:        NewField("database.password", "DATABASE_PASSWORD", "Database Password", DefaultDatabasePassword),
 		Name:            NewField("database.name", "DATABASE_NAME", "Database Name", DefaultDatabaseName),
-		SSLMode:         NewField("database.sslmode", "DATABASE_SSL_MODE", "Database SSL Mode", DefaultDatabaseSSLMode),
-		MaxPingTimeout:  NewField("database.maxpingtimeout", "DATABASE_MAX_PING_TIMEOUT", "Database Max Ping Timeout", DefaultDatabaseMaxPingTimeout),
-		MaxQueryTimeout: NewField("database.maxquerytimeout", "DATABASE_MAX_QUERY_TIMEOUT", "Database Max Query Timeout", DefaultDatabaseMaxQueryTimeout),
-		ConnMaxLifetime: NewField("database.connmaxlifetime", "DATABASE_CONN_MAX_LIFETIME", "Database Connection Max Lifetime", DefaultDatabaseConnMaxLifetime),
-		MaxIdleConns:    NewField("database.maxidleconns", "DATABASE_MAX_IDLE_CONNS", "Database Max Idle Connections", DefaultDatabaseMaxIdleConns),
-		MaxOpenConns:    NewField("database.maxopenconns", "DATABASE_MAX_OPEN_CONNS", "Database Max Open Connections", DefaultDatabaseMaxOpenConns),
+		SSLMode:         NewField("database.ssl.mode", "DATABASE_SSL_MODE", "Database SSL Mode", DefaultDatabaseSSLMode),
+		MaxPingTimeout:  NewField("database.max.ping.timeout", "DATABASE_MAX_PING_TIMEOUT", "Database Max Ping Timeout", DefaultDatabaseMaxPingTimeout),
+		MaxQueryTimeout: NewField("database.max.query.timeout", "DATABASE_MAX_QUERY_TIMEOUT", "Database Max Query Timeout", DefaultDatabaseMaxQueryTimeout),
+		ConnMaxLifetime: NewField("database.conn.max.lifetime", "DATABASE_CONN_MAX_LIFETIME", "Database Connection Max Lifetime", DefaultDatabaseConnMaxLifetime),
+		MaxIdleConns:    NewField("database.max.idle.conns", "DATABASE_MAX_IDLE_CONNS", "Database Max Idle Connections", DefaultDatabaseMaxIdleConns),
+		MaxOpenConns:    NewField("database.max.open.conns", "DATABASE_MAX_OPEN_CONNS", "Database Max Open Connections", DefaultDatabaseMaxOpenConns),
 	}
 }
 

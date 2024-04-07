@@ -1,11 +1,16 @@
 package main
 
 import (
+	"context"
+	"errors"
 	"flag"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 
 	"github.com/wereweare/go-service-template/internal/config"
 	"github.com/wereweare/go-service-template/internal/handler"
@@ -13,6 +18,7 @@ import (
 
 var (
 	LogConfig = config.NewLogConfig()
+	SrvConfig = config.NewServerConfig()
 	DBConfig  = config.NewDatabaseConfig()
 
 	logHandler        slog.Handler
@@ -24,6 +30,11 @@ func init() {
 	flag.StringVar(&LogConfig.Level.Value, LogConfig.Level.FlagName, config.DefaultLogLevel, LogConfig.Level.FlagDescription)
 	flag.StringVar(&LogConfig.Format.Value, LogConfig.Format.FlagName, config.DefaultLogFormat, LogConfig.Format.FlagDescription)
 	flag.Var(&LogConfig.Output.Value, LogConfig.Output.FlagName, LogConfig.Output.FlagDescription)
+
+	// Server configuration values
+	flag.StringVar(&SrvConfig.Address.Value, SrvConfig.Address.FlagName, config.DefaultServerAddress, SrvConfig.Address.FlagDescription)
+	flag.IntVar(&SrvConfig.Port.Value, SrvConfig.Port.FlagName, config.DefaultServerPort, SrvConfig.Port.FlagDescription)
+	flag.DurationVar(&SrvConfig.ShutdownTimeout.Value, SrvConfig.ShutdownTimeout.FlagName, config.DefaultShutdownTimeout, SrvConfig.ShutdownTimeout.FlagDescription)
 
 	// Initialize the application
 	flag.StringVar(&DBConfig.Address.Value, DBConfig.Address.FlagName, config.DefaultDatabaseAddress, DBConfig.Address.FlagDescription)
@@ -82,7 +93,6 @@ func main() {
 	// Set the default logger
 	slog.SetDefault(slog.New(logHandler))
 
-	slog.Info("starting service...")
 	slog.Debug("configuration", "database", DBConfig)
 	slog.Debug("configuration", "log", LogConfig)
 
@@ -94,12 +104,61 @@ func main() {
 
 	// Configure the server
 	server := &http.Server{
-		Addr:    ":8080",
+		Addr:    fmt.Sprintf("%s:%d", SrvConfig.Address.Value, SrvConfig.Port.Value),
 		Handler: mux,
 	}
 
+	// Wait for a signal to shutdown
+	osSigChan := make(chan os.Signal, 1)
+	signal.Notify(osSigChan, os.Interrupt, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
+
+	stopChan := make(chan struct{})
+
+	ctx, cancel := context.WithTimeout(context.Background(), SrvConfig.ShutdownTimeout.Value)
+	defer cancel()
+
+	// Handle signals
+	go func() {
+		slog.Info("waiting for os signals...")
+		for {
+			select {
+			case sig := <-osSigChan:
+				slog.Debug("received signal", "signal", sig)
+
+				switch sig {
+				case os.Interrupt, syscall.SIGINT, syscall.SIGTERM:
+					slog.Warn("shutting down server...")
+					if err := server.Shutdown(ctx); err != nil {
+						slog.Error("server shutdown error", "error", err)
+					}
+					close(stopChan)
+					return
+				case syscall.SIGHUP:
+					slog.Warn("reloading server...")
+					// Reload the server
+					// This is where you would reload the server
+
+					return
+				default:
+					slog.Warn("unknown signal", "signal", sig)
+					return
+				}
+
+			case <-stopChan:
+				return
+			}
+		}
+	}()
+
 	// Start the server
-	if err := server.ListenAndServe(); err != nil {
-		slog.Error("server error", "error", err)
-	}
+	go func() {
+		slog.Info("starting server", "address", SrvConfig.Address.Value, "port", SrvConfig.Port.Value)
+		if err := server.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
+			slog.Error("server error", "error", err)
+		}
+	}()
+
+	// Wait for stopChan to close
+	<-stopChan
+	slog.Info("server stopped gracefully")
 }
