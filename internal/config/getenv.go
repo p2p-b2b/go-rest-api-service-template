@@ -6,8 +6,8 @@ import (
 	"time"
 )
 
-// getEnv retrieves the value of an environment variable or returns a default value
-func getEnv[T any](key string, defaultValue T) T {
+// GetEnv retrieves the value of an environment variable or returns a default value
+func GetEnv[T any](key string, defaultValue T) T {
 	if value, exists := os.LookupEnv(key); exists {
 		switch any(defaultValue).(type) {
 		case string:
