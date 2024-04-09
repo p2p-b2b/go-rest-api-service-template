@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"flag"
 	"fmt"
@@ -35,6 +36,9 @@ func init() {
 	flag.StringVar(&SrvConfig.Address.Value, SrvConfig.Address.FlagName, config.DefaultServerAddress, SrvConfig.Address.FlagDescription)
 	flag.IntVar(&SrvConfig.Port.Value, SrvConfig.Port.FlagName, config.DefaultServerPort, SrvConfig.Port.FlagDescription)
 	flag.DurationVar(&SrvConfig.ShutdownTimeout.Value, SrvConfig.ShutdownTimeout.FlagName, config.DefaultShutdownTimeout, SrvConfig.ShutdownTimeout.FlagDescription)
+	flag.Var(&SrvConfig.PrivateKeyFile.Value, SrvConfig.PrivateKeyFile.FlagName, SrvConfig.PrivateKeyFile.FlagDescription)
+	flag.Var(&SrvConfig.CertificateFile.Value, SrvConfig.CertificateFile.FlagName, SrvConfig.CertificateFile.FlagDescription)
+	flag.BoolVar(&SrvConfig.TLSEnabled.Value, SrvConfig.TLSEnabled.FlagName, config.DefaultServerTLSEnabled, SrvConfig.TLSEnabled.FlagDescription)
 
 	// Initialize the application
 	flag.StringVar(&DBConfig.Address.Value, DBConfig.Address.FlagName, config.DefaultDatabaseAddress, DBConfig.Address.FlagDescription)
@@ -108,6 +112,34 @@ func main() {
 		Handler: mux,
 	}
 
+	// Configure the TLS
+	if SrvConfig.TLSEnabled.Value {
+		slog.Info("configuring tls")
+		// if _, err := os.Stat(SrvConfig.CertificateFile.Value.Name()); os.IsNotExist(err) {
+		// 	slog.Error("tls.crt file not found")
+		// 	os.Exit(1)
+		// }
+
+		// if _, err := os.Stat(SrvConfig.PrivateKeyFile.Value.Name()); os.IsNotExist(err) {
+		// 	slog.Error("tls.key file not found")
+		// 	os.Exit(1)
+		// }
+
+		tlsCfg := &tls.Config{
+			MinVersion:               tls.VersionTLS12,
+			CurvePreferences:         []tls.CurveID{tls.CurveP521, tls.CurveP384, tls.CurveP256},
+			PreferServerCipherSuites: true,
+			CipherSuites: []uint16{
+				tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+				tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
+				tls.TLS_RSA_WITH_AES_256_GCM_SHA384,
+				tls.TLS_RSA_WITH_AES_256_CBC_SHA,
+			},
+		}
+		server.TLSConfig = tlsCfg
+		server.TLSNextProto = make(map[string]func(*http.Server, *tls.Conn, http.Handler), 0)
+	}
+
 	// Wait for a signal to shutdown
 	osSigChan := make(chan os.Signal, 1)
 	signal.Notify(osSigChan, os.Interrupt, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
@@ -131,6 +163,7 @@ func main() {
 					slog.Warn("shutting down server...")
 					if err := server.Shutdown(ctx); err != nil {
 						slog.Error("server shutdown with error", "error", err)
+						os.Exit(1)
 					}
 					close(stopChan)
 					return
@@ -154,8 +187,23 @@ func main() {
 	// Start the server
 	go func() {
 		slog.Info("starting server", "address", SrvConfig.Address.Value, "port", SrvConfig.Port.Value)
-		if err := server.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
-			slog.Error("server error", "error", err)
+
+		// Check if the port is 443 and start the server with TLS
+		if SrvConfig.TLSEnabled.Value {
+			slog.Info("server using tls")
+			if err := server.ListenAndServeTLS(
+				SrvConfig.CertificateFile.Value.Name(),
+				SrvConfig.PrivateKeyFile.Value.Name(),
+			); !errors.Is(err, http.ErrServerClosed) {
+				slog.Error("server error", "error", err)
+				os.Exit(1)
+			}
+		} else {
+			slog.Info("server using http")
+			if err := server.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
+				slog.Error("server error", "error", err)
+				os.Exit(1)
+			}
 		}
 	}()
 

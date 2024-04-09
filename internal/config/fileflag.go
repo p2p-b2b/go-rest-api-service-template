@@ -7,6 +7,10 @@ import "os"
 // Reference: https://pkg.go.dev/gg-scm.io/tool/internal/flag#FlagSet.Var
 type FileVar struct {
 	*os.File
+
+	// flag is the flag to open the file with
+	// os.O_APPEND|os.O_CREATE|os.O_WRONLY
+	flag int
 }
 
 // String presents the current value as a string.
@@ -20,7 +24,7 @@ func (f *FileVar) String() string {
 
 // Set is called once, in command line order, for each flag present.
 func (f *FileVar) Set(value string) error {
-	file, err := os.OpenFile(value, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
+	file, err := os.OpenFile(value, f.flag, 0o644)
 	if err != nil {
 		return err
 	}

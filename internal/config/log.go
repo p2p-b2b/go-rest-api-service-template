@@ -10,7 +10,7 @@ var (
 	DefaultLogFormat = "text"
 
 	// DefaultLogOutput is the default log output destination
-	DefaultLogOutput = FileVar{os.Stdout}
+	DefaultLogOutput = FileVar{os.Stdout, os.O_APPEND | os.O_CREATE | os.O_WRONLY}
 )
 
 // LogConfig is the configuration for the logger
