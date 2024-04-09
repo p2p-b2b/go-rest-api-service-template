@@ -17,10 +17,15 @@ type Field[T any] struct {
 
 // NewField creates a new configuration field
 func NewField[T any](flagName string, enVarName string, flagDescription string, value T) Field[T] {
-	return Field[T]{
+	ret := Field[T]{
 		FlagName:        flagName,
-		FlagDescription: flagDescription + ", EnvVar: " + enVarName,
+		FlagDescription: flagDescription,
 		EnVarName:       enVarName,
 		Value:           value,
 	}
+	if enVarName != "" {
+		ret.FlagDescription += ", EnvVar: " + enVarName
+	}
+
+	return ret
 }
