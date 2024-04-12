@@ -15,12 +15,15 @@ import (
 
 	"github.com/wereweare/go-service-template/internal/config"
 	"github.com/wereweare/go-service-template/internal/handler"
+	"github.com/wereweare/go-service-template/internal/version"
 )
 
 var (
 	LogConfig = config.NewLogConfig()
 	SrvConfig = config.NewServerConfig()
 	DBConfig  = config.NewDatabaseConfig()
+
+	appName = "go-service-template"
 
 	logHandler        slog.Handler
 	logHandlerOptions *slog.HandlerOptions
@@ -31,6 +34,10 @@ func init() {
 	flag.StringVar(&LogConfig.Level.Value, LogConfig.Level.FlagName, config.DefaultLogLevel, LogConfig.Level.FlagDescription)
 	flag.StringVar(&LogConfig.Format.Value, LogConfig.Format.FlagName, config.DefaultLogFormat, LogConfig.Format.FlagDescription)
 	flag.Var(&LogConfig.Output.Value, LogConfig.Output.FlagName, LogConfig.Output.FlagDescription)
+
+	// Version flag
+	flag.Bool("version", false, "Show the version information")
+	flag.Bool("version.long", false, "Show the long version information")
 
 	// Server configuration values
 	flag.StringVar(&SrvConfig.Address.Value, SrvConfig.Address.FlagName, config.DefaultServerAddress, SrvConfig.Address.FlagDescription)
@@ -56,6 +63,18 @@ func init() {
 	// Parse the command line arguments
 	flag.Bool("help", false, "Show this help message")
 	flag.Parse()
+
+	// implement the version flag
+	if flag.Lookup("version").Value.(flag.Getter).Get().(bool) {
+		fmt.Printf("%s version: %s\n", appName, version.Version)
+		os.Exit(0)
+	}
+
+	// implement the long version flag
+	if flag.Lookup("version.long").Value.(flag.Getter).Get().(bool) {
+		fmt.Printf("%s version: %s,  Git Commit: %s, Build Date: %s, Go Version: %s, OS/Arch: %s/%s\n", appName, version.Version, version.GitCommit, version.BuildDate, version.GoVersion, version.GoVersionOS, version.GoVersionArch)
+		os.Exit(0)
+	}
 
 	// implement the help flag
 	if flag.Lookup("help").Value.(flag.Getter).Get().(bool) {
