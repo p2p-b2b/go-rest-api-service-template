@@ -37,7 +37,7 @@ endef
 GO_LDFLAGS     := -ldflags "$(GO_LDFLAGS_OPTIONS) $(EXTRA_GO_LDFLAGS_OPTIONS)"
 GO_CGO_ENABLED ?= 0
 GO_OPTS        ?= -v
-GO_OS          ?= darwin linux
+GO_OS          ?= linux
 GO_ARCH        ?= arm64 amd64
 # avoid mocks in tests
 GO_FILES       := $(shell go list ./... | grep -v /mocks/)
