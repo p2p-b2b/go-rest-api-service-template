@@ -74,13 +74,13 @@ jobs:
           files=$(echo "$changed_files" | wc -l)
           echo "**Changed Files:** $files" >> $GITHUB_STEP_SUMMARY
 
-          echo '```bash' >> $GITHUB_STEP_SUMMARY
+          # echo '```bash' >> $GITHUB_STEP_SUMMARY
 
-          for file in $changed_files; do
-            echo "$file" >> $GITHUB_STEP_SUMMARY
+          for f in $changed_files; do
+            echo "$f" >> $GITHUB_STEP_SUMMARY
           done
 
-          echo '```' >> $GITHUB_STEP_SUMMARY
+          # echo '```' >> $GITHUB_STEP_SUMMARY
 
       # - name: Dump GitHub context
       #   env:
