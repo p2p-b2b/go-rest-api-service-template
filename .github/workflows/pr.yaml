@@ -5,6 +5,8 @@ on:
     branches:
       - main
 
+env: MAKE_STOP_ON_ERRORS=true # Stop on errors when running make
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -38,6 +40,7 @@ jobs:
           # Write to Summary
           SUMMARY=$(cat "$GITHUB_STEP_SUMMARY")
           SUMMARY="$SUMMARY\n**Go Version:** $version"
+          echo "$SUMMARY" > "$GITHUB_STEP_SUMMARY"
 
       - name: Set up Go
         uses: actions/setup-go@v5
@@ -48,7 +51,13 @@ jobs:
         run: go version
 
       - name: Make tests
-        run: make test
+        run: |
+          SUMMARY=$(cat "$GITHUB_STEP_SUMMARY")
+          SUMMARY="$SUMMARY\n\n# Make tests"
+          make test 2>&1 | tee -a "$GITHUB_STEP_SUMMARY"
 
       - name: Make build
-        run: make build
+        run: |
+          SUMMARY=$(cat "$GITHUB_STEP_SUMMARY")
+          SUMMARY="$SUMMARY\n\n# Make build"
+          make build 2>&1 | tee -a "$GITHUB_STEP_SUMMARY"
