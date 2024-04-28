@@ -38,6 +38,12 @@ jobs:
           echo "Make version: $version"
           echo "**Make Version:** $version" >> $GITHUB_STEP_SUMMARY
 
+      - name: Bash version
+        run: |
+          version=$(bash --version | head -n 1 | awk '{print $4}')
+          echo "Bash version: $version"
+          echo "**Bash Version:** $version" >> $GITHUB_STEP_SUMMARY
+
       - name: Get Go version from package
         id: go_version
         run: |
