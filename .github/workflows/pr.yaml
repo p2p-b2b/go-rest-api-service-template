@@ -16,17 +16,16 @@ jobs:
 
       - name: Summary Information
         run: |
-          SUMMARY="# Pull Request Summary"
-          SUMMARY="$SUMMARY\n\n**Pull Request:** ${{ github.event.pull_request.title }}"
-          SUMMARY="$SUMMARY\n**Author:** ${{ github.event.pull_request.user.login }}"
-          SUMMARY="$SUMMARY\n**Branch:** ${{ github.event.pull_request.head.ref }}"
-          SUMMARY="$SUMMARY\n**Base:** ${{ github.event.pull_request.base.ref }}"
-          SUMMARY="$SUMMARY\n**Commits:** ${{ github.event.pull_request.commits }}"
-          SUMMARY="$SUMMARY\n**Changed Files:** ${{ github.event.pull_request.changed_files }}"
-          SUMMARY="$SUMMARY\n**Additions:** ${{ github.event.pull_request.additions }}"
-          SUMMARY="$SUMMARY\n**Deletions:** ${{ github.event.pull_request.deletions }}"
-
-          echo "$SUMMARY" >> "$GITHUB_STEP_SUMMARY"
+          echo "# Pull Request Summary" > $GITHUB_STEP_SUMMARY
+          echo "**Pull Request:** ${{ github.event.pull_request.title }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Author:** ${{ github.event.pull_request.user.login }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch:** ${{ github.event.pull_request.head.ref }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Base:** ${{ github.event.pull_request.base.ref }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Commits:** ${{ github.event.pull_request.commits }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Changed Files:** ${{ github.event.pull_request.changed_files }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Additions:** ${{ github.event.pull_request.additions }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Deletions:** ${{ github.event.pull_request.deletions }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
 
       - name: Get Go version from package
         id: go_version
@@ -39,9 +38,7 @@ jobs:
           echo "version=${version}" >> "$GITHUB_OUTPUT"
 
           # Write to Summary
-          SUMMARY=$(cat "$GITHUB_STEP_SUMMARY")
-          SUMMARY="$SUMMARY\n**Go Version:** $version"
-          echo "$SUMMARY" > "$GITHUB_STEP_SUMMARY"
+          echo "**Go Version:** $version" >> $GITHUB_STEP_SUMMARY
 
       - name: Set up Go
         uses: actions/setup-go@v5
@@ -53,12 +50,10 @@ jobs:
 
       - name: Make tests
         run: |
-          SUMMARY=$(cat "$GITHUB_STEP_SUMMARY")
-          SUMMARY="$SUMMARY\n\n# Make tests"
-          make test 2>&1 | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "## Make tests" >> $GITHUB_STEP_SUMMARY
+          make test 2>&1 | tee -a $GITHUB_STEP_SUMMARY
 
       - name: Make build
         run: |
-          SUMMARY=$(cat "$GITHUB_STEP_SUMMARY")
-          SUMMARY="$SUMMARY\n\n# Make build"
-          make build 2>&1 | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "## Make build" >> $GITHUB_STEP_SUMMARY
+          make build 2>&1 | tee -a $GITHUB_STEP_SUMMARY
