@@ -5,7 +5,8 @@ on:
     branches:
       - main
 
-env: MAKE_STOP_ON_ERRORS=true # Stop on errors when running make
+env:
+  MAKE_STOP_ON_ERRORS: true # Stop on errors when running make
 
 jobs:
   build:
@@ -30,8 +31,8 @@ jobs:
       - name: Get Go version from package
         id: go_version
         run: |
-          # Get Go version from go.mod
-          version=$(grep 'go' go.mod | awk '{print $2}')
+          # Get Go version from go.mod, the whitespace is important in the grep 'go ' command
+          version=$(grep 'go ' go.mod | awk '{print $2}')
           echo "Go version: $version"
 
           # Write to output to be used in next steps
@@ -45,7 +46,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: ${{ steps.go_version.outputs.version }}
+          go-version: "^${{ steps.go_version.outputs.version }}"
 
       - name: Check Go version in the runner
         run: go version
