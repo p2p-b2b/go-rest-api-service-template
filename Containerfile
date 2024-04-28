@@ -9,10 +9,10 @@ ARG BUILD_VERSION
 ARG GOOS
 ARG GOARCH
 
-LABEL org.label-schema.schema-version="1.0"
-LABEL org.label-schema.build-date=${BUILD_DATE}
-LABEL org.label-schema.name=${SERVICE_NAME}
-LABEL org.label-schema.version=$BUILD_VERSION
+# https://github.com/opencontainers/image-spec/blob/main/annotations.md
+LABEL org.opencontainers.image.created=${BUILD_DATE}
+LABEL org.opencontainers.image.title=${SERVICE_NAME}
+LABEL org.opencontainers.image.version=$BUILD_VERSION
 
 # make available the service name in the container
 ENV SERVICE_NAME=${SERVICE_NAME}
