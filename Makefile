@@ -4,8 +4,8 @@ EXECUTABLES = go zip shasum
 K := $(foreach exec,$(EXECUTABLES),\
   $(if $(shell which $(exec)),some string,$(error "No $(exec) in PATH)))
 
-PROJECT_NAME      ?= $(shell git config --get remote.origin.url | cut -d '/' -f 2 | cut -d '.' -f 1)
-PROJECT_NAMESPACE ?= $(shell git config --get remote.origin.url | cut -d ':' -f 2 | cut -d '/' -f 1)
+PROJECT_NAME      ?= $(shell grep module go.mod | cut -d '/' -f 2 | cut -d '.' -f 1)
+PROJECT_NAMESPACE ?= $(shell grep module go.mod | cut -d ':' -f 2 | cut -d '/' -f 3)
 PROJECT_MODULES_PATH := $(shell ls -d cmd/*)
 PROJECT_MODULES_NAME := $(foreach dir_name, $(PROJECT_MODULES_PATH), $(shell basename $(dir_name)) )
 PROJECT_DEPENDENCIES := $(shell go list -m -f '{{if not (or .Indirect .Main)}}{{.Path}}{{end}}' all)
