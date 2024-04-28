@@ -27,6 +27,17 @@ jobs:
           echo "**Deletions:** ${{ github.event.pull_request.deletions }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
+      - name: Tools and versions
+        run: |
+          echo "## Tools" >> $GITHUB_STEP_SUMMARY
+          echo " List of tools used in the workflow" >> $GITHUB_STEP_SUMMARY
+
+      - name: Make version
+        run: |
+          version=$(make --version | head -n 1 | awk '{print $3}')
+          echo "Make version: $version"
+          echo "**Make Version:** $version" >> $GITHUB_STEP_SUMMARY
+
       - name: Get Go version from package
         id: go_version
         run: |
