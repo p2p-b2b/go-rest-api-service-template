@@ -65,7 +65,7 @@ jobs:
       - name: Files changed
         run: |
           echo "## Files changed" >> $GITHUB_STEP_SUMMARY
-          changed_files=$(git diff --name-only --diff-filter=ACMRT ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }} | xarg | sort -u)
+          changed_files=$(git diff --name-only --diff-filter=ACMRT | xargs)
 
           # print to the console
           echo "$changed_files"
