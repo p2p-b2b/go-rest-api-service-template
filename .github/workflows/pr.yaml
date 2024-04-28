@@ -17,6 +17,8 @@ jobs:
       - name: Summary Information
         run: |
           echo "# Pull Request Summary" > $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Repository:** ${{ github.repository }}" >> $GITHUB_STEP_SUMMARY
           echo "**Pull Request:** ${{ github.event.pull_request.title }}" >> $GITHUB_STEP_SUMMARY
           echo "**Author:** ${{ github.event.pull_request.user.login }}" >> $GITHUB_STEP_SUMMARY
           echo "**Branch:** ${{ github.event.pull_request.head.ref }}" >> $GITHUB_STEP_SUMMARY
@@ -80,10 +82,15 @@ jobs:
 
           echo '```' >> $GITHUB_STEP_SUMMARY
 
-      - name: Dump GitHub context
+      # - name: Dump GitHub context
+      #   env:
+      #     GITHUB_CONTEXT: ${{ toJSON(github) }}
+      #   run: echo "$GITHUB_CONTEXT"
+
+      - name: Dump GitHub pull_request context
         env:
-          GITHUB_CONTEXT: ${{ toJSON(github) }}
-        run: echo "$GITHUB_CONTEXT"
+          GITHUB_CONTEXT_PR: ${{ toJSON(github.event.pull_request) }}
+        run: echo "$GITHUB_CONTEXT_PR"
 
       - name: Set up Go
         uses: actions/setup-go@v5
