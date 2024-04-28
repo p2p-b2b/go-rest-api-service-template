@@ -63,7 +63,7 @@ jobs:
       - name: Files changed
         run: |
           echo "## Files changed" >> $GITHUB_STEP_SUMMARY
-          git diff --name-only HEAD^ ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }} >> $GITHUB_STEP_SUMMARY
+          git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }} >> $GITHUB_STEP_SUMMARY
 
       - name: Set up Go
         uses: actions/setup-go@v5
