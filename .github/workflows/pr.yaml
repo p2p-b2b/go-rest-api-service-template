@@ -65,7 +65,7 @@ jobs:
       - name: Files changed
         run: |
           echo "## Files changed" >> $GITHUB_STEP_SUMMARY
-          changed_files=$(git diff --name-only --diff-filter=ACMRT ${{ github.event.pull_request.base.sha }} | xargs)
+          changed_files=$(git diff --name-only --diff-filter=ACMRT ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }} | xarg | sort -u)
 
           # print to the console
           echo "$changed_files"
@@ -87,10 +87,10 @@ jobs:
       #     GITHUB_CONTEXT: ${{ toJSON(github) }}
       #   run: echo "$GITHUB_CONTEXT"
 
-      - name: Dump GitHub pull_request context
-        env:
-          GITHUB_CONTEXT_PR: ${{ toJSON(github.event.pull_request) }}
-        run: echo "$GITHUB_CONTEXT_PR"
+      # - name: Dump GitHub pull_request context
+      #   env:
+      #     GITHUB_CONTEXT_PR: ${{ toJSON(github.event.pull_request) }}
+      #   run: echo "$GITHUB_CONTEXT_PR"
 
       - name: Set up Go
         uses: actions/setup-go@v5
