@@ -161,7 +161,7 @@ test: $(PROJECT_COVERAGE_FILE) go-mod-tidy go-fmt go-vet go-generate ## Run test
 ###############################################################################
 ##@ Build commands
 .PHONY: build
-build: go-generate go-fmt go-vet test ## Build the application
+build: go-generate go-fmt go-vet ## Build the application
 	@printf "👉 Building applications...\n"
 	$(foreach proj_mod, $(PROJECT_MODULES_NAME), \
 		$(call exec_cmd, CGO_ENABLED=$(GO_CGO_ENABLED) go build $(GO_LDFLAGS) $(GO_OPTS) -o $(BUILD_DIR)/$(proj_mod) ./cmd/$(proj_mod)/ ) \
