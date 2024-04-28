@@ -63,7 +63,7 @@ jobs:
       - name: Files changed
         run: |
           echo "## Files changed" >> $GITHUB_STEP_SUMMARY
-          changed_files=$(git diff --name-only HEAD^)
+          changed_files=$(git diff --name-only)
           echo "$changed_files"
           echo "**Changed Files:**" >> $GITHUB_STEP_SUMMARY
 
