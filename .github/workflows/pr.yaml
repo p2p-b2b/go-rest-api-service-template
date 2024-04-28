@@ -71,8 +71,13 @@ jobs:
           # print to the summary
           files=$(echo "$changed_files" | wc -l)
           echo "**Changed Files:** $files" >> $GITHUB_STEP_SUMMARY
+
           echo '```bash' >> $GITHUB_STEP_SUMMARY
-          echo "$changed_files" >> $GITHUB_STEP_SUMMARY
+
+          for file in $changed_files; do
+            echo "$file" >> $GITHUB_STEP_SUMMARY
+          done
+
           echo '```' >> $GITHUB_STEP_SUMMARY
 
       - name: Set up Go
