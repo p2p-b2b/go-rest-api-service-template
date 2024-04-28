@@ -64,10 +64,16 @@ jobs:
         run: |
           echo "## Files changed" >> $GITHUB_STEP_SUMMARY
           changed_files=$(git diff --name-only --diff-filter=ACMRT ${{ github.event.pull_request.base.sha }} ${{ github.sha }} | xargs)
+
+          # print to the console
           echo "$changed_files"
-          echo "```bash" >> $GITHUB_STEP_SUMMARY
+
+          # print to the summary
+          files=$(echo "$changed_files" | wc -l)
+          echo "**Changed Files:** $files" >> $GITHUB_STEP_SUMMARY
+          echo '```bash' >> $GITHUB_STEP_SUMMARY
           echo "$changed_files" >> $GITHUB_STEP_SUMMARY
-          echo "```" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
 
       - name: Set up Go
         uses: actions/setup-go@v5
