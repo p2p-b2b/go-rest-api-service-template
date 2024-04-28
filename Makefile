@@ -179,7 +179,7 @@ build-dist: ## Build the application for all platforms defined in GO_OS and GO_A
 	)
 
 .PHONY: build-dist-zip
-build-dist-zip: ## Build the application for all platforms defined in GO_OS and GO_ARCH in this Makefile and create a zip file for each binary
+build-dist-zip: ## Build the application for all platforms defined in GO_OS and GO_ARCH in this Makefile and create a zip file for each binary. Requires make build-dist
 	@printf "👉 Creating zip files for distribution...\n"
 	$(call exec_cmd, mkdir -p $(DIST_ASSEST_DIR))
 	$(foreach GOOS, $(GO_OS), \
@@ -195,7 +195,7 @@ build-dist-zip: ## Build the application for all platforms defined in GO_OS and 
 ##@ Container commands
 CONTAINER_MANIFEST_EXISTS := $(shell podman manifest exists $(CONTAINER_NAMESPACE)/$(CONTAINER_IMAGE_NAME):$(GIT_VERSION) || echo "exists" )
 .PHONY: container-build
-container-build: build-dist ## Build the container image
+container-build: ## Build the container image, requires make build-dist
 	@printf "👉 Building container manifest...\n"
 	$(if $(CONTAINER_MANIFEST_EXISTS), \
 		$(call exec_cmd, podman manifest create $(CONTAINER_NAMESPACE)/$(CONTAINER_IMAGE_NAME):$(GIT_VERSION) ) \
@@ -224,12 +224,32 @@ container-build: build-dist ## Build the container image
 		) \
 	)
 
+.PHONY: container-login
+container-login: ## Login to the container registry. Requires REPOSITORY_REGISTRY_TOKEN env var
+	@printf "👉 Logging in to container registry...\n"
+	$(foreach REPO, $(CONTAINER_REPOS), \
+		$(call exec_cmd, echo $(REPOSITORY_REGISTRY_TOKEN) | podman login $(REPO) --username $(CONTAINER_NAMESPACE) --password-stdin ) \
+	)
+
 .PHONY: container-publish
 container-publish: ## Publish the container image to the container registry
-	@printf "👉 Publishing container image to docker hub...\n"
+	@printf "👉 Tagging container images...\n"
 	$(foreach REPO, $(CONTAINER_REPOS), \
-		$(call exec_cmd, podman tag $(CONTAINER_NAMESPACE)/$(CONTAINER_IMAGE_NAME):$(GIT_VERSION) $(REPO)/$(CONTAINER_NAMESPACE)/$(CONTAINER_IMAGE_NAME):$(GIT_VERSION) ) \
-		$(call exec_cmd, podman manifest push $(REPO)/$(CONTAINER_NAMESPACE)/$(CONTAINER_IMAGE_NAME):$(GIT_VERSION) ) \
+		$(foreach OS, $(CONTAINER_OS), \
+			$(foreach ARCH, $(CONTAINER_ARCH), \
+				$(if $(findstring v, $(ARCH)), $(eval BIN_ARCH = arm64), $(eval BIN_ARCH = $(ARCH)) ) \
+				$(call exec_cmd, podman tag $(CONTAINER_NAMESPACE)/$(CONTAINER_IMAGE_NAME):$(GIT_VERSION)-$(OS)-$(ARCH) $(REPO)/$(CONTAINER_NAMESPACE)/$(CONTAINER_IMAGE_NAME):$(GIT_VERSION)-$(OS)-$(ARCH) ) \
+				$(call exec_cmd, podman tag $(CONTAINER_NAMESPACE)/$(CONTAINER_IMAGE_NAME):latest-$(OS)-$(ARCH) $(REPO)/$(CONTAINER_NAMESPACE)/$(CONTAINER_IMAGE_NAME):latest-$(OS)-$(ARCH) ) \
+				$(call exec_cmd, podman tag $(CONTAINER_NAMESPACE)/$(CONTAINER_IMAGE_NAME):latest $(REPO)/$(CONTAINER_NAMESPACE)/$(CONTAINER_IMAGE_NAME):latest ) \
+			) \
+		) \
+	)
+
+	@printf "👉 Publishing container images...\n"
+	$(foreach REPO, $(CONTAINER_REPOS), \
+		$(call exec_cmd, podman manifest push --all \
+			$(CONTAINER_NAMESPACE)/$(CONTAINER_IMAGE_NAME):$(GIT_VERSION) \
+			docker://$(REPO)/$(CONTAINER_NAMESPACE)/$(CONTAINER_IMAGE_NAME):$(GIT_VERSION) ) \
 	)
 
 ###############################################################################

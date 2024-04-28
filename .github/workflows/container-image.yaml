@@ -1,0 +1,74 @@
+name: Container Image
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+env:
+  MAKE_STOP_ON_ERRORS: true # Stop on errors when running make
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Podman
+        run: |
+          sudo apt-get -y install podman
+
+      - name: Summary Information
+        run: |
+          echo "# Container Image Summary" > $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+      - name: Tools and versions
+        run: |
+          echo "## Tools and versions" >> $GITHUB_STEP_SUMMARY
+
+          ubuntu_version=$(lsb_release -a 2>&1 | grep "Description" | awk '{print $2, $3, $4}')
+          echo "Ubuntu version: $ubuntu_version"
+          echo "**Ubuntu Version:** $ubuntu_version" >> $GITHUB_STEP_SUMMARY
+
+          bash_version=$(bash --version | head -n 1 | awk '{print $4}')
+          echo "Bash version: $bash_version"
+          echo "**Bash Version:** $bash_version" >> $GITHUB_STEP_SUMMARY
+
+          git_version=$(git --version | awk '{print $3}')
+          echo "Git version: $git_version"
+          echo "**Git Version:** $git_version" >> $GITHUB_STEP_SUMMARY
+
+          make_version=$(make --version | head -n 1 | awk '{print $3}')
+          echo "Make version: $make_version"
+          echo "**Make Version:** $make_version" >> $GITHUB_STEP_SUMMARY
+
+          podman_version=$(podman --version | awk '{print $3}')
+          echo "Podman version: $podman_version"
+          echo "**Podman Version:** $podman_version" >>
+
+      - name: Download Distribution files
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: ./dist/
+
+      - name: Make container-build
+        run: |
+          echo "## Make container-build" >> $GITHUB_STEP_SUMMARY
+          make container-build 2>&1 | tee -a $GITHUB_STEP_SUMMARY
+
+      - name: Make container-login
+        run: |
+          echo "## Make container-login" >> $GITHUB_STEP_SUMMARY
+          make container-login 2>&1 | tee -a $GITHUB_STEP_SUMMARY
+        env:
+          REPOSITORY_REGISTRY_TOKEN: ${{ secrets.CONTAINER_REGISTRY }}
+
+      - name: Make container-publish
+        run: |
+          echo "## Make container-publish" >> $GITHUB_STEP_SUMMARY
+          make container-publish 2>&1 | tee -a $GITHUB_STEP_SUMMARY

@@ -69,3 +69,10 @@ podman login ghcr.io -u p2p-b2b -p $CR_PAT
 
 make container-publish
 ```
+
+From ghcr.io:
+
+```bash
+podman run --name go-service-template --rm ghcr.io/p2p-b2b/go-service-template:first-implementation
+```
+
