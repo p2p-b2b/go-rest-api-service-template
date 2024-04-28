@@ -13,9 +13,9 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/wereweare/go-service-template/internal/config"
-	"github.com/wereweare/go-service-template/internal/handler"
-	"github.com/wereweare/go-service-template/internal/version"
+	"github.com/p2p-b2b/go-service-template/internal/config"
+	"github.com/p2p-b2b/go-service-template/internal/handler"
+	"github.com/p2p-b2b/go-service-template/internal/version"
 )
 
 var (

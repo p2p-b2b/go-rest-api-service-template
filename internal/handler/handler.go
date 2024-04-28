@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/wereweare/go-service-template/internal/version"
+	"github.com/p2p-b2b/go-service-template/internal/version"
 )
 
 func GetVersion(w http.ResponseWriter, r *http.Request) {
