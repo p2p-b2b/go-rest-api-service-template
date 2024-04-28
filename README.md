@@ -27,3 +27,45 @@ openssl req -x509 -nodes -newkey rsa:2048 -keyout server.key -out server.crt -da
 ln -sf server.rsa.key server.key
 ln -sf server.rsa.crt server.crt
 ```
+
+## Building
+
+using
+
+```bash
+docker build \
+   --platform linux/arm64 \
+   --tag p2p-b2b/go-service-template:v1.0.0-linux-arm64 \
+   --tag p2p-b2b/go-service-template:v1.0.0-linux-arm64 \
+    --build-arg SERVICE_NAME=go-service-template
+    --build-arg GOOS=linux
+    --build-arg GOARCH=arm64
+    --build-arg BUILD_DATE=2024-04-28T15:26:26
+    --build-arg BUILD_VERSION=v1.0.0
+   --file ./Containerfile .
+```
+
+Using Podman:
+
+```bash
+podman build
+    --platform linux/arm64
+    --manifest p2p-b2b/go-service-template:v1.0.0
+    --tag p2p-b2b/go-service-template:v1.0.0-linux-arm64
+    --build-arg SERVICE_NAME=go-service-template
+    --build-arg GOOS=linux
+    --build-arg GOARCH=arm64
+    --build-arg BUILD_DATE=2024-04-28T15:26:26
+    --build-arg BUILD_VERSION=v1.0.0
+    --file ./Containerfile .
+```
+
+## Running
+
+```bash
+# this is a personal access token (classic)
+export CR_PAT=ghp_uxxxxxxx
+podman login ghcr.io -u p2p-b2b -p $CR_PAT
+
+make container-publish
+```

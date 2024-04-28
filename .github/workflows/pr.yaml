@@ -62,25 +62,26 @@ jobs:
           # Write to Summary
           echo "**Go Version:** $version" >> $GITHUB_STEP_SUMMARY
 
-      - name: Files changed
-        run: |
-          echo "## Files changed" >> $GITHUB_STEP_SUMMARY
-          changed_files=$(git diff --name-only --diff-filter=ACMRT | xargs)
+      #  should be refined to show only the files that have been changed
+      # - name: Files changed
+      #   run: |
+      #     echo "## Files changed" >> $GITHUB_STEP_SUMMARY
+      #     changed_files=$(git diff --name-only --diff-filter=ACMRT | xargs)
 
-          # print to the console
-          echo "$changed_files"
+      #     # print to the console
+      #     echo "$changed_files"
 
-          # print to the summary
-          files=$(echo "$changed_files" | wc -l)
-          echo "**Changed Files:** $files" >> $GITHUB_STEP_SUMMARY
+      #     # print to the summary
+      #     files=$(echo "$changed_files" | wc -l)
+      #     echo "**Changed Files:** $files" >> $GITHUB_STEP_SUMMARY
 
-          # echo '```bash' >> $GITHUB_STEP_SUMMARY
+      #     # echo '```bash' >> $GITHUB_STEP_SUMMARY
 
-          for f in $changed_files; do
-            echo "$f" >> $GITHUB_STEP_SUMMARY
-          done
+      #     for f in $changed_files; do
+      #       echo "$f" >> $GITHUB_STEP_SUMMARY
+      #     done
 
-          # echo '```' >> $GITHUB_STEP_SUMMARY
+      #     # echo '```' >> $GITHUB_STEP_SUMMARY
 
       # - name: Dump GitHub context
       #   env:
