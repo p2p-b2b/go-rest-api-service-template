@@ -16,7 +16,7 @@ const (
 	DefaultServerPort = 8443
 
 	// DefaultServerTLSEnabled is the default value for enabling TLS
-	DefaultServerTLSEnabled = true
+	DefaultServerTLSEnabled = false
 )
 
 var (
