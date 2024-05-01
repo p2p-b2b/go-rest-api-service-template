@@ -122,8 +122,9 @@ func main() {
 	// Create a new ServeMux
 	mux := http.NewServeMux()
 
-	// Add the routes
-	mux.HandleFunc("GET /version", handler.GetVersion)
+	// Create handlers
+	vh := &handler.VersionHandler{}
+	mux.HandleFunc("GET /version", vh.Get)
 
 	// Configure the server
 	server := &http.Server{

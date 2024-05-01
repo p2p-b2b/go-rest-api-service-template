@@ -1,0 +1,5 @@
+# To use it you should have installed the vsconde extension "REST Client"
+# https://marketplace.visualstudio.com/items?itemName=humao.rest-client
+
+# Get the version of the application
+GET http://localhost:8443/version
