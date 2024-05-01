@@ -134,15 +134,15 @@ func main() {
 	// Configure the TLS
 	if SrvConfig.TLSEnabled.Value {
 		slog.Info("configuring tls")
-		// if _, err := os.Stat(SrvConfig.CertificateFile.Value.Name()); os.IsNotExist(err) {
-		// 	slog.Error("tls.crt file not found")
-		// 	os.Exit(1)
-		// }
+		if _, err := os.Stat(SrvConfig.CertificateFile.Value.Name()); os.IsNotExist(err) {
+			slog.Error("tls.crt file not found")
+			os.Exit(1)
+		}
 
-		// if _, err := os.Stat(SrvConfig.PrivateKeyFile.Value.Name()); os.IsNotExist(err) {
-		// 	slog.Error("tls.key file not found")
-		// 	os.Exit(1)
-		// }
+		if _, err := os.Stat(SrvConfig.PrivateKeyFile.Value.Name()); os.IsNotExist(err) {
+			slog.Error("tls.key file not found")
+			os.Exit(1)
+		}
 
 		tlsCfg := &tls.Config{
 			MinVersion:               tls.VersionTLS12,
@@ -190,7 +190,6 @@ func main() {
 					slog.Warn("reloading server...")
 					// Reload the server
 					// This is where you would reload the server
-
 					return
 				default:
 					slog.Warn("unknown signal", "signal", sig)
@@ -205,7 +204,11 @@ func main() {
 
 	// Start the server
 	go func() {
-		slog.Info("starting server", "address", SrvConfig.Address.Value, "port", SrvConfig.Port.Value)
+		slog.Info("starting server",
+			"address", SrvConfig.Address.Value,
+			"port", SrvConfig.Port.Value,
+			"url", fmt.Sprintf("http://%s:%d", SrvConfig.Address.Value, SrvConfig.Port.Value),
+		)
 
 		// Check if the port is 443 and start the server with TLS
 		if SrvConfig.TLSEnabled.Value {
