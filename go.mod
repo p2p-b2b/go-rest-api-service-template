@@ -4,6 +4,7 @@ go 1.22.2
 
 require (
 	github.com/go-sql-driver/mysql v1.8.1
+	github.com/golang/mock v1.6.0
 	github.com/google/uuid v1.6.0
 	github.com/lib/pq v1.10.9
 )

@@ -7,6 +7,10 @@ import (
 	"github.com/p2p-b2b/go-service-template/internal/model"
 )
 
+// this is a mockgen command to generate a mock for UserRepository
+//go:generate go run github.com/golang/mock/mockgen@v1.6.0 -package=mocks -destination=../../mocks/user_repository.go -source=user.go UserRepository
+
+// UserRepository represents a repository for managing users.
 type UserRepository interface {
 	// Close closes the repository, releasing any open resources.
 	Close() error
