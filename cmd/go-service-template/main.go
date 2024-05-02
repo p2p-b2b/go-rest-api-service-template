@@ -163,8 +163,8 @@ func main() {
 	db.SetConnMaxLifetime(DBConfig.ConnMaxLifetime.Value)
 	db.SetConnMaxIdleTime(DBConfig.ConnMaxIdleTime.Value)
 
-	// Create a new PGSQLUserStore
-	pgsqlUserStore := store.NewPGSQLUserStore(
+	// Create a new userStore
+	userStore := store.NewPGSQLUserStore(
 		store.PGSQLUserStoreConfig{
 			DB:              db,
 			MaxPingTimeout:  DBConfig.MaxPingTimeout.Value,
@@ -189,8 +189,8 @@ func main() {
 		"conn_max_idle_time", DBConfig.ConnMaxIdleTime.Value,
 	)
 
-	// Ping the database to check the connection
-	if err := pgsqlUserStore.Ping(context.Background()); err != nil {
+	// Test database connection
+	if err := userStore.Ping(context.Background()); err != nil {
 		slog.Error("database ping error", "error", err)
 		os.Exit(1)
 	}
@@ -201,7 +201,7 @@ func main() {
 
 	// Create a new RepositoryHandler
 	repositoryHandler := &handler.RepositoryHandler{
-		Repository: pgsqlUserStore,
+		Repository: userStore,
 	}
 	mux.HandleFunc("GET /users/{id}", repositoryHandler.GetUserByID)
 	mux.HandleFunc("POST /users", repositoryHandler.CreateUser)
