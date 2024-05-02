@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 
 	"github.com/google/uuid"
@@ -9,47 +10,54 @@ import (
 	"github.com/p2p-b2b/go-service-template/internal/repository"
 )
 
+var (
+	// ErrInvalidID is returned when an invalid ID is provided.
+	ErrInvalidID = errors.New("invalid ID")
+
+	// ErrIDRequired is returned when an ID is required.
+	ErrIDRequired = errors.New("id is required for this operation")
+
+	// ErrInternalServer is returned when an internal server error occurs.
+	ErrInternalServer = errors.New("internal server error")
+)
+
 type RepositoryHandler struct {
 	Repository repository.UserRepository
 }
 
-// GetUserByID handles the HTTP GET - /{id} endpoint.
+// GetUserByID handles the HTTP GET - /users/{id} endpoint.
 func (h *RepositoryHandler) GetUserByID(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
+	w.Header().Set("Content-Type", "application/json")
 
-	idParam := r.PathValue("id")
-	if idParam == "" {
+	idString := r.PathValue("id")
+	if idString == "" {
 		w.WriteHeader(http.StatusBadRequest)
-		http.Error(w, "ID is required", http.StatusBadRequest)
+		http.Error(w, ErrIDRequired.Error(), http.StatusBadRequest)
 		return
 	}
 
 	// convert the id to uuid.UUID
-	id, err := uuid.Parse(idParam)
+	id, err := uuid.Parse(idString)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		http.Error(w, "Invalid ID", http.StatusBadRequest)
+		http.Error(w, ErrInvalidID.Error(), http.StatusBadRequest)
 		return
 	}
+
 	user, err := h.Repository.GetByID(r.Context(), id)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		http.Error(w, ErrInternalServer.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	// write the response
 	if err := json.NewEncoder(w).Encode(user); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		http.Error(w, ErrInternalServer.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 }
 

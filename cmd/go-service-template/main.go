@@ -203,10 +203,11 @@ func main() {
 	repositoryHandler := &handler.RepositoryHandler{
 		Repository: userStore,
 	}
+
 	mux.HandleFunc("GET /users/{id}", repositoryHandler.GetUserByID)
-	mux.HandleFunc("POST /users", repositoryHandler.CreateUser)
 	mux.HandleFunc("PUT /users/{id}", repositoryHandler.UpdateUser)
 	mux.HandleFunc("DELETE /users/{id}", repositoryHandler.DeleteUser)
+	mux.HandleFunc("POST /users", repositoryHandler.CreateUser)
 	mux.HandleFunc("GET /users", repositoryHandler.ListUsers)
 
 	// Configure the server
