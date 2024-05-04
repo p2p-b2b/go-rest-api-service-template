@@ -19,7 +19,7 @@ type PGSQLUserRepositoryConfig struct {
 // PGSQLUserRepository is a PostgreSQL store.
 type PGSQLUserRepository struct {
 	// DB is the PostgreSQL database.
-	DB *sql.DB
+	db *sql.DB
 
 	// MaxQueryTimeout is the maximum time a query can take.
 	MaxPingTimeout time.Duration
@@ -31,7 +31,7 @@ type PGSQLUserRepository struct {
 // NewPGSQLUserRepository creates a new PGSQLUserRepository.
 func NewPGSQLUserRepository(conf PGSQLUserRepositoryConfig) *PGSQLUserRepository {
 	return &PGSQLUserRepository{
-		DB:              conf.DB,
+		db:              conf.DB,
 		MaxPingTimeout:  conf.MaxPingTimeout,
 		MaxQueryTimeout: conf.MaxQueryTimeout,
 	}
@@ -39,7 +39,7 @@ func NewPGSQLUserRepository(conf PGSQLUserRepositoryConfig) *PGSQLUserRepository
 
 // Close closes the repository, releasing any open resources.
 func (s *PGSQLUserRepository) Close() error {
-	return s.DB.Close()
+	return s.db.Close()
 }
 
 // Ping verifies a connection to the repository is still alive, establishing a connection if necessary.
@@ -47,7 +47,7 @@ func (s *PGSQLUserRepository) Ping(ctx context.Context) error {
 	ctx, cancel := context.WithTimeout(ctx, s.MaxPingTimeout)
 	defer cancel()
 
-	return s.DB.PingContext(ctx)
+	return s.db.PingContext(ctx)
 }
 
 // Insert a new user into the database.
@@ -57,7 +57,7 @@ func (s *PGSQLUserRepository) Insert(ctx context.Context, user *model.User) erro
 
 	const query = `INSERT INTO users (id, first_name, last_name, age) VALUES ($1, $2, $3, $4)`
 
-	_, err := s.DB.ExecContext(ctx, query, user.ID, user.FirstName, user.LastName, user.Age)
+	_, err := s.db.ExecContext(ctx, query, user.ID, user.FirstName, user.LastName, user.Age)
 	return err
 }
 
@@ -68,7 +68,7 @@ func (s *PGSQLUserRepository) Update(ctx context.Context, user *model.User) erro
 
 	const query = `UPDATE users SET first_name = $1, last_name = $2, age = $3 WHERE id = $4`
 
-	_, err := s.DB.ExecContext(ctx, query, user.FirstName, user.LastName, user.Age, user.ID)
+	_, err := s.db.ExecContext(ctx, query, user.FirstName, user.LastName, user.Age, user.ID)
 	return err
 }
 
@@ -79,7 +79,7 @@ func (s *PGSQLUserRepository) Delete(ctx context.Context, id uuid.UUID) error {
 
 	const query = `DELETE FROM users WHERE id = $1`
 
-	_, err := s.DB.ExecContext(ctx, query, id)
+	_, err := s.db.ExecContext(ctx, query, id)
 	return err
 }
 
@@ -90,7 +90,7 @@ func (s *PGSQLUserRepository) SelectByID(ctx context.Context, id uuid.UUID) (*mo
 
 	const query = `SELECT id, first_name, last_name, age FROM users WHERE id = $1`
 
-	row := s.DB.QueryRowContext(ctx, query, id)
+	row := s.db.QueryRowContext(ctx, query, id)
 
 	var u model.User
 	if err := row.Scan(&u.ID, &u.FirstName, &u.LastName, &u.Age); err != nil {
@@ -107,7 +107,7 @@ func (s *PGSQLUserRepository) SelectAll(ctx context.Context) ([]*model.User, err
 
 	const query = `SELECT id, first_name, last_name, age FROM users`
 
-	rows, err := s.DB.QueryContext(ctx, query)
+	rows, err := s.db.QueryContext(ctx, query)
 	if err != nil {
 		return nil, err
 	}

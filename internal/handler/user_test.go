@@ -5,8 +5,11 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/golang/mock/gomock"
+	"github.com/google/uuid"
+	"github.com/p2p-b2b/go-service-template/internal/model"
 	mocksService "github.com/p2p-b2b/go-service-template/mocks/service"
 )
 
@@ -17,7 +20,7 @@ func TestUser_GetUserByID(t *testing.T) {
 	mockService := mocksService.NewMockUserService(ctrl)
 	// ctx := context.TODO()
 
-	t.Run("GetByID error codes", func(t *testing.T) {
+	t.Run("GetByID", func(t *testing.T) {
 		type test struct {
 			name             string
 			method           string
@@ -26,17 +29,19 @@ func TestUser_GetUserByID(t *testing.T) {
 			serviceError     error
 			expectedHTTPCode int
 			expectedBody     string
+			mockCall         *gomock.Call
 		}
 
 		tests := []test{
 			{
-				name:             "id required",
+				name:             "page not found",
 				method:           http.MethodGet,
 				pathPattern:      "/users/{id}",
 				pathValue:        "/users",
-				serviceError:     ErrInvalidID,
-				expectedHTTPCode: http.StatusBadRequest,
-				expectedBody:     ErrInvalidID.Error() + "\n",
+				serviceError:     nil,
+				expectedHTTPCode: http.StatusNotFound,
+				expectedBody:     "404 page not found\n",
+				mockCall:         nil,
 			},
 			{
 				name:             "invalid id",
@@ -46,6 +51,35 @@ func TestUser_GetUserByID(t *testing.T) {
 				serviceError:     ErrInvalidID,
 				expectedHTTPCode: http.StatusBadRequest,
 				expectedBody:     ErrInvalidID.Error() + "\n",
+				mockCall:         nil,
+			},
+			{
+				name:             "service fail with internal server error",
+				method:           http.MethodGet,
+				pathPattern:      "/users/{id}",
+				pathValue:        "/users/123e4567-e89b-12d3-a456-426614174000",
+				serviceError:     ErrInternalServer,
+				expectedHTTPCode: http.StatusInternalServerError,
+				expectedBody:     ErrInternalServer.Error() + "\n",
+				mockCall:         mockService.EXPECT().GetByID(gomock.Any(), gomock.Any()).Return(nil, ErrInternalServer).Times(1),
+			},
+			{
+				name:             "service success",
+				method:           http.MethodGet,
+				pathPattern:      "/users/{id}",
+				pathValue:        "/users/123e4567-e89b-12d3-a456-426614174000",
+				serviceError:     nil,
+				expectedHTTPCode: http.StatusOK,
+				expectedBody:     "{\"id\":\"ffffffff-ffff-ffff-ffff-ffffffffffff\",\"first_name\":\"\",\"last_name\":\"\",\"age\":0,\"created_at\":\"2021-01-01T00:00:00Z\"}\n",
+				mockCall: mockService.
+					EXPECT().
+					GetByID(gomock.Any(), gomock.Any()).
+					Return(&model.User{
+						ID: uuid.Max,
+						// fixed time here
+						CreatedAt: time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC),
+					}, nil).
+					Times(1),
 			},
 		}
 
@@ -59,6 +93,10 @@ func TestUser_GetUserByID(t *testing.T) {
 				handlerPattern := fmt.Sprintf("%s %s", tc.method, tc.pathPattern)
 
 				w := httptest.NewRecorder()
+
+				if tc.mockCall != nil {
+					gomock.InOrder(tc.mockCall)
+				}
 
 				// When
 				mux := http.NewServeMux()
@@ -81,63 +119,4 @@ func TestUser_GetUserByID(t *testing.T) {
 			})
 		}
 	})
-
-	t.Run("get user invalid id", func(t *testing.T) {
-		//  Given
-		r, err := http.NewRequest(http.MethodGet, "/users/InvalidId123", nil)
-		if err != nil {
-			t.Fatalf("could not create request: %v", err)
-		}
-
-		w := httptest.NewRecorder()
-
-		//  Then
-		mux := http.NewServeMux()
-		h := NewUserHandler(&UserHandlerConfig{
-			Service: mockService,
-		})
-
-		mux.HandleFunc("/users/{id}", h.GetByID)
-
-		mux.ServeHTTP(w, r)
-
-		if w.Code != http.StatusBadRequest {
-			t.Errorf("expected status code %d, got %d", http.StatusBadRequest, w.Code)
-		}
-
-		if w.Body.String() != ErrInvalidID.Error()+"\n" {
-			t.Errorf("expected body %s, got %s", ErrInvalidID.Error()+"\n", w.Body.String())
-		}
-	})
 }
-
-// 	t.Run("get user invalid id", func(t *testing.T) {
-// 		// create the serve mux
-// 		mux := http.NewServeMux()
-
-// 		// create the handler
-// 		h := &UserHandler{
-// 			service: service,
-// 		}
-// 		mux.HandleFunc("GET /users/{id}", h.GetByID)
-
-// 		// mock the request
-// 		r := httptest.NewRequest(http.MethodGet, "/users/InvalidId123", nil)
-
-// 		// mock the response writer
-// 		w := httptest.NewRecorder()
-
-// 		// serve the request
-// 		mux.ServeHTTP(w, r)
-
-// 		// assert the response
-// 		if w.Code != http.StatusBadRequest {
-// 			t.Errorf("expected status code %d, got %d", http.StatusBadRequest, w.Code)
-// 		}
-
-// 		// assert the response body
-// 		if w.Body.String() != ErrInvalidID.Error()+"\n" {
-// 			t.Errorf("expected body %s, got %s", ErrInvalidID.Error()+"\n", w.Body.String())
-// 		}
-// 	})
-// }

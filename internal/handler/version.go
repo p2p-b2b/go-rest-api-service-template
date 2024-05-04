@@ -18,8 +18,6 @@ func (h *VersionHandler) Get(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 
-	w.WriteHeader(http.StatusOK)
-
 	fmt.Fprintf(w, `{"version":"%s","buildDate":"%s","gitCommit":"%s","gitBranch":"%s","goVersion":"%s","goVersionArch":"%s","goVersionOS":"%s"}`,
 		version.Version,
 		version.BuildDate,
@@ -29,4 +27,5 @@ func (h *VersionHandler) Get(w http.ResponseWriter, r *http.Request) {
 		version.GoVersionArch,
 		version.GoVersionOS,
 	)
+	w.WriteHeader(http.StatusOK)
 }

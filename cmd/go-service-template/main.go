@@ -202,12 +202,11 @@ func main() {
 
 	// Create handlers
 	versionHandler := &handler.VersionHandler{}
-	mux.HandleFunc("GET /version", versionHandler.Get)
-
-	// Create a new UserHandler
 	userHandler := handler.NewUserHandler(&handler.UserHandlerConfig{
 		Service: userService,
 	})
+
+	mux.HandleFunc("GET /version", versionHandler.Get)
 
 	mux.HandleFunc("GET /users/{id}", userHandler.GetByID)
 	mux.HandleFunc("PUT /users/{id}", userHandler.UpdateUser)
@@ -252,9 +251,7 @@ func main() {
 	// Wait for a signal to shutdown
 	osSigChan := make(chan os.Signal, 1)
 	signal.Notify(osSigChan, os.Interrupt, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
-
 	stopChan := make(chan struct{})
-
 	ctx, cancel := context.WithTimeout(context.Background(), SrvConfig.ShutdownTimeout.Value)
 	defer cancel()
 
@@ -285,7 +282,6 @@ func main() {
 					slog.Warn("unknown signal", "signal", sig)
 					return
 				}
-
 			case <-stopChan:
 				return
 			}
