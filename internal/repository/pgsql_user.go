@@ -37,6 +37,11 @@ func NewPGSQLUserRepository(conf PGSQLUserRepositoryConfig) *PGSQLUserRepository
 	}
 }
 
+// DriverName returns the name of the driver.
+func (s *PGSQLUserRepository) DriverName() string {
+	return sql.Drivers()[0]
+}
+
 // Conn returns the connection to the repository.
 func (s *PGSQLUserRepository) Conn(ctx context.Context) (*sql.Conn, error) {
 	return s.db.Conn(ctx)

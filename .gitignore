@@ -26,3 +26,6 @@ server.key
 server.crt
 tmp/
 .env
+
+# local database volume
+go-service-template-db-volume-host/

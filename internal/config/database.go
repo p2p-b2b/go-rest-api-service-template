@@ -9,8 +9,8 @@ const (
 	DefaultDatabaseKind     = "postgres"
 	DefaultDatabaseAddress  = "localhost"
 	DefaultDatabasePort     = 5432
-	DefaultDatabaseUsername = "dbadmin"
-	DefaultDatabasePassword = "dbadmin"
+	DefaultDatabaseUsername = "username"
+	DefaultDatabasePassword = "password"
 	DefaultDatabaseName     = "go-template-service"
 	DefaultDatabaseSSLMode  = "disable"
 	DefaultDatabaseTimeZone = "UTC"

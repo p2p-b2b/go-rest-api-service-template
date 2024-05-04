@@ -14,8 +14,8 @@ import (
 	"strings"
 	"syscall"
 
-	_ "github.com/go-sql-driver/mysql" // load the MySQL driver for database/sql
-	_ "github.com/lib/pq"              // load the PostgreSQL driver for database/sql
+	// _ "github.com/go-sql-driver/mysql" // load the MySQL driver for database/sql
+	_ "github.com/lib/pq" // load the PostgreSQL driver for database/sql
 
 	"github.com/p2p-b2b/go-service-template/internal/config"
 	"github.com/p2p-b2b/go-service-template/internal/handler"
@@ -81,7 +81,15 @@ func init() {
 
 	// implement the long version flag
 	if flag.Lookup("version.long").Value.(flag.Getter).Get().(bool) {
-		fmt.Printf("%s version: %s,  Git Commit: %s, Build Date: %s, Go Version: %s, OS/Arch: %s/%s\n", appName, version.Version, version.GitCommit, version.BuildDate, version.GoVersion, version.GoVersionOS, version.GoVersionArch)
+		fmt.Printf("%s version: %s,  Git Commit: %s, Build Date: %s, Go Version: %s, OS/Arch: %s/%s\n",
+			appName,
+			version.Version,
+			version.GitCommit,
+			version.BuildDate,
+			version.GoVersion,
+			version.GoVersionOS,
+			version.GoVersionArch,
+		)
 		os.Exit(0)
 	}
 
@@ -173,7 +181,6 @@ func main() {
 		"address", DBConfig.Address.Value,
 		"port", DBConfig.Port.Value,
 		"username", DBConfig.Username.Value,
-		"password", DBConfig.Password.Value,
 		"name", DBConfig.Name.Value,
 		"ssl_mode", DBConfig.SSLMode.Value,
 	)
@@ -197,10 +204,12 @@ func main() {
 	ctx, cancel := context.WithTimeout(ctx, DBConfig.MaxPingTimeout.Value)
 	defer cancel()
 
+	slog.Info("database connection test...", "dsn", dbDSN)
 	if err := userRepository.PingContext(ctx); err != nil {
 		slog.Error("database ping error", "error", err)
 		os.Exit(1)
 	}
+	slog.Info("database connection test successful")
 
 	userService := service.NewDefaultUserService(&service.DefaultUserServiceConfig{
 		Repository: userRepository,
@@ -292,6 +301,7 @@ func main() {
 					slog.Warn("reloading server...")
 					// Reload the server
 					// This is where you would reload the server
+
 					return
 				default:
 					slog.Warn("unknown signal", "signal", sig)
@@ -305,10 +315,10 @@ func main() {
 
 	// Start the server
 	go func() {
-		slog.Info("starting server",
+		slog.Info("starting http server",
 			"address", SrvConfig.Address.Value,
 			"port", SrvConfig.Port.Value,
-			"url", fmt.Sprintf("http://%s:%d", SrvConfig.Address.Value, SrvConfig.Port.Value),
+			"url", fmt.Sprintf("http://%s:%d/status", SrvConfig.Address.Value, SrvConfig.Port.Value),
 		)
 
 		// Check if the port is 443 and start the server with TLS

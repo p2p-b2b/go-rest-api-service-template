@@ -13,6 +13,9 @@ import (
 
 // UserRepository represents a repository for managing users.
 type UserRepository interface {
+	// DriverName returns the name of the driver.
+	DriverName() string
+
 	// Close closes the repository, releasing any open resources.
 	Close() error
 

@@ -59,6 +59,7 @@ func (s *DefaultUserService) HealthCheck(ctx context.Context) (model.Health, err
 
 	database := model.Check{
 		Name:   "database",
+		Kind:   s.repository.DriverName(),
 		Status: dbStatus,
 	}
 
@@ -68,6 +69,7 @@ func (s *DefaultUserService) HealthCheck(ctx context.Context) (model.Health, err
 	runtime.ReadMemStats(mem)
 	rt := model.Check{
 		Name:   "runtime",
+		Kind:   "go",
 		Status: rtStatus,
 		Data: map[string]interface{}{
 			"version":      runtime.Version(),
