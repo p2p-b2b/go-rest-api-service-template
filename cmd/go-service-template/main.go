@@ -14,8 +14,8 @@ import (
 	"strings"
 	"syscall"
 
-	// _ "github.com/go-sql-driver/mysql" // load the MySQL driver for database/sql
 	_ "github.com/lib/pq" // load the PostgreSQL driver for database/sql
+	// _ "github.com/go-sql-driver/mysql" // load the MySQL driver for database/sql
 
 	"github.com/p2p-b2b/go-service-template/internal/config"
 	"github.com/p2p-b2b/go-service-template/internal/handler"

@@ -88,5 +88,6 @@ jobs:
           path: ./dist/
           retention-days: 1
 
-      - name: Create and publish container images
-        uses: p2p-b2b/go-service-template/.github/workflows/container-image.yaml@main
+  containers:
+    name: Create and publish container images
+    uses: p2p-b2b/go-service-template/.github/workflows/container-image.yaml@main
