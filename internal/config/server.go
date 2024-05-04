@@ -13,10 +13,10 @@ const (
 	DefaultServerAddress = "localhost"
 
 	// DefaultServerPort is the default port for the server
-	DefaultServerPort = 8443
+	DefaultServerPort = 8080
 
 	// DefaultServerTLSEnabled is the default value for enabling TLS
-	DefaultServerTLSEnabled = true
+	DefaultServerTLSEnabled = false
 )
 
 var (

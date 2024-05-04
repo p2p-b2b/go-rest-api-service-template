@@ -190,6 +190,12 @@ build-dist-zip: ## Build the application for all platforms defined in GO_OS and 
 			) \
 		) \
 	)
+###############################################################################
+##@ Tools commands
+.PHONY: install-air
+install-air: ## Install air for hot reload (https://github.com/cosmtrek/air)
+	@printf "👉 Install air...\n"
+	$(call exec_cmd, go install github.com/cosmtrek/air@latest )
 
 ###############################################################################
 ##@ Container commands

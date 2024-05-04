@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"crypto/tls"
+	"database/sql"
 	"errors"
 	"flag"
 	"fmt"
@@ -13,8 +14,13 @@ import (
 	"strings"
 	"syscall"
 
+	_ "github.com/lib/pq" // load the PostgreSQL driver for database/sql
+	// _ "github.com/go-sql-driver/mysql" // load the MySQL driver for database/sql
+
 	"github.com/p2p-b2b/go-service-template/internal/config"
 	"github.com/p2p-b2b/go-service-template/internal/handler"
+	"github.com/p2p-b2b/go-service-template/internal/repository"
+	"github.com/p2p-b2b/go-service-template/internal/service"
 	"github.com/p2p-b2b/go-service-template/internal/version"
 )
 
@@ -38,6 +44,7 @@ func init() {
 	// Version flag
 	flag.Bool("version", false, "Show the version information")
 	flag.Bool("version.long", false, "Show the long version information")
+	flag.Bool("debug", false, "Enable debug mode. This is a shorthand for -log.level=debug")
 
 	// Server configuration values
 	flag.StringVar(&SrvConfig.Address.Value, SrvConfig.Address.FlagName, config.DefaultServerAddress, SrvConfig.Address.FlagDescription)
@@ -47,13 +54,15 @@ func init() {
 	flag.Var(&SrvConfig.CertificateFile.Value, SrvConfig.CertificateFile.FlagName, SrvConfig.CertificateFile.FlagDescription)
 	flag.BoolVar(&SrvConfig.TLSEnabled.Value, SrvConfig.TLSEnabled.FlagName, config.DefaultServerTLSEnabled, SrvConfig.TLSEnabled.FlagDescription)
 
-	// Initialize the application
+	// Database configuration values
+	flag.StringVar(&DBConfig.Kind.Value, DBConfig.Kind.FlagName, config.DefaultDatabaseKind, DBConfig.Kind.FlagDescription)
 	flag.StringVar(&DBConfig.Address.Value, DBConfig.Address.FlagName, config.DefaultDatabaseAddress, DBConfig.Address.FlagDescription)
 	flag.IntVar(&DBConfig.Port.Value, DBConfig.Port.FlagName, config.DefaultDatabasePort, DBConfig.Port.FlagDescription)
 	flag.StringVar(&DBConfig.Username.Value, DBConfig.Username.FlagName, config.DefaultDatabaseUsername, DBConfig.Username.FlagDescription)
 	flag.StringVar(&DBConfig.Password.Value, DBConfig.Password.FlagName, config.DefaultDatabasePassword, DBConfig.Password.FlagDescription)
 	flag.StringVar(&DBConfig.Name.Value, DBConfig.Name.FlagName, config.DefaultDatabaseName, DBConfig.Name.FlagDescription)
 	flag.StringVar(&DBConfig.SSLMode.Value, DBConfig.SSLMode.FlagName, config.DefaultDatabaseSSLMode, DBConfig.SSLMode.FlagDescription)
+	flag.StringVar(&DBConfig.TimeZone.Value, DBConfig.TimeZone.FlagName, config.DefaultDatabaseTimeZone, DBConfig.TimeZone.FlagDescription)
 	flag.DurationVar(&DBConfig.MaxPingTimeout.Value, DBConfig.MaxPingTimeout.FlagName, config.DefaultDatabaseMaxPingTimeout, DBConfig.MaxPingTimeout.FlagDescription)
 	flag.DurationVar(&DBConfig.MaxQueryTimeout.Value, DBConfig.MaxQueryTimeout.FlagName, config.DefaultDatabaseMaxQueryTimeout, DBConfig.MaxQueryTimeout.FlagDescription)
 	flag.DurationVar(&DBConfig.ConnMaxLifetime.Value, DBConfig.ConnMaxLifetime.FlagName, config.DefaultDatabaseConnMaxLifetime, DBConfig.ConnMaxLifetime.FlagDescription)
@@ -72,7 +81,15 @@ func init() {
 
 	// implement the long version flag
 	if flag.Lookup("version.long").Value.(flag.Getter).Get().(bool) {
-		fmt.Printf("%s version: %s,  Git Commit: %s, Build Date: %s, Go Version: %s, OS/Arch: %s/%s\n", appName, version.Version, version.GitCommit, version.BuildDate, version.GoVersion, version.GoVersionOS, version.GoVersionArch)
+		fmt.Printf("%s version: %s,  Git Commit: %s, Build Date: %s, Go Version: %s, OS/Arch: %s/%s\n",
+			appName,
+			version.Version,
+			version.GitCommit,
+			version.BuildDate,
+			version.GoVersion,
+			version.GoVersionOS,
+			version.GoVersionArch,
+		)
 		os.Exit(0)
 	}
 
@@ -82,12 +99,22 @@ func init() {
 		os.Exit(0)
 	}
 
+	// validate the database kind
+	if DBConfig.Kind.Value != "postgres" && DBConfig.Kind.Value != "mysql" {
+		slog.Error("Invalid database kind. Use --help to get more info", "kind", DBConfig.Kind.Value)
+		os.Exit(1)
+	}
+
 	// Get Configuration from Environment Variables
 	// and override the values when they are set
 	DBConfig.PaseEnvVars()
 	LogConfig.ParseEnvVars()
 
 	// Set the log level
+	if flag.Lookup("debug").Value.(flag.Getter).Get().(bool) {
+		LogConfig.Level.Value = "debug"
+	}
+
 	switch strings.ToLower(LogConfig.Level.Value) {
 	case "debug":
 		logHandlerOptions = &slog.HandlerOptions{Level: slog.LevelDebug}
@@ -119,11 +146,96 @@ func main() {
 	slog.Debug("configuration", "database", DBConfig)
 	slog.Debug("configuration", "log", LogConfig)
 
+	// Context
+	ctx := context.Background()
+
 	// Create a new ServeMux
 	mux := http.NewServeMux()
 
-	// Add the routes
-	mux.HandleFunc("GET /version", handler.GetVersion)
+	// Create PGSQLUserStore
+	dbDSN := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=%s TimeZone=%s",
+		DBConfig.Address.Value,
+		DBConfig.Port.Value,
+		DBConfig.Username.Value,
+		DBConfig.Password.Value,
+		DBConfig.Name.Value,
+		DBConfig.SSLMode.Value,
+		DBConfig.TimeZone.Value,
+	)
+
+	db, err := sql.Open(DBConfig.Kind.Value, dbDSN)
+	if err != nil {
+		slog.Error("database connection error", "error", err)
+		os.Exit(1)
+	}
+	defer db.Close()
+
+	db.SetMaxIdleConns(DBConfig.MaxIdleConns.Value)
+	db.SetMaxOpenConns(DBConfig.MaxOpenConns.Value)
+	db.SetConnMaxLifetime(DBConfig.ConnMaxLifetime.Value)
+	db.SetConnMaxIdleTime(DBConfig.ConnMaxIdleTime.Value)
+
+	slog.Debug("database connection",
+		"dsn", dbDSN,
+		"kind", DBConfig.Kind.Value,
+		"address", DBConfig.Address.Value,
+		"port", DBConfig.Port.Value,
+		"username", DBConfig.Username.Value,
+		"name", DBConfig.Name.Value,
+		"ssl_mode", DBConfig.SSLMode.Value,
+	)
+	slog.Debug("database configuration",
+		"max_idle_conns", DBConfig.MaxIdleConns.Value,
+		"max_open_conns", DBConfig.MaxOpenConns.Value,
+		"conn_max_lifetime", DBConfig.ConnMaxLifetime.Value,
+		"conn_max_idle_time", DBConfig.ConnMaxIdleTime.Value,
+	)
+
+	// Create a new userRepository
+	userRepository := repository.NewPGSQLUserRepository(
+		repository.PGSQLUserRepositoryConfig{
+			DB:              db,
+			MaxPingTimeout:  DBConfig.MaxPingTimeout.Value,
+			MaxQueryTimeout: DBConfig.MaxQueryTimeout.Value,
+		},
+	)
+
+	// Test database connection
+	ctx, cancel := context.WithTimeout(ctx, DBConfig.MaxPingTimeout.Value)
+	defer cancel()
+
+	slog.Info("database connection test...", "dsn", dbDSN)
+	if err := userRepository.PingContext(ctx); err != nil {
+		slog.Error("database ping error", "error", err)
+		os.Exit(1)
+	}
+	slog.Info("database connection test successful")
+
+	userService := service.NewDefaultUserService(&service.DefaultUserServiceConfig{
+		Repository: userRepository,
+	})
+
+	// Create handlers
+	versionHandler := handler.NewVersionHandler()
+	healthHandler := handler.NewHealthHandler(&handler.HealthUserHandlerConfig{
+		Service: userService,
+	})
+	userHandler := handler.NewUserHandler(&handler.UserHandlerConfig{
+		Service: userService,
+	})
+
+	// Register the handlers
+	mux.HandleFunc("GET /version", versionHandler.Get)
+
+	mux.HandleFunc("GET /health", healthHandler.Get)
+	mux.HandleFunc("GET /healthz", healthHandler.Get)
+	mux.HandleFunc("GET /status", healthHandler.Get)
+
+	mux.HandleFunc("GET /users/{id}", userHandler.GetByID)
+	mux.HandleFunc("PUT /users/{id}", userHandler.UpdateUser)
+	mux.HandleFunc("DELETE /users/{id}", userHandler.DeleteUser)
+	mux.HandleFunc("POST /users", userHandler.CreateUser)
+	mux.HandleFunc("GET /users", userHandler.ListUsers)
 
 	// Configure the server
 	server := &http.Server{
@@ -134,15 +246,15 @@ func main() {
 	// Configure the TLS
 	if SrvConfig.TLSEnabled.Value {
 		slog.Info("configuring tls")
-		// if _, err := os.Stat(SrvConfig.CertificateFile.Value.Name()); os.IsNotExist(err) {
-		// 	slog.Error("tls.crt file not found")
-		// 	os.Exit(1)
-		// }
+		if _, err := os.Stat(SrvConfig.CertificateFile.Value.Name()); os.IsNotExist(err) {
+			slog.Error("tls.crt file not found")
+			os.Exit(1)
+		}
 
-		// if _, err := os.Stat(SrvConfig.PrivateKeyFile.Value.Name()); os.IsNotExist(err) {
-		// 	slog.Error("tls.key file not found")
-		// 	os.Exit(1)
-		// }
+		if _, err := os.Stat(SrvConfig.PrivateKeyFile.Value.Name()); os.IsNotExist(err) {
+			slog.Error("tls.key file not found")
+			os.Exit(1)
+		}
 
 		tlsCfg := &tls.Config{
 			MinVersion:               tls.VersionTLS12,
@@ -162,10 +274,9 @@ func main() {
 	// Wait for a signal to shutdown
 	osSigChan := make(chan os.Signal, 1)
 	signal.Notify(osSigChan, os.Interrupt, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
-
 	stopChan := make(chan struct{})
 
-	ctx, cancel := context.WithTimeout(context.Background(), SrvConfig.ShutdownTimeout.Value)
+	ctx, cancel = context.WithTimeout(ctx, SrvConfig.ShutdownTimeout.Value)
 	defer cancel()
 
 	// Handle signals
@@ -196,7 +307,6 @@ func main() {
 					slog.Warn("unknown signal", "signal", sig)
 					return
 				}
-
 			case <-stopChan:
 				return
 			}
@@ -205,7 +315,11 @@ func main() {
 
 	// Start the server
 	go func() {
-		slog.Info("starting server", "address", SrvConfig.Address.Value, "port", SrvConfig.Port.Value)
+		slog.Info("starting http server",
+			"address", SrvConfig.Address.Value,
+			"port", SrvConfig.Port.Value,
+			"url", fmt.Sprintf("http://%s:%d/status", SrvConfig.Address.Value, SrvConfig.Port.Value),
+		)
 
 		// Check if the port is 443 and start the server with TLS
 		if SrvConfig.TLSEnabled.Value {
