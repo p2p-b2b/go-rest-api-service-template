@@ -15,6 +15,7 @@ exclude_dir = [
   "testdata",
 ]
 exclude_file = [
+  "docs/docs.go",
 ]
 exclude_regex = [
   "_test.go",

@@ -13,6 +13,7 @@
     "podman",
     "postgres",
     "sslmode",
+    "swaggo",
     "unmarshals",
     "uuid"
   ]

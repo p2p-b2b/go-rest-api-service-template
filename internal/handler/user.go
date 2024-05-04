@@ -23,7 +23,14 @@ func NewUserHandler(conf *UserHandlerConfig) *UserHandler {
 	}
 }
 
-// GetByID handles the HTTP GET - /users/{id} endpoint.
+// GetByID Get a user by ID
+// @Summary Get a user by ID
+// @Description Get a user by ID
+// @Tags user
+// @Produce json
+// @Param id path string true "User ID"
+// @Success 200 {object} model.User
+// @Router /user/{id} [get]
 func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -59,7 +66,15 @@ func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-// CreateUser handles the HTTP POST - / endpoint.
+// CreateUser Create a new user
+// @Summary Create a new user
+// @Description Create a new user
+// @Tags user
+// @Accept json
+// @Produce json
+// @Param user body model.User true "User"
+// @Success 201 {object} model.User
+// @Router /user [post]
 func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)
@@ -106,7 +121,16 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 }
 
-// UpdateUser handles the HTTP PUT - /{id} endpoint.
+// UpdateUser Update a user
+// @Summary Update a user
+// @Description Update a user
+// @Tags user
+// @Accept json
+// @Produce json
+// @Param id path string true "User ID"
+// @Param user body model.User true "User"
+// @Success 200
+// @Router /user/{id} [put]
 func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPut {
 		w.WriteHeader(http.StatusMethodNotAllowed)
@@ -166,7 +190,13 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-// DeleteUser handles the HTTP DELETE - /{id} endpoint.
+// DeleteUser Delete a user
+// @Summary Delete a user
+// @Description Delete a user
+// @Tags user
+// @Param id path string true "User ID"
+// @Success 200
+// @Router /user/{id} [delete]
 func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodDelete {
 		w.WriteHeader(http.StatusMethodNotAllowed)
