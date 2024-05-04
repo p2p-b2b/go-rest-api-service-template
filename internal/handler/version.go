@@ -9,6 +9,10 @@ import (
 
 type VersionHandler struct{}
 
+func NewVersionHandler() *VersionHandler {
+	return &VersionHandler{}
+}
+
 func (h *VersionHandler) Get(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		w.WriteHeader(http.StatusMethodNotAllowed)

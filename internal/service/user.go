@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"runtime"
 
 	"github.com/google/uuid"
 	"github.com/p2p-b2b/go-service-template/internal/model"
@@ -13,6 +14,9 @@ import (
 
 // UserService represents a service for managing users.
 type UserService interface {
+	// HealthCheck verifies a connection to the repository is still alive.
+	HealthCheck(ctx context.Context) (model.Health, error)
+
 	// GetByID returns the user with the specified ID.
 	GetByID(ctx context.Context, id uuid.UUID) (*model.User, error)
 
@@ -42,6 +46,50 @@ func NewDefaultUserService(conf *DefaultUserServiceConfig) *DefaultUserService {
 	return &DefaultUserService{
 		repository: conf.Repository,
 	}
+}
+
+// HealthCheck verifies a connection to the repository is still alive.
+func (s *DefaultUserService) HealthCheck(ctx context.Context) (model.Health, error) {
+	// database
+	dbStatus := model.StatusUp
+	err := s.repository.PingContext(ctx)
+	if err != nil {
+		dbStatus = model.StatusDown
+	}
+
+	database := model.Check{
+		Name:   "database",
+		Status: dbStatus,
+	}
+
+	// runtime
+	rtStatus := model.StatusUp
+	mem := &runtime.MemStats{}
+	runtime.ReadMemStats(mem)
+	rt := model.Check{
+		Name:   "runtime",
+		Status: rtStatus,
+		Data: map[string]interface{}{
+			"version":      runtime.Version(),
+			"numCPU":       runtime.NumCPU(),
+			"numGoroutine": runtime.NumGoroutine(),
+			"numCgoCall":   runtime.NumCgoCall(),
+			"memStats":     mem,
+		},
+	}
+
+	// and operator
+	allStatus := dbStatus && rtStatus
+
+	health := model.Health{
+		Status: allStatus,
+		Checks: []model.Check{
+			database,
+			rt,
+		},
+	}
+
+	return health, err
 }
 
 // GetByID returns the user with the specified ID.

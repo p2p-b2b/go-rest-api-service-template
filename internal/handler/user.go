@@ -2,23 +2,11 @@ package handler
 
 import (
 	"encoding/json"
-	"errors"
 	"net/http"
 
 	"github.com/google/uuid"
 	"github.com/p2p-b2b/go-service-template/internal/model"
 	"github.com/p2p-b2b/go-service-template/internal/service"
-)
-
-var (
-	// ErrInvalidID is returned when an invalid ID is provided.
-	ErrInvalidID = errors.New("invalid ID")
-
-	// ErrIDRequired is returned when an ID is required.
-	ErrIDRequired = errors.New("id is required for this operation")
-
-	// ErrInternalServer is returned when an internal server error occurs.
-	ErrInternalServer = errors.New("internal server error")
 )
 
 type UserHandlerConfig struct {

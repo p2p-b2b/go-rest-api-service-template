@@ -37,13 +37,18 @@ func NewPGSQLUserRepository(conf PGSQLUserRepositoryConfig) *PGSQLUserRepository
 	}
 }
 
+// Conn returns the connection to the repository.
+func (s *PGSQLUserRepository) Conn(ctx context.Context) (*sql.Conn, error) {
+	return s.db.Conn(ctx)
+}
+
 // Close closes the repository, releasing any open resources.
 func (s *PGSQLUserRepository) Close() error {
 	return s.db.Close()
 }
 
-// Ping verifies a connection to the repository is still alive, establishing a connection if necessary.
-func (s *PGSQLUserRepository) Ping(ctx context.Context) error {
+// PingContext verifies a connection to the repository is still alive, establishing a connection if necessary.
+func (s *PGSQLUserRepository) PingContext(ctx context.Context) error {
 	ctx, cancel := context.WithTimeout(ctx, s.MaxPingTimeout)
 	defer cancel()
 

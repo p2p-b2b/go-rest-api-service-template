@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"database/sql"
 
 	"github.com/google/uuid"
 	"github.com/p2p-b2b/go-service-template/internal/model"
@@ -15,8 +16,11 @@ type UserRepository interface {
 	// Close closes the repository, releasing any open resources.
 	Close() error
 
-	// Ping verifies a connection to the repository is still alive, establishing a connection if necessary.
-	Ping(ctx context.Context) error
+	// PingContext verifies a connection to the repository is still alive, establishing a connection if necessary.
+	PingContext(ctx context.Context) error
+
+	// Conn returns the connection to the repository.
+	Conn(ctx context.Context) (*sql.Conn, error)
 
 	// Insert a new user into the database.
 	Insert(ctx context.Context, user *model.User) error

@@ -6,6 +6,7 @@ package mocks
 
 import (
 	context "context"
+	sql "database/sql"
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
@@ -50,6 +51,21 @@ func (mr *MockUserRepositoryMockRecorder) Close() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockUserRepository)(nil).Close))
 }
 
+// Conn mocks base method.
+func (m *MockUserRepository) Conn(ctx context.Context) (*sql.Conn, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Conn", ctx)
+	ret0, _ := ret[0].(*sql.Conn)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Conn indicates an expected call of Conn.
+func (mr *MockUserRepositoryMockRecorder) Conn(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Conn", reflect.TypeOf((*MockUserRepository)(nil).Conn), ctx)
+}
+
 // Delete mocks base method.
 func (m *MockUserRepository) Delete(ctx context.Context, id uuid.UUID) error {
 	m.ctrl.T.Helper()
@@ -78,18 +94,18 @@ func (mr *MockUserRepositoryMockRecorder) Insert(ctx, user interface{}) *gomock.
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Insert", reflect.TypeOf((*MockUserRepository)(nil).Insert), ctx, user)
 }
 
-// Ping mocks base method.
-func (m *MockUserRepository) Ping(ctx context.Context) error {
+// PingContext mocks base method.
+func (m *MockUserRepository) PingContext(ctx context.Context) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Ping", ctx)
+	ret := m.ctrl.Call(m, "PingContext", ctx)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// Ping indicates an expected call of Ping.
-func (mr *MockUserRepositoryMockRecorder) Ping(ctx interface{}) *gomock.Call {
+// PingContext indicates an expected call of PingContext.
+func (mr *MockUserRepositoryMockRecorder) PingContext(ctx interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Ping", reflect.TypeOf((*MockUserRepository)(nil).Ping), ctx)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PingContext", reflect.TypeOf((*MockUserRepository)(nil).PingContext), ctx)
 }
 
 // SelectAll mocks base method.

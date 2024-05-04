@@ -138,6 +138,9 @@ func main() {
 	slog.Debug("configuration", "database", DBConfig)
 	slog.Debug("configuration", "log", LogConfig)
 
+	// Context
+	ctx := context.Background()
+
 	// Create a new ServeMux
 	mux := http.NewServeMux()
 
@@ -191,7 +194,10 @@ func main() {
 	)
 
 	// Test database connection
-	if err := userRepository.Ping(context.Background()); err != nil {
+	ctx, cancel := context.WithTimeout(ctx, DBConfig.MaxPingTimeout.Value)
+	defer cancel()
+
+	if err := userRepository.PingContext(ctx); err != nil {
 		slog.Error("database ping error", "error", err)
 		os.Exit(1)
 	}
@@ -201,12 +207,20 @@ func main() {
 	})
 
 	// Create handlers
-	versionHandler := &handler.VersionHandler{}
+	versionHandler := handler.NewVersionHandler()
+	healthHandler := handler.NewHealthHandler(&handler.HealthUserHandlerConfig{
+		Service: userService,
+	})
 	userHandler := handler.NewUserHandler(&handler.UserHandlerConfig{
 		Service: userService,
 	})
 
+	// Register the handlers
 	mux.HandleFunc("GET /version", versionHandler.Get)
+
+	mux.HandleFunc("GET /health", healthHandler.Get)
+	mux.HandleFunc("GET /healthz", healthHandler.Get)
+	mux.HandleFunc("GET /status", healthHandler.Get)
 
 	mux.HandleFunc("GET /users/{id}", userHandler.GetByID)
 	mux.HandleFunc("PUT /users/{id}", userHandler.UpdateUser)
@@ -252,7 +266,8 @@ func main() {
 	osSigChan := make(chan os.Signal, 1)
 	signal.Notify(osSigChan, os.Interrupt, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
 	stopChan := make(chan struct{})
-	ctx, cancel := context.WithTimeout(context.Background(), SrvConfig.ShutdownTimeout.Value)
+
+	ctx, cancel = context.WithTimeout(ctx, SrvConfig.ShutdownTimeout.Value)
 	defer cancel()
 
 	// Handle signals

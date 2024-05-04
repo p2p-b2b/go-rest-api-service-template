@@ -1,13 +1,16 @@
 # go-service-template
 
-This is a template for a Go service. It includes a basic structure for a Go service, with a Makefile for building and running the service, and a Dockerfile for building a Docker image.
+This is a template for a Go HTTP REST API Service.
 
-## Getting started
+## Features
 
-- [] Create a new repository from this template
-- [] Change the module name in `go.mod` using the command `go mod edit -module github.com/your-username/your-repo`
-- [] Change the service name in `cmd/go-service-template` to the name of your service, e.g. `cmd/your-service-name`
-- [] Change the service name in `Makefile` to the name of your service
+- [x] Create a new repository from this template
+- [x] Change the module name in `go.mod` using the command `go mod edit -module github.com/your-username/your-repo`
+- [x] Change the service name in `cmd/go-service-template` to the name of your service, e.g. `cmd/your-service-name`
+- [x] Change the service name in `Makefile` to the name of your service
+- [x] Hot reload with [air](https://github.com/cosmtrek/air), use `make install-air` to install it, then `air` to run it
+- [x] Ready to use Certificates for HTTPS, see [Certificates](#certificates)
+- [x] Containerize your service with Podman, see [Building](#building)
 
 ## Certificates
 
@@ -30,7 +33,7 @@ ln -sf server.rsa.crt server.crt
 
 ## Building
 
-using
+using Docker:
 
 ```bash
 docker build \
@@ -75,4 +78,3 @@ From ghcr.io:
 ```bash
 podman run --name go-service-template --rm ghcr.io/p2p-b2b/go-service-template:first-implementation
 ```
-

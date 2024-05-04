@@ -79,6 +79,21 @@ func (mr *MockUserServiceMockRecorder) GetByID(ctx, id interface{}) *gomock.Call
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByID", reflect.TypeOf((*MockUserService)(nil).GetByID), ctx, id)
 }
 
+// HealthCheck mocks base method.
+func (m *MockUserService) HealthCheck(ctx context.Context) (model.Health, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "HealthCheck", ctx)
+	ret0, _ := ret[0].(model.Health)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// HealthCheck indicates an expected call of HealthCheck.
+func (mr *MockUserServiceMockRecorder) HealthCheck(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HealthCheck", reflect.TypeOf((*MockUserService)(nil).HealthCheck), ctx)
+}
+
 // List mocks base method.
 func (m *MockUserService) List(ctx context.Context) ([]*model.ListUserOutput, error) {
 	m.ctrl.T.Helper()
