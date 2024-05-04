@@ -21,6 +21,15 @@ func NewHealthHandler(conf *HealthUserHandlerConfig) *HealthHandler {
 	}
 }
 
+// Get returns the health of the service
+// @Summary Get the health of the service
+// @Description Get the health of the service
+// @Tags health
+// @Produce json
+// @Success 200 {object} model.Health
+// @Router /health [get]
+// @Router /healthz [get]
+// @Router /status [get]
 func (h *HealthHandler) Get(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 

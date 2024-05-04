@@ -13,6 +13,20 @@ This is a template for a Go HTTP REST API Service.
 - [x] Containerize your service with Podman, see [Building](#building)
 - [x] Podman pod file for development [dev-service-pod.yaml](dev-service-pod.yaml), see [Running](#running). This is something like `docker-compose/podman-compose` but more powerful
 
+## Swagger Documentation
+
+The Swagger documentation is available at `/swagger/index.html`.
+
+To generate the Swagger documentation, you need to install [swag](https://github.com/swaggo/swag) and run the following command:
+
+```bash
+swag init \
+  --dir "./cmd/go-service-template/,./internal/handler" \
+  --output ./docs \
+  --parseDependency true \
+  --parseInternal true
+```
+
 ## Certificates
 
 This service uses self-signed certificates for HTTPS. You can generate new certificates using the following command:

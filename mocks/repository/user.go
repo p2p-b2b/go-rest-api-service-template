@@ -80,6 +80,20 @@ func (mr *MockUserRepositoryMockRecorder) Delete(ctx, id interface{}) *gomock.Ca
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockUserRepository)(nil).Delete), ctx, id)
 }
 
+// DriverName mocks base method.
+func (m *MockUserRepository) DriverName() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DriverName")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// DriverName indicates an expected call of DriverName.
+func (mr *MockUserRepositoryMockRecorder) DriverName() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DriverName", reflect.TypeOf((*MockUserRepository)(nil).DriverName))
+}
+
 // Insert mocks base method.
 func (m *MockUserRepository) Insert(ctx context.Context, user *model.User) error {
 	m.ctrl.T.Helper()

@@ -40,7 +40,7 @@ GO_OPTS        ?= -v
 GO_OS          ?= linux darwin
 GO_ARCH        ?= arm64 amd64
 # avoid mocks in tests
-GO_FILES       := $(shell go list ./... | grep -v /mocks/)
+GO_FILES       := $(shell go list ./... | grep -v mocks | grep -v docs)
 GO_GRAPH_FILE  := $(BUILD_DIR)/go-mod-graph.txt
 
 CONTAINER_NAMESPACE  ?= $(PROJECT_NAMESPACE)
@@ -81,19 +81,19 @@ endef # don't remove the whiteline before endef
 ######## Targets ##############################################################
 ##@ Default command
 .PHONY: all
-all: clean test build ## Clean, test and build the application.  Execute by default when make is called without arguments
+all: clean test build-all ## Clean, test and build the application.  Execute by default when make is called without arguments
 
 ###############################################################################
 ##@ Golang commands
 .PHONY: go-fmt
 go-fmt: ## Format go code
 	@printf "👉 Formatting go code...\n"
-	$(call exec_cmd, go fmt ./... )
+	$(call exec_cmd, go fmt $(GO_FILES) )
 
 .PHONY: go-vet
 go-vet: ## Vet go code
 	@printf "👉 Vet go code...\n"
-	$(call exec_cmd, go vet ./... )
+	$(call exec_cmd, go vet  $(GO_FILES) )
 
 .PHONY: go-generate
 go-generate: ## Generate go code
@@ -159,8 +159,16 @@ test: $(PROJECT_COVERAGE_FILE) go-mod-tidy go-fmt go-vet go-generate ## Run test
 ###############################################################################
 ##@ Build commands
 .PHONY: build
-build: go-generate go-fmt go-vet ## Build the application
-	@printf "👉 Building applications...\n"
+build: docs-swagger ## Build the application
+	@printf "👉 Building...\n"
+	$(foreach proj_mod, $(PROJECT_MODULES_NAME), \
+		$(call exec_cmd, CGO_ENABLED=$(GO_CGO_ENABLED) go build $(GO_LDFLAGS) $(GO_OPTS) -o $(BUILD_DIR)/$(proj_mod) ./cmd/$(proj_mod)/ ) \
+		$(call exec_cmd, chmod +x $(BUILD_DIR)/$(proj_mod) ) \
+	)
+
+.PHONY: build-all
+build-all: go-generate go-fmt go-vet docs-swagger ## Build the application and execute go generate, go fmt and go vet
+	@printf "👉 Building and lintering...\n"
 	$(foreach proj_mod, $(PROJECT_MODULES_NAME), \
 		$(call exec_cmd, CGO_ENABLED=$(GO_CGO_ENABLED) go build $(GO_LDFLAGS) $(GO_OPTS) -o $(BUILD_DIR)/$(proj_mod) ./cmd/$(proj_mod)/ ) \
 		$(call exec_cmd, chmod +x $(BUILD_DIR)/$(proj_mod) ) \
@@ -190,12 +198,34 @@ build-dist-zip: ## Build the application for all platforms defined in GO_OS and 
 			) \
 		) \
 	)
+
+###############################################################################
+##@ Doocs commands
+# this is necessary to avoid a comma in the call function
+COMMA_SIGN := ,
+.PHONY: docs-swagger
+docs-swagger: ## Generate swagger documentation
+	@printf "👉 Generating swagger documentation...\n"
+	$(foreach proj_mod, $(PROJECT_MODULES_NAME), \
+		$(call exec_cmd, swag init \
+			--dir ./cmd/$(proj_mod)$(COMMA_SIGN)./internal/handler \
+			--output ./docs \
+			--parseDependency true \
+			--parseInternal true \
+		) \
+	)
+
 ###############################################################################
 ##@ Tools commands
 .PHONY: install-air
 install-air: ## Install air for hot reload (https://github.com/cosmtrek/air)
 	@printf "👉 Install air...\n"
 	$(call exec_cmd, go install github.com/cosmtrek/air@latest )
+
+.PHONY: install-swag
+install-swag: ## Install swag for swagger documentation (https://github.com/swaggo/http-swagger)
+	@printf "👉 Install swag...\n"
+	$(call exec_cmd, go install github.com/swaggo/swag/cmd/swag@latest )
 
 ###############################################################################
 ##@ Container commands

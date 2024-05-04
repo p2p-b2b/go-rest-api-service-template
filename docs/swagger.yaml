@@ -1,0 +1,169 @@
+basePath: /
+definitions:
+  model.Check:
+    properties:
+      data:
+        additionalProperties: true
+        type: object
+      kind:
+        type: string
+      name:
+        type: string
+      status:
+        type: boolean
+    type: object
+  model.Health:
+    properties:
+      checks:
+        items:
+          $ref: '#/definitions/model.Check'
+        type: array
+      status:
+        type: boolean
+    type: object
+  model.User:
+    properties:
+      age:
+        type: integer
+      created_at:
+        type: string
+      first_name:
+        type: string
+      id:
+        type: string
+      last_name:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: |-
+    This is a service template for building RESTful APIs in Go.
+    It uses a PostgreSQL database to store user information.
+    The service provides:
+    - CRUD operations for users.
+    - Health and version endpoints.
+    - Configuration using environment variables or command line arguments.
+    - Debug mode to enable debug logging.
+    - TLS enabled to secure the communication.
+  version: 1.0.0
+paths:
+  /health:
+    get:
+      description: Get the health of the service
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Health'
+      summary: Get the health of the service
+      tags:
+      - health
+  /healthz:
+    get:
+      description: Get the health of the service
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Health'
+      summary: Get the health of the service
+      tags:
+      - health
+  /status:
+    get:
+      description: Get the health of the service
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Health'
+      summary: Get the health of the service
+      tags:
+      - health
+  /user:
+    post:
+      consumes:
+      - application/json
+      description: Create a new user
+      parameters:
+      - description: User
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/model.User'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/model.User'
+      summary: Create a new user
+      tags:
+      - user
+  /user/{id}:
+    delete:
+      description: Delete a user
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+      summary: Delete a user
+      tags:
+      - user
+    get:
+      description: Get a user by ID
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.User'
+      summary: Get a user by ID
+      tags:
+      - user
+    put:
+      consumes:
+      - application/json
+      description: Update a user
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: User
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/model.User'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      summary: Update a user
+      tags:
+      - user
+swagger: "2.0"
