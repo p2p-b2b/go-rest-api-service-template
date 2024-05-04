@@ -81,7 +81,7 @@ endef # don't remove the whiteline before endef
 ######## Targets ##############################################################
 ##@ Default command
 .PHONY: all
-all: clean test build ## Clean, test and build the application.  Execute by default when make is called without arguments
+all: clean test build-all ## Clean, test and build the application.  Execute by default when make is called without arguments
 
 ###############################################################################
 ##@ Golang commands
@@ -159,8 +159,16 @@ test: $(PROJECT_COVERAGE_FILE) go-mod-tidy go-fmt go-vet go-generate ## Run test
 ###############################################################################
 ##@ Build commands
 .PHONY: build
-build: go-generate go-fmt go-vet ## Build the application
-	@printf "👉 Building applications...\n"
+build: ## Build the application
+	@printf "👉 Building...\n"
+	$(foreach proj_mod, $(PROJECT_MODULES_NAME), \
+		$(call exec_cmd, CGO_ENABLED=$(GO_CGO_ENABLED) go build $(GO_LDFLAGS) $(GO_OPTS) -o $(BUILD_DIR)/$(proj_mod) ./cmd/$(proj_mod)/ ) \
+		$(call exec_cmd, chmod +x $(BUILD_DIR)/$(proj_mod) ) \
+	)
+
+.PHONY: build-all
+build-all: go-generate go-fmt go-vet ## Build the application and execute go generate, go fmt and go vet
+	@printf "👉 Building and lintering...\n"
 	$(foreach proj_mod, $(PROJECT_MODULES_NAME), \
 		$(call exec_cmd, CGO_ENABLED=$(GO_CGO_ENABLED) go build $(GO_LDFLAGS) $(GO_OPTS) -o $(BUILD_DIR)/$(proj_mod) ./cmd/$(proj_mod)/ ) \
 		$(call exec_cmd, chmod +x $(BUILD_DIR)/$(proj_mod) ) \
