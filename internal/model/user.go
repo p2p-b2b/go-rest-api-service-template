@@ -7,4 +7,21 @@ type User struct {
 	FirstName string    `json:"first_name"`
 	LastName  string    `json:"last_name"`
 	Age       int       `json:"age"`
+	CreatedAt string    `json:"created_at"`
+}
+
+type CreateUserInput User
+
+type UpdateUserInput User
+
+type DeleteUserInput User
+
+type ListUserOutput struct {
+	Data []*User `json:"data"`
+
+	// pagination
+	TotalCount int `json:"total_count"`
+	Page       int `json:"page"`
+	PageSize   int `json:"page_size"`
+	TotalPages int `json:"total_pages"`
 }

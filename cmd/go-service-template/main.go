@@ -19,7 +19,8 @@ import (
 
 	"github.com/p2p-b2b/go-service-template/internal/config"
 	"github.com/p2p-b2b/go-service-template/internal/handler"
-	"github.com/p2p-b2b/go-service-template/internal/store"
+	"github.com/p2p-b2b/go-service-template/internal/repository"
+	"github.com/p2p-b2b/go-service-template/internal/service"
 	"github.com/p2p-b2b/go-service-template/internal/version"
 )
 
@@ -163,15 +164,6 @@ func main() {
 	db.SetConnMaxLifetime(DBConfig.ConnMaxLifetime.Value)
 	db.SetConnMaxIdleTime(DBConfig.ConnMaxIdleTime.Value)
 
-	// Create a new userStore
-	userStore := store.NewPGSQLUserStore(
-		store.PGSQLUserStoreConfig{
-			DB:              db,
-			MaxPingTimeout:  DBConfig.MaxPingTimeout.Value,
-			MaxQueryTimeout: DBConfig.MaxQueryTimeout.Value,
-		},
-	)
-
 	slog.Debug("database connection",
 		"dsn", dbDSN,
 		"kind", DBConfig.Kind.Value,
@@ -189,26 +181,39 @@ func main() {
 		"conn_max_idle_time", DBConfig.ConnMaxIdleTime.Value,
 	)
 
+	// Create a new userRepository
+	userRepository := repository.NewPGSQLUserRepository(
+		repository.PGSQLUserRepositoryConfig{
+			DB:              db,
+			MaxPingTimeout:  DBConfig.MaxPingTimeout.Value,
+			MaxQueryTimeout: DBConfig.MaxQueryTimeout.Value,
+		},
+	)
+
 	// Test database connection
-	if err := userStore.Ping(context.Background()); err != nil {
+	if err := userRepository.Ping(context.Background()); err != nil {
 		slog.Error("database ping error", "error", err)
 		os.Exit(1)
 	}
+
+	userService := service.NewDefaultUserService(&service.DefaultUserServiceConfig{
+		Repository: userRepository,
+	})
 
 	// Create handlers
 	versionHandler := &handler.VersionHandler{}
 	mux.HandleFunc("GET /version", versionHandler.Get)
 
-	// Create a new RepositoryHandler
-	repositoryHandler := &handler.RepositoryHandler{
-		Repository: userStore,
-	}
+	// Create a new UserHandler
+	userHandler := handler.NewUserHandler(&handler.UserHandlerConfig{
+		Service: userService,
+	})
 
-	mux.HandleFunc("GET /users/{id}", repositoryHandler.GetUserByID)
-	mux.HandleFunc("PUT /users/{id}", repositoryHandler.UpdateUser)
-	mux.HandleFunc("DELETE /users/{id}", repositoryHandler.DeleteUser)
-	mux.HandleFunc("POST /users", repositoryHandler.CreateUser)
-	mux.HandleFunc("GET /users", repositoryHandler.ListUsers)
+	mux.HandleFunc("GET /users/{id}", userHandler.GetByID)
+	mux.HandleFunc("PUT /users/{id}", userHandler.UpdateUser)
+	mux.HandleFunc("DELETE /users/{id}", userHandler.DeleteUser)
+	mux.HandleFunc("POST /users", userHandler.CreateUser)
+	mux.HandleFunc("GET /users", userHandler.ListUsers)
 
 	// Configure the server
 	server := &http.Server{
