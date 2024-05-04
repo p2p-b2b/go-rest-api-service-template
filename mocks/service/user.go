@@ -36,20 +36,6 @@ func (m *MockUserService) EXPECT() *MockUserServiceMockRecorder {
 	return m.recorder
 }
 
-// Close mocks base method.
-func (m *MockUserService) Close() error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Close")
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// Close indicates an expected call of Close.
-func (mr *MockUserServiceMockRecorder) Close() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockUserService)(nil).Close))
-}
-
 // Create mocks base method.
 func (m *MockUserService) Create(ctx context.Context, user *model.CreateUserInput) error {
 	m.ctrl.T.Helper()
@@ -106,20 +92,6 @@ func (m *MockUserService) List(ctx context.Context) ([]*model.ListUserOutput, er
 func (mr *MockUserServiceMockRecorder) List(ctx interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockUserService)(nil).List), ctx)
-}
-
-// Ping mocks base method.
-func (m *MockUserService) Ping(ctx context.Context) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Ping", ctx)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// Ping indicates an expected call of Ping.
-func (mr *MockUserServiceMockRecorder) Ping(ctx interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Ping", reflect.TypeOf((*MockUserService)(nil).Ping), ctx)
 }
 
 // Update mocks base method.
