@@ -201,16 +201,20 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "data": {
+                    "description": "Data is an optional field that can be used to provide additional information about the check.",
                     "type": "object",
                     "additionalProperties": true
                 },
                 "kind": {
+                    "description": "Kind is the kind of check.",
                     "type": "string"
                 },
                 "name": {
+                    "description": "Name is the name of the check.",
                     "type": "string"
                 },
                 "status": {
+                    "description": "Status is the status of the check.",
                     "type": "boolean"
                 }
             }
@@ -219,12 +223,14 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "checks": {
+                    "description": "Checks is a list of health checks.",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/model.Check"
                     }
                 },
                 "status": {
+                    "description": "Status is the status of the health check.",
                     "type": "boolean"
                 }
             }
@@ -233,18 +239,23 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "age": {
+                    "description": "Age is the age of the user.",
                     "type": "integer"
                 },
                 "created_at": {
+                    "description": "Email is the email address of the user.",
                     "type": "string"
                 },
                 "first_name": {
+                    "description": "FirstName is the first name of the user.",
                     "type": "string"
                 },
                 "id": {
+                    "description": "ID is the unique identifier of the user.",
                     "type": "string"
                 },
                 "last_name": {
+                    "description": "LastName is the last name of the user.",
                     "type": "string"
                 }
             }

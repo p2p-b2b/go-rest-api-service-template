@@ -7,10 +7,19 @@ import (
 )
 
 type User struct {
-	ID        uuid.UUID `json:"id"`
-	FirstName string    `json:"first_name"`
-	LastName  string    `json:"last_name"`
-	Age       int       `json:"age"`
+	// ID is the unique identifier of the user.
+	ID uuid.UUID `json:"id"`
+
+	// FirstName is the first name of the user.
+	FirstName string `json:"first_name"`
+
+	// LastName is the last name of the user.
+	LastName string `json:"last_name"`
+
+	// Age is the age of the user.
+	Age int `json:"age"`
+
+	// Email is the email address of the user.
 	CreatedAt time.Time `json:"created_at"`
 }
 
@@ -21,11 +30,17 @@ type UpdateUserInput User
 type DeleteUserInput User
 
 type ListUserOutput struct {
+	// Data is a list of users.
 	Data []*User `json:"data"`
 
-	// pagination
+	// TotalCount is the total number of users.
 	TotalCount int `json:"total_count"`
-	Page       int `json:"page"`
-	PageSize   int `json:"page_size"`
+
+	// Page is the current page.
+	Page int `json:"page"`
+
+	// PageSize is the number of users per page.
+	PageSize int `json:"page_size"`
+
 	TotalPages int `json:"total_pages"`
 }
