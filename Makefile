@@ -228,6 +228,19 @@ install-swag: ## Install swag for swagger documentation (https://github.com/swag
 	$(call exec_cmd, go install github.com/swaggo/swag/cmd/swag@latest )
 
 ###############################################################################
+##@ Development commands
+.PHONY: stop-dev-env
+stop-dev-env: ## Run the application in development mode
+	@printf "👉 Stopping application in development mode...\n"
+		$(call exec_cmd, podman play kube --force --down dev-service-pod.yaml )
+
+.PHONY: run-dev-env
+run-dev-env: stop-dev-env install-air install-swag ## Run the application in development mode.  WARNING: This will stop the current running application deleting the data
+	@printf "👉 Running application in development mode...\n"
+		$(call exec_cmd, mkdir -p /tmp/go-service-template-db-volume-host )
+		$(call exec_cmd, podman play kube dev-service-pod.yaml )
+
+###############################################################################
 ##@ Container commands
 CONTAINER_MANIFEST_EXISTS := $(shell podman manifest exists $(CONTAINER_NAMESPACE)/$(CONTAINER_IMAGE_NAME):$(GIT_VERSION) || echo "exists" )
 .PHONY: container-build

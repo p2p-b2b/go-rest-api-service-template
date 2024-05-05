@@ -37,14 +37,24 @@ func (s *Status) UnmarshalJSON(data []byte) error {
 
 // Check represents a health check.
 type Check struct {
-	Name   string                 `json:"name"`
-	Kind   string                 `json:"kind,omitempty"`
-	Status Status                 `json:"status"`
-	Data   map[string]interface{} `json:"data,omitempty"`
+	// Name is the name of the check.
+	Name string `json:"name"`
+
+	// Kind is the kind of check.
+	Kind string `json:"kind,omitempty"`
+
+	// Status is the status of the check.
+	Status Status `json:"status"`
+
+	// Data is an optional field that can be used to provide additional information about the check.
+	Data map[string]interface{} `json:"data,omitempty"`
 }
 
 // Check represents a health check.
 type Health struct {
-	Status Status  `json:"status"`
+	// Status is the status of the health check.
+	Status Status `json:"status"`
+
+	// Checks is a list of health checks.
 	Checks []Check `json:"checks"`
 }

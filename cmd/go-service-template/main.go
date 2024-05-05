@@ -155,6 +155,15 @@ func init() {
 // @host localhost:8080
 // @BasePath /
 func main() {
+	// Configure server URL information
+	serverProtocol := "http"
+	if SrvConfig.TLSEnabled.Value {
+		serverProtocol = "https"
+	}
+	serverURL := fmt.Sprintf("%s://%s:%d", serverProtocol, SrvConfig.Address.Value, SrvConfig.Port.Value)
+	statusURL := fmt.Sprintf("%s/status", serverURL)
+	swaggerURL := fmt.Sprintf("%s/swagger", serverURL)
+
 	// Set the default logger
 	slog.SetDefault(slog.New(logHandler))
 
@@ -238,9 +247,10 @@ func main() {
 	userHandler := handler.NewUserHandler(&handler.UserHandlerConfig{
 		Service: userService,
 	})
+	swaggerHandler := httpSwagger.Handler(httpSwagger.URL(swaggerURL + "/doc.json"))
 
 	// Register the handlers
-	mux.HandleFunc("GET /swagger/", httpSwagger.Handler(httpSwagger.URL("http://localhost:8080/swagger/doc.json")))
+	mux.HandleFunc("GET /", swaggerHandler)
 
 	mux.HandleFunc("GET /version", versionHandler.Get)
 
@@ -335,8 +345,8 @@ func main() {
 		slog.Info("starting http server",
 			"address", SrvConfig.Address.Value,
 			"port", SrvConfig.Port.Value,
-			"url", fmt.Sprintf("http://%s:%d/status", SrvConfig.Address.Value, SrvConfig.Port.Value),
-			"swagger", "http://localhost:8080/swagger/",
+			"status", statusURL,
+			"swagger", swaggerURL,
 		)
 
 		// Check if the port is 443 and start the server with TLS
