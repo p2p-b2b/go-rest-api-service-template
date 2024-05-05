@@ -75,7 +75,31 @@ const docTemplate = `{
                 }
             }
         },
-        "/user": {
+        "/users": {
+            "get": {
+                "description": "List all users",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "List all users",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.ListUserOutput"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            },
             "post": {
                 "description": "Create a new user",
                 "consumes": [
@@ -85,17 +109,17 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "user"
+                    "users"
                 ],
                 "summary": "Create a new user",
                 "parameters": [
                     {
-                        "description": "User",
+                        "description": "CreateUserInput",
                         "name": "user",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/model.User"
+                            "$ref": "#/definitions/model.CreateUserInput"
                         }
                     }
                 ],
@@ -103,20 +127,26 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/model.User"
+                            "$ref": "#/definitions/model.CreateUserInput"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "string"
                         }
                     }
                 }
             }
         },
-        "/user/{id}": {
+        "/users/{id}": {
             "get": {
                 "description": "Get a user by ID",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "user"
+                    "users"
                 ],
                 "summary": "Get a user by ID",
                 "parameters": [
@@ -134,6 +164,12 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/model.User"
                         }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 }
             },
@@ -146,7 +182,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "user"
+                    "users"
                 ],
                 "summary": "Update a user",
                 "parameters": [
@@ -170,13 +206,19 @@ const docTemplate = `{
                 "responses": {
                     "200": {
                         "description": "OK"
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 }
             },
             "delete": {
                 "description": "Delete a user",
                 "tags": [
-                    "user"
+                    "users"
                 ],
                 "summary": "Delete a user",
                 "parameters": [
@@ -191,6 +233,12 @@ const docTemplate = `{
                 "responses": {
                     "200": {
                         "description": "OK"
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 }
             }
@@ -219,6 +267,23 @@ const docTemplate = `{
                 }
             }
         },
+        "model.CreateUserInput": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "description": "Email is the email address of the user.",
+                    "type": "string"
+                },
+                "first_name": {
+                    "description": "FirstName is the first name of the user.",
+                    "type": "string"
+                },
+                "last_name": {
+                    "description": "LastName is the last name of the user.",
+                    "type": "string"
+                }
+            }
+        },
         "model.Health": {
             "type": "object",
             "properties": {
@@ -235,14 +300,41 @@ const docTemplate = `{
                 }
             }
         },
+        "model.ListUserOutput": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "description": "Data is a list of users.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.User"
+                    }
+                },
+                "page": {
+                    "description": "Page is the current page.",
+                    "type": "integer"
+                },
+                "page_size": {
+                    "description": "PageSize is the number of users per page.",
+                    "type": "integer"
+                },
+                "total_count": {
+                    "description": "TotalCount is the total number of users.",
+                    "type": "integer"
+                },
+                "total_pages": {
+                    "type": "integer"
+                }
+            }
+        },
         "model.User": {
             "type": "object",
             "properties": {
-                "age": {
-                    "description": "Age is the age of the user.",
-                    "type": "integer"
-                },
                 "created_at": {
+                    "description": "Email is the email address of the user.",
+                    "type": "string"
+                },
+                "email": {
                     "description": "Email is the email address of the user.",
                     "type": "string"
                 },
@@ -256,6 +348,10 @@ const docTemplate = `{
                 },
                 "last_name": {
                     "description": "LastName is the last name of the user.",
+                    "type": "string"
+                },
+                "updated_at": {
+                    "description": "UpdatedAt is the time the user was last updated.",
                     "type": "string"
                 }
             }

@@ -26,13 +26,20 @@ func NewUserHandler(conf *UserHandlerConfig) *UserHandler {
 // GetByID Get a user by ID
 // @Summary Get a user by ID
 // @Description Get a user by ID
-// @Tags user
+// @Tags users
 // @Produce json
 // @Param id path string true "User ID"
 // @Success 200 {object} model.User
-// @Router /user/{id} [get]
+// @Failure 500 {object} string
+// @Router /users/{id} [get]
 func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+
+	if r.Method != http.MethodGet {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
 
 	idString := r.PathValue("id")
 	if idString == "" {
@@ -56,7 +63,7 @@ func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// write the response
+	// encode and write the response
 	if err := json.NewEncoder(w).Encode(user); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		http.Error(w, ErrInternalServer.Error(), http.StatusInternalServerError)
@@ -69,28 +76,27 @@ func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 // CreateUser Create a new user
 // @Summary Create a new user
 // @Description Create a new user
-// @Tags user
+// @Tags users
 // @Accept json
 // @Produce json
-// @Param user body model.User true "User"
-// @Success 201 {object} model.User
-// @Router /user [post]
+// @Param user body model.CreateUserInput true "CreateUserInput"
+// @Success 201 {object} model.CreateUserInput
+// @Failure 500 {object} string
+// @Router /users [post]
 func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
-	var user model.User
+	var user model.CreateUserInput
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
-	}
-
-	if user.ID == uuid.Nil {
-		user.ID = uuid.New()
 	}
 
 	if user.FirstName == "" {
@@ -105,14 +111,13 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if user.Age < 0 {
+	if user.Email == "" {
 		w.WriteHeader(http.StatusBadRequest)
-		http.Error(w, "Age must be greater than or equal to 0", http.StatusBadRequest)
+		http.Error(w, "Email is required", http.StatusBadRequest)
 		return
 	}
-	u := model.CreateUserInput(user)
 
-	if err := h.service.Create(r.Context(), &u); err != nil {
+	if err := h.service.Create(r.Context(), &user); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
@@ -124,13 +129,14 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 // UpdateUser Update a user
 // @Summary Update a user
 // @Description Update a user
-// @Tags user
+// @Tags users
 // @Accept json
 // @Produce json
 // @Param id path string true "User ID"
 // @Param user body model.User true "User"
 // @Success 200
-// @Router /user/{id} [put]
+// @Failure 500 {object} string
+// @Router /users/{id} [put]
 func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPut {
 		w.WriteHeader(http.StatusMethodNotAllowed)
@@ -172,7 +178,7 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if user.Age < 0 {
+	if user.Email == "" {
 		w.WriteHeader(http.StatusBadRequest)
 		http.Error(w, "Age must be greater than or equal to 0", http.StatusBadRequest)
 		return
@@ -193,10 +199,11 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 // DeleteUser Delete a user
 // @Summary Delete a user
 // @Description Delete a user
-// @Tags user
+// @Tags users
 // @Param id path string true "User ID"
 // @Success 200
-// @Router /user/{id} [delete]
+// @Failure 500 {object} string
+// @Router /users/{id} [delete]
 func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodDelete {
 		w.WriteHeader(http.StatusMethodNotAllowed)
@@ -232,8 +239,17 @@ func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-// ListUsers handles the HTTP GET - / endpoint.
+// ListUsers List all users
+// @Summary List all users
+// @Description List all users
+// @Tags users
+// @Produce json
+// @Success 200 {object} model.ListUserOutput
+// @Failure 500 {object} string
+// @Router /users [get]
 func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
 	if r.Method != http.MethodGet {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -246,7 +262,6 @@ func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
-	w.Header().Set("Content-Type", "application/json")
 
 	// write the response
 	if err := json.NewEncoder(w).Encode(users); err != nil {

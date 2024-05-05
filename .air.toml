@@ -4,6 +4,8 @@ tmp_dir      = "tmp"
 
 [build]
 args_bin = [
+  "--debug",
+  "--database.migration.enable true",
 ]
 bin = "./build/go-service-template"
 cmd = "make build"
@@ -33,7 +35,7 @@ include_ext = [
 ]
 include_file = [
 ]
-kill_delay = "0s"
+kill_delay = "5s"
 log = "build-errors.log"
 poll = false
 poll_interval = 0
@@ -43,7 +45,7 @@ pre_cmd = [
 ]
 rerun = false
 rerun_delay = 500
-send_interrupt = false
+send_interrupt = true
 stop_on_error = false
 
 [color]

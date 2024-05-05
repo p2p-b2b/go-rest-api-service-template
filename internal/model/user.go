@@ -16,14 +16,26 @@ type User struct {
 	// LastName is the last name of the user.
 	LastName string `json:"last_name"`
 
-	// Age is the age of the user.
-	Age int `json:"age"`
+	// Email is the email address of the user.
+	Email string `json:"email"`
 
 	// Email is the email address of the user.
 	CreatedAt time.Time `json:"created_at"`
+
+	// UpdatedAt is the time the user was last updated.
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
-type CreateUserInput User
+type CreateUserInput struct {
+	// FirstName is the first name of the user.
+	FirstName string `json:"first_name"`
+
+	// LastName is the last name of the user.
+	LastName string `json:"last_name"`
+
+	// Email is the email address of the user.
+	Email string `json:"email"`
+}
 
 type UpdateUserInput User
 

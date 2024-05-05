@@ -219,13 +219,18 @@ docs-swagger: ## Generate swagger documentation
 ##@ Tools commands
 .PHONY: install-air
 install-air: ## Install air for hot reload (https://github.com/cosmtrek/air)
-	@printf "👉 Install air...\n"
+	@printf "👉 Installing air...\n"
 	$(call exec_cmd, go install github.com/cosmtrek/air@latest )
 
 .PHONY: install-swag
 install-swag: ## Install swag for swagger documentation (https://github.com/swaggo/http-swagger)
-	@printf "👉 Install swag...\n"
+	@printf "👉 Installing swag...\n"
 	$(call exec_cmd, go install github.com/swaggo/swag/cmd/swag@latest )
+
+.PHONY: install-goose
+install-goose: ## Install goose for database migrations (
+	@printf "👉 Installing goose...\n"
+	$(call exec_cmd, go install github.com/pressly/goose/v3/cmd/goose@latest )
 
 ###############################################################################
 ##@ Development commands
@@ -235,7 +240,7 @@ stop-dev-env: ## Run the application in development mode
 		$(call exec_cmd, podman play kube --force --down dev-service-pod.yaml )
 
 .PHONY: run-dev-env
-run-dev-env: stop-dev-env install-air install-swag ## Run the application in development mode.  WARNING: This will stop the current running application deleting the data
+run-dev-env: stop-dev-env install-air install-swag install-goose ## Run the application in development mode.  WARNING: This will stop the current running application deleting the data
 	@printf "👉 Running application in development mode...\n"
 		$(call exec_cmd, mkdir -p /tmp/go-service-template-db-volume-host )
 		$(call exec_cmd, podman play kube dev-service-pod.yaml )

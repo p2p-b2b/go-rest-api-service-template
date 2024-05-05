@@ -23,6 +23,8 @@ const (
 
 	DefaultDatabaseConnMaxIdleTime = 30 * time.Minute
 	DefaultDatabaseConnMaxLifetime = 15 * time.Second
+
+	DefaultDatabaseMigrationEnable = false
 )
 
 type DatabaseConfig struct {
@@ -43,6 +45,8 @@ type DatabaseConfig struct {
 
 	ConnMaxIdleTime Field[time.Duration]
 	ConnMaxLifetime Field[time.Duration]
+
+	MigrationEnable Field[bool]
 }
 
 func NewDatabaseConfig() *DatabaseConfig {
@@ -64,6 +68,8 @@ func NewDatabaseConfig() *DatabaseConfig {
 
 		ConnMaxIdleTime: NewField("database.conn.max.idle.time", "DATABASE_CONN_MAX_IDLE_TIME", "Database Connection Max Idle Time", DefaultDatabaseConnMaxIdleTime),
 		ConnMaxLifetime: NewField("database.conn.max.lifetime", "DATABASE_CONN_MAX_LIFETIME", "Database Connection Max Lifetime", DefaultDatabaseConnMaxLifetime),
+
+		MigrationEnable: NewField("database.migration.enable", "DATABASE_MIGRATION_ENABLE", "Database migration is enables?", DefaultDatabaseMigrationEnable),
 	}
 }
 
@@ -87,4 +93,6 @@ func (c *DatabaseConfig) PaseEnvVars() {
 
 	c.ConnMaxIdleTime.Value = GetEnv(c.ConnMaxIdleTime.EnVarName, c.ConnMaxIdleTime.Value)
 	c.ConnMaxLifetime.Value = GetEnv(c.ConnMaxLifetime.EnVarName, c.ConnMaxLifetime.Value)
+
+	c.MigrationEnable.Value = GetEnv(c.MigrationEnable.EnVarName, c.MigrationEnable.Value)
 }
