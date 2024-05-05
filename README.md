@@ -14,6 +14,11 @@ This is a template for a Go HTTP REST API Service.
 - [x] Podman pod file for development [dev-service-pod.yaml](dev-service-pod.yaml), see [Running](#running). This is something like `docker-compose/podman-compose` but more powerful
 - [x] Database migrations with [goose](https://github.com/pressly/goose). Check the [db](db/README.md) documentation
 
+## References
+
+- [RESTful web API design](https://learn.microsoft.com/en-us/azure/architecture/best-practices/api-design)
+- [How To Do Pagination in Postgres with Golang in 4 Common Ways](https://medium.easyread.co/how-to-do-pagination-in-postgres-with-golang-in-4-common-ways-12365b9fb528)
+
 ## Swagger Documentation
 
 The Swagger documentation is available at `/swagger/index.html`.

@@ -95,18 +95,18 @@ func (mr *MockUserServiceMockRecorder) HealthCheck(ctx interface{}) *gomock.Call
 }
 
 // List mocks base method.
-func (m *MockUserService) List(ctx context.Context) ([]*model.ListUserOutput, error) {
+func (m *MockUserService) List(ctx context.Context, params *model.ListUserInput) ([]*model.ListUserOutput, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "List", ctx)
+	ret := m.ctrl.Call(m, "List", ctx, params)
 	ret0, _ := ret[0].([]*model.ListUserOutput)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // List indicates an expected call of List.
-func (mr *MockUserServiceMockRecorder) List(ctx interface{}) *gomock.Call {
+func (mr *MockUserServiceMockRecorder) List(ctx, params interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockUserService)(nil).List), ctx)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockUserService)(nil).List), ctx, params)
 }
 
 // Update mocks base method.

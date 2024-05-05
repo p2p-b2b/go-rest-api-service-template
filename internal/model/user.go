@@ -6,6 +6,7 @@ import (
 	"github.com/google/uuid"
 )
 
+// User represents a user.
 type User struct {
 	// ID is the unique identifier of the user.
 	ID uuid.UUID `json:"id"`
@@ -26,6 +27,7 @@ type User struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
+// CreateUserInput represents the input for the CreateUser method.
 type CreateUserInput struct {
 	// FirstName is the first name of the user.
 	FirstName string `json:"first_name"`
@@ -37,22 +39,53 @@ type CreateUserInput struct {
 	Email string `json:"email"`
 }
 
+// UpdateUserInput represents the input for the UpdateUser method.
 type UpdateUserInput User
 
+// DeleteUserInput represents the input for the DeleteUser method.
 type DeleteUserInput User
 
+// ListUserInput represents the input for the ListUser method.
+type ListUserInput struct {
+	// Next is the token to the next page of users.
+	Next string `json:"next"`
+
+	// Limit is the maximum number of users to return.
+	Limit int `json:"limit"`
+
+	// Offset is the number of users to skip.
+	Offset int `json:"offset"`
+
+	// Sort is the field to sort by.
+	Sort string `json:"sort"`
+
+	// Order is the order to sort by.
+	Order string `json:"order"`
+
+	// Filter is the field to filter by.
+	Filter string `json:"filter"`
+
+	// Fields is the fields to return.
+	Fields string `json:"fields"`
+}
+
+// ListUserOutput represents a list of users.
 type ListUserOutput struct {
-	// Data is a list of users.
-	Data []*User `json:"data"`
+	// Items is a list of users.
+	Items []*User `json:"data"`
 
-	// TotalCount is the total number of users.
-	TotalCount int `json:"total_count"`
+	// Next is the token to the next page of users.
+	Next *CursorToken `json:"next"`
 
-	// Page is the current page.
-	Page int `json:"page"`
+	// Previous is the token to the previous page of users.
+	Previous *CursorToken `json:"previous"`
 
-	// PageSize is the number of users per page.
-	PageSize int `json:"page_size"`
+	// Total is the total number of users.
+	Total int `json:"total"`
 
-	TotalPages int `json:"total_pages"`
+	// Limit is the maximum number of users to return.
+	Limit int `json:"limit"`
+
+	// Offset is the number of users to skip.
+	Offset int `json:"offset"`
 }

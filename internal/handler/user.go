@@ -3,6 +3,7 @@ package handler
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 
 	"github.com/google/uuid"
 	"github.com/p2p-b2b/go-service-template/internal/model"
@@ -256,7 +257,39 @@ func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	users, err := h.service.List(r.Context())
+	next := r.URL.Query().Get("next")
+	limitString := r.URL.Query().Get("limit")
+	offsetString := r.URL.Query().Get("offset")
+	sort := r.URL.Query().Get("sort")
+	order := r.URL.Query().Get("order")
+	filter := r.URL.Query().Get("filter")
+	fields := r.URL.Query().Get("fields")
+
+	limit, err := strconv.Atoi(limitString)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		http.Error(w, "Invalid limit", http.StatusBadRequest)
+		return
+	}
+
+	offset, err := strconv.Atoi(offsetString)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		http.Error(w, "Invalid offset", http.StatusBadRequest)
+		return
+	}
+
+	params := &model.ListUserInput{
+		Next:   next,
+		Limit:  limit,
+		Offset: offset,
+		Sort:   sort,
+		Order:  order,
+		Filter: filter,
+		Fields: fields,
+	}
+
+	users, err := h.service.List(r.Context(), params)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
