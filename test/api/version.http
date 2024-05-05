@@ -4,5 +4,19 @@
 
 @host = localhost:8080
 
+###
+
 # Get the version of the application
 GET http://{{host}}/version
+
+###
+
+# Create a new user
+POST http://{{host}}/users HTTP/1.1
+Content-Type: application/json
+
+{
+  "email": "christian.gonzalez@gmail.com",
+  "first_name": "Christian",
+  "last_name": "Gonzalez"
+}

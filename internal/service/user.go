@@ -102,6 +102,7 @@ func (s *DefaultUserService) GetByID(ctx context.Context, id uuid.UUID) (*model.
 // Create inserts a new user into the database.
 func (s *DefaultUserService) Create(ctx context.Context, user *model.CreateUserInput) error {
 	return s.repository.Insert(ctx, &model.User{
+		ID:        uuid.New(),
 		FirstName: user.FirstName,
 		LastName:  user.LastName,
 		Email:     user.Email,

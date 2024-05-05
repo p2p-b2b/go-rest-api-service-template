@@ -17,6 +17,18 @@ definitions:
         description: Status is the status of the check.
         type: boolean
     type: object
+  model.CreateUserInput:
+    properties:
+      email:
+        description: Email is the email address of the user.
+        type: string
+      first_name:
+        description: FirstName is the first name of the user.
+        type: string
+      last_name:
+        description: LastName is the last name of the user.
+        type: string
+    type: object
   model.Health:
     properties:
       checks:
@@ -27,6 +39,25 @@ definitions:
       status:
         description: Status is the status of the health check.
         type: boolean
+    type: object
+  model.ListUserOutput:
+    properties:
+      data:
+        description: Data is a list of users.
+        items:
+          $ref: '#/definitions/model.User'
+        type: array
+      page:
+        description: Page is the current page.
+        type: integer
+      page_size:
+        description: PageSize is the number of users per page.
+        type: integer
+      total_count:
+        description: TotalCount is the total number of users.
+        type: integer
+      total_pages:
+        type: integer
     type: object
   model.User:
     properties:
@@ -102,29 +133,49 @@ paths:
       summary: Get the health of the service
       tags:
       - health
-  /user:
+  /users:
+    get:
+      description: List all users
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.ListUserOutput'
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: List all users
+      tags:
+      - users
     post:
       consumes:
       - application/json
       description: Create a new user
       parameters:
-      - description: User
+      - description: CreateUserInput
         in: body
         name: user
         required: true
         schema:
-          $ref: '#/definitions/model.User'
+          $ref: '#/definitions/model.CreateUserInput'
       produces:
       - application/json
       responses:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/model.User'
+            $ref: '#/definitions/model.CreateUserInput'
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
       summary: Create a new user
       tags:
-      - user
-  /user/{id}:
+      - users
+  /users/{id}:
     delete:
       description: Delete a user
       parameters:
@@ -136,9 +187,13 @@ paths:
       responses:
         "200":
           description: OK
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
       summary: Delete a user
       tags:
-      - user
+      - users
     get:
       description: Get a user by ID
       parameters:
@@ -154,9 +209,13 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/model.User'
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
       summary: Get a user by ID
       tags:
-      - user
+      - users
     put:
       consumes:
       - application/json
@@ -178,7 +237,11 @@ paths:
       responses:
         "200":
           description: OK
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
       summary: Update a user
       tags:
-      - user
+      - users
 swagger: "2.0"
