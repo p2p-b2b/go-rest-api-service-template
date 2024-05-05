@@ -25,11 +25,9 @@ require (
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/pressly/goose/v3 v3.20.0
 	github.com/swaggo/files/v2 v2.0.0 // indirect
-	github.com/swaggo/http-swagger/example/go-chi v0.0.0-20230830153024-537f045bded0
-	github.com/swaggo/http-swagger/v2 v2.0.2 // indirect
-	github.com/swaggo/swag v1.16.3 // indirect
+	github.com/swaggo/http-swagger/v2 v2.0.2
+	github.com/swaggo/swag v1.16.3
 	golang.org/x/sys v0.20.0 // indirect
 	golang.org/x/tools v0.20.0 // indirect
-	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

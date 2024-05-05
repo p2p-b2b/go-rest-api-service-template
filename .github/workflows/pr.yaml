@@ -93,8 +93,12 @@ jobs:
         run: |
           echo "## Make tests" >> $GITHUB_STEP_SUMMARY
           make test 2>&1 | tee -a $GITHUB_STEP_SUMMARY
+        env:
+          MAKE_STOP_ON_ERRORS: false
 
       - name: Make build-all
         run: |
           echo "## Make build" >> $GITHUB_STEP_SUMMARY
           make build-all 2>&1 | tee -a $GITHUB_STEP_SUMMARY
+        env:
+          MAKE_STOP_ON_ERRORS: false
