@@ -70,7 +70,7 @@ func TestUser_GetUserByID(t *testing.T) {
 				pathValue:        "/users/123e4567-e89b-12d3-a456-426614174000",
 				serviceError:     nil,
 				expectedHTTPCode: http.StatusOK,
-				expectedBody:     "{\"id\":\"ffffffff-ffff-ffff-ffff-ffffffffffff\",\"first_name\":\"\",\"last_name\":\"\",\"age\":0,\"created_at\":\"2021-01-01T00:00:00Z\"}\n",
+				expectedBody:     "{\"id\":\"ffffffff-ffff-ffff-ffff-ffffffffffff\",\"first_name\":\"\",\"last_name\":\"\",\"email\":\"\",\"created_at\":\"2021-01-01T00:00:00Z\",\"updated_at\":\"0001-01-01T00:00:00Z\"}\n",
 				mockCall: mockService.
 					EXPECT().
 					GetByID(gomock.Any(), gomock.Any()).
