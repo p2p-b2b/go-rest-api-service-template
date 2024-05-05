@@ -17,6 +17,7 @@ import (
 	_ "github.com/lib/pq" // load the PostgreSQL driver for database/sql
 	// _ "github.com/go-sql-driver/mysql" // load the MySQL driver for database/sql
 
+	"github.com/p2p-b2b/go-service-template/database"
 	"github.com/p2p-b2b/go-service-template/internal/config"
 	"github.com/p2p-b2b/go-service-template/internal/handler"
 	"github.com/p2p-b2b/go-service-template/internal/repository"
@@ -228,13 +229,17 @@ func main() {
 	ctx, cancel := context.WithTimeout(ctx, DBConfig.MaxPingTimeout.Value)
 	defer cancel()
 
-	slog.Info("database connection test...", "dsn", dbDSN)
+	slog.Info("testing database connection...", "dsn", dbDSN)
 	if err := userRepository.PingContext(ctx); err != nil {
 		slog.Error("database ping error", "error", err)
 		os.Exit(1)
 	}
-	slog.Info("database connection test successful")
 
+	// Run the database migrations
+	slog.Info("running database migrations")
+	database.Migrate(ctx, DBConfig.Kind.Value, db)
+
+	// Create Service
 	userService := service.NewDefaultUserService(&service.DefaultUserServiceConfig{
 		Repository: userRepository,
 	})

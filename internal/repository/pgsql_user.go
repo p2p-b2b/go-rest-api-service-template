@@ -65,9 +65,9 @@ func (s *PGSQLUserRepository) Insert(ctx context.Context, user *model.User) erro
 	ctx, cancel := context.WithTimeout(ctx, s.MaxQueryTimeout)
 	defer cancel()
 
-	const query = `INSERT INTO users (id, first_name, last_name, age) VALUES ($1, $2, $3, $4)`
+	const query = `INSERT INTO users (id, first_name, last_name, email) VALUES ($1, $2, $3, $4)`
 
-	_, err := s.db.ExecContext(ctx, query, user.ID, user.FirstName, user.LastName, user.Age)
+	_, err := s.db.ExecContext(ctx, query, user.ID, user.FirstName, user.LastName, user.Email)
 	return err
 }
 
@@ -76,9 +76,9 @@ func (s *PGSQLUserRepository) Update(ctx context.Context, user *model.User) erro
 	ctx, cancel := context.WithTimeout(ctx, s.MaxQueryTimeout)
 	defer cancel()
 
-	const query = `UPDATE users SET first_name = $1, last_name = $2, age = $3 WHERE id = $4`
+	const query = `UPDATE users SET first_name = $1, last_name = $2, email = $3 WHERE id = $4`
 
-	_, err := s.db.ExecContext(ctx, query, user.FirstName, user.LastName, user.Age, user.ID)
+	_, err := s.db.ExecContext(ctx, query, user.FirstName, user.LastName, user.Email, user.ID)
 	return err
 }
 
@@ -98,12 +98,12 @@ func (s *PGSQLUserRepository) SelectByID(ctx context.Context, id uuid.UUID) (*mo
 	ctx, cancel := context.WithTimeout(ctx, s.MaxQueryTimeout)
 	defer cancel()
 
-	const query = `SELECT id, first_name, last_name, age FROM users WHERE id = $1`
+	const query = `SELECT id, first_name, last_name, email FROM users WHERE id = $1`
 
 	row := s.db.QueryRowContext(ctx, query, id)
 
 	var u model.User
-	if err := row.Scan(&u.ID, &u.FirstName, &u.LastName, &u.Age); err != nil {
+	if err := row.Scan(&u.ID, &u.FirstName, &u.LastName, &u.Email); err != nil {
 		return nil, err
 	}
 
@@ -115,7 +115,7 @@ func (s *PGSQLUserRepository) SelectAll(ctx context.Context) ([]*model.User, err
 	ctx, cancel := context.WithTimeout(ctx, s.MaxQueryTimeout)
 	defer cancel()
 
-	const query = `SELECT id, first_name, last_name, age FROM users`
+	const query = `SELECT id, first_name, last_name, email FROM users`
 
 	rows, err := s.db.QueryContext(ctx, query)
 	if err != nil {
@@ -126,7 +126,7 @@ func (s *PGSQLUserRepository) SelectAll(ctx context.Context) ([]*model.User, err
 	var users []*model.User
 	for rows.Next() {
 		var u model.User
-		if err := rows.Scan(&u.ID, &u.FirstName, &u.LastName, &u.Age); err != nil {
+		if err := rows.Scan(&u.ID, &u.FirstName, &u.LastName, &u.Email); err != nil {
 			return nil, err
 		}
 		users = append(users, &u)

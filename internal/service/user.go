@@ -104,7 +104,7 @@ func (s *DefaultUserService) Create(ctx context.Context, user *model.CreateUserI
 	return s.repository.Insert(ctx, &model.User{
 		FirstName: user.FirstName,
 		LastName:  user.LastName,
-		Age:       user.Age,
+		Email:     user.Email,
 	})
 }
 

@@ -105,7 +105,7 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if user.Age < 0 {
+	if user.Email == "" {
 		w.WriteHeader(http.StatusBadRequest)
 		http.Error(w, "Age must be greater than or equal to 0", http.StatusBadRequest)
 		return
@@ -172,7 +172,7 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if user.Age < 0 {
+	if user.Email == "" {
 		w.WriteHeader(http.StatusBadRequest)
 		http.Error(w, "Age must be greater than or equal to 0", http.StatusBadRequest)
 		return

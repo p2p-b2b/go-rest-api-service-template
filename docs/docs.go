@@ -238,11 +238,11 @@ const docTemplate = `{
         "model.User": {
             "type": "object",
             "properties": {
-                "age": {
-                    "description": "Age is the age of the user.",
-                    "type": "integer"
-                },
                 "created_at": {
+                    "description": "Email is the email address of the user.",
+                    "type": "string"
+                },
+                "email": {
                     "description": "Email is the email address of the user.",
                     "type": "string"
                 },
@@ -256,6 +256,10 @@ const docTemplate = `{
                 },
                 "last_name": {
                     "description": "LastName is the last name of the user.",
+                    "type": "string"
+                },
+                "updated_at": {
+                    "description": "UpdatedAt is the time the user was last updated.",
                     "type": "string"
                 }
             }
