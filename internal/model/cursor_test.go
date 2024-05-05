@@ -2,26 +2,27 @@ package model
 
 import (
 	"encoding/base64"
+	"reflect"
 	"testing"
 	"time"
 
 	"github.com/google/uuid"
 )
 
-func TestCursorToken_Encode(t *testing.T) {
-	type fields struct {
+func TestCursorToken_EncodeCursorToken(t *testing.T) {
+	type args struct {
 		Next uuid.UUID
 		Date time.Time
 	}
 	tests := []struct {
 		name    string
-		fields  fields
+		args    args
 		want    string
 		wantErr bool
 	}{
 		{
 			name: "success",
-			fields: fields{
+			args: args{
 				Next: uuid.Max,
 				// fixed date
 				Date: time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC),
@@ -32,44 +33,19 @@ func TestCursorToken_Encode(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			c := &CursorToken{
-				Next: tt.fields.Next,
-				Date: tt.fields.Date,
-			}
-			got := c.Encode()
-			if got != tt.want {
-				t.Errorf("CursorToken.Encode() = %v, want %v", got, tt.want)
-			}
-
-			// Decode the token to verify it
-			date, id, err := c.Decode(got)
-			if err != nil {
-				t.Errorf("CursorToken.Decode() error = %v", err)
-				return
-			}
-
-			if date != c.Date {
-				t.Errorf("CursorToken.Decode() date = %v, want %v", date, c.Date)
-			}
-
-			if id != c.Next {
-				t.Errorf("CursorToken.Decode() id = %v, want %v", id, c.Next)
+			if got := EncodeCursorToken(tt.args.Next, tt.args.Date); got != tt.want {
+				t.Errorf("EncodeCursorToken() = %v, want %v", got, tt.want)
 			}
 		})
 	}
 }
 
-func TestCursorToken_Decode(t *testing.T) {
-	type fields struct {
-		Next uuid.UUID
-		Date time.Time
-	}
+func TestCursorToken_DecodeCursorToken(t *testing.T) {
 	type args struct {
 		s string
 	}
 	tests := []struct {
 		name    string
-		fields  fields
 		args    args
 		want    time.Time
 		want1   uuid.UUID
@@ -77,11 +53,7 @@ func TestCursorToken_Decode(t *testing.T) {
 	}{
 		{
 			name: "success",
-			fields: fields{
-				Next: uuid.Max,
-				// fixed date
-				Date: time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC),
-			},
+
 			args: args{
 				s: base64.StdEncoding.EncodeToString([]byte(uuid.Max.String() + DataSeparator + time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC).Format(time.RFC3339))),
 			},
@@ -91,11 +63,6 @@ func TestCursorToken_Decode(t *testing.T) {
 		},
 		{
 			name: "error",
-			fields: fields{
-				Next: uuid.Max,
-				// fixed date
-				Date: time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC),
-			},
 			args: args{
 				s: "invalid",
 			},
@@ -106,20 +73,16 @@ func TestCursorToken_Decode(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			c := &CursorToken{
-				Next: tt.fields.Next,
-				Date: tt.fields.Date,
-			}
-			got, got1, err := c.Decode(tt.args.s)
+			date, id, err := DecodeCursorToken(tt.args.s)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("CursorToken.Decode() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("DecodeCursorToken() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if got != tt.want {
-				t.Errorf("CursorToken.Decode() got = %v, want %v", got, tt.want)
+			if date != tt.want {
+				t.Errorf("DecodeCursorToken() date = %v, want %v", date, tt.want)
 			}
-			if got1 != tt.want1 {
-				t.Errorf("CursorToken.Decode() got1 = %v, want %v", got1, tt.want1)
+			if id != tt.want1 {
+				t.Errorf("DecodeCursorToken() id = %v, want %v", id, tt.want1)
 			}
 		})
 	}
@@ -237,6 +200,50 @@ func TestCursorToken_UnmarshalJSON(t *testing.T) {
 				if c.Next != tt.fields.Next {
 					t.Errorf("CursorToken.UnmarshalJSON() id = %v, want %v", c.Next, tt.fields.Next)
 				}
+			}
+		})
+	}
+}
+
+func TestStoCursorToken(t *testing.T) {
+	type args struct {
+		base64 string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    *CursorToken
+		wantErr bool
+	}{
+		{
+			name: "success",
+			args: args{
+				base64: base64.StdEncoding.EncodeToString([]byte(uuid.Max.String() + DataSeparator + time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC).Format(time.RFC3339))),
+			},
+			want: &CursorToken{
+				Next: uuid.Max,
+				Date: time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC),
+			},
+			wantErr: false,
+		},
+		{
+			name: "error",
+			args: args{
+				base64: "invalid",
+			},
+			want:    nil,
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := StoCursorToken(tt.args.base64)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("StoCursorToken() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("StoCursorToken() = %v, want %v", got, tt.want)
 			}
 		})
 	}

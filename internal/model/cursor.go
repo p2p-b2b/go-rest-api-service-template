@@ -40,13 +40,32 @@ func (c *CursorToken) String() string {
 	return out
 }
 
+// MarshalJSON marshals the cursor token into a JSON string.
+func (c *CursorToken) MarshalJSON() ([]byte, error) {
+	return []byte(`"` + c.String() + `"`), nil
+}
+
+// UnmarshalJSON unmarshals the cursor token from a JSON string.
+func (c *CursorToken) UnmarshalJSON(data []byte) error {
+	s := strings.Trim(string(data), `"`)
+	date, id, err := DecodeCursorToken(s)
+	if err != nil {
+		return err
+	}
+
+	c.Date = date
+	c.Next = id
+
+	return nil
+}
+
 // Encode encodes the date and id into a string.
-func (c *CursorToken) Encode() string {
-	return c.String()
+func EncodeCursorToken(next uuid.UUID, date time.Time) string {
+	return NewCursorToken(next, date).String()
 }
 
 // Decode decodes the string into a date and id.
-func (c *CursorToken) Decode(s string) (date time.Time, id uuid.UUID, err error) {
+func DecodeCursorToken(s string) (date time.Time, id uuid.UUID, err error) {
 	data, err := base64.StdEncoding.DecodeString(s)
 	if err != nil {
 		return time.Time{}, uuid.Nil, err
@@ -70,21 +89,12 @@ func (c *CursorToken) Decode(s string) (date time.Time, id uuid.UUID, err error)
 	return date, id, nil
 }
 
-// MarshalJSON marshals the cursor token into a JSON string.
-func (c *CursorToken) MarshalJSON() ([]byte, error) {
-	return []byte(`"` + c.String() + `"`), nil
-}
-
-// UnmarshalJSON unmarshals the cursor token from a JSON string.
-func (c *CursorToken) UnmarshalJSON(data []byte) error {
-	s := strings.Trim(string(data), `"`)
-	date, id, err := c.Decode(s)
+// ConvertCursorToken converts string to CursorToken.
+func StoCursorToken(base64 string) (*CursorToken, error) {
+	date, id, err := DecodeCursorToken(base64)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	c.Date = date
-	c.Next = id
-
-	return nil
+	return NewCursorToken(id, date), nil
 }
