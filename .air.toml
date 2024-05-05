@@ -4,6 +4,7 @@ tmp_dir      = "tmp"
 
 [build]
 args_bin = [
+  "--database.migration.enable true",
 ]
 bin = "./build/go-service-template"
 cmd = "make build"

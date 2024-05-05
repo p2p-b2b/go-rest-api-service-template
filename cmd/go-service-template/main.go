@@ -72,6 +72,7 @@ func init() {
 	flag.DurationVar(&DBConfig.ConnMaxLifetime.Value, DBConfig.ConnMaxLifetime.FlagName, config.DefaultDatabaseConnMaxLifetime, DBConfig.ConnMaxLifetime.FlagDescription)
 	flag.IntVar(&DBConfig.MaxIdleConns.Value, DBConfig.MaxIdleConns.FlagName, config.DefaultDatabaseMaxIdleConns, DBConfig.MaxIdleConns.FlagDescription)
 	flag.IntVar(&DBConfig.MaxOpenConns.Value, DBConfig.MaxOpenConns.FlagName, config.DefaultDatabaseMaxOpenConns, DBConfig.MaxOpenConns.FlagDescription)
+	flag.BoolVar(&DBConfig.MigrationEnable.Value, DBConfig.MigrationEnable.FlagName, config.DefaultDatabaseMigrationEnable, DBConfig.MigrationEnable.FlagDescription)
 
 	// Parse the command line arguments
 	flag.Bool("help", false, "Show this help message")
@@ -236,8 +237,10 @@ func main() {
 	}
 
 	// Run the database migrations
-	slog.Info("running database migrations")
-	database.Migrate(ctx, DBConfig.Kind.Value, db)
+	if DBConfig.MigrationEnable.Value {
+		slog.Info("running database migrations")
+		database.Migrate(ctx, DBConfig.Kind.Value, db)
+	}
 
 	// Create Service
 	userService := service.NewDefaultUserService(&service.DefaultUserServiceConfig{
