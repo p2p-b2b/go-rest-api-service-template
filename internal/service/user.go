@@ -30,7 +30,7 @@ type UserService interface {
 	Delete(ctx context.Context, user *model.DeleteUserInput) error
 
 	// List returns a list of users.
-	List(ctx context.Context, params *model.ListUserInput) ([]*model.ListUserOutput, error)
+	List(ctx context.Context, params *model.ListUserInput) (*model.ListUserOutput, error)
 }
 
 type DefaultUserServiceConfig struct {
@@ -120,16 +120,6 @@ func (s *DefaultUserService) Delete(ctx context.Context, user *model.DeleteUserI
 }
 
 // List returns a list of users.
-func (s *DefaultUserService) List(ctx context.Context, params *model.ListUserInput) ([]*model.ListUserOutput, error) {
-	users, err := s.repository.SelectAll(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	return []*model.ListUserOutput{
-		{
-			Items: users,
-			Next:  nil,
-		},
-	}, nil
+func (s *DefaultUserService) List(ctx context.Context, params *model.ListUserInput) (*model.ListUserOutput, error) {
+	return s.repository.SelectAll(ctx, params)
 }

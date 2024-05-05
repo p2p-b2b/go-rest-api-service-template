@@ -48,25 +48,25 @@ type DeleteUserInput User
 // ListUserInput represents the input for the ListUser method.
 type ListUserInput struct {
 	// Next is the token to the next page of users.
-	Next *CursorToken `json:"next"`
+	Next *CursorToken `json:"next,omitempty"`
 
 	// Limit is the maximum number of users to return.
-	Limit int `json:"limit"`
+	Limit int `json:"limit,omitempty"`
 
 	// Offset is the number of users to skip.
-	Offset int `json:"offset"`
+	Offset int `json:"offset,omitempty"`
 
 	// Sort is the field to sort by.
-	Sort string `json:"sort"`
+	Sort string `json:"sort,omitempty"`
 
 	// Order is the order to sort by.
-	Order string `json:"order"`
+	Order string `json:"order,omitempty"`
 
 	// Filter is the field to filter by.
-	Filter string `json:"filter"`
+	Filter string `json:"filter,omitempty"`
 
 	// Fields is the fields to return.
-	Fields string `json:"fields"`
+	Fields string `json:"fields,omitempty"`
 }
 
 // ListUserOutput represents a list of users.
@@ -75,17 +75,17 @@ type ListUserOutput struct {
 	Items []*User `json:"data"`
 
 	// Next is the token to the next page of users.
-	Next *CursorToken `json:"next"`
+	Next *CursorToken `json:"next,omitempty"`
 
 	// Previous is the token to the previous page of users.
-	Previous *CursorToken `json:"previous"`
+	Previous *CursorToken `json:"previous,omitempty"`
 
 	// Total is the total number of users.
-	Total int `json:"total"`
+	Total int `json:"total,omitempty"`
 
 	// Limit is the maximum number of users to return.
-	Limit int `json:"limit"`
+	Limit int `json:"limit,omitempty"`
 
 	// Offset is the number of users to skip.
-	Offset int `json:"offset"`
+	Offset int `json:"offset,omitempty"`
 }

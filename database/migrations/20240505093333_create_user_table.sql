@@ -4,7 +4,7 @@ SELECT 'up SQL query';
 --
 -- table for users
 CREATE TABLE IF NOT EXISTS users (
-    id uuid PRIMARY KEY NOT NULL UNIQUE DEFAULT uuid_generate_v4(),
+    id uuid PRIMARY KEY NOT NULL UNIQUE DEFAULT gen_random_uuid(),
     first_name VARCHAR(255) NOT NULL,
     last_name VARCHAR(255) NOT NULL,
     email VARCHAR(255) NOT NULL,

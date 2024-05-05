@@ -112,13 +112,13 @@ func (s *PGSQLUserRepository) SelectByID(ctx context.Context, id uuid.UUID) (*mo
 }
 
 // SelectAll returns a list of users.
-func (s *PGSQLUserRepository) SelectAll(ctx context.Context) ([]*model.User, error) {
+func (s *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.ListUserInput) (*model.ListUserOutput, error) {
 	ctx, cancel := context.WithTimeout(ctx, s.MaxQueryTimeout)
 	defer cancel()
 
-	const query = `SELECT id, first_name, last_name, email FROM users`
+	const query = `SELECT id, first_name, last_name, email FROM users ORDER BY id LIMIT $1 OFFSET $2`
 
-	rows, err := s.db.QueryContext(ctx, query)
+	rows, err := s.db.QueryContext(ctx, query, params.Limit, params.Offset)
 	if err != nil {
 		return nil, err
 	}
@@ -133,5 +133,10 @@ func (s *PGSQLUserRepository) SelectAll(ctx context.Context) ([]*model.User, err
 		users = append(users, &u)
 	}
 
-	return users, nil
+	return &model.ListUserOutput{
+		Items:    users,
+		Next:     nil,
+		Previous: nil,
+		Total:    len(users),
+	}, nil
 }

@@ -284,6 +284,19 @@ const docTemplate = `{
                 }
             }
         },
+        "model.CursorToken": {
+            "type": "object",
+            "properties": {
+                "date": {
+                    "description": "Date is the date of the cursor.",
+                    "type": "string"
+                },
+                "next": {
+                    "description": "Next is the token to the next page of users.",
+                    "type": "string"
+                }
+            }
+        },
         "model.Health": {
             "type": "object",
             "properties": {
@@ -304,25 +317,38 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "data": {
-                    "description": "Data is a list of users.",
+                    "description": "Items is a list of users.",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/model.User"
                     }
                 },
-                "page": {
-                    "description": "Page is the current page.",
+                "limit": {
+                    "description": "Limit is the maximum number of users to return.",
                     "type": "integer"
                 },
-                "page_size": {
-                    "description": "PageSize is the number of users per page.",
+                "next": {
+                    "description": "Next is the token to the next page of users.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/model.CursorToken"
+                        }
+                    ]
+                },
+                "offset": {
+                    "description": "Offset is the number of users to skip.",
                     "type": "integer"
                 },
-                "total_count": {
-                    "description": "TotalCount is the total number of users.",
-                    "type": "integer"
+                "previous": {
+                    "description": "Previous is the token to the previous page of users.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/model.CursorToken"
+                        }
+                    ]
                 },
-                "total_pages": {
+                "total": {
+                    "description": "Total is the total number of users.",
                     "type": "integer"
                 }
             }

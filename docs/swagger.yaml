@@ -29,6 +29,15 @@ definitions:
         description: LastName is the last name of the user.
         type: string
     type: object
+  model.CursorToken:
+    properties:
+      date:
+        description: Date is the date of the cursor.
+        type: string
+      next:
+        description: Next is the token to the next page of users.
+        type: string
+    type: object
   model.Health:
     properties:
       checks:
@@ -43,20 +52,26 @@ definitions:
   model.ListUserOutput:
     properties:
       data:
-        description: Data is a list of users.
+        description: Items is a list of users.
         items:
           $ref: '#/definitions/model.User'
         type: array
-      page:
-        description: Page is the current page.
+      limit:
+        description: Limit is the maximum number of users to return.
         type: integer
-      page_size:
-        description: PageSize is the number of users per page.
+      next:
+        allOf:
+        - $ref: '#/definitions/model.CursorToken'
+        description: Next is the token to the next page of users.
+      offset:
+        description: Offset is the number of users to skip.
         type: integer
-      total_count:
-        description: TotalCount is the total number of users.
-        type: integer
-      total_pages:
+      previous:
+        allOf:
+        - $ref: '#/definitions/model.CursorToken'
+        description: Previous is the token to the previous page of users.
+      total:
+        description: Total is the total number of users.
         type: integer
     type: object
   model.User:
