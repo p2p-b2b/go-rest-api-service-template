@@ -48,7 +48,7 @@ type DeleteUserInput User
 // ListUserInput represents the input for the ListUser method.
 type ListUserInput struct {
 	// Next is the token to the next page of users.
-	Next *CursorToken `json:"next,omitempty"`
+	Next string `json:"next,omitempty"`
 
 	// Limit is the maximum number of users to return.
 	Limit int `json:"limit,omitempty"`
@@ -75,10 +75,10 @@ type ListUserOutput struct {
 	Items []*User `json:"data"`
 
 	// Next is the token to the next page of users.
-	Next *CursorToken `json:"next,omitempty"`
+	Next string `json:"next,omitempty"`
 
 	// Previous is the token to the previous page of users.
-	Previous *CursorToken `json:"previous,omitempty"`
+	Previous string `json:"previous,omitempty"`
 
 	// Total is the total number of users.
 	Total int `json:"total,omitempty"`

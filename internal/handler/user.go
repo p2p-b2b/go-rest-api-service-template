@@ -257,20 +257,13 @@ func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	nextString := r.URL.Query().Get("next")
+	next := r.URL.Query().Get("next")
 	limitString := r.URL.Query().Get("limit")
 	offsetString := r.URL.Query().Get("offset")
 	sort := r.URL.Query().Get("sort")
 	order := r.URL.Query().Get("order")
 	filter := r.URL.Query().Get("filter")
 	fields := r.URL.Query().Get("fields")
-
-	next, err := model.StoCursorToken(nextString)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		http.Error(w, "Invalid next", http.StatusBadRequest)
-		return
-	}
 
 	limit, err := strconv.Atoi(limitString)
 	if err != nil {

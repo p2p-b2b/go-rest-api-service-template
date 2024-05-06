@@ -135,8 +135,8 @@ func (s *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.ListU
 
 	return &model.ListUserOutput{
 		Items:    users,
-		Next:     nil,
-		Previous: nil,
+		Next:     "",
+		Previous: "",
 		Total:    len(users),
 	}, nil
 }
