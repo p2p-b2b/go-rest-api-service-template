@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"log/slog"
 	"runtime"
 
 	"github.com/google/uuid"
@@ -102,7 +103,6 @@ func (s *DefaultUserService) GetByID(ctx context.Context, id uuid.UUID) (*model.
 // Create inserts a new user into the database.
 func (s *DefaultUserService) Create(ctx context.Context, user *model.CreateUserInput) error {
 	return s.repository.Insert(ctx, &model.User{
-		ID:        uuid.New(),
 		FirstName: user.FirstName,
 		LastName:  user.LastName,
 		Email:     user.Email,
@@ -121,5 +121,38 @@ func (s *DefaultUserService) Delete(ctx context.Context, user *model.DeleteUserI
 
 // List returns a list of users.
 func (s *DefaultUserService) List(ctx context.Context, params *model.ListUserInput) (*model.ListUserOutput, error) {
-	return s.repository.SelectAll(ctx, params)
+	// get the id and created_at from next cursor
+	if params.User == nil {
+		params.User = &model.User{}
+	}
+
+	if params.Paginator.Next != "" {
+
+		date, id, err := model.DecodeToken(params.Paginator.Next)
+		if err != nil {
+			return nil, err
+		}
+
+		params.User.ID = id
+		params.User.CreatedAt = date
+	}
+
+	users, err := s.repository.SelectAll(ctx, params)
+	if err != nil {
+		slog.Error("Service List", "error", err)
+		return nil, err
+	}
+
+	size := len(users)
+	lastUser := users[size-1]
+
+	slog.Debug("last user", "id", lastUser.ID, "created_at", lastUser.CreatedAt)
+
+	return &model.ListUserOutput{
+		Items: users,
+		Paginator: model.Paginator{
+			Size: size,
+			Next: model.EncodeToken(lastUser.ID, lastUser.CreatedAt),
+		},
+	}, nil
 }

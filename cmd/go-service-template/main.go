@@ -354,7 +354,7 @@ func main() {
 			"address", SrvConfig.Address.Value,
 			"port", SrvConfig.Port.Value,
 			"status", statusURL,
-			"swagger", swaggerURL,
+			"swagger", swaggerURL+"/index.html",
 		)
 
 		// Check if the port is 443 and start the server with TLS

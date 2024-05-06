@@ -47,14 +47,8 @@ type DeleteUserInput User
 
 // ListUserInput represents the input for the ListUser method.
 type ListUserInput struct {
-	// Next is the token to the next page of users.
-	Next string `json:"next,omitempty"`
-
-	// Limit is the maximum number of users to return.
-	Limit int `json:"limit,omitempty"`
-
-	// Offset is the number of users to skip.
-	Offset int `json:"offset,omitempty"`
+	// User is the user to filter by.
+	User *User `json:"user,omitempty"`
 
 	// Sort is the field to sort by.
 	Sort string `json:"sort,omitempty"`
@@ -67,6 +61,9 @@ type ListUserInput struct {
 
 	// Fields is the fields to return.
 	Fields string `json:"fields,omitempty"`
+
+	// Paginator is the paginator for the list of users.
+	Paginator Paginator `json:"paginator,omitempty"`
 }
 
 // ListUserOutput represents a list of users.
@@ -74,18 +71,6 @@ type ListUserOutput struct {
 	// Items is a list of users.
 	Items []*User `json:"data"`
 
-	// Next is the token to the next page of users.
-	Next string `json:"next,omitempty"`
-
-	// Previous is the token to the previous page of users.
-	Previous string `json:"previous,omitempty"`
-
-	// Total is the total number of users.
-	Total int `json:"total,omitempty"`
-
-	// Limit is the maximum number of users to return.
-	Limit int `json:"limit,omitempty"`
-
-	// Offset is the number of users to skip.
-	Offset int `json:"offset,omitempty"`
+	// Paginator is the paginator for the list of users.
+	Paginator Paginator `json:"paginator,omitempty"`
 }

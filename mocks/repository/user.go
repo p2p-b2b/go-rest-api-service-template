@@ -123,18 +123,18 @@ func (mr *MockUserRepositoryMockRecorder) PingContext(ctx interface{}) *gomock.C
 }
 
 // SelectAll mocks base method.
-func (m *MockUserRepository) SelectAll(ctx context.Context, params *model.ListUserInput) (*model.ListUserOutput, error) {
+func (m *MockUserRepository) SelectAll(ctx context.Context, user *model.User) ([]*model.User, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SelectAll", ctx, params)
-	ret0, _ := ret[0].(*model.ListUserOutput)
+	ret := m.ctrl.Call(m, "SelectAll", ctx, user)
+	ret0, _ := ret[0].([]*model.User)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // SelectAll indicates an expected call of SelectAll.
-func (mr *MockUserRepositoryMockRecorder) SelectAll(ctx, params interface{}) *gomock.Call {
+func (mr *MockUserRepositoryMockRecorder) SelectAll(ctx, user interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SelectAll", reflect.TypeOf((*MockUserRepository)(nil).SelectAll), ctx, params)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SelectAll", reflect.TypeOf((*MockUserRepository)(nil).SelectAll), ctx, user)
 }
 
 // SelectByID mocks base method.

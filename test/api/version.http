@@ -20,3 +20,8 @@ Content-Type: application/json
   "first_name": "Christian",
   "last_name": "Gonzalez"
 }
+
+###
+
+# Get all users
+GET http://{{host}}/users

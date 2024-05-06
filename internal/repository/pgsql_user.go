@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"log/slog"
 	"time"
 
 	"github.com/google/uuid"
@@ -65,9 +66,9 @@ func (s *PGSQLUserRepository) Insert(ctx context.Context, user *model.User) erro
 	ctx, cancel := context.WithTimeout(ctx, s.MaxQueryTimeout)
 	defer cancel()
 
-	const query = "INSERT INTO users (id, first_name, last_name, email) VALUES ($1, $2, $3, $4)"
+	const query = "INSERT INTO users (first_name, last_name, email) VALUES ($2, $3, $4)"
 
-	_, err := s.db.ExecContext(ctx, query, user.ID, user.FirstName, user.LastName, user.Email)
+	_, err := s.db.ExecContext(ctx, query, user.FirstName, user.LastName, user.Email)
 
 	return err
 }
@@ -112,13 +113,35 @@ func (s *PGSQLUserRepository) SelectByID(ctx context.Context, id uuid.UUID) (*mo
 }
 
 // SelectAll returns a list of users.
-func (s *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.ListUserInput) (*model.ListUserOutput, error) {
+func (s *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.ListUserInput) ([]*model.User, error) {
 	ctx, cancel := context.WithTimeout(ctx, s.MaxQueryTimeout)
 	defer cancel()
 
-	const query = `SELECT id, first_name, last_name, email FROM users ORDER BY id LIMIT $1 OFFSET $2`
+	query := `SELECT id, first_name, last_name, email FROM users`
+	args := []any{}
 
-	rows, err := s.db.QueryContext(ctx, query, params.Limit, params.Offset)
+	if params.User.ID != uuid.Nil || !params.User.CreatedAt.IsZero() {
+		query += " WHERE created_at > $1 and (id > $2 or created_at > $3)"
+		args = append(args, params.User.CreatedAt, params.User.ID, params.User.CreatedAt)
+	}
+
+	query += " ORDER BY created_at ASC, id ASC"
+
+	if params.Paginator.Limit > 0 && len(args) > 0 {
+		query += " LIMIT $4"
+		args = append(args, params.Paginator.Limit)
+	} else if params.Paginator.Limit > 0 && len(args) == 0 {
+		query += " LIMIT $1"
+		args = append(args, params.Paginator.Limit)
+	}
+
+	var rows *sql.Rows
+	var err error
+
+	slog.Debug("SelectAll", "query", query)
+	slog.Debug("SelectAll", "args", args)
+
+	rows, err = s.db.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -133,10 +156,5 @@ func (s *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.ListU
 		users = append(users, &u)
 	}
 
-	return &model.ListUserOutput{
-		Items:    users,
-		Next:     "",
-		Previous: "",
-		Total:    len(users),
-	}, nil
+	return users, nil
 }

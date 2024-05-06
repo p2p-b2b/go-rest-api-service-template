@@ -30,6 +30,7 @@ func NewUserHandler(conf *UserHandlerConfig) *UserHandler {
 // @Tags users
 // @Produce json
 // @Param id path string true "User ID"
+// @Param query query string false "Query string"
 // @Success 200 {object} model.User
 // @Failure 500 {object} string
 // @Router /users/{id} [get]
@@ -240,53 +241,69 @@ func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-// ListUsers List all users
+// ListUsers Return a paginated list of users
 // @Summary List all users
 // @Description List all users
 // @Tags users
 // @Produce json
+// @Param query query string false "Query string"
+// @Param next query string false "Next cursor"
+// @Param previous query string false "Previous cursor"
+// @Param limit query int false "Limit"
 // @Success 200 {object} model.ListUserOutput
 // @Failure 500 {object} string
 // @Router /users [get]
 func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-
 	if r.Method != http.MethodGet {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
+	// paginator
 	next := r.URL.Query().Get("next")
+	previous := r.URL.Query().Get("previous")
 	limitString := r.URL.Query().Get("limit")
-	offsetString := r.URL.Query().Get("offset")
+
+	// convert the limit to int
+	var limit int
+	var err error
+	if limitString != "" {
+		limit, err = strconv.Atoi(limitString)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			http.Error(w, "Invalid limit", http.StatusBadRequest)
+			return
+		}
+
+		if limit < 0 {
+			w.WriteHeader(http.StatusBadRequest)
+			http.Error(w, "Limit must be greater than or equal to 0", http.StatusBadRequest)
+			return
+		}
+		if limit == 0 {
+			limit = 10
+		}
+
+	} else {
+		limit = 10
+	}
+
 	sort := r.URL.Query().Get("sort")
 	order := r.URL.Query().Get("order")
 	filter := r.URL.Query().Get("filter")
 	fields := r.URL.Query().Get("fields")
 
-	limit, err := strconv.Atoi(limitString)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		http.Error(w, "Invalid limit", http.StatusBadRequest)
-		return
-	}
-
-	offset, err := strconv.Atoi(offsetString)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		http.Error(w, "Invalid offset", http.StatusBadRequest)
-		return
-	}
-
 	params := &model.ListUserInput{
-		Next:   next,
-		Limit:  limit,
-		Offset: offset,
 		Sort:   sort,
 		Order:  order,
 		Filter: filter,
 		Fields: fields,
+		Paginator: model.Paginator{
+			Next:     next,
+			Previous: previous,
+			Limit:    limit,
+		},
 	}
 
 	users, err := h.service.List(r.Context(), params)
@@ -297,6 +314,7 @@ func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// write the response
+	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(users); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)

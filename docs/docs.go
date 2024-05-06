@@ -85,6 +85,32 @@ const docTemplate = `{
                     "users"
                 ],
                 "summary": "List all users",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Query string",
+                        "name": "query",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Next cursor",
+                        "name": "next",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Previous cursor",
+                        "name": "previous",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Limit",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -156,6 +182,12 @@ const docTemplate = `{
                         "name": "id",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Query string",
+                        "name": "query",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -284,19 +316,6 @@ const docTemplate = `{
                 }
             }
         },
-        "model.CursorToken": {
-            "type": "object",
-            "properties": {
-                "date": {
-                    "description": "Date is the date of the cursor.",
-                    "type": "string"
-                },
-                "next": {
-                    "description": "Next is the token to the next page of users.",
-                    "type": "string"
-                }
-            }
-        },
         "model.Health": {
             "type": "object",
             "properties": {
@@ -323,32 +342,33 @@ const docTemplate = `{
                         "$ref": "#/definitions/model.User"
                     }
                 },
+                "paginator": {
+                    "description": "Paginator is the paginator for the list of users.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/model.Paginator"
+                        }
+                    ]
+                }
+            }
+        },
+        "model.Paginator": {
+            "type": "object",
+            "properties": {
                 "limit": {
                     "description": "Limit is the maximum number of users to return.",
                     "type": "integer"
                 },
                 "next": {
                     "description": "Next is the token to the next page of users.",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/model.CursorToken"
-                        }
-                    ]
-                },
-                "offset": {
-                    "description": "Offset is the number of users to skip.",
-                    "type": "integer"
+                    "type": "string"
                 },
                 "previous": {
                     "description": "Previous is the token to the previous page of users.",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/model.CursorToken"
-                        }
-                    ]
+                    "type": "string"
                 },
-                "total": {
-                    "description": "Total is the total number of users.",
+                "size": {
+                    "description": "Size is the number of users returned.",
                     "type": "integer"
                 }
             }

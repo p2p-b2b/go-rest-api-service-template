@@ -17,7 +17,9 @@ This is a template for a Go HTTP REST API Service.
 ## References
 
 - [RESTful web API design](https://learn.microsoft.com/en-us/azure/architecture/best-practices/api-design)
+- [API pagination techniques](https://samu.space/api-pagination/#uuid-primary-keys)
 - [How To Do Pagination in Postgres with Golang in 4 Common Ways](https://medium.easyread.co/how-to-do-pagination-in-postgres-with-golang-in-4-common-ways-12365b9fb528)
+- [“Cursor Pagination” Profile](https://jsonapi.org/profiles/ethanresnick/cursor-pagination/)
 
 ## Swagger Documentation
 

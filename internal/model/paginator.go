@@ -1,4 +1,4 @@
-package paginator
+package model
 
 import (
 	"encoding/base64"
@@ -17,6 +17,26 @@ var TokenDateFormat string = time.RFC3339
 
 // ErrInvalidCursorToken is an error that is returned when the cursor token is invalid.
 var ErrInvalidCursorToken = errors.New("invalid cursor token")
+
+// Paginator represents a paginator.
+//
+// size: number of users returned
+// next: token to the next page encoded in base64 from the last user id and created_at date
+// previous: token to the previous page encoded in base64 from the first user id and created_at date
+// limit: maximum number of users to return
+type Paginator struct {
+	// Size is the number of users returned.
+	Size int `json:"size,omitempty"`
+
+	// Next is the token to the next page of users.
+	Next string `json:"next,omitempty"`
+
+	// Previous is the token to the previous page of users.
+	Previous string `json:"previous,omitempty"`
+
+	// Limit is the maximum number of users to return.
+	Limit int `json:"limit,omitempty"`
+}
 
 // EncodeToken encodes the date and id into a base64 string.
 func EncodeToken(id uuid.UUID, date time.Time) string {

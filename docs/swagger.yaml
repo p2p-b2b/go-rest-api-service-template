@@ -29,15 +29,6 @@ definitions:
         description: LastName is the last name of the user.
         type: string
     type: object
-  model.CursorToken:
-    properties:
-      date:
-        description: Date is the date of the cursor.
-        type: string
-      next:
-        description: Next is the token to the next page of users.
-        type: string
-    type: object
   model.Health:
     properties:
       checks:
@@ -56,22 +47,24 @@ definitions:
         items:
           $ref: '#/definitions/model.User'
         type: array
+      paginator:
+        allOf:
+        - $ref: '#/definitions/model.Paginator'
+        description: Paginator is the paginator for the list of users.
+    type: object
+  model.Paginator:
+    properties:
       limit:
         description: Limit is the maximum number of users to return.
         type: integer
       next:
-        allOf:
-        - $ref: '#/definitions/model.CursorToken'
         description: Next is the token to the next page of users.
-      offset:
-        description: Offset is the number of users to skip.
-        type: integer
+        type: string
       previous:
-        allOf:
-        - $ref: '#/definitions/model.CursorToken'
         description: Previous is the token to the previous page of users.
-      total:
-        description: Total is the total number of users.
+        type: string
+      size:
+        description: Size is the number of users returned.
         type: integer
     type: object
   model.User:
@@ -151,6 +144,23 @@ paths:
   /users:
     get:
       description: List all users
+      parameters:
+      - description: Query string
+        in: query
+        name: query
+        type: string
+      - description: Next cursor
+        in: query
+        name: next
+        type: string
+      - description: Previous cursor
+        in: query
+        name: previous
+        type: string
+      - description: Limit
+        in: query
+        name: limit
+        type: integer
       produces:
       - application/json
       responses:
@@ -216,6 +226,10 @@ paths:
         in: path
         name: id
         required: true
+        type: string
+      - description: Query string
+        in: query
+        name: query
         type: string
       produces:
       - application/json
