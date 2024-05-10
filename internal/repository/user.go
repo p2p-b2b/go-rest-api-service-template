@@ -38,5 +38,5 @@ type UserRepository interface {
 	SelectByID(ctx context.Context, id uuid.UUID) (*model.User, error)
 
 	// SelectAll returns a list of users.
-	SelectAll(ctx context.Context, user *model.ListUserInput) ([]*model.User, error)
+	SelectAll(ctx context.Context, params *model.SelectAllUserQueryInput) (*model.SelectAllUserQueryOutput, error)
 }

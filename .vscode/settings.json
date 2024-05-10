@@ -12,6 +12,7 @@
     "PGSQL",
     "podman",
     "postgres",
+    "RESTAPI",
     "sslmode",
     "swaggo",
     "unmarshals",

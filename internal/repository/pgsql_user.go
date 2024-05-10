@@ -3,11 +3,14 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"log/slog"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/p2p-b2b/go-service-template/internal/model"
+	"github.com/p2p-b2b/go-service-template/internal/paginator"
 )
 
 type PGSQLUserRepositoryConfig struct {
@@ -113,36 +116,82 @@ func (s *PGSQLUserRepository) SelectByID(ctx context.Context, id uuid.UUID) (*mo
 }
 
 // SelectAll returns a list of users.
-func (s *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.ListUserInput) ([]*model.User, error) {
+func (s *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.SelectAllUserQueryInput) (*model.SelectAllUserQueryOutput, error) {
 	ctx, cancel := context.WithTimeout(ctx, s.MaxQueryTimeout)
 	defer cancel()
 
-	query := `SELECT id, first_name, last_name, email FROM users`
-	args := []any{}
-
-	if params.User.ID != uuid.Nil || !params.User.CreatedAt.IsZero() {
-		query += " WHERE created_at > $1 and (id > $2 or created_at > $3)"
-		args = append(args, params.User.CreatedAt, params.User.ID, params.User.CreatedAt)
+	if params == nil {
+		params = &model.SelectAllUserQueryInput{
+			Fields: []string{"*"},
+			Sort:   "created_at",
+			Filter: []string{},
+			Paginator: paginator.Paginator{
+				Limit: 10,
+			},
+		}
 	}
 
-	query += " ORDER BY created_at ASC, id ASC"
-
-	if params.Paginator.Limit > 0 && len(args) > 0 {
-		query += " LIMIT $4"
-		args = append(args, params.Paginator.Limit)
-	} else if params.Paginator.Limit > 0 && len(args) == 0 {
-		query += " LIMIT $1"
-		args = append(args, params.Paginator.Limit)
+	fieldsStr := strings.Join(params.Fields, ", ")
+	if fieldsStr == "" {
+		fieldsStr = "*"
 	}
 
-	var rows *sql.Rows
-	var err error
+	slog.Debug("SelectAll", "params", params)
 
-	slog.Debug("SelectAll", "query", query)
-	slog.Debug("SelectAll", "args", args)
+	var paginationQuery string
+	if params.Paginator.Next != "" {
+		// decode the token
+		id, createdAt, err := paginator.DecodeToken(params.Paginator.Next)
+		if err != nil {
+			slog.Error("SelectAll", "error", err)
+			return nil, err
+		}
+		_ = id
+		paginationQuery = fmt.Sprintf(" WHERE usrs.created_at < '%s' ORDER BY created_at DESC LIMIT %d",
+			createdAt.UTC().Format(paginator.DateFormat),
+			params.Paginator.Limit,
+		)
+	}
 
-	rows, err = s.db.QueryContext(ctx, query, args...)
+	if params.Paginator.Prev != "" {
+		// decode the token
+		id, createdAt, err := paginator.DecodeToken(params.Paginator.Prev)
+		if err != nil {
+			slog.Error("SelectAll", "error", err)
+			return nil, err
+		}
+		_ = id
+		paginationQuery = fmt.Sprintf(" WHERE usrs.created_at > '%s' ORDER BY created_at ASC LIMIT %d",
+			createdAt.UTC().Format(paginator.DateFormat),
+			params.Paginator.Limit,
+		)
+	}
+
+	if params.Paginator.Next == "" && params.Paginator.Prev == "" {
+		paginationQuery = fmt.Sprintf(" ORDER BY usrs.created_at DESC LIMIT %d", params.Paginator.Limit)
+	}
+
+	query := fmt.Sprintf(`
+        WITH usrs AS (
+            SELECT %s FROM users usrs %s
+        )
+        SELECT * FROM usrs ORDER BY created_at DESC
+    `,
+		fieldsStr,
+		paginationQuery,
+	)
+
+	prettyPrintQuery := func() string {
+		out := strings.ReplaceAll(query, "   ", "")
+		out = strings.ReplaceAll(out, "\n", "")
+		return out
+	}
+
+	slog.Debug("SelectAll", "query", prettyPrintQuery())
+
+	rows, err := s.db.QueryContext(ctx, query)
 	if err != nil {
+		slog.Error("SelectAll", "error", err)
 		return nil, err
 	}
 	defer rows.Close()
@@ -150,11 +199,39 @@ func (s *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.ListU
 	var users []*model.User
 	for rows.Next() {
 		var u model.User
-		if err := rows.Scan(&u.ID, &u.FirstName, &u.LastName, &u.Email); err != nil {
+		if err := rows.Scan(&u.ID, &u.FirstName, &u.LastName, &u.Email, &u.CreatedAt, &u.UpdatedAt); err != nil {
+			slog.Error("SelectAll", "error", err)
 			return nil, err
 		}
 		users = append(users, &u)
 	}
 
-	return users, nil
+	if err := rows.Err(); err != nil {
+		slog.Error("SelectAll", "error", err)
+		return nil, err
+	}
+
+	if len(users) == 0 {
+		return &model.SelectAllUserQueryOutput{
+			Items:     users,
+			Paginator: paginator.Paginator{},
+		}, nil
+	}
+
+	slog.Debug("SelectAll", "next_id", users[len(users)-1].ID, "next_created_at", users[len(users)-1].CreatedAt)
+	slog.Debug("SelectAll", "prev_id", users[0].ID, "prev_created_at", users[0].CreatedAt)
+
+	next := params.Paginator.GenerateToken(users[len(users)-1].ID, users[len(users)-1].CreatedAt)
+	prev := params.Paginator.GenerateToken(users[0].ID, users[0].CreatedAt)
+
+	ret := &model.SelectAllUserQueryOutput{
+		Items: users,
+		Paginator: paginator.Paginator{
+			Next:  next,
+			Prev:  prev,
+			Limit: params.Paginator.Limit,
+		},
+	}
+
+	return ret, nil
 }

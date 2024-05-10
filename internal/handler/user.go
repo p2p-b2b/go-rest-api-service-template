@@ -2,11 +2,15 @@ package handler
 
 import (
 	"encoding/json"
+	"io"
+	"log/slog"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/p2p-b2b/go-service-template/internal/model"
+	"github.com/p2p-b2b/go-service-template/internal/paginator"
 	"github.com/p2p-b2b/go-service-template/internal/service"
 )
 
@@ -81,8 +85,8 @@ func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 // @Tags users
 // @Accept json
 // @Produce json
-// @Param user body model.CreateUserInput true "CreateUserInput"
-// @Success 201 {object} model.CreateUserInput
+// @Param user body model.CreateUserRequest true "CreateUserRequest"
+// @Success 201 {object} model.CreateUserRequest
 // @Failure 500 {object} string
 // @Router /users [post]
 func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
@@ -94,7 +98,7 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var user model.CreateUserInput
+	var user model.CreateUserRequest
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
@@ -246,14 +250,29 @@ func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 // @Description List all users
 // @Tags users
 // @Produce json
+// @Param sort query string false "Sort field"
+// @Param filter query string false "Filter field"
+// @Param fields query string false "Fields to return"
 // @Param query query string false "Query string"
 // @Param next query string false "Next cursor"
-// @Param previous query string false "Previous cursor"
+// @Param prev query string false "Previous cursor"
 // @Param limit query int false "Limit"
-// @Success 200 {object} model.ListUserOutput
+// @Success 200 {object} model.ListUserResponse
 // @Failure 500 {object} string
 // @Router /users [get]
 func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
+	var req model.ListUserRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		// if err is distinct from EOF
+		if err != io.EOF {
+			w.WriteHeader(http.StatusBadRequest)
+			http.Error(w, "Invalid request body", http.StatusBadRequest)
+			slog.Error("ListUsers", "error", err)
+			return
+		}
+	}
+	defer r.Body.Close()
+
 	if r.Method != http.MethodGet {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -262,8 +281,24 @@ func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 
 	// paginator
 	next := r.URL.Query().Get("next")
-	previous := r.URL.Query().Get("previous")
+	prev := r.URL.Query().Get("prev")
 	limitString := r.URL.Query().Get("limit")
+
+	sort := r.URL.Query().Get("sort")
+	filterFields := r.URL.Query().Get("filter")
+
+	var filter []string
+	if len(filterFields) != 0 {
+		filter = strings.Split(filterFields, ",")
+	}
+
+	fieldsFields := r.URL.Query().Get("fields")
+	var fields []string
+	if len(fieldsFields) != 0 {
+		fields = strings.Split(fieldsFields, ",")
+	}
+
+	slog.Debug("ListUsers", "sort", sort, "filter", filter, "fields", fields, "next", next, "previous", prev, "limit", limitString)
 
 	// convert the limit to int
 	var limit int
@@ -289,20 +324,14 @@ func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 		limit = 10
 	}
 
-	sort := r.URL.Query().Get("sort")
-	order := r.URL.Query().Get("order")
-	filter := r.URL.Query().Get("filter")
-	fields := r.URL.Query().Get("fields")
-
-	params := &model.ListUserInput{
+	params := &model.ListUserRequest{
 		Sort:   sort,
-		Order:  order,
 		Filter: filter,
 		Fields: fields,
-		Paginator: model.Paginator{
-			Next:     next,
-			Previous: previous,
-			Limit:    limit,
+		Paginator: paginator.Paginator{
+			Next:  next,
+			Prev:  prev,
+			Limit: limit,
 		},
 	}
 

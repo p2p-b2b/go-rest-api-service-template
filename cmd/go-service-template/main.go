@@ -37,6 +37,7 @@ var (
 
 	logHandler        slog.Handler
 	logHandlerOptions *slog.HandlerOptions
+	logger            *slog.Logger
 )
 
 func init() {
@@ -167,7 +168,8 @@ func main() {
 	swaggerURL := fmt.Sprintf("%s/swagger", serverURL)
 
 	// Set the default logger
-	slog.SetDefault(slog.New(logHandler))
+	logger = slog.New(logHandler)
+	slog.SetDefault(logger)
 
 	slog.Debug("configuration", "database", DBConfig)
 	slog.Debug("configuration", "log", LogConfig)
@@ -239,7 +241,10 @@ func main() {
 	// Run the database migrations
 	if DBConfig.MigrationEnable.Value {
 		slog.Info("running database migrations")
-		database.Migrate(ctx, DBConfig.Kind.Value, db)
+		if err := database.Migrate(ctx, DBConfig.Kind.Value, db); err != nil {
+			slog.Error("database migration error", "error", err)
+			os.Exit(1)
+		}
 	}
 
 	// Create Service

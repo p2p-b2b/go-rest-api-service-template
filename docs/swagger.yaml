@@ -17,13 +17,16 @@ definitions:
         description: Status is the status of the check.
         type: boolean
     type: object
-  model.CreateUserInput:
+  model.CreateUserRequest:
     properties:
       email:
         description: Email is the email address of the user.
         type: string
       first_name:
         description: FirstName is the first name of the user.
+        type: string
+      id:
+        description: ID is the unique identifier of the user.
         type: string
       last_name:
         description: LastName is the last name of the user.
@@ -40,7 +43,7 @@ definitions:
         description: Status is the status of the health check.
         type: boolean
     type: object
-  model.ListUserOutput:
+  model.ListUserResponse:
     properties:
       data:
         description: Items is a list of users.
@@ -49,23 +52,8 @@ definitions:
         type: array
       paginator:
         allOf:
-        - $ref: '#/definitions/model.Paginator'
+        - $ref: '#/definitions/paginator.Paginator'
         description: Paginator is the paginator for the list of users.
-    type: object
-  model.Paginator:
-    properties:
-      limit:
-        description: Limit is the maximum number of users to return.
-        type: integer
-      next:
-        description: Next is the token to the next page of users.
-        type: string
-      previous:
-        description: Previous is the token to the previous page of users.
-        type: string
-      size:
-        description: Size is the number of users returned.
-        type: integer
     type: object
   model.User:
     properties:
@@ -86,6 +74,18 @@ definitions:
         type: string
       updated_at:
         description: UpdatedAt is the time the user was last updated.
+        type: string
+    type: object
+  paginator.Paginator:
+    properties:
+      limit:
+        description: Limit is the maximum number of elements to return.
+        type: integer
+      next:
+        description: Next is the cursor token to the next page.
+        type: string
+      previous:
+        description: Prev is the cursor token to the previous page.
         type: string
     type: object
 host: localhost:8080
@@ -145,6 +145,18 @@ paths:
     get:
       description: List all users
       parameters:
+      - description: Sort field
+        in: query
+        name: sort
+        type: string
+      - description: Filter field
+        in: query
+        name: filter
+        type: string
+      - description: Fields to return
+        in: query
+        name: fields
+        type: string
       - description: Query string
         in: query
         name: query
@@ -155,7 +167,7 @@ paths:
         type: string
       - description: Previous cursor
         in: query
-        name: previous
+        name: prev
         type: string
       - description: Limit
         in: query
@@ -167,7 +179,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/model.ListUserOutput'
+            $ref: '#/definitions/model.ListUserResponse'
         "500":
           description: Internal Server Error
           schema:
@@ -180,19 +192,19 @@ paths:
       - application/json
       description: Create a new user
       parameters:
-      - description: CreateUserInput
+      - description: CreateUserRequest
         in: body
         name: user
         required: true
         schema:
-          $ref: '#/definitions/model.CreateUserInput'
+          $ref: '#/definitions/model.CreateUserRequest'
       produces:
       - application/json
       responses:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/model.CreateUserInput'
+            $ref: '#/definitions/model.CreateUserRequest'
         "500":
           description: Internal Server Error
           schema:

@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/p2p-b2b/go-service-template/internal/model"
+	"github.com/p2p-b2b/go-service-template/internal/paginator"
 	"github.com/p2p-b2b/go-service-template/internal/repository"
 )
 
@@ -22,7 +23,7 @@ type UserService interface {
 	GetByID(ctx context.Context, id uuid.UUID) (*model.User, error)
 
 	// Create inserts a new user into the database.
-	Create(ctx context.Context, user *model.CreateUserInput) error
+	Create(ctx context.Context, user *model.CreateUserRequest) error
 
 	// Update updates the user with the specified ID.
 	Update(ctx context.Context, user *model.UpdateUserInput) error
@@ -31,7 +32,7 @@ type UserService interface {
 	Delete(ctx context.Context, user *model.DeleteUserInput) error
 
 	// List returns a list of users.
-	List(ctx context.Context, params *model.ListUserInput) (*model.ListUserOutput, error)
+	List(ctx context.Context, params *model.ListUserRequest) (*model.ListUserResponse, error)
 }
 
 type DefaultUserServiceConfig struct {
@@ -101,7 +102,7 @@ func (s *DefaultUserService) GetByID(ctx context.Context, id uuid.UUID) (*model.
 }
 
 // Create inserts a new user into the database.
-func (s *DefaultUserService) Create(ctx context.Context, user *model.CreateUserInput) error {
+func (s *DefaultUserService) Create(ctx context.Context, user *model.CreateUserRequest) error {
 	return s.repository.Insert(ctx, &model.User{
 		FirstName: user.FirstName,
 		LastName:  user.LastName,
@@ -120,39 +121,39 @@ func (s *DefaultUserService) Delete(ctx context.Context, user *model.DeleteUserI
 }
 
 // List returns a list of users.
-func (s *DefaultUserService) List(ctx context.Context, params *model.ListUserInput) (*model.ListUserOutput, error) {
-	// get the id and created_at from next cursor
-	if params.User == nil {
-		params.User = &model.User{}
+func (s *DefaultUserService) List(ctx context.Context, lur *model.ListUserRequest) (*model.ListUserResponse, error) {
+	qParams := &model.SelectAllUserQueryInput{
+		Sort:      lur.Sort,
+		Filter:    lur.Filter,
+		Fields:    lur.Fields,
+		Paginator: lur.Paginator,
 	}
 
-	if params.Paginator.Next != "" {
-
-		date, id, err := model.DecodeToken(params.Paginator.Next)
-		if err != nil {
-			return nil, err
-		}
-
-		params.User.ID = id
-		params.User.CreatedAt = date
-	}
-
-	users, err := s.repository.SelectAll(ctx, params)
+	qryOut, err := s.repository.SelectAll(ctx, qParams)
 	if err != nil {
 		slog.Error("Service List", "error", err)
 		return nil, err
 	}
+	if qryOut == nil {
+		return nil, nil
+	}
+
+	users := qryOut.Items
 
 	size := len(users)
+	if size == 0 {
+		return &model.ListUserResponse{
+			Items:     users,
+			Paginator: paginator.Paginator{},
+		}, nil
+	}
+
 	lastUser := users[size-1]
 
 	slog.Debug("last user", "id", lastUser.ID, "created_at", lastUser.CreatedAt)
 
-	return &model.ListUserOutput{
-		Items: users,
-		Paginator: model.Paginator{
-			Size: size,
-			Next: model.EncodeToken(lastUser.ID, lastUser.CreatedAt),
-		},
+	return &model.ListUserResponse{
+		Items:     users,
+		Paginator: qryOut.Paginator,
 	}, nil
 }

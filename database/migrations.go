@@ -12,6 +12,9 @@ import (
 //go:embed migrations/*.sql
 var embedMigrations embed.FS
 
+// migrationsDir is the directory where the migrations are stored.
+const migrationsDir = "migrations"
+
 // Migrate runs the database migrations
 func Migrate(ctx context.Context, dialect string, db *sql.DB) error {
 	goose.SetBaseFS(embedMigrations)
@@ -21,12 +24,12 @@ func Migrate(ctx context.Context, dialect string, db *sql.DB) error {
 		return err
 	}
 
-	if err := goose.UpContext(ctx, db, "migrations"); err != nil {
+	if err := goose.UpContext(ctx, db, migrationsDir); err != nil {
 		slog.Error("failed to migrate database", "error", err)
 		return err
 	}
 
-	if err := goose.VersionContext(ctx, db, "migrations"); err != nil {
+	if err := goose.VersionContext(ctx, db, migrationsDir); err != nil {
 		slog.Error("failed to get database version", "error", err)
 		return err
 	}

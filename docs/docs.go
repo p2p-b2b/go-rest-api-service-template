@@ -88,6 +88,24 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
+                        "description": "Sort field",
+                        "name": "sort",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter field",
+                        "name": "filter",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Fields to return",
+                        "name": "fields",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
                         "description": "Query string",
                         "name": "query",
                         "in": "query"
@@ -101,7 +119,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "description": "Previous cursor",
-                        "name": "previous",
+                        "name": "prev",
                         "in": "query"
                     },
                     {
@@ -115,7 +133,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/model.ListUserOutput"
+                            "$ref": "#/definitions/model.ListUserResponse"
                         }
                     },
                     "500": {
@@ -140,12 +158,12 @@ const docTemplate = `{
                 "summary": "Create a new user",
                 "parameters": [
                     {
-                        "description": "CreateUserInput",
+                        "description": "CreateUserRequest",
                         "name": "user",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/model.CreateUserInput"
+                            "$ref": "#/definitions/model.CreateUserRequest"
                         }
                     }
                 ],
@@ -153,7 +171,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/model.CreateUserInput"
+                            "$ref": "#/definitions/model.CreateUserRequest"
                         }
                     },
                     "500": {
@@ -299,7 +317,7 @@ const docTemplate = `{
                 }
             }
         },
-        "model.CreateUserInput": {
+        "model.CreateUserRequest": {
             "type": "object",
             "properties": {
                 "email": {
@@ -308,6 +326,10 @@ const docTemplate = `{
                 },
                 "first_name": {
                     "description": "FirstName is the first name of the user.",
+                    "type": "string"
+                },
+                "id": {
+                    "description": "ID is the unique identifier of the user.",
                     "type": "string"
                 },
                 "last_name": {
@@ -332,7 +354,7 @@ const docTemplate = `{
                 }
             }
         },
-        "model.ListUserOutput": {
+        "model.ListUserResponse": {
             "type": "object",
             "properties": {
                 "data": {
@@ -346,30 +368,9 @@ const docTemplate = `{
                     "description": "Paginator is the paginator for the list of users.",
                     "allOf": [
                         {
-                            "$ref": "#/definitions/model.Paginator"
+                            "$ref": "#/definitions/paginator.Paginator"
                         }
                     ]
-                }
-            }
-        },
-        "model.Paginator": {
-            "type": "object",
-            "properties": {
-                "limit": {
-                    "description": "Limit is the maximum number of users to return.",
-                    "type": "integer"
-                },
-                "next": {
-                    "description": "Next is the token to the next page of users.",
-                    "type": "string"
-                },
-                "previous": {
-                    "description": "Previous is the token to the previous page of users.",
-                    "type": "string"
-                },
-                "size": {
-                    "description": "Size is the number of users returned.",
-                    "type": "integer"
                 }
             }
         },
@@ -398,6 +399,23 @@ const docTemplate = `{
                 },
                 "updated_at": {
                     "description": "UpdatedAt is the time the user was last updated.",
+                    "type": "string"
+                }
+            }
+        },
+        "paginator.Paginator": {
+            "type": "object",
+            "properties": {
+                "limit": {
+                    "description": "Limit is the maximum number of elements to return.",
+                    "type": "integer"
+                },
+                "next": {
+                    "description": "Next is the cursor token to the next page.",
+                    "type": "string"
+                },
+                "previous": {
+                    "description": "Prev is the cursor token to the previous page.",
                     "type": "string"
                 }
             }

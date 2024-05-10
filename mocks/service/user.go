@@ -37,7 +37,7 @@ func (m *MockUserService) EXPECT() *MockUserServiceMockRecorder {
 }
 
 // Create mocks base method.
-func (m *MockUserService) Create(ctx context.Context, user *model.CreateUserInput) error {
+func (m *MockUserService) Create(ctx context.Context, user *model.CreateUserRequest) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Create", ctx, user)
 	ret0, _ := ret[0].(error)
@@ -95,10 +95,10 @@ func (mr *MockUserServiceMockRecorder) HealthCheck(ctx interface{}) *gomock.Call
 }
 
 // List mocks base method.
-func (m *MockUserService) List(ctx context.Context, params *model.ListUserInput) (*model.ListUserOutput, error) {
+func (m *MockUserService) List(ctx context.Context, params *model.ListUserRequest) (*model.ListUserResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "List", ctx, params)
-	ret0, _ := ret[0].(*model.ListUserOutput)
+	ret0, _ := ret[0].(*model.ListUserResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

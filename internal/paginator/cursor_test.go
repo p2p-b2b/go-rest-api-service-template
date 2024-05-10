@@ -36,7 +36,7 @@ func TestEncodeToken(t *testing.T) {
 			}
 
 			// Decode the token to verify the encoding
-			date, id, err := DecodeToken(tt.want)
+			id, date, err := DecodeToken(tt.want)
 			if err != nil {
 				t.Errorf("DecodeToken() error = %v", err)
 			}
@@ -84,7 +84,7 @@ func TestDecodeToken(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotDate, gotId, err := DecodeToken(tt.args.s)
+			gotId, gotDate, err := DecodeToken(tt.args.s)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("DecodeToken() error = %v, wantErr %v", err, tt.wantErr)
 				return

@@ -23,6 +23,10 @@ spec:
       args:
         - postgres
       env:
+        - name: TZ
+          value: UTC
+        - name: PGTZ
+          value: UTC
         - name: POSTGRES_PASSWORD
           value: password
         - name: POSTGRES_USER
