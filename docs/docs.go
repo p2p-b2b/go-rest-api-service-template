@@ -171,7 +171,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/model.CreateUserRequest"
+                            "type": "string"
                         }
                     },
                     "500": {

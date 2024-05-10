@@ -16,23 +16,23 @@ import (
 
 // UserService represents a service for managing users.
 type UserService interface {
-	// HealthCheck verifies a connection to the repository is still alive.
-	HealthCheck(ctx context.Context) (model.Health, error)
+	// UserHealthCheck verifies a connection to the repository is still alive.
+	UserHealthCheck(ctx context.Context) (model.Health, error)
 
-	// GetByID returns the user with the specified ID.
-	GetByID(ctx context.Context, id uuid.UUID) (*model.User, error)
+	// GetUserByID returns the user with the specified ID.
+	GetUserByID(ctx context.Context, id uuid.UUID) (*model.User, error)
 
-	// Create inserts a new user into the database.
-	Create(ctx context.Context, user *model.CreateUserRequest) error
+	// CreateUser inserts a new user into the database.
+	CreateUser(ctx context.Context, user *model.CreateUserRequest) error
 
-	// Update updates the user with the specified ID.
-	Update(ctx context.Context, user *model.UpdateUserInput) error
+	// UpdateUser updates the user with the specified ID.
+	UpdateUser(ctx context.Context, user *model.UpdateUserInput) error
 
-	// Delete deletes the user with the specified ID.
-	Delete(ctx context.Context, user *model.DeleteUserInput) error
+	// DeleteUser deletes the user with the specified ID.
+	DeleteUser(ctx context.Context, user *model.DeleteUserInput) error
 
-	// List returns a list of users.
-	List(ctx context.Context, params *model.ListUserRequest) (*model.ListUserResponse, error)
+	// ListUsers returns a list of users.
+	ListUsers(ctx context.Context, params *model.ListUserRequest) (*model.ListUserResponse, error)
 }
 
 type DefaultUserServiceConfig struct {
@@ -50,8 +50,8 @@ func NewDefaultUserService(conf *DefaultUserServiceConfig) *DefaultUserService {
 	}
 }
 
-// HealthCheck verifies a connection to the repository is still alive.
-func (s *DefaultUserService) HealthCheck(ctx context.Context) (model.Health, error) {
+// UserHealthCheck verifies a connection to the repository is still alive.
+func (s *DefaultUserService) UserHealthCheck(ctx context.Context) (model.Health, error) {
 	// database
 	dbStatus := model.StatusUp
 	err := s.repository.PingContext(ctx)
@@ -96,13 +96,13 @@ func (s *DefaultUserService) HealthCheck(ctx context.Context) (model.Health, err
 	return health, err
 }
 
-// GetByID returns the user with the specified ID.
-func (s *DefaultUserService) GetByID(ctx context.Context, id uuid.UUID) (*model.User, error) {
+// GetUserByID returns the user with the specified ID.
+func (s *DefaultUserService) GetUserByID(ctx context.Context, id uuid.UUID) (*model.User, error) {
 	return s.repository.SelectByID(ctx, id)
 }
 
-// Create inserts a new user into the database.
-func (s *DefaultUserService) Create(ctx context.Context, user *model.CreateUserRequest) error {
+// CreateUser inserts a new user into the database.
+func (s *DefaultUserService) CreateUser(ctx context.Context, user *model.CreateUserRequest) error {
 	return s.repository.Insert(ctx, &model.User{
 		FirstName: user.FirstName,
 		LastName:  user.LastName,
@@ -110,18 +110,18 @@ func (s *DefaultUserService) Create(ctx context.Context, user *model.CreateUserR
 	})
 }
 
-// Update updates the user with the specified ID.
-func (s *DefaultUserService) Update(ctx context.Context, user *model.UpdateUserInput) error {
+// UpdateUser updates the user with the specified ID.
+func (s *DefaultUserService) UpdateUser(ctx context.Context, user *model.UpdateUserInput) error {
 	return s.repository.Update(ctx, (*model.User)(user))
 }
 
-// Delete deletes the user with the specified ID.
-func (s *DefaultUserService) Delete(ctx context.Context, user *model.DeleteUserInput) error {
+// DeleteUser deletes the user with the specified ID.
+func (s *DefaultUserService) DeleteUser(ctx context.Context, user *model.DeleteUserInput) error {
 	return s.repository.Delete(ctx, user.ID)
 }
 
-// List returns a list of users.
-func (s *DefaultUserService) List(ctx context.Context, lur *model.ListUserRequest) (*model.ListUserResponse, error) {
+// ListUsers returns a list of users.
+func (s *DefaultUserService) ListUsers(ctx context.Context, lur *model.ListUserRequest) (*model.ListUserResponse, error) {
 	qParams := &model.SelectAllUserQueryInput{
 		Sort:      lur.Sort,
 		Filter:    lur.Filter,

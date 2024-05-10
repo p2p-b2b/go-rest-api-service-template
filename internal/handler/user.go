@@ -62,7 +62,7 @@ func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := h.service.GetByID(r.Context(), id)
+	user, err := h.service.GetUserByID(r.Context(), id)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		http.Error(w, ErrInternalServer.Error(), http.StatusInternalServerError)
@@ -86,7 +86,7 @@ func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 // @Accept json
 // @Produce json
 // @Param user body model.CreateUserRequest true "CreateUserRequest"
-// @Success 201 {object} model.CreateUserRequest
+// @Success 201 {object} string
 // @Failure 500 {object} string
 // @Router /users [post]
 func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
@@ -123,7 +123,7 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.service.Create(r.Context(), &user); err != nil {
+	if err := h.service.CreateUser(r.Context(), &user); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
@@ -193,7 +193,7 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	u := model.UpdateUserInput(user)
 
 	user.ID = id
-	if err := h.service.Update(r.Context(), &u); err != nil {
+	if err := h.service.UpdateUser(r.Context(), &u); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
@@ -236,7 +236,7 @@ func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 		ID: id,
 	}
 
-	if err := h.service.Delete(r.Context(), &u); err != nil {
+	if err := h.service.DeleteUser(r.Context(), &u); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
@@ -332,7 +332,7 @@ func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 
-	usersResponse, err := h.service.List(r.Context(), params)
+	usersResponse, err := h.service.ListUsers(r.Context(), params)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
