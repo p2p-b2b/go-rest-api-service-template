@@ -345,8 +345,13 @@ func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 		r.URL.Scheme = "https"
 	}
 	serverURL := srvScheme + "://" + r.Host
-	usersResponse.Paginator.Next = serverURL + r.URL.Path + "?next_token=" + usersResponse.Paginator.NextToken + "&limit=" + strconv.Itoa(limit)
-	usersResponse.Paginator.Prev = serverURL + r.URL.Path + "?prev_token=" + usersResponse.Paginator.PrevToken + "&limit=" + strconv.Itoa(limit)
+
+	if usersResponse.Paginator.NextToken != "" {
+		usersResponse.Paginator.Next = serverURL + r.URL.Path + "?next_token=" + usersResponse.Paginator.NextToken + "&limit=" + strconv.Itoa(limit)
+	}
+	if usersResponse.Paginator.PrevToken != "" {
+		usersResponse.Paginator.Prev = serverURL + r.URL.Path + "?prev_token=" + usersResponse.Paginator.PrevToken + "&limit=" + strconv.Itoa(limit)
+	}
 
 	// write the response
 	w.Header().Set("Content-Type", "application/json")

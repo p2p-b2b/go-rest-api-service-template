@@ -226,7 +226,7 @@ func (s *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.Selec
 
 	if len(users) == 0 {
 		return &model.SelectAllUserQueryOutput{
-			Items:     users,
+			Items:     make([]*model.User, 0),
 			Paginator: paginator.Paginator{},
 		}, nil
 	}
