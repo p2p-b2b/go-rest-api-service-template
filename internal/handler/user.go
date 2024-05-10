@@ -340,7 +340,11 @@ func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// inject the parameters and server url to paginator for the next and previous links
-	serverURL := r.URL.Scheme + "://" + r.URL.Host
+	srvScheme := "http"
+	if r.TLS != nil {
+		r.URL.Scheme = "https"
+	}
+	serverURL := srvScheme + "://" + r.Host
 	usersResponse.Paginator.Next = serverURL + r.URL.Path + "?next_token=" + usersResponse.Paginator.NextToken + "&limit=" + strconv.Itoa(limit)
 	usersResponse.Paginator.Prev = serverURL + r.URL.Path + "?prev_token=" + usersResponse.Paginator.PrevToken + "&limit=" + strconv.Itoa(limit)
 
