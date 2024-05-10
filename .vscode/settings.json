@@ -6,6 +6,7 @@
     "healthz",
     "kube",
     "Macbook",
+    "mockgen",
     "mysql",
     "openssl",
     "pgsql",
@@ -16,6 +17,7 @@
     "sslmode",
     "swaggo",
     "unmarshals",
+    "usrs",
     "uuid"
   ]
 }

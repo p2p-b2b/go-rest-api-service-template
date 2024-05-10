@@ -298,7 +298,7 @@ func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 		fields = strings.Split(fieldsFields, ",")
 	}
 
-	slog.Debug("ListUsers", "sort", sort, "filter", filter, "fields", fields, "next_oken", nextToken, "prev_token", prevToken, "limit", limitString)
+	slog.Debug("ListUsers", "sort", sort, "filter", filter, "fields", fields, "next_token", nextToken, "prev_token", prevToken, "limit", limitString)
 
 	// convert the limit to int
 	limit := paginator.DefaultLimit
