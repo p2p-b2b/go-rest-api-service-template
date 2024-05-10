@@ -113,13 +113,13 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "description": "Next cursor",
-                        "name": "next",
+                        "name": "next_token",
                         "in": "query"
                     },
                     {
                         "type": "string",
                         "description": "Previous cursor",
-                        "name": "prev",
+                        "name": "prev_token",
                         "in": "query"
                     },
                     {
@@ -411,11 +411,19 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "next": {
-                    "description": "Next is the cursor token to the next page.",
+                    "description": "Next the URL to the next page.",
                     "type": "string"
                 },
-                "previous": {
+                "next_token": {
+                    "description": "NextToken is the cursor token to the next page.",
+                    "type": "string"
+                },
+                "prev": {
                     "description": "Prev is the cursor token to the previous page.",
+                    "type": "string"
+                },
+                "prev_token": {
+                    "description": "PrevToken is the cursor token to the previous page.",
                     "type": "string"
                 }
             }

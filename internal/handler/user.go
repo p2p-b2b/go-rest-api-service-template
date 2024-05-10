@@ -254,8 +254,8 @@ func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 // @Param filter query string false "Filter field"
 // @Param fields query string false "Fields to return"
 // @Param query query string false "Query string"
-// @Param next query string false "Next cursor"
-// @Param prev query string false "Previous cursor"
+// @Param next_token query string false "Next cursor"
+// @Param prev_token query string false "Previous cursor"
 // @Param limit query int false "Limit"
 // @Success 200 {object} model.ListUserResponse
 // @Failure 500 {object} string
@@ -280,13 +280,13 @@ func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// paginator
-	next := r.URL.Query().Get("next")
-	prev := r.URL.Query().Get("prev")
+	nextToken := r.URL.Query().Get("next_token")
+	prevToken := r.URL.Query().Get("prev_token")
 	limitString := r.URL.Query().Get("limit")
 
 	sort := r.URL.Query().Get("sort")
-	filterFields := r.URL.Query().Get("filter")
 
+	filterFields := r.URL.Query().Get("filter")
 	var filter []string
 	if len(filterFields) != 0 {
 		filter = strings.Split(filterFields, ",")
@@ -298,10 +298,10 @@ func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 		fields = strings.Split(fieldsFields, ",")
 	}
 
-	slog.Debug("ListUsers", "sort", sort, "filter", filter, "fields", fields, "next", next, "previous", prev, "limit", limitString)
+	slog.Debug("ListUsers", "sort", sort, "filter", filter, "fields", fields, "next_oken", nextToken, "prev_token", prevToken, "limit", limitString)
 
 	// convert the limit to int
-	var limit int
+	limit := paginator.DefaultLimit
 	var err error
 	if limitString != "" {
 		limit, err = strconv.Atoi(limitString)
@@ -317,11 +317,8 @@ func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if limit == 0 {
-			limit = 10
+			limit = paginator.DefaultLimit
 		}
-
-	} else {
-		limit = 10
 	}
 
 	params := &model.ListUserRequest{
@@ -329,22 +326,27 @@ func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 		Filter: filter,
 		Fields: fields,
 		Paginator: paginator.Paginator{
-			Next:  next,
-			Prev:  prev,
-			Limit: limit,
+			NextToken: nextToken,
+			PrevToken: prevToken,
+			Limit:     limit,
 		},
 	}
 
-	users, err := h.service.List(r.Context(), params)
+	usersResponse, err := h.service.List(r.Context(), params)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
 
+	// inject the parameters and server url to paginator for the next and previous links
+	serverURL := r.URL.Scheme + "://" + r.URL.Host
+	usersResponse.Paginator.Next = serverURL + r.URL.Path + "?next_token=" + usersResponse.Paginator.NextToken + "&limit=" + strconv.Itoa(limit)
+	usersResponse.Paginator.Prev = serverURL + r.URL.Path + "?prev_token=" + usersResponse.Paginator.PrevToken + "&limit=" + strconv.Itoa(limit)
+
 	// write the response
 	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(users); err != nil {
+	if err := json.NewEncoder(w).Encode(usersResponse); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return

@@ -126,7 +126,7 @@ func (s *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.Selec
 			Sort:   "created_at",
 			Filter: []string{},
 			Paginator: paginator.Paginator{
-				Limit: 10,
+				Limit: paginator.DefaultLimit,
 			},
 		}
 	}
@@ -139,9 +139,19 @@ func (s *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.Selec
 	slog.Debug("SelectAll", "params", params)
 
 	var paginationQuery string
-	if params.Paginator.Next != "" {
+
+	// if both next and prev tokens are provided, use next token
+	if params.Paginator.NextToken != "" && params.Paginator.PrevToken != "" {
+		slog.Warn("SelectAll", "error", "both next and prev tokens are provided, going to use next token")
+
+		// clean the prev token
+		params.Paginator.PrevToken = ""
+	}
+
+	// if next token is provided
+	if params.Paginator.NextToken != "" {
 		// decode the token
-		id, createdAt, err := paginator.DecodeToken(params.Paginator.Next)
+		id, createdAt, err := paginator.DecodeToken(params.Paginator.NextToken)
 		if err != nil {
 			slog.Error("SelectAll", "error", err)
 			return nil, err
@@ -153,9 +163,10 @@ func (s *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.Selec
 		)
 	}
 
-	if params.Paginator.Prev != "" {
+	// if prev token is provided
+	if params.Paginator.PrevToken != "" {
 		// decode the token
-		id, createdAt, err := paginator.DecodeToken(params.Paginator.Prev)
+		id, createdAt, err := paginator.DecodeToken(params.Paginator.PrevToken)
 		if err != nil {
 			slog.Error("SelectAll", "error", err)
 			return nil, err
@@ -167,7 +178,8 @@ func (s *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.Selec
 		)
 	}
 
-	if params.Paginator.Next == "" && params.Paginator.Prev == "" {
+	// if no token is provided, first page
+	if params.Paginator.NextToken == "" && params.Paginator.PrevToken == "" {
 		paginationQuery = fmt.Sprintf(" ORDER BY usrs.created_at DESC LIMIT %d", params.Paginator.Limit)
 	}
 
@@ -181,14 +193,15 @@ func (s *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.Selec
 		paginationQuery,
 	)
 
+	// helper function to pretty print the query
 	prettyPrintQuery := func() string {
 		out := strings.ReplaceAll(query, "   ", "")
 		out = strings.ReplaceAll(out, "\n", "")
 		return out
 	}
-
 	slog.Debug("SelectAll", "query", prettyPrintQuery())
 
+	// execute the query
 	rows, err := s.db.QueryContext(ctx, query)
 	if err != nil {
 		slog.Error("SelectAll", "error", err)
@@ -221,15 +234,15 @@ func (s *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.Selec
 	slog.Debug("SelectAll", "next_id", users[len(users)-1].ID, "next_created_at", users[len(users)-1].CreatedAt)
 	slog.Debug("SelectAll", "prev_id", users[0].ID, "prev_created_at", users[0].CreatedAt)
 
-	next := params.Paginator.GenerateToken(users[len(users)-1].ID, users[len(users)-1].CreatedAt)
-	prev := params.Paginator.GenerateToken(users[0].ID, users[0].CreatedAt)
+	nextToken := params.Paginator.GenerateToken(users[len(users)-1].ID, users[len(users)-1].CreatedAt)
+	prevToken := params.Paginator.GenerateToken(users[0].ID, users[0].CreatedAt)
 
 	ret := &model.SelectAllUserQueryOutput{
 		Items: users,
 		Paginator: paginator.Paginator{
-			Next:  next,
-			Prev:  prev,
-			Limit: params.Paginator.Limit,
+			NextToken: nextToken,
+			PrevToken: prevToken,
+			Limit:     params.Paginator.Limit,
 		},
 	}
 

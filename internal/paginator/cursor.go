@@ -16,6 +16,9 @@ var DataSeparator string = ";"
 // DateFormat is the date format used in the cursor token.
 var DateFormat string = time.RFC3339
 
+// DefaultLimit is the maximum number of elements to return.
+const DefaultLimit int = 10
+
 var (
 	// ErrInvalidCursor is an error that is returned when the cursor token is invalid.
 	ErrInvalidCursor = errors.New("invalid cursor token")
@@ -26,28 +29,32 @@ var (
 
 // Paginator represents a paginator.
 type Paginator struct {
-	// Next is the cursor token to the next page.
+	// NextToken is the cursor token to the next page.
+	NextToken string `json:"next_token,omitempty"`
+
+	// Next the URL to the next page.
 	Next string `json:"next,omitempty"`
 
+	// PrevToken is the cursor token to the previous page.
+	PrevToken string `json:"prev_token,omitempty"`
+
 	// Prev is the cursor token to the previous page.
-	Prev string `json:"previous,omitempty"`
+	Prev string `json:"prev,omitempty"`
 
 	// Limit is the maximum number of elements to return.
 	Limit int `json:"limit,omitempty"`
 }
 
-func NewPaginator(next, prev string, limit int) *Paginator {
-	return &Paginator{
-		Next:  next,
-		Prev:  prev,
-		Limit: limit,
-	}
-}
-
 // String returns the string representation of the paginator.
 func (p *Paginator) String() string {
 	limit := fmt.Sprintf("%d", p.Limit)
-	return "Paginator{Next: " + p.Next + ", Prev: " + p.Prev + ", Limit: " + limit + "}"
+	return fmt.Sprintf("next: %s, next_token: %s, prev: %s, prev_token: %s, limit: %s",
+		p.Next,
+		p.NextToken,
+		p.Prev,
+		p.PrevToken,
+		limit,
+	)
 }
 
 // GenerateToken generates a token for the given id and date.
@@ -61,16 +68,16 @@ func (p *Paginator) Validate() error {
 	}
 
 	// next should be a base64 encoded string
-	if p.Next != "" {
-		_, _, err := DecodeToken(p.Next)
+	if p.NextToken != "" {
+		_, _, err := DecodeToken(p.NextToken)
 		if err != nil {
 			return ErrInvalidCursor
 		}
 	}
 
 	// previous should be a base64 encoded string
-	if p.Prev != "" {
-		_, _, err := DecodeToken(p.Prev)
+	if p.PrevToken != "" {
+		_, _, err := DecodeToken(p.PrevToken)
 		if err != nil {
 			return ErrInvalidCursor
 		}

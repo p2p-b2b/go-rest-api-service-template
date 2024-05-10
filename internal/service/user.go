@@ -139,7 +139,6 @@ func (s *DefaultUserService) List(ctx context.Context, lur *model.ListUserReques
 	}
 
 	users := qryOut.Items
-
 	size := len(users)
 	if size == 0 {
 		return &model.ListUserResponse{
@@ -147,10 +146,6 @@ func (s *DefaultUserService) List(ctx context.Context, lur *model.ListUserReques
 			Paginator: paginator.Paginator{},
 		}, nil
 	}
-
-	lastUser := users[size-1]
-
-	slog.Debug("last user", "id", lastUser.ID, "created_at", lastUser.CreatedAt)
 
 	return &model.ListUserResponse{
 		Items:     users,
