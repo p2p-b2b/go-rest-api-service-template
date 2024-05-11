@@ -66,6 +66,7 @@ func (p *Paginator) GenerateToken(id uuid.UUID, date time.Time) string {
 	return EncodeToken(id, date)
 }
 
+// Validate validates the paginator.
 func (p *Paginator) Validate() error {
 	if p.Limit <= 0 {
 		return ErrMustBeOneOrGreater

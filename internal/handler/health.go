@@ -7,14 +7,17 @@ import (
 	"github.com/p2p-b2b/go-service-template/internal/service"
 )
 
+// HealthUserHandlerConfig represents the configuration used to create a new HealthHandler.
 type HealthUserHandlerConfig struct {
 	Service service.UserService
 }
 
+// HealthHandler represents the handler for the health of the service.
 type HealthHandler struct {
 	service service.UserService
 }
 
+// NewHealthHandler returns a new instance of HealthHandler.
 func NewHealthHandler(conf *HealthUserHandlerConfig) *HealthHandler {
 	return &HealthHandler{
 		service: conf.Service,
