@@ -30,28 +30,28 @@ var (
 // Paginator represents a paginator.
 type Paginator struct {
 	// NextToken is the cursor token to the next page.
-	NextToken string `json:"next_token,omitempty"`
+	NextToken string `json:"next_token"`
 
-	// Next the URL to the next page.
-	Next string `json:"next,omitempty"`
+	// NextPage the URL to the next page.
+	NextPage string `json:"next_page"`
 
 	// PrevToken is the cursor token to the previous page.
-	PrevToken string `json:"prev_token,omitempty"`
+	PrevToken string `json:"prev_token"`
 
-	// Prev is the cursor token to the previous page.
-	Prev string `json:"prev,omitempty"`
+	// PrevPage is the cursor token to the previous page.
+	PrevPage string `json:"prev_page"`
 
 	// Limit is the maximum number of elements to return.
-	Limit int `json:"limit,omitempty"`
+	Limit int `json:"limit"`
 }
 
 // String returns the string representation of the paginator.
 func (p *Paginator) String() string {
 	limit := fmt.Sprintf("%d", p.Limit)
 	return fmt.Sprintf("next: %s, next_token: %s, prev: %s, prev_token: %s, limit: %s",
-		p.Next,
+		p.NextPage,
 		p.NextToken,
-		p.Prev,
+		p.PrevPage,
 		p.PrevToken,
 		limit,
 	)

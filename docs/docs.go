@@ -410,16 +410,16 @@ const docTemplate = `{
                     "description": "Limit is the maximum number of elements to return.",
                     "type": "integer"
                 },
-                "next": {
-                    "description": "Next the URL to the next page.",
+                "next_page": {
+                    "description": "NextPage the URL to the next page.",
                     "type": "string"
                 },
                 "next_token": {
                     "description": "NextToken is the cursor token to the next page.",
                     "type": "string"
                 },
-                "prev": {
-                    "description": "Prev is the cursor token to the previous page.",
+                "prev_page": {
+                    "description": "PrevPage is the cursor token to the previous page.",
                     "type": "string"
                 },
                 "prev_token": {

@@ -1,6 +1,6 @@
 .DELETE_ON_ERROR: clean
 
-EXECUTABLES = go zip shasum
+EXECUTABLES = go zip shasum podman
 K := $(foreach exec,$(EXECUTABLES),\
   $(if $(shell which $(exec)),some string,$(error "No $(exec) in PATH)))
 

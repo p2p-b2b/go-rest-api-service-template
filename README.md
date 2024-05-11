@@ -21,6 +21,7 @@ This is a template for a Go HTTP REST API Service.
 - [How To Do Pagination in Postgres with Golang in 4 Common Ways](https://medium.easyread.co/how-to-do-pagination-in-postgres-with-golang-in-4-common-ways-12365b9fb528)
 - [“Cursor Pagination” Profile](https://jsonapi.org/profiles/ethanresnick/cursor-pagination/)
 - [Cursor-Based Pagination in Go](https://mtekmir.com/blog/golang-cursor-pagination/)
+- [Migrations in YDB using “goose”](https://blog.ydb.tech/migrations-in-ydb-using-goose-58137bc5c303)
 
 ## Swagger Documentation
 
