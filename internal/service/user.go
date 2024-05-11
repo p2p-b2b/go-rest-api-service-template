@@ -152,8 +152,7 @@ func (s *DefaultUserService) ListUsers(ctx context.Context, lur *model.ListUserR
 	}
 
 	users := qryOut.Items
-	size := len(users)
-	if size == 0 {
+	if len(users) == 0 {
 		return &model.ListUserResponse{
 			Items:     users,
 			Paginator: paginator.Paginator{},
