@@ -436,6 +436,10 @@ const docTemplate = `{
                 "prev_token": {
                     "description": "PrevToken is the cursor token to the previous page.",
                     "type": "string"
+                },
+                "size": {
+                    "description": "Size is the number of elements in the current page.",
+                    "type": "integer"
                 }
             }
         }

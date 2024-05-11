@@ -275,17 +275,19 @@ func (s *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.Selec
 		return nil, err
 	}
 
-	if len(users) == 0 {
+	outLen := len(users)
+
+	if outLen == 0 {
 		return &model.SelectAllUserQueryOutput{
 			Items:     make([]*model.User, 0),
 			Paginator: paginator.Paginator{},
 		}, nil
 	}
 
-	slog.Debug("SelectAll", "next_id", users[len(users)-1].ID, "next_created_at", users[len(users)-1].CreatedAt)
+	slog.Debug("SelectAll", "next_id", users[outLen-1].ID, "next_created_at", users[outLen-1].CreatedAt)
 	slog.Debug("SelectAll", "prev_id", users[0].ID, "prev_created_at", users[0].CreatedAt)
 
-	nextToken := params.Paginator.GenerateToken(users[len(users)-1].ID, users[len(users)-1].CreatedAt)
+	nextToken := params.Paginator.GenerateToken(users[outLen-1].ID, users[outLen-1].CreatedAt)
 	prevToken := params.Paginator.GenerateToken(users[0].ID, users[0].CreatedAt)
 
 	ret := &model.SelectAllUserQueryOutput{
@@ -293,6 +295,7 @@ func (s *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.Selec
 		Paginator: paginator.Paginator{
 			NextToken: nextToken,
 			PrevToken: prevToken,
+			Size:      outLen,
 			Limit:     params.Paginator.Limit,
 		},
 	}
