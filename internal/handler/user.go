@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"errors"
 	"io"
 	"log/slog"
 	"net/http"
@@ -80,8 +81,9 @@ func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 }
 
 // CreateUser Create a new user
-// @Summary Create a new user
-// @Description Create a new user
+// @Summary Create a new user, if the id is not provided, it will be generated
+// @Description Create a new user from scratch, you should provide the id, first name, last name and email.
+// @Description If the id is not provided, it will be generated automatically.
 // @Tags users
 // @Accept json
 // @Produce json
@@ -95,6 +97,7 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		slog.Error("CreateUser", "error", errors.New("method not allowed"))
 		return
 	}
 
@@ -102,18 +105,21 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		slog.Error("CreateUser", "error", err)
 		return
 	}
 
 	if user.FirstName == "" {
 		w.WriteHeader(http.StatusBadRequest)
 		http.Error(w, "First name is required", http.StatusBadRequest)
+		slog.Error("CreateUser", "error", errors.New("first name is required"))
 		return
 	}
 
 	if user.LastName == "" {
 		w.WriteHeader(http.StatusBadRequest)
 		http.Error(w, "Last name is required", http.StatusBadRequest)
+		slog.Error("CreateUser", "error", errors.New("last name is required"))
 		return
 	}
 
@@ -126,6 +132,7 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	if err := h.service.CreateUser(r.Context(), &user); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		slog.Error("CreateUser", "error", err)
 		return
 	}
 

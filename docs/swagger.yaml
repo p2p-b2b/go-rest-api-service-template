@@ -196,7 +196,9 @@ paths:
     post:
       consumes:
       - application/json
-      description: Create a new user
+      description: |-
+        Create a new user from scratch, you should provide the id, first name, last name and email.
+        If the id is not provided, it will be generated automatically.
       parameters:
       - description: CreateUserRequest
         in: body
@@ -215,7 +217,7 @@ paths:
           description: Internal Server Error
           schema:
             type: string
-      summary: Create a new user
+      summary: Create a new user, if the id is not provided, it will be generated
       tags:
       - users
   /users/{id}:

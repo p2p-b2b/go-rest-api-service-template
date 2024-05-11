@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"runtime"
 
@@ -103,11 +104,23 @@ func (s *DefaultUserService) GetUserByID(ctx context.Context, id uuid.UUID) (*mo
 
 // CreateUser inserts a new user into the database.
 func (s *DefaultUserService) CreateUser(ctx context.Context, user *model.CreateUserRequest) error {
-	return s.repository.Insert(ctx, &model.User{
+	if user == nil {
+		return errors.New("user is nil")
+	}
+
+	// if user.ID is nil, generate a new UUID
+	if user.ID == uuid.Nil {
+		user.ID = uuid.New()
+	}
+
+	newUser := &model.User{
+		ID:        user.ID,
 		FirstName: user.FirstName,
 		LastName:  user.LastName,
 		Email:     user.Email,
-	})
+	}
+
+	return s.repository.Insert(ctx, newUser)
 }
 
 // UpdateUser updates the user with the specified ID.

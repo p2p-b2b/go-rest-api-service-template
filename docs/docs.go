@@ -145,7 +145,7 @@ const docTemplate = `{
                 }
             },
             "post": {
-                "description": "Create a new user",
+                "description": "Create a new user from scratch, you should provide the id, first name, last name and email.\nIf the id is not provided, it will be generated automatically.",
                 "consumes": [
                     "application/json"
                 ],
@@ -155,7 +155,7 @@ const docTemplate = `{
                 "tags": [
                     "users"
                 ],
-                "summary": "Create a new user",
+                "summary": "Create a new user, if the id is not provided, it will be generated",
                 "parameters": [
                     {
                         "description": "CreateUserRequest",

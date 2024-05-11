@@ -69,9 +69,12 @@ func (s *PGSQLUserRepository) Insert(ctx context.Context, user *model.User) erro
 	ctx, cancel := context.WithTimeout(ctx, s.MaxQueryTimeout)
 	defer cancel()
 
-	const query = "INSERT INTO users (first_name, last_name, email) VALUES ($2, $3, $4)"
+	const query = "INSERT INTO users (id, first_name, last_name, email) VALUES ($1, $2, $3, $4)"
 
-	_, err := s.db.ExecContext(ctx, query, user.FirstName, user.LastName, user.Email)
+	_, err := s.db.ExecContext(ctx, query, user.ID, user.FirstName, user.LastName, user.Email)
+	if err != nil {
+		slog.Error("Insert", "error", err)
+	}
 
 	return err
 }
