@@ -193,9 +193,7 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	u := model.User(user)
-
-	if err := h.service.UpdateUser(r.Context(), &u); err != nil {
+	if err := h.service.UpdateUser(r.Context(), &user); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		slog.Error("UpdateUser", "error", err)
