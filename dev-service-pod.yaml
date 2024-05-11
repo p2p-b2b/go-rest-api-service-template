@@ -38,11 +38,11 @@ spec:
         - containerPort: 5432
           hostPort: 5432
       volumeMounts:
-        - name: go-service-template-db-volume-host
+        - name: go-rest-api-service-template-db-volume-host
           mountPath: /var/lib/postgresq/data
 
   volumes:
-    - name: go-service-template-db-volume-host
+    - name: go-rest-api-service-template-db-volume-host
       hostPath:
-        path: /tmp/go-service-template-db-volume-host
+        path: /tmp/go-rest-api-service-template-db-volume-host
         type: Directory

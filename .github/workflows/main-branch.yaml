@@ -6,7 +6,7 @@ on:
       - main
 
 env:
-  MAKE_STOP_ON_ERRORS: true # Stop on errors when running make
+  MAKE_STOP_ON_ERRORS: "true" # Stop on errors when running make
 
 jobs:
   build:
@@ -51,6 +51,11 @@ jobs:
           go_version=$(go version | awk '{print $3}')
           echo "Go version: $go_version"
           echo "**Go Version:** $go_version" >> $GITHUB_STEP_SUMMARY
+
+      - name: make install-swag
+        run: |
+          echo "## Make install-swag" >> $GITHUB_STEP_SUMMARY
+          make install-swag 2>&1 | tee -a $GITHUB_STEP_SUMMARY
 
       - name: Make tests
         run: |

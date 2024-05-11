@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/p2p-b2b/go-service-template/internal/service"
+	"github.com/p2p-b2b/go-rest-api-service-template/internal/service"
 )
 
 // HealthUserHandlerConfig represents the configuration used to create a new HealthHandler.

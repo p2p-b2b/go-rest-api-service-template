@@ -9,8 +9,8 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"
-	"github.com/p2p-b2b/go-service-template/internal/model"
-	mocksService "github.com/p2p-b2b/go-service-template/mocks/service"
+	"github.com/p2p-b2b/go-rest-api-service-template/internal/model"
+	mocksService "github.com/p2p-b2b/go-rest-api-service-template/mocks/service"
 )
 
 func TestUser_GetUserByID(t *testing.T) {

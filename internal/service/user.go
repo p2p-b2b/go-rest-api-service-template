@@ -7,9 +7,9 @@ import (
 	"runtime"
 
 	"github.com/google/uuid"
-	"github.com/p2p-b2b/go-service-template/internal/model"
-	"github.com/p2p-b2b/go-service-template/internal/paginator"
-	"github.com/p2p-b2b/go-service-template/internal/repository"
+	"github.com/p2p-b2b/go-rest-api-service-template/internal/model"
+	"github.com/p2p-b2b/go-rest-api-service-template/internal/paginator"
+	"github.com/p2p-b2b/go-rest-api-service-template/internal/repository"
 )
 
 // this is a mockgen command to generate a mock for UserService
