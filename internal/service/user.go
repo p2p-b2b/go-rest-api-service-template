@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"runtime"
 
@@ -26,10 +27,10 @@ type UserService interface {
 	CreateUser(ctx context.Context, user *model.CreateUserRequest) error
 
 	// UpdateUser updates the user with the specified ID.
-	UpdateUser(ctx context.Context, user *model.UpdateUserInput) error
+	UpdateUser(ctx context.Context, user *model.User) error
 
 	// DeleteUser deletes the user with the specified ID.
-	DeleteUser(ctx context.Context, user *model.DeleteUserInput) error
+	DeleteUser(ctx context.Context, id uuid.UUID) error
 
 	// ListUsers returns a list of users.
 	ListUsers(ctx context.Context, params *model.ListUserRequest) (*model.ListUserResponse, error)
@@ -103,21 +104,33 @@ func (s *DefaultUserService) GetUserByID(ctx context.Context, id uuid.UUID) (*mo
 
 // CreateUser inserts a new user into the database.
 func (s *DefaultUserService) CreateUser(ctx context.Context, user *model.CreateUserRequest) error {
-	return s.repository.Insert(ctx, &model.User{
+	if user == nil {
+		return errors.New("user is nil")
+	}
+
+	// if user.ID is nil, generate a new UUID
+	if user.ID == uuid.Nil {
+		user.ID = uuid.New()
+	}
+
+	newUser := &model.User{
+		ID:        user.ID,
 		FirstName: user.FirstName,
 		LastName:  user.LastName,
 		Email:     user.Email,
-	})
+	}
+
+	return s.repository.Insert(ctx, newUser)
 }
 
 // UpdateUser updates the user with the specified ID.
-func (s *DefaultUserService) UpdateUser(ctx context.Context, user *model.UpdateUserInput) error {
-	return s.repository.Update(ctx, (*model.User)(user))
+func (s *DefaultUserService) UpdateUser(ctx context.Context, user *model.User) error {
+	return s.repository.Update(ctx, user)
 }
 
 // DeleteUser deletes the user with the specified ID.
-func (s *DefaultUserService) DeleteUser(ctx context.Context, user *model.DeleteUserInput) error {
-	return s.repository.Delete(ctx, user.ID)
+func (s *DefaultUserService) DeleteUser(ctx context.Context, id uuid.UUID) error {
+	return s.repository.Delete(ctx, id)
 }
 
 // ListUsers returns a list of users.
@@ -139,8 +152,7 @@ func (s *DefaultUserService) ListUsers(ctx context.Context, lur *model.ListUserR
 	}
 
 	users := qryOut.Items
-	size := len(users)
-	if size == 0 {
+	if len(users) == 0 {
 		return &model.ListUserResponse{
 			Items:     users,
 			Paginator: paginator.Paginator{},

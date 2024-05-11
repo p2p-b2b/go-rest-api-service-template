@@ -69,9 +69,12 @@ func (s *PGSQLUserRepository) Insert(ctx context.Context, user *model.User) erro
 	ctx, cancel := context.WithTimeout(ctx, s.MaxQueryTimeout)
 	defer cancel()
 
-	const query = "INSERT INTO users (first_name, last_name, email) VALUES ($2, $3, $4)"
+	const query = "INSERT INTO users (id, first_name, last_name, email) VALUES ($1, $2, $3, $4)"
 
-	_, err := s.db.ExecContext(ctx, query, user.FirstName, user.LastName, user.Email)
+	_, err := s.db.ExecContext(ctx, query, user.ID, user.FirstName, user.LastName, user.Email)
+	if err != nil {
+		slog.Error("Insert", "error", err)
+	}
 
 	return err
 }
@@ -81,9 +84,35 @@ func (s *PGSQLUserRepository) Update(ctx context.Context, user *model.User) erro
 	ctx, cancel := context.WithTimeout(ctx, s.MaxQueryTimeout)
 	defer cancel()
 
-	const query = `UPDATE users SET first_name = $1, last_name = $2, email = $3 WHERE id = $4`
+	var queryFields []string
 
-	_, err := s.db.ExecContext(ctx, query, user.FirstName, user.LastName, user.Email, user.ID)
+	if user.FirstName != "" {
+		queryFields = append(queryFields, fmt.Sprintf("first_name = '%s'", user.FirstName))
+	}
+
+	if user.LastName != "" {
+		queryFields = append(queryFields, fmt.Sprintf("last_name = '%s'", user.LastName))
+	}
+
+	if user.Email != "" {
+		queryFields = append(queryFields, fmt.Sprintf("email = '%s'", user.Email))
+	}
+
+	if len(queryFields) == 0 {
+		slog.Warn("Update", "error", "no fields to update")
+		return nil
+	}
+
+	fields := strings.Join(queryFields, ", ")
+
+	query := fmt.Sprintf(`UPDATE users SET %s WHERE id = '%s'`,
+		fields,
+		user.ID,
+	)
+
+	slog.Debug("Update", "query", query)
+
+	_, err := s.db.ExecContext(ctx, query)
 	return err
 }
 
@@ -92,9 +121,11 @@ func (s *PGSQLUserRepository) Delete(ctx context.Context, id uuid.UUID) error {
 	ctx, cancel := context.WithTimeout(ctx, s.MaxQueryTimeout)
 	defer cancel()
 
-	const query = `DELETE FROM users WHERE id = $1`
+	query := fmt.Sprintf(`DELETE FROM users WHERE id = '%s'`, id)
 
-	_, err := s.db.ExecContext(ctx, query, id)
+	slog.Debug("Delete", "query", query)
+
+	_, err := s.db.ExecContext(ctx, query)
 	return err
 }
 
@@ -103,9 +134,11 @@ func (s *PGSQLUserRepository) SelectByID(ctx context.Context, id uuid.UUID) (*mo
 	ctx, cancel := context.WithTimeout(ctx, s.MaxQueryTimeout)
 	defer cancel()
 
-	const query = `SELECT id, first_name, last_name, email FROM users WHERE id = $1`
+	query := fmt.Sprintf(`SELECT id, first_name, last_name, email FROM users WHERE id = '%s'`, id)
 
-	row := s.db.QueryRowContext(ctx, query, id)
+	slog.Debug("SelectByID", "query", query)
+
+	row := s.db.QueryRowContext(ctx, query)
 
 	var u model.User
 	if err := row.Scan(&u.ID, &u.FirstName, &u.LastName, &u.Email); err != nil {
@@ -242,17 +275,19 @@ func (s *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.Selec
 		return nil, err
 	}
 
-	if len(users) == 0 {
+	outLen := len(users)
+
+	if outLen == 0 {
 		return &model.SelectAllUserQueryOutput{
 			Items:     make([]*model.User, 0),
 			Paginator: paginator.Paginator{},
 		}, nil
 	}
 
-	slog.Debug("SelectAll", "next_id", users[len(users)-1].ID, "next_created_at", users[len(users)-1].CreatedAt)
+	slog.Debug("SelectAll", "next_id", users[outLen-1].ID, "next_created_at", users[outLen-1].CreatedAt)
 	slog.Debug("SelectAll", "prev_id", users[0].ID, "prev_created_at", users[0].CreatedAt)
 
-	nextToken := params.Paginator.GenerateToken(users[len(users)-1].ID, users[len(users)-1].CreatedAt)
+	nextToken := params.Paginator.GenerateToken(users[outLen-1].ID, users[outLen-1].CreatedAt)
 	prevToken := params.Paginator.GenerateToken(users[0].ID, users[0].CreatedAt)
 
 	ret := &model.SelectAllUserQueryOutput{
@@ -260,6 +295,7 @@ func (s *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.Selec
 		Paginator: paginator.Paginator{
 			NextToken: nextToken,
 			PrevToken: prevToken,
+			Size:      outLen,
 			Limit:     params.Paginator.Limit,
 		},
 	}

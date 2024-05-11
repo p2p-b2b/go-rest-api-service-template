@@ -41,6 +41,9 @@ type Paginator struct {
 	// PrevPage is the cursor token to the previous page.
 	PrevPage string `json:"prev_page"`
 
+	// Size is the number of elements in the current page.
+	Size int `json:"size"`
+
 	// Limit is the maximum number of elements to return.
 	Limit int `json:"limit"`
 }
@@ -48,11 +51,12 @@ type Paginator struct {
 // String returns the string representation of the paginator.
 func (p *Paginator) String() string {
 	limit := fmt.Sprintf("%d", p.Limit)
-	return fmt.Sprintf("next: %s, next_token: %s, prev: %s, prev_token: %s, limit: %s",
+	return fmt.Sprintf("next: %s, next_token: %s, prev: %s, prev_token: %s, size: %d, limit: %s",
 		p.NextPage,
 		p.NextToken,
 		p.PrevPage,
 		p.PrevToken,
+		p.Size,
 		limit,
 	)
 }
@@ -62,6 +66,7 @@ func (p *Paginator) GenerateToken(id uuid.UUID, date time.Time) string {
 	return EncodeToken(id, date)
 }
 
+// Validate validates the paginator.
 func (p *Paginator) Validate() error {
 	if p.Limit <= 0 {
 		return ErrMustBeOneOrGreater

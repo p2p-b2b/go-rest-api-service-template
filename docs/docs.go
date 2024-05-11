@@ -145,7 +145,7 @@ const docTemplate = `{
                 }
             },
             "post": {
-                "description": "Create a new user",
+                "description": "Create a new user from scratch, you should provide the id, first name, last name and email.\nIf the id is not provided, it will be generated automatically.",
                 "consumes": [
                     "application/json"
                 ],
@@ -155,7 +155,7 @@ const docTemplate = `{
                 "tags": [
                     "users"
                 ],
-                "summary": "Create a new user",
+                "summary": "Create a new user, if the id is not provided, it will be generated",
                 "parameters": [
                     {
                         "description": "CreateUserRequest",
@@ -200,12 +200,6 @@ const docTemplate = `{
                         "name": "id",
                         "in": "path",
                         "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Query string",
-                        "name": "query",
-                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -249,7 +243,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/model.User"
+                            "$ref": "#/definitions/model.UpdateUserRequest"
                         }
                     }
                 ],
@@ -374,6 +368,23 @@ const docTemplate = `{
                 }
             }
         },
+        "model.UpdateUserRequest": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "description": "Email is the email address of the user.",
+                    "type": "string"
+                },
+                "first_name": {
+                    "description": "FirstName is the first name of the user.",
+                    "type": "string"
+                },
+                "last_name": {
+                    "description": "LastName is the last name of the user.",
+                    "type": "string"
+                }
+            }
+        },
         "model.User": {
             "type": "object",
             "properties": {
@@ -425,6 +436,10 @@ const docTemplate = `{
                 "prev_token": {
                     "description": "PrevToken is the cursor token to the previous page.",
                     "type": "string"
+                },
+                "size": {
+                    "description": "Size is the number of elements in the current page.",
+                    "type": "integer"
                 }
             }
         }

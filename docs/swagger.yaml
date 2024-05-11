@@ -55,6 +55,18 @@ definitions:
         - $ref: '#/definitions/paginator.Paginator'
         description: Paginator is the paginator for the list of users.
     type: object
+  model.UpdateUserRequest:
+    properties:
+      email:
+        description: Email is the email address of the user.
+        type: string
+      first_name:
+        description: FirstName is the first name of the user.
+        type: string
+      last_name:
+        description: LastName is the last name of the user.
+        type: string
+    type: object
   model.User:
     properties:
       created_at:
@@ -93,6 +105,9 @@ definitions:
       prev_token:
         description: PrevToken is the cursor token to the previous page.
         type: string
+      size:
+        description: Size is the number of elements in the current page.
+        type: integer
     type: object
 host: localhost:8080
 info:
@@ -196,7 +211,9 @@ paths:
     post:
       consumes:
       - application/json
-      description: Create a new user
+      description: |-
+        Create a new user from scratch, you should provide the id, first name, last name and email.
+        If the id is not provided, it will be generated automatically.
       parameters:
       - description: CreateUserRequest
         in: body
@@ -215,7 +232,7 @@ paths:
           description: Internal Server Error
           schema:
             type: string
-      summary: Create a new user
+      summary: Create a new user, if the id is not provided, it will be generated
       tags:
       - users
   /users/{id}:
@@ -244,10 +261,6 @@ paths:
         in: path
         name: id
         required: true
-        type: string
-      - description: Query string
-        in: query
-        name: query
         type: string
       produces:
       - application/json
@@ -278,7 +291,7 @@ paths:
         name: user
         required: true
         schema:
-          $ref: '#/definitions/model.User'
+          $ref: '#/definitions/model.UpdateUserRequest'
       produces:
       - application/json
       responses:

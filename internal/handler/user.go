@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"errors"
 	"io"
 	"log/slog"
 	"net/http"
@@ -14,14 +15,17 @@ import (
 	"github.com/p2p-b2b/go-service-template/internal/service"
 )
 
+// UserHandlerConfig represents the configuration for the UserHandler.
 type UserHandlerConfig struct {
 	Service service.UserService
 }
 
+// UserHandler represents the handler for the user.
 type UserHandler struct {
 	service service.UserService
 }
 
+// NewUserHandler creates a new UserHandler.
 func NewUserHandler(conf *UserHandlerConfig) *UserHandler {
 	return &UserHandler{
 		service: conf.Service,
@@ -34,7 +38,6 @@ func NewUserHandler(conf *UserHandlerConfig) *UserHandler {
 // @Tags users
 // @Produce json
 // @Param id path string true "User ID"
-// @Param query query string false "Query string"
 // @Success 200 {object} model.User
 // @Failure 500 {object} string
 // @Router /users/{id} [get]
@@ -44,6 +47,7 @@ func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		slog.Error("GetByID", "error", errors.New("method not allowed"))
 		return
 	}
 
@@ -51,6 +55,7 @@ func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	if idString == "" {
 		w.WriteHeader(http.StatusBadRequest)
 		http.Error(w, ErrIDRequired.Error(), http.StatusBadRequest)
+		slog.Error("GetByID", "error", errors.New("ID is required"))
 		return
 	}
 
@@ -59,6 +64,7 @@ func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		http.Error(w, ErrInvalidID.Error(), http.StatusBadRequest)
+		slog.Error("GetByID", "error", err)
 		return
 	}
 
@@ -66,6 +72,7 @@ func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		http.Error(w, ErrInternalServer.Error(), http.StatusInternalServerError)
+		slog.Error("GetByID", "error", err)
 		return
 	}
 
@@ -73,6 +80,7 @@ func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewEncoder(w).Encode(user); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		http.Error(w, ErrInternalServer.Error(), http.StatusInternalServerError)
+		slog.Error("GetByID", "error", err)
 		return
 	}
 
@@ -80,8 +88,9 @@ func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 }
 
 // CreateUser Create a new user
-// @Summary Create a new user
-// @Description Create a new user
+// @Summary Create a new user, if the id is not provided, it will be generated
+// @Description Create a new user from scratch, you should provide the id, first name, last name and email.
+// @Description If the id is not provided, it will be generated automatically.
 // @Tags users
 // @Accept json
 // @Produce json
@@ -95,6 +104,7 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		slog.Error("CreateUser", "error", errors.New("method not allowed"))
 		return
 	}
 
@@ -102,18 +112,21 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		slog.Error("CreateUser", "error", err)
 		return
 	}
 
 	if user.FirstName == "" {
 		w.WriteHeader(http.StatusBadRequest)
 		http.Error(w, "First name is required", http.StatusBadRequest)
+		slog.Error("CreateUser", "error", errors.New("first name is required"))
 		return
 	}
 
 	if user.LastName == "" {
 		w.WriteHeader(http.StatusBadRequest)
 		http.Error(w, "Last name is required", http.StatusBadRequest)
+		slog.Error("CreateUser", "error", errors.New("last name is required"))
 		return
 	}
 
@@ -126,6 +139,7 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	if err := h.service.CreateUser(r.Context(), &user); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		slog.Error("CreateUser", "error", err)
 		return
 	}
 
@@ -139,7 +153,7 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 // @Accept json
 // @Produce json
 // @Param id path string true "User ID"
-// @Param user body model.User true "User"
+// @Param user body model.UpdateUserRequest true "User"
 // @Success 200
 // @Failure 500 {object} string
 // @Router /users/{id} [put]
@@ -154,6 +168,7 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	if idParam == "" {
 		w.WriteHeader(http.StatusBadRequest)
 		http.Error(w, "ID is required", http.StatusBadRequest)
+		slog.Error("UpdateUser", "error", errors.New("ID is required"))
 		return
 	}
 
@@ -162,6 +177,7 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		http.Error(w, "Invalid ID", http.StatusBadRequest)
+		slog.Error("UpdateUser", "error", err)
 		return
 	}
 
@@ -169,33 +185,25 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		slog.Error("UpdateUser", "error", err)
 		return
 	}
 
-	if user.FirstName == "" {
-		w.WriteHeader(http.StatusBadRequest)
-		http.Error(w, "First name is required", http.StatusBadRequest)
-		return
-	}
-
-	if user.LastName == "" {
-		w.WriteHeader(http.StatusBadRequest)
-		http.Error(w, "Last name is required", http.StatusBadRequest)
-		return
-	}
-
-	if user.Email == "" {
-		w.WriteHeader(http.StatusBadRequest)
-		http.Error(w, "Age must be greater than or equal to 0", http.StatusBadRequest)
-		return
-	}
-
-	u := model.UpdateUserInput(user)
-
+	// set the user ID
 	user.ID = id
-	if err := h.service.UpdateUser(r.Context(), &u); err != nil {
+
+	// at least one field must be updated
+	if user.FirstName == "" && user.LastName == "" && user.Email == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		http.Error(w, "At least one field must be updated", http.StatusBadRequest)
+		slog.Error("UpdateUser", "error", errors.New("at least one field must be updated"))
+		return
+	}
+
+	if err := h.service.UpdateUser(r.Context(), &user); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		slog.Error("UpdateUser", "error", err)
 		return
 	}
 
@@ -232,11 +240,7 @@ func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	u := model.DeleteUserInput{
-		ID: id,
-	}
-
-	if err := h.service.DeleteUser(r.Context(), &u); err != nil {
+	if err := h.service.DeleteUser(r.Context(), id); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return

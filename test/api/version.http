@@ -11,17 +11,30 @@ GET http://{{host}}/version
 
 ###
 
-# Create a new user
+# Create a new user without ID (uuid)
 POST http://{{host}}/users HTTP/1.1
 Content-Type: application/json
 
 {
-  "email": "christian.gonzalez@gmail.com",
-  "first_name": "Christian",
-  "last_name": "Gonzalez"
+  "email": "franz.stigler@tv.com",
+  "first_name": "Franz",
+  "last_name": "Stigler"
 }
 
 ###
 
-# Get all users
-GET http://{{host}}/users
+# Create a new user providing an ID
+POST http://{{host}}/users HTTP/1.1
+Content-Type: application/json
+
+{
+  "id": "0dc9a3fb-4cd8-40a6-b20a-8c865d96b936",
+  "email": "charlie.brown@tv.com",
+  "first_name": "Charlie",
+  "last_name": "Brown"
+}
+
+###
+
+# Get all users paginated
+GET http://{{host}}/users?limit=3

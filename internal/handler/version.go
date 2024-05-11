@@ -7,12 +7,15 @@ import (
 	"github.com/p2p-b2b/go-service-template/internal/version"
 )
 
+// VersionHandler represents the handler for the version of the service.
 type VersionHandler struct{}
 
+// NewVersionHandler returns a new instance of VersionHandler.
 func NewVersionHandler() *VersionHandler {
 	return &VersionHandler{}
 }
 
+// Get returns the version of the service
 func (h *VersionHandler) Get(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		w.WriteHeader(http.StatusMethodNotAllowed)
