@@ -17,6 +17,9 @@ const (
 
 	// DefaultServerTLSEnabled is the default value for enabling TLS
 	DefaultServerTLSEnabled = false
+
+	// DefaultServerPprofEnabled is the default value for enabling pprof
+	DefaultServerPprofEnabled = false
 )
 
 var (
@@ -37,6 +40,7 @@ type ServerConfig struct {
 	PrivateKeyFile  Field[FileVar]
 	CertificateFile Field[FileVar]
 	TLSEnabled      Field[bool]
+	PprofEnabled    Field[bool]
 }
 
 // NewServerConfig creates a new server configuration
@@ -48,6 +52,7 @@ func NewServerConfig() *ServerConfig {
 		PrivateKeyFile:  NewField("server.private.key.file", "SERVER_PRIVATE_KEY_FILE", "Server Private Key File", DefaultServerPrivateKeyFile),
 		CertificateFile: NewField("server.certificate.file", "SERVER_CERTIFICATE_FILE", "Server Certificate File", DefaultServerCertificateFile),
 		TLSEnabled:      NewField("server.tls.enabled", "SERVER_TLS_ENABLED", "Enable TLS", DefaultServerTLSEnabled),
+		PprofEnabled:    NewField("server.pprof.enabled", "SERVER_PPROF_ENABLED", "Enable pprof", DefaultServerPprofEnabled),
 	}
 }
 
@@ -60,4 +65,5 @@ func (c *ServerConfig) ParseEnvVars() {
 	c.PrivateKeyFile.Value = GetEnv(c.PrivateKeyFile.EnVarName, c.PrivateKeyFile.Value)
 	c.CertificateFile.Value = GetEnv(c.CertificateFile.EnVarName, c.CertificateFile.Value)
 	c.TLSEnabled.Value = GetEnv(c.TLSEnabled.EnVarName, c.TLSEnabled.Value)
+	c.PprofEnabled.Value = GetEnv(c.PprofEnabled.EnVarName, c.PprofEnabled.Value)
 }
