@@ -1,11 +1,22 @@
 package model
 
 import (
+	"errors"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/p2p-b2b/go-service-template/internal/paginator"
 )
 
+var (
+	// ErrSortFieldTooLong is an error that is returned when the sort field is too long.
+	ErrSortFieldTooLong = errors.New("sort field is too long")
+
+	// ErrInvalidID is an error that is returned when the ID is not a valid UUID.
+	ErrInvalidID = errors.New("invalid ID")
+)
+
+// User represents a user.
 type User struct {
 	// ID is the unique identifier of the user.
 	ID uuid.UUID `json:"id"`
@@ -26,7 +37,11 @@ type User struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
-type CreateUserInput struct {
+// CreateUserRequest represents the input for the CreateUser method.
+type CreateUserRequest struct {
+	// ID is the unique identifier of the user.
+	ID uuid.UUID `json:"id"`
+
 	// FirstName is the first name of the user.
 	FirstName string `json:"first_name"`
 
@@ -37,22 +52,73 @@ type CreateUserInput struct {
 	Email string `json:"email"`
 }
 
+// CreateUserResponse represents the output for the CreateUser method.
+type CreateUserResponse User
+
+// UpdateUserInput represents the input for the UpdateUser method.
 type UpdateUserInput User
 
+// DeleteUserInput represents the input for the DeleteUser method.
 type DeleteUserInput User
 
-type ListUserOutput struct {
-	// Data is a list of users.
-	Data []*User `json:"data"`
+// ListUserRequest represents the input for the ListUser method.
+type ListUserRequest struct {
+	// Sort is the field to sort by.
+	Sort string `json:"sort,omitempty"`
 
-	// TotalCount is the total number of users.
-	TotalCount int `json:"total_count"`
+	// Filter is the field to filter by.
+	Filter []string `json:"filter,omitempty"`
 
-	// Page is the current page.
-	Page int `json:"page"`
+	// Fields is the fields to return.
+	Fields []string `json:"fields,omitempty"`
 
-	// PageSize is the number of users per page.
-	PageSize int `json:"page_size"`
+	// Paginator is the paginator for the list of users.
+	Paginator paginator.Paginator `json:"paginator,omitempty"`
+}
 
-	TotalPages int `json:"total_pages"`
+func (l *ListUserRequest) Validate() error {
+	if len(l.Sort) > 32 {
+		return ErrSortFieldTooLong
+	}
+
+	if len(l.Fields) > 0 && len(l.Fields) < 15 {
+		for _, field := range l.Fields {
+			if field != "id" && field != "first_name" && field != "last_name" && field != "email" && field != "created_at" && field != "updated_at" {
+				return errors.New("invalid field")
+			}
+		}
+	}
+
+	return nil
+}
+
+// ListUserResponse represents a list of users.
+type ListUserResponse struct {
+	// Items is a list of users.
+	Items []*User `json:"data"`
+
+	// Paginator is the paginator for the list of users.
+	Paginator paginator.Paginator `json:"paginator,omitempty"`
+}
+
+type SelectAllUserQueryInput struct {
+	// Sort is the field to sort by.
+	Sort string `json:"sort,omitempty"`
+
+	// Filter is the field to filter by.
+	Filter []string `json:"filter,omitempty"`
+
+	// Fields is the fields to return.
+	Fields []string `json:"fields,omitempty"`
+
+	// Paginator is the paginator for the list of users.
+	Paginator paginator.Paginator `json:"paginator,omitempty"`
+}
+
+type SelectAllUserQueryOutput struct {
+	// Items is a list of users.
+	Items []*User `json:"data"`
+
+	// Paginator is the paginator for the list of users.
+	Paginator paginator.Paginator `json:"paginator,omitempty"`
 }

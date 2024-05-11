@@ -2,10 +2,15 @@ package handler
 
 import (
 	"encoding/json"
+	"io"
+	"log/slog"
 	"net/http"
+	"strconv"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/p2p-b2b/go-service-template/internal/model"
+	"github.com/p2p-b2b/go-service-template/internal/paginator"
 	"github.com/p2p-b2b/go-service-template/internal/service"
 )
 
@@ -29,6 +34,7 @@ func NewUserHandler(conf *UserHandlerConfig) *UserHandler {
 // @Tags users
 // @Produce json
 // @Param id path string true "User ID"
+// @Param query query string false "Query string"
 // @Success 200 {object} model.User
 // @Failure 500 {object} string
 // @Router /users/{id} [get]
@@ -56,7 +62,7 @@ func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := h.service.GetByID(r.Context(), id)
+	user, err := h.service.GetUserByID(r.Context(), id)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		http.Error(w, ErrInternalServer.Error(), http.StatusInternalServerError)
@@ -79,8 +85,8 @@ func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 // @Tags users
 // @Accept json
 // @Produce json
-// @Param user body model.CreateUserInput true "CreateUserInput"
-// @Success 201 {object} model.CreateUserInput
+// @Param user body model.CreateUserRequest true "CreateUserRequest"
+// @Success 201 {object} string
 // @Failure 500 {object} string
 // @Router /users [post]
 func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
@@ -92,7 +98,7 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var user model.CreateUserInput
+	var user model.CreateUserRequest
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
@@ -117,7 +123,7 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.service.Create(r.Context(), &user); err != nil {
+	if err := h.service.CreateUser(r.Context(), &user); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
@@ -187,7 +193,7 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	u := model.UpdateUserInput(user)
 
 	user.ID = id
-	if err := h.service.Update(r.Context(), &u); err != nil {
+	if err := h.service.UpdateUser(r.Context(), &u); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
@@ -230,7 +236,7 @@ func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 		ID: id,
 	}
 
-	if err := h.service.Delete(r.Context(), &u); err != nil {
+	if err := h.service.DeleteUser(r.Context(), &u); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
@@ -239,16 +245,33 @@ func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-// ListUsers List all users
+// ListUsers Return a paginated list of users
 // @Summary List all users
 // @Description List all users
 // @Tags users
 // @Produce json
-// @Success 200 {object} model.ListUserOutput
+// @Param sort query string false "Sort field"
+// @Param filter query string false "Filter field"
+// @Param fields query string false "Fields to return"
+// @Param query query string false "Query string"
+// @Param next_token query string false "Next cursor"
+// @Param prev_token query string false "Previous cursor"
+// @Param limit query int false "Limit"
+// @Success 200 {object} model.ListUserResponse
 // @Failure 500 {object} string
 // @Router /users [get]
 func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
+	var req model.ListUserRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		// if err is distinct from EOF
+		if err != io.EOF {
+			w.WriteHeader(http.StatusBadRequest)
+			http.Error(w, "Invalid request body", http.StatusBadRequest)
+			slog.Error("ListUsers", "error", err)
+			return
+		}
+	}
+	defer r.Body.Close()
 
 	if r.Method != http.MethodGet {
 		w.WriteHeader(http.StatusMethodNotAllowed)
@@ -256,15 +279,83 @@ func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	users, err := h.service.List(r.Context())
+	// paginator
+	nextToken := r.URL.Query().Get("next_token")
+	prevToken := r.URL.Query().Get("prev_token")
+	limitString := r.URL.Query().Get("limit")
+
+	sort := r.URL.Query().Get("sort")
+
+	filterFields := r.URL.Query().Get("filter")
+	var filter []string
+	if len(filterFields) != 0 {
+		filter = strings.Split(filterFields, ",")
+	}
+
+	fieldsFields := r.URL.Query().Get("fields")
+	var fields []string
+	if len(fieldsFields) != 0 {
+		fields = strings.Split(fieldsFields, ",")
+	}
+
+	slog.Debug("ListUsers", "sort", sort, "filter", filter, "fields", fields, "next_token", nextToken, "prev_token", prevToken, "limit", limitString)
+
+	// convert the limit to int
+	limit := paginator.DefaultLimit
+	var err error
+	if limitString != "" {
+		limit, err = strconv.Atoi(limitString)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			http.Error(w, "Invalid limit", http.StatusBadRequest)
+			return
+		}
+
+		if limit < 0 {
+			w.WriteHeader(http.StatusBadRequest)
+			http.Error(w, "Limit must be greater than or equal to 0", http.StatusBadRequest)
+			return
+		}
+		if limit == 0 {
+			limit = paginator.DefaultLimit
+		}
+	}
+
+	params := &model.ListUserRequest{
+		Sort:   sort,
+		Filter: filter,
+		Fields: fields,
+		Paginator: paginator.Paginator{
+			NextToken: nextToken,
+			PrevToken: prevToken,
+			Limit:     limit,
+		},
+	}
+
+	usersResponse, err := h.service.ListUsers(r.Context(), params)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
 
+	// inject the parameters and server url to paginator for the next and previous links
+	srvScheme := "http"
+	if r.TLS != nil {
+		r.URL.Scheme = "https"
+	}
+	serverURL := srvScheme + "://" + r.Host
+
+	if usersResponse.Paginator.NextToken != "" {
+		usersResponse.Paginator.NextPage = serverURL + r.URL.Path + "?next_token=" + usersResponse.Paginator.NextToken + "&limit=" + strconv.Itoa(limit)
+	}
+	if usersResponse.Paginator.PrevToken != "" {
+		usersResponse.Paginator.PrevPage = serverURL + r.URL.Path + "?prev_token=" + usersResponse.Paginator.PrevToken + "&limit=" + strconv.Itoa(limit)
+	}
+
 	// write the response
-	if err := json.NewEncoder(w).Encode(users); err != nil {
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(usersResponse); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return

@@ -6,15 +6,18 @@
     "healthz",
     "kube",
     "Macbook",
+    "mockgen",
     "mysql",
     "openssl",
     "pgsql",
     "PGSQL",
     "podman",
     "postgres",
+    "RESTAPI",
     "sslmode",
     "swaggo",
     "unmarshals",
+    "usrs",
     "uuid"
   ]
 }

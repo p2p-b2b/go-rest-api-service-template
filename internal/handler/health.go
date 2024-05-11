@@ -33,7 +33,7 @@ func NewHealthHandler(conf *HealthUserHandlerConfig) *HealthHandler {
 func (h *HealthHandler) Get(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	health, err := h.service.HealthCheck(r.Context())
+	health, err := h.service.UserHealthCheck(r.Context())
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		http.Error(w, ErrInternalServer.Error(), http.StatusInternalServerError)

@@ -1,6 +1,6 @@
 .DELETE_ON_ERROR: clean
 
-EXECUTABLES = go zip shasum
+EXECUTABLES = go zip shasum podman
 K := $(foreach exec,$(EXECUTABLES),\
   $(if $(shell which $(exec)),some string,$(error "No $(exec) in PATH)))
 
@@ -159,7 +159,7 @@ test: $(PROJECT_COVERAGE_FILE) go-mod-tidy go-fmt go-vet go-generate ## Run test
 ###############################################################################
 ##@ Build commands
 .PHONY: build
-build: docs-swagger ## Build the application
+build: docs-swagger go-generate ## Build the application
 	@printf "👉 Building...\n"
 	$(foreach proj_mod, $(PROJECT_MODULES_NAME), \
 		$(call exec_cmd, CGO_ENABLED=$(GO_CGO_ENABLED) go build $(GO_LDFLAGS) $(GO_OPTS) -o $(BUILD_DIR)/$(proj_mod) ./cmd/$(proj_mod)/ ) \
@@ -239,8 +239,8 @@ stop-dev-env: ## Run the application in development mode
 	@printf "👉 Stopping application in development mode...\n"
 		$(call exec_cmd, podman play kube --force --down dev-service-pod.yaml )
 
-.PHONY: run-dev-env
-run-dev-env: stop-dev-env install-air install-swag install-goose ## Run the application in development mode.  WARNING: This will stop the current running application deleting the data
+.PHONY: start-dev-env
+start-dev-env: stop-dev-env install-air install-swag install-goose ## Run the application in development mode.  WARNING: This will stop the current running application deleting the data
 	@printf "👉 Running application in development mode...\n"
 		$(call exec_cmd, mkdir -p /tmp/go-service-template-db-volume-host )
 		$(call exec_cmd, podman play kube dev-service-pod.yaml )

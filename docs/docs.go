@@ -85,11 +85,55 @@ const docTemplate = `{
                     "users"
                 ],
                 "summary": "List all users",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Sort field",
+                        "name": "sort",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter field",
+                        "name": "filter",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Fields to return",
+                        "name": "fields",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Query string",
+                        "name": "query",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Next cursor",
+                        "name": "next_token",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Previous cursor",
+                        "name": "prev_token",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Limit",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/model.ListUserOutput"
+                            "$ref": "#/definitions/model.ListUserResponse"
                         }
                     },
                     "500": {
@@ -114,12 +158,12 @@ const docTemplate = `{
                 "summary": "Create a new user",
                 "parameters": [
                     {
-                        "description": "CreateUserInput",
+                        "description": "CreateUserRequest",
                         "name": "user",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/model.CreateUserInput"
+                            "$ref": "#/definitions/model.CreateUserRequest"
                         }
                     }
                 ],
@@ -127,7 +171,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/model.CreateUserInput"
+                            "type": "string"
                         }
                     },
                     "500": {
@@ -156,6 +200,12 @@ const docTemplate = `{
                         "name": "id",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Query string",
+                        "name": "query",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -267,7 +317,7 @@ const docTemplate = `{
                 }
             }
         },
-        "model.CreateUserInput": {
+        "model.CreateUserRequest": {
             "type": "object",
             "properties": {
                 "email": {
@@ -276,6 +326,10 @@ const docTemplate = `{
                 },
                 "first_name": {
                     "description": "FirstName is the first name of the user.",
+                    "type": "string"
+                },
+                "id": {
+                    "description": "ID is the unique identifier of the user.",
                     "type": "string"
                 },
                 "last_name": {
@@ -300,30 +354,23 @@ const docTemplate = `{
                 }
             }
         },
-        "model.ListUserOutput": {
+        "model.ListUserResponse": {
             "type": "object",
             "properties": {
                 "data": {
-                    "description": "Data is a list of users.",
+                    "description": "Items is a list of users.",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/model.User"
                     }
                 },
-                "page": {
-                    "description": "Page is the current page.",
-                    "type": "integer"
-                },
-                "page_size": {
-                    "description": "PageSize is the number of users per page.",
-                    "type": "integer"
-                },
-                "total_count": {
-                    "description": "TotalCount is the total number of users.",
-                    "type": "integer"
-                },
-                "total_pages": {
-                    "type": "integer"
+                "paginator": {
+                    "description": "Paginator is the paginator for the list of users.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/paginator.Paginator"
+                        }
+                    ]
                 }
             }
         },
@@ -352,6 +399,31 @@ const docTemplate = `{
                 },
                 "updated_at": {
                     "description": "UpdatedAt is the time the user was last updated.",
+                    "type": "string"
+                }
+            }
+        },
+        "paginator.Paginator": {
+            "type": "object",
+            "properties": {
+                "limit": {
+                    "description": "Limit is the maximum number of elements to return.",
+                    "type": "integer"
+                },
+                "next_page": {
+                    "description": "NextPage the URL to the next page.",
+                    "type": "string"
+                },
+                "next_token": {
+                    "description": "NextToken is the cursor token to the next page.",
+                    "type": "string"
+                },
+                "prev_page": {
+                    "description": "PrevPage is the cursor token to the previous page.",
+                    "type": "string"
+                },
+                "prev_token": {
+                    "description": "PrevToken is the cursor token to the previous page.",
                     "type": "string"
                 }
             }

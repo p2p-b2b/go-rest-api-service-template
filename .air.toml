@@ -15,6 +15,9 @@ exclude_dir = [
   "tmp",
   "vendor",
   "testdata",
+  "docs",
+  "build",
+  "mocks",
 ]
 exclude_file = [
   "docs/docs.go",

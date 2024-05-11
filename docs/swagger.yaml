@@ -17,13 +17,16 @@ definitions:
         description: Status is the status of the check.
         type: boolean
     type: object
-  model.CreateUserInput:
+  model.CreateUserRequest:
     properties:
       email:
         description: Email is the email address of the user.
         type: string
       first_name:
         description: FirstName is the first name of the user.
+        type: string
+      id:
+        description: ID is the unique identifier of the user.
         type: string
       last_name:
         description: LastName is the last name of the user.
@@ -40,24 +43,17 @@ definitions:
         description: Status is the status of the health check.
         type: boolean
     type: object
-  model.ListUserOutput:
+  model.ListUserResponse:
     properties:
       data:
-        description: Data is a list of users.
+        description: Items is a list of users.
         items:
           $ref: '#/definitions/model.User'
         type: array
-      page:
-        description: Page is the current page.
-        type: integer
-      page_size:
-        description: PageSize is the number of users per page.
-        type: integer
-      total_count:
-        description: TotalCount is the total number of users.
-        type: integer
-      total_pages:
-        type: integer
+      paginator:
+        allOf:
+        - $ref: '#/definitions/paginator.Paginator'
+        description: Paginator is the paginator for the list of users.
     type: object
   model.User:
     properties:
@@ -78,6 +74,24 @@ definitions:
         type: string
       updated_at:
         description: UpdatedAt is the time the user was last updated.
+        type: string
+    type: object
+  paginator.Paginator:
+    properties:
+      limit:
+        description: Limit is the maximum number of elements to return.
+        type: integer
+      next_page:
+        description: NextPage the URL to the next page.
+        type: string
+      next_token:
+        description: NextToken is the cursor token to the next page.
+        type: string
+      prev_page:
+        description: PrevPage is the cursor token to the previous page.
+        type: string
+      prev_token:
+        description: PrevToken is the cursor token to the previous page.
         type: string
     type: object
 host: localhost:8080
@@ -136,13 +150,42 @@ paths:
   /users:
     get:
       description: List all users
+      parameters:
+      - description: Sort field
+        in: query
+        name: sort
+        type: string
+      - description: Filter field
+        in: query
+        name: filter
+        type: string
+      - description: Fields to return
+        in: query
+        name: fields
+        type: string
+      - description: Query string
+        in: query
+        name: query
+        type: string
+      - description: Next cursor
+        in: query
+        name: next_token
+        type: string
+      - description: Previous cursor
+        in: query
+        name: prev_token
+        type: string
+      - description: Limit
+        in: query
+        name: limit
+        type: integer
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/model.ListUserOutput'
+            $ref: '#/definitions/model.ListUserResponse'
         "500":
           description: Internal Server Error
           schema:
@@ -155,19 +198,19 @@ paths:
       - application/json
       description: Create a new user
       parameters:
-      - description: CreateUserInput
+      - description: CreateUserRequest
         in: body
         name: user
         required: true
         schema:
-          $ref: '#/definitions/model.CreateUserInput'
+          $ref: '#/definitions/model.CreateUserRequest'
       produces:
       - application/json
       responses:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/model.CreateUserInput'
+            type: string
         "500":
           description: Internal Server Error
           schema:
@@ -201,6 +244,10 @@ paths:
         in: path
         name: id
         required: true
+        type: string
+      - description: Query string
+        in: query
+        name: query
         type: string
       produces:
       - application/json

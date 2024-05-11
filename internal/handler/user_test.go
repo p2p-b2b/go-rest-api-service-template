@@ -61,7 +61,7 @@ func TestUser_GetUserByID(t *testing.T) {
 				serviceError:     ErrInternalServer,
 				expectedHTTPCode: http.StatusInternalServerError,
 				expectedBody:     ErrInternalServer.Error() + "\n",
-				mockCall:         mockService.EXPECT().GetByID(gomock.Any(), gomock.Any()).Return(nil, ErrInternalServer).Times(1),
+				mockCall:         mockService.EXPECT().GetUserByID(gomock.Any(), gomock.Any()).Return(nil, ErrInternalServer).Times(1),
 			},
 			{
 				name:             "service success",
@@ -73,7 +73,7 @@ func TestUser_GetUserByID(t *testing.T) {
 				expectedBody:     "{\"id\":\"ffffffff-ffff-ffff-ffff-ffffffffffff\",\"first_name\":\"\",\"last_name\":\"\",\"email\":\"\",\"created_at\":\"2021-01-01T00:00:00Z\",\"updated_at\":\"0001-01-01T00:00:00Z\"}\n",
 				mockCall: mockService.
 					EXPECT().
-					GetByID(gomock.Any(), gomock.Any()).
+					GetUserByID(gomock.Any(), gomock.Any()).
 					Return(&model.User{
 						ID: uuid.Max,
 						// fixed time here
