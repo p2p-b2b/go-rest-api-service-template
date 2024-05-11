@@ -9,6 +9,8 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"net/http/pprof"
+	_ "net/http/pprof" // import the net/http/pprof package
 	"os"
 	"os/signal"
 	"strings"
@@ -58,6 +60,7 @@ func init() {
 	flag.Var(&SrvConfig.PrivateKeyFile.Value, SrvConfig.PrivateKeyFile.FlagName, SrvConfig.PrivateKeyFile.FlagDescription)
 	flag.Var(&SrvConfig.CertificateFile.Value, SrvConfig.CertificateFile.FlagName, SrvConfig.CertificateFile.FlagDescription)
 	flag.BoolVar(&SrvConfig.TLSEnabled.Value, SrvConfig.TLSEnabled.FlagName, config.DefaultServerTLSEnabled, SrvConfig.TLSEnabled.FlagDescription)
+	flag.BoolVar(&SrvConfig.PprofEnabled.Value, SrvConfig.PprofEnabled.FlagName, config.DefaultServerPprofEnabled, SrvConfig.PprofEnabled.FlagDescription)
 
 	// Database configuration values
 	flag.StringVar(&DBConfig.Kind.Value, DBConfig.Kind.FlagName, config.DefaultDatabaseKind, DBConfig.Kind.FlagDescription)
@@ -173,6 +176,7 @@ func main() {
 
 	slog.Debug("configuration", "database", DBConfig)
 	slog.Debug("configuration", "log", LogConfig)
+	slog.Debug("configuration", "server", SrvConfig)
 
 	// Context
 	ctx := context.Background()
@@ -276,6 +280,22 @@ func main() {
 	mux.HandleFunc("DELETE /users/{id}", userHandler.DeleteUser)
 	mux.HandleFunc("POST /users", userHandler.CreateUser)
 	mux.HandleFunc("GET /users", userHandler.ListUsers)
+
+	// Configure pprof
+	if SrvConfig.PprofEnabled.Value {
+		slog.Info("configuring pprof")
+		mux.HandleFunc("GET /debug/pprof/", pprof.Index)
+		mux.HandleFunc("GET /debug/pprof/cmdline", pprof.Cmdline)
+		mux.HandleFunc("GET /debug/pprof/profile", pprof.Profile)
+		mux.HandleFunc("GET /debug/pprof/symbol", pprof.Symbol)
+		mux.HandleFunc("GET /debug/pprof/trace", pprof.Trace)
+		mux.HandleFunc("GET /debug/pprof/allocs", pprof.Handler("allocs").ServeHTTP)
+		mux.HandleFunc("GET /debug/pprof/block", pprof.Handler("block").ServeHTTP)
+		mux.HandleFunc("GET /debug/pprof/goroutine", pprof.Handler("goroutine").ServeHTTP)
+		mux.HandleFunc("GET /debug/pprof/heap", pprof.Handler("heap").ServeHTTP)
+		mux.HandleFunc("GET /debug/pprof/mutex", pprof.Handler("mutex").ServeHTTP)
+		mux.HandleFunc("GET /debug/pprof/threadcreate", pprof.Handler("threadcreate").ServeHTTP)
+	}
 
 	// Configure the server
 	server := &http.Server{
