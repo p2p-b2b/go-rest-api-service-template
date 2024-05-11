@@ -27,7 +27,7 @@ type UserService interface {
 	CreateUser(ctx context.Context, user *model.CreateUserRequest) error
 
 	// UpdateUser updates the user with the specified ID.
-	UpdateUser(ctx context.Context, user *model.UpdateUserInput) error
+	UpdateUser(ctx context.Context, user *model.User) error
 
 	// DeleteUser deletes the user with the specified ID.
 	DeleteUser(ctx context.Context, user *model.DeleteUserInput) error
@@ -124,8 +124,8 @@ func (s *DefaultUserService) CreateUser(ctx context.Context, user *model.CreateU
 }
 
 // UpdateUser updates the user with the specified ID.
-func (s *DefaultUserService) UpdateUser(ctx context.Context, user *model.UpdateUserInput) error {
-	return s.repository.Update(ctx, (*model.User)(user))
+func (s *DefaultUserService) UpdateUser(ctx context.Context, user *model.User) error {
+	return s.repository.Update(ctx, user)
 }
 
 // DeleteUser deletes the user with the specified ID.

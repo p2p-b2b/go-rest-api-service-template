@@ -95,7 +95,7 @@ func (mr *MockUserServiceMockRecorder) ListUsers(ctx, params interface{}) *gomoc
 }
 
 // UpdateUser mocks base method.
-func (m *MockUserService) UpdateUser(ctx context.Context, user *model.UpdateUserInput) error {
+func (m *MockUserService) UpdateUser(ctx context.Context, user *model.User) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateUser", ctx, user)
 	ret0, _ := ret[0].(error)

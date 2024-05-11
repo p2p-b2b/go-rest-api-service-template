@@ -146,7 +146,7 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 // @Accept json
 // @Produce json
 // @Param id path string true "User ID"
-// @Param user body model.User true "User"
+// @Param user body model.UpdateUserRequest true "User"
 // @Success 200
 // @Failure 500 {object} string
 // @Router /users/{id} [put]
@@ -161,6 +161,7 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	if idParam == "" {
 		w.WriteHeader(http.StatusBadRequest)
 		http.Error(w, "ID is required", http.StatusBadRequest)
+		slog.Error("UpdateUser", "error", errors.New("ID is required"))
 		return
 	}
 
@@ -169,6 +170,7 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		http.Error(w, "Invalid ID", http.StatusBadRequest)
+		slog.Error("UpdateUser", "error", err)
 		return
 	}
 
@@ -176,33 +178,27 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		slog.Error("UpdateUser", "error", err)
 		return
 	}
 
-	if user.FirstName == "" {
-		w.WriteHeader(http.StatusBadRequest)
-		http.Error(w, "First name is required", http.StatusBadRequest)
-		return
-	}
-
-	if user.LastName == "" {
-		w.WriteHeader(http.StatusBadRequest)
-		http.Error(w, "Last name is required", http.StatusBadRequest)
-		return
-	}
-
-	if user.Email == "" {
-		w.WriteHeader(http.StatusBadRequest)
-		http.Error(w, "Age must be greater than or equal to 0", http.StatusBadRequest)
-		return
-	}
-
-	u := model.UpdateUserInput(user)
-
+	// set the user ID
 	user.ID = id
+
+	// at least one field must be updated
+	if user.FirstName == "" && user.LastName == "" && user.Email == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		http.Error(w, "At least one field must be updated", http.StatusBadRequest)
+		slog.Error("UpdateUser", "error", errors.New("at least one field must be updated"))
+		return
+	}
+
+	u := model.User(user)
+
 	if err := h.service.UpdateUser(r.Context(), &u); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		slog.Error("UpdateUser", "error", err)
 		return
 	}
 

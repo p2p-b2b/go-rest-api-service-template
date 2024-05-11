@@ -55,6 +55,18 @@ definitions:
         - $ref: '#/definitions/paginator.Paginator'
         description: Paginator is the paginator for the list of users.
     type: object
+  model.UpdateUserRequest:
+    properties:
+      email:
+        description: Email is the email address of the user.
+        type: string
+      first_name:
+        description: FirstName is the first name of the user.
+        type: string
+      last_name:
+        description: LastName is the last name of the user.
+        type: string
+    type: object
   model.User:
     properties:
       created_at:
@@ -280,7 +292,7 @@ paths:
         name: user
         required: true
         schema:
-          $ref: '#/definitions/model.User'
+          $ref: '#/definitions/model.UpdateUserRequest'
       produces:
       - application/json
       responses:

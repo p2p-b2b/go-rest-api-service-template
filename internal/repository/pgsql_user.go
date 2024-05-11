@@ -84,9 +84,35 @@ func (s *PGSQLUserRepository) Update(ctx context.Context, user *model.User) erro
 	ctx, cancel := context.WithTimeout(ctx, s.MaxQueryTimeout)
 	defer cancel()
 
-	const query = `UPDATE users SET first_name = $1, last_name = $2, email = $3 WHERE id = $4`
+	var queryFields []string
 
-	_, err := s.db.ExecContext(ctx, query, user.FirstName, user.LastName, user.Email, user.ID)
+	if user.FirstName != "" {
+		queryFields = append(queryFields, fmt.Sprintf("first_name = '%s'", user.FirstName))
+	}
+
+	if user.LastName != "" {
+		queryFields = append(queryFields, fmt.Sprintf("last_name = '%s'", user.LastName))
+	}
+
+	if user.Email != "" {
+		queryFields = append(queryFields, fmt.Sprintf("email = '%s'", user.Email))
+	}
+
+	if len(queryFields) == 0 {
+		slog.Warn("Update", "error", "no fields to update")
+		return nil
+	}
+
+	fields := strings.Join(queryFields, ", ")
+
+	query := fmt.Sprintf(`UPDATE users SET %s WHERE id = '%s'`,
+		fields,
+		user.ID,
+	)
+
+	slog.Debug("Update", "query", query)
+
+	_, err := s.db.ExecContext(ctx, query)
 	return err
 }
 

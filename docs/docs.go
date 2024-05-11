@@ -249,7 +249,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/model.User"
+                            "$ref": "#/definitions/model.UpdateUserRequest"
                         }
                     }
                 ],
@@ -371,6 +371,23 @@ const docTemplate = `{
                             "$ref": "#/definitions/paginator.Paginator"
                         }
                     ]
+                }
+            }
+        },
+        "model.UpdateUserRequest": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "description": "Email is the email address of the user.",
+                    "type": "string"
+                },
+                "first_name": {
+                    "description": "FirstName is the first name of the user.",
+                    "type": "string"
+                },
+                "last_name": {
+                    "description": "LastName is the last name of the user.",
+                    "type": "string"
                 }
             }
         },

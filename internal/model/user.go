@@ -55,8 +55,17 @@ type CreateUserRequest struct {
 // CreateUserResponse represents the output for the CreateUser method.
 type CreateUserResponse User
 
-// UpdateUserInput represents the input for the UpdateUser method.
-type UpdateUserInput User
+// UpdateUserRequest represents the input for the UpdateUser method.
+type UpdateUserRequest struct {
+	// FirstName is the first name of the user.
+	FirstName string `json:"first_name"`
+
+	// LastName is the last name of the user.
+	LastName string `json:"last_name"`
+
+	// Email is the email address of the user.
+	Email string `json:"email"`
+}
 
 // DeleteUserInput represents the input for the DeleteUser method.
 type DeleteUserInput User
