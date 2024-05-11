@@ -156,8 +156,15 @@ func (s *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.Selec
 			slog.Error("SelectAll", "error", err)
 			return nil, err
 		}
-		_ = id
-		paginationQuery = fmt.Sprintf(" WHERE usrs.created_at < '%s' ORDER BY created_at DESC LIMIT %d",
+
+		// from newest to oldest
+		paginationQuery = fmt.Sprintf(`
+                WHERE usrs.created_at < '%s' AND (usrs.id < '%s' OR usrs.created_at < '%s')
+                ORDER BY usrs.created_at DESC, usrs.id DESC
+                LIMIT %d
+            `,
+			createdAt.UTC().Format(paginator.DateFormat),
+			id.String(),
 			createdAt.UTC().Format(paginator.DateFormat),
 			params.Paginator.Limit,
 		)
@@ -171,23 +178,34 @@ func (s *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.Selec
 			slog.Error("SelectAll", "error", err)
 			return nil, err
 		}
-		_ = id
-		paginationQuery = fmt.Sprintf(" WHERE usrs.created_at > '%s' ORDER BY created_at ASC LIMIT %d",
+
+		// from newest to oldest
+		paginationQuery = fmt.Sprintf(`
+                WHERE usrs.created_at > '%s' AND (usrs.id > '%s' OR usrs.created_at > '%s')
+                ORDER BY usrs.created_at ASC, usrs.id ASC
+                LIMIT %d
+                `,
+			createdAt.UTC().Format(paginator.DateFormat),
+			id.String(),
 			createdAt.UTC().Format(paginator.DateFormat),
 			params.Paginator.Limit,
 		)
 	}
 
 	// if no token is provided, first page
+	// newest to oldest
 	if params.Paginator.NextToken == "" && params.Paginator.PrevToken == "" {
-		paginationQuery = fmt.Sprintf(" ORDER BY usrs.created_at DESC LIMIT %d", params.Paginator.Limit)
+		paginationQuery = fmt.Sprintf(`
+            ORDER BY usrs.created_at DESC, id DESC
+            LIMIT %d
+            `, params.Paginator.Limit)
 	}
 
 	query := fmt.Sprintf(`
         WITH usrs AS (
             SELECT %s FROM users usrs %s
         )
-        SELECT * FROM usrs ORDER BY created_at DESC
+        SELECT * FROM usrs ORDER BY created_at DESC, id DESC
     `,
 		fieldsStr,
 		paginationQuery,
