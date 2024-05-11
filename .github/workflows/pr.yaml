@@ -89,15 +89,15 @@ jobs:
       #     GITHUB_CONTEXT_PR: ${{ toJSON(github.event.pull_request) }}
       #   run: echo "$GITHUB_CONTEXT_PR"
 
-      - name: Make tests
-        run: |
-          echo "## Make tests" >> $GITHUB_STEP_SUMMARY
-          make test 2>&1 | tee -a $GITHUB_STEP_SUMMARY
-
       - name: make install-swag
         run: |
           echo "## Make install-swag" >> $GITHUB_STEP_SUMMARY
           make install-swag 2>&1 | tee -a $GITHUB_STEP_SUMMARY
+
+      - name: Make tests
+        run: |
+          echo "## Make tests" >> $GITHUB_STEP_SUMMARY
+          make test 2>&1 | tee -a $GITHUB_STEP_SUMMARY
 
       - name: Make build-all
         run: |
