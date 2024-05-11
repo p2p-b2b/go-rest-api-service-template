@@ -30,7 +30,7 @@ type UserService interface {
 	UpdateUser(ctx context.Context, user *model.User) error
 
 	// DeleteUser deletes the user with the specified ID.
-	DeleteUser(ctx context.Context, user *model.DeleteUserInput) error
+	DeleteUser(ctx context.Context, id uuid.UUID) error
 
 	// ListUsers returns a list of users.
 	ListUsers(ctx context.Context, params *model.ListUserRequest) (*model.ListUserResponse, error)
@@ -129,8 +129,8 @@ func (s *DefaultUserService) UpdateUser(ctx context.Context, user *model.User) e
 }
 
 // DeleteUser deletes the user with the specified ID.
-func (s *DefaultUserService) DeleteUser(ctx context.Context, user *model.DeleteUserInput) error {
-	return s.repository.Delete(ctx, user.ID)
+func (s *DefaultUserService) DeleteUser(ctx context.Context, id uuid.UUID) error {
+	return s.repository.Delete(ctx, id)
 }
 
 // ListUsers returns a list of users.

@@ -259,10 +259,6 @@ paths:
         name: id
         required: true
         type: string
-      - description: Query string
-        in: query
-        name: query
-        type: string
       produces:
       - application/json
       responses:

@@ -200,12 +200,6 @@ const docTemplate = `{
                         "name": "id",
                         "in": "path",
                         "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Query string",
-                        "name": "query",
-                        "in": "query"
                     }
                 ],
                 "responses": {

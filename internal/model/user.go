@@ -16,7 +16,7 @@ var (
 	ErrInvalidID = errors.New("invalid ID")
 )
 
-// User represents a user.
+// User represents a user entity.
 type User struct {
 	// ID is the unique identifier of the user.
 	ID uuid.UUID `json:"id"`
@@ -52,9 +52,6 @@ type CreateUserRequest struct {
 	Email string `json:"email"`
 }
 
-// CreateUserResponse represents the output for the CreateUser method.
-type CreateUserResponse User
-
 // UpdateUserRequest represents the input for the UpdateUser method.
 type UpdateUserRequest struct {
 	// FirstName is the first name of the user.
@@ -66,9 +63,6 @@ type UpdateUserRequest struct {
 	// Email is the email address of the user.
 	Email string `json:"email"`
 }
-
-// DeleteUserInput represents the input for the DeleteUser method.
-type DeleteUserInput User
 
 // ListUserRequest represents the input for the ListUser method.
 type ListUserRequest struct {

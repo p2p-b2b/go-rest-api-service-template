@@ -35,7 +35,6 @@ func NewUserHandler(conf *UserHandlerConfig) *UserHandler {
 // @Tags users
 // @Produce json
 // @Param id path string true "User ID"
-// @Param query query string false "Query string"
 // @Success 200 {object} model.User
 // @Failure 500 {object} string
 // @Router /users/{id} [get]
@@ -45,6 +44,7 @@ func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		slog.Error("GetByID", "error", errors.New("method not allowed"))
 		return
 	}
 
@@ -52,6 +52,7 @@ func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	if idString == "" {
 		w.WriteHeader(http.StatusBadRequest)
 		http.Error(w, ErrIDRequired.Error(), http.StatusBadRequest)
+		slog.Error("GetByID", "error", errors.New("ID is required"))
 		return
 	}
 
@@ -60,6 +61,7 @@ func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		http.Error(w, ErrInvalidID.Error(), http.StatusBadRequest)
+		slog.Error("GetByID", "error", err)
 		return
 	}
 
@@ -67,6 +69,7 @@ func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		http.Error(w, ErrInternalServer.Error(), http.StatusInternalServerError)
+		slog.Error("GetByID", "error", err)
 		return
 	}
 
@@ -74,6 +77,7 @@ func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewEncoder(w).Encode(user); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		http.Error(w, ErrInternalServer.Error(), http.StatusInternalServerError)
+		slog.Error("GetByID", "error", err)
 		return
 	}
 
@@ -233,11 +237,7 @@ func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	u := model.DeleteUserInput{
-		ID: id,
-	}
-
-	if err := h.service.DeleteUser(r.Context(), &u); err != nil {
+	if err := h.service.DeleteUser(r.Context(), id); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return

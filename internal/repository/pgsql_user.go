@@ -121,9 +121,11 @@ func (s *PGSQLUserRepository) Delete(ctx context.Context, id uuid.UUID) error {
 	ctx, cancel := context.WithTimeout(ctx, s.MaxQueryTimeout)
 	defer cancel()
 
-	const query = `DELETE FROM users WHERE id = $1`
+	query := fmt.Sprintf(`DELETE FROM users WHERE id = '%s'`, id)
 
-	_, err := s.db.ExecContext(ctx, query, id)
+	slog.Debug("Delete", "query", query)
+
+	_, err := s.db.ExecContext(ctx, query)
 	return err
 }
 
@@ -132,9 +134,11 @@ func (s *PGSQLUserRepository) SelectByID(ctx context.Context, id uuid.UUID) (*mo
 	ctx, cancel := context.WithTimeout(ctx, s.MaxQueryTimeout)
 	defer cancel()
 
-	const query = `SELECT id, first_name, last_name, email FROM users WHERE id = $1`
+	query := fmt.Sprintf(`SELECT id, first_name, last_name, email FROM users WHERE id = '%s'`, id)
 
-	row := s.db.QueryRowContext(ctx, query, id)
+	slog.Debug("SelectByID", "query", query)
+
+	row := s.db.QueryRowContext(ctx, query)
 
 	var u model.User
 	if err := row.Scan(&u.ID, &u.FirstName, &u.LastName, &u.Email); err != nil {
