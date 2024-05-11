@@ -11,7 +11,7 @@ import (
 
 	gomock "github.com/golang/mock/gomock"
 	uuid "github.com/google/uuid"
-	model "github.com/p2p-b2b/go-service-template/internal/model"
+	model "github.com/p2p-b2b/go-rest-api-service-template/internal/model"
 )
 
 // MockUserRepository is a mock of UserRepository interface.

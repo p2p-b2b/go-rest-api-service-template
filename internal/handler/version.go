@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/p2p-b2b/go-service-template/internal/version"
+	"github.com/p2p-b2b/go-rest-api-service-template/internal/version"
 )
 
 // VersionHandler represents the handler for the version of the service.

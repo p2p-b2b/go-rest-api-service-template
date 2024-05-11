@@ -242,7 +242,7 @@ stop-dev-env: ## Run the application in development mode
 .PHONY: start-dev-env
 start-dev-env: stop-dev-env install-air install-swag install-goose ## Run the application in development mode.  WARNING: This will stop the current running application deleting the data
 	@printf "👉 Running application in development mode...\n"
-		$(call exec_cmd, mkdir -p /tmp/go-service-template-db-volume-host )
+		$(call exec_cmd, mkdir -p /tmp/go-rest-api-service-template-db-volume-host )
 		$(call exec_cmd, podman play kube dev-service-pod.yaml )
 
 ###############################################################################

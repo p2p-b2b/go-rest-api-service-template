@@ -1,4 +1,4 @@
-# go-service-template
+# go-rest-api-service-template
 
 This is a template for a Go HTTP REST API Service.
 
@@ -6,7 +6,7 @@ This is a template for a Go HTTP REST API Service.
 
 - [x] Create a new repository from this template
 - [x] Change the module name in `go.mod` using the command `go mod edit -module github.com/your-username/your-repo`
-- [x] Change the service name in `cmd/go-service-template` to the name of your service, e.g. `cmd/your-service-name`
+- [x] Change the service name in `cmd/go-rest-api-service-template` to the name of your service, e.g. `cmd/your-service-name`
 - [x] Change the service name in `Makefile` to the name of your service
 - [x] Hot reload with [air](https://github.com/cosmtrek/air), use `make install-air` to install it, then `air` to run it
 - [x] Ready to use Certificates for HTTPS, see [Certificates](#certificates)
@@ -31,7 +31,7 @@ To generate the Swagger documentation, you need to install [swag](https://github
 
 ```bash
 swag init \
-  --dir "./cmd/go-service-template/,./internal/handler" \
+  --dir "./cmd/go-rest-api-service-template/,./internal/handler" \
   --output ./docs \
   --parseDependency true \
   --parseInternal true
@@ -63,9 +63,9 @@ using Docker:
 ```bash
 docker build \
    --platform linux/arm64 \
-   --tag p2p-b2b/go-service-template:v1.0.0-linux-arm64 \
-   --tag p2p-b2b/go-service-template:v1.0.0-linux-arm64 \
-    --build-arg SERVICE_NAME=go-service-template
+   --tag p2p-b2b/go-rest-api-service-template:v1.0.0-linux-arm64 \
+   --tag p2p-b2b/go-rest-api-service-template:v1.0.0-linux-arm64 \
+    --build-arg SERVICE_NAME=go-rest-api-service-template
     --build-arg GOOS=linux
     --build-arg GOARCH=arm64
     --build-arg BUILD_DATE=2024-04-28T15:26:26
@@ -78,9 +78,9 @@ Using Podman:
 ```bash
 podman build
     --platform linux/arm64
-    --manifest p2p-b2b/go-service-template:v1.0.0
-    --tag p2p-b2b/go-service-template:v1.0.0-linux-arm64
-    --build-arg SERVICE_NAME=go-service-template
+    --manifest p2p-b2b/go-rest-api-service-template:v1.0.0
+    --tag p2p-b2b/go-rest-api-service-template:v1.0.0-linux-arm64
+    --build-arg SERVICE_NAME=go-rest-api-service-template
     --build-arg GOOS=linux
     --build-arg GOARCH=arm64
     --build-arg BUILD_DATE=2024-04-28T15:26:26
@@ -112,7 +112,7 @@ __WARNING:__ This will remove the current machine and all the containers.
 Start the pod:
 
 ```bash
-mkdir -p /tmp/go-service-template-db-volume-host
+mkdir -p /tmp/go-rest-api-service-template-db-volume-host
 podman play kube dev-service-pod.yaml
 ```
 
@@ -128,17 +128,17 @@ podman play kube --force --down dev-service-pod.yaml
 Start a PostgreSQL container:
 
 ```bash
-mkdir -p /tmp/go-service-template-db-volume-host
+mkdir -p /tmp/go-rest-api-service-template-db-volume-host
 podman volume create \
-      -o device=/tmp/go-service-template-db-volume-host \
+      -o device=/tmp/go-rest-api-service-template-db-volume-host \
       -o=o=bind \
-      go-service-template-db-volume-host
+      go-rest-api-service-template-db-volume-host
 
 podman run --name postgres \
   --env POSTGRES_USER=username \
   --env POSTGRES_PASSWORD=password \
   --publish 5432:5432 \
-  --volume go-service-template-db-volume-host:/var/lib/postgresq/data \
+  --volume go-rest-api-service-template-db-volume-host:/var/lib/postgresq/data \
   --detach postgres:16
 ```
 
@@ -178,7 +178,7 @@ make container-publish
 From ghcr.io:
 
 ```bash
-podman run --name go-service-template --rm ghcr.io/p2p-b2b/go-service-template:first-implementation
+podman run --name go-rest-api-service-template --rm ghcr.io/p2p-b2b/go-rest-api-service-template:first-implementation
 ```
 
 ## Pagination

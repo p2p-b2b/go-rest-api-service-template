@@ -1,4 +1,4 @@
-module github.com/p2p-b2b/go-service-template
+module github.com/p2p-b2b/go-rest-api-service-template
 
 go 1.22.3
 

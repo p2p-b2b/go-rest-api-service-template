@@ -2,7 +2,7 @@ FROM --platform=${TARGETPLATFORM:-linux/amd64} scratch
 # FROM --platform=${TARGETPLATFORM:-linux/amd64} alpine:latest
 
 # these parameters are required
-# example: --build-arg SERVICE_NAME=go-service-template --build-arg GOOS=linux --build-arg GOARCH=arm64
+# example: --build-arg SERVICE_NAME=go-rest-api-service-template --build-arg GOOS=linux --build-arg GOARCH=arm64
 ARG SERVICE_NAME
 ARG BUILD_DATE
 ARG BUILD_VERSION
