@@ -6,7 +6,7 @@ on:
       - main
 
 env:
-  MAKE_STOP_ON_ERRORS: true # Stop on errors when running make
+  MAKE_STOP_ON_ERRORS: "true" # Stop on errors when running make
 
 jobs:
   build:

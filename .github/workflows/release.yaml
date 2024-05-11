@@ -5,7 +5,7 @@ on:
       - v[0-9].[0-9]+.[0-9]*
 
 env:
-  MAKE_STOP_ON_ERRORS: true # Stop on errors when running make
+  MAKE_STOP_ON_ERRORS: "true" # Stop on errors when running make
 
 permissions:
   contents: write

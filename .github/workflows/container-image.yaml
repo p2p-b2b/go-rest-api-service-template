@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
 
 env:
-  MAKE_STOP_ON_ERRORS: true # Stop on errors when running make
+  MAKE_STOP_ON_ERRORS: "true" # Stop on errors when running make
 
 permissions:
   id-token: write
