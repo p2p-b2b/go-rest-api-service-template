@@ -2,9 +2,7 @@ package handler
 
 import (
 	"encoding/json"
-	"errors"
 	"io"
-	"log/slog"
 	"net/http"
 	"strconv"
 	"strings"
@@ -42,48 +40,32 @@ func NewUserHandler(conf *UserHandlerConfig) *UserHandler {
 // @Failure 500 {object} string
 // @Router /users/{id} [get]
 func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-
-	if r.Method != http.MethodGet {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		slog.Error("GetByID", "error", errors.New("method not allowed"))
-		return
-	}
-
 	idString := r.PathValue("id")
 	if idString == "" {
-		w.WriteHeader(http.StatusBadRequest)
-		http.Error(w, ErrIDRequired.Error(), http.StatusBadRequest)
-		slog.Error("GetByID", "error", errors.New("ID is required"))
+		WriteError(w, r, http.StatusBadRequest, ErrIDRequired.Error())
 		return
 	}
 
 	// convert the id to uuid.UUID
 	id, err := uuid.Parse(idString)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		http.Error(w, ErrInvalidID.Error(), http.StatusBadRequest)
-		slog.Error("GetByID", "error", err)
+		WriteError(w, r, http.StatusBadRequest, ErrInvalidID.Error())
 		return
 	}
 
 	user, err := h.service.GetUserByID(r.Context(), id)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		http.Error(w, ErrInternalServer.Error(), http.StatusInternalServerError)
-		slog.Error("GetByID", "error", err)
+		WriteError(w, r, http.StatusInternalServerError, ErrInternalServerError.Error())
 		return
 	}
 
 	// encode and write the response
 	if err := json.NewEncoder(w).Encode(user); err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		http.Error(w, ErrInternalServer.Error(), http.StatusInternalServerError)
-		slog.Error("GetByID", "error", err)
+		WriteError(w, r, http.StatusInternalServerError, ErrInternalServerError.Error())
 		return
 	}
 
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -99,50 +81,33 @@ func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} string
 // @Router /users [post]
 func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-
-	if r.Method != http.MethodPost {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		slog.Error("CreateUser", "error", errors.New("method not allowed"))
-		return
-	}
-
 	var user model.CreateUserRequest
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
-		slog.Error("CreateUser", "error", err)
+		WriteError(w, r, http.StatusBadRequest, ErrInvalidRequestBody.Error())
 		return
 	}
 
 	if user.FirstName == "" {
-		w.WriteHeader(http.StatusBadRequest)
-		http.Error(w, "First name is required", http.StatusBadRequest)
-		slog.Error("CreateUser", "error", errors.New("first name is required"))
+		WriteError(w, r, http.StatusBadRequest, "First name is required")
 		return
 	}
 
 	if user.LastName == "" {
-		w.WriteHeader(http.StatusBadRequest)
-		http.Error(w, "Last name is required", http.StatusBadRequest)
-		slog.Error("CreateUser", "error", errors.New("last name is required"))
+		WriteError(w, r, http.StatusBadRequest, "Last name is required")
 		return
 	}
 
 	if user.Email == "" {
-		w.WriteHeader(http.StatusBadRequest)
-		http.Error(w, "Email is required", http.StatusBadRequest)
+		WriteError(w, r, http.StatusBadRequest, "Email is required")
 		return
 	}
 
 	if err := h.service.CreateUser(r.Context(), &user); err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
-		slog.Error("CreateUser", "error", err)
+		WriteError(w, r, http.StatusInternalServerError, ErrInternalServerError.Error())
 		return
 	}
 
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 }
 
@@ -158,34 +123,22 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} string
 // @Router /users/{id} [put]
 func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPut {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
 	idParam := r.PathValue("id")
 	if idParam == "" {
-		w.WriteHeader(http.StatusBadRequest)
-		http.Error(w, "ID is required", http.StatusBadRequest)
-		slog.Error("UpdateUser", "error", errors.New("ID is required"))
+		WriteError(w, r, http.StatusBadRequest, ErrIDRequired.Error())
 		return
 	}
 
 	// convert the id to uuid.UUID
 	id, err := uuid.Parse(idParam)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		http.Error(w, "Invalid ID", http.StatusBadRequest)
-		slog.Error("UpdateUser", "error", err)
+		WriteError(w, r, http.StatusBadRequest, ErrInvalidID.Error())
 		return
 	}
 
 	var user model.User
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
-		slog.Error("UpdateUser", "error", err)
+		WriteError(w, r, http.StatusBadRequest, ErrInvalidRequestBody.Error())
 		return
 	}
 
@@ -194,19 +147,16 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 
 	// at least one field must be updated
 	if user.FirstName == "" && user.LastName == "" && user.Email == "" {
-		w.WriteHeader(http.StatusBadRequest)
-		http.Error(w, "At least one field must be updated", http.StatusBadRequest)
-		slog.Error("UpdateUser", "error", errors.New("at least one field must be updated"))
+		WriteError(w, r, http.StatusBadRequest, "At least one field must be updated")
 		return
 	}
 
 	if err := h.service.UpdateUser(r.Context(), &user); err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
-		slog.Error("UpdateUser", "error", err)
+		WriteError(w, r, http.StatusInternalServerError, ErrInternalServerError.Error())
 		return
 	}
 
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -219,33 +169,25 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} string
 // @Router /users/{id} [delete]
 func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodDelete {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
 	idParam := r.PathValue("id")
 	if idParam == "" {
-		w.WriteHeader(http.StatusBadRequest)
-		http.Error(w, "ID is required", http.StatusBadRequest)
+		WriteError(w, r, http.StatusBadRequest, ErrIDRequired.Error())
 		return
 	}
 
 	// convert the id to uuid.UUID
 	id, err := uuid.Parse(idParam)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		http.Error(w, "Invalid ID", http.StatusBadRequest)
+		WriteError(w, r, http.StatusBadRequest, ErrInvalidID.Error())
 		return
 	}
 
 	if err := h.service.DeleteUser(r.Context(), id); err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		WriteError(w, r, http.StatusInternalServerError, ErrInternalServerError.Error())
 		return
 	}
 
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -267,21 +209,12 @@ func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 	var req model.ListUserRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		// if err is distinct from EOF
 		if err != io.EOF {
-			w.WriteHeader(http.StatusBadRequest)
-			http.Error(w, "Invalid request body", http.StatusBadRequest)
-			slog.Error("ListUsers", "error", err)
+			WriteError(w, r, http.StatusBadRequest, ErrInvalidRequestBody.Error())
 			return
 		}
 	}
 	defer r.Body.Close()
-
-	if r.Method != http.MethodGet {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
 
 	// paginator
 	nextToken := r.URL.Query().Get("next_token")
@@ -302,22 +235,18 @@ func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 		fields = strings.Split(fieldsFields, ",")
 	}
 
-	slog.Debug("ListUsers", "sort", sort, "filter", filter, "fields", fields, "next_token", nextToken, "prev_token", prevToken, "limit", limitString)
-
 	// convert the limit to int
 	limit := paginator.DefaultLimit
 	var err error
 	if limitString != "" {
 		limit, err = strconv.Atoi(limitString)
 		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			http.Error(w, "Invalid limit", http.StatusBadRequest)
+			WriteError(w, r, http.StatusBadRequest, "Invalid limit")
 			return
 		}
 
 		if limit < 0 {
-			w.WriteHeader(http.StatusBadRequest)
-			http.Error(w, "Limit must be greater than or equal to 0", http.StatusBadRequest)
+			WriteError(w, r, http.StatusBadRequest, "Limit must be greater than or equal to 0")
 			return
 		}
 		if limit == 0 {
@@ -338,8 +267,7 @@ func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 
 	usersResponse, err := h.service.ListUsers(r.Context(), params)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		WriteError(w, r, http.StatusInternalServerError, ErrInternalServerError.Error())
 		return
 	}
 
@@ -358,12 +286,11 @@ func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// write the response
-	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(usersResponse); err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		WriteError(w, r, http.StatusInternalServerError, ErrInternalServerError.Error())
 		return
 	}
 
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 }
