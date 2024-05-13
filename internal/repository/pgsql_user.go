@@ -74,9 +74,10 @@ func (s *PGSQLUserRepository) Insert(ctx context.Context, user *model.User) erro
 	_, err := s.db.ExecContext(ctx, query, user.ID, user.FirstName, user.LastName, user.Email)
 	if err != nil {
 		slog.Error("Insert", "error", err)
+		return err
 	}
 
-	return err
+	return nil
 }
 
 // Update updates the user with the specified ID.
@@ -113,7 +114,12 @@ func (s *PGSQLUserRepository) Update(ctx context.Context, user *model.User) erro
 	slog.Debug("Update", "query", query)
 
 	_, err := s.db.ExecContext(ctx, query)
-	return err
+	if err != nil {
+		slog.Error("Update", "error", err)
+		return err
+	}
+
+	return nil
 }
 
 // Delete deletes the user with the specified ID.
@@ -126,7 +132,12 @@ func (s *PGSQLUserRepository) Delete(ctx context.Context, id uuid.UUID) error {
 	slog.Debug("Delete", "query", query)
 
 	_, err := s.db.ExecContext(ctx, query)
-	return err
+	if err != nil {
+		slog.Error("Delete", "error", err)
+		return err
+	}
+
+	return nil
 }
 
 // SelectByID returns the user with the specified ID.

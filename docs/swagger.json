@@ -2,11 +2,8 @@
     "swagger": "2.0",
     "info": {
         "description": "This is a service template for building RESTful APIs in Go.\nIt uses a PostgreSQL database to store user information.\nThe service provides:\n- CRUD operations for users.\n- Health and version endpoints.\n- Configuration using environment variables or command line arguments.\n- Debug mode to enable debug logging.\n- TLS enabled to secure the communication.",
-        "contact": {},
-        "version": "1.0.0"
+        "contact": {}
     },
-    "host": "localhost:8080",
-    "basePath": "/",
     "paths": {
         "/health": {
             "get": {
@@ -23,6 +20,12 @@
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/model.Health"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handler.APIError"
                         }
                     }
                 }
@@ -44,6 +47,12 @@
                         "schema": {
                             "$ref": "#/definitions/model.Health"
                         }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handler.APIError"
+                        }
                     }
                 }
             }
@@ -63,6 +72,12 @@
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/model.Health"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handler.APIError"
                         }
                     }
                 }
@@ -129,10 +144,16 @@
                             "$ref": "#/definitions/model.ListUserResponse"
                         }
                     },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handler.APIError"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/handler.APIError"
                         }
                     }
                 }
@@ -167,10 +188,16 @@
                             "type": "string"
                         }
                     },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handler.APIError"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/handler.APIError"
                         }
                     }
                 }
@@ -202,10 +229,16 @@
                             "$ref": "#/definitions/model.User"
                         }
                     },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handler.APIError"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/handler.APIError"
                         }
                     }
                 }
@@ -244,10 +277,16 @@
                     "200": {
                         "description": "OK"
                     },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handler.APIError"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/handler.APIError"
                         }
                     }
                 }
@@ -271,10 +310,36 @@
                     "200": {
                         "description": "OK"
                     },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handler.APIError"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/handler.APIError"
+                        }
+                    }
+                }
+            }
+        },
+        "/version": {
+            "get": {
+                "description": "Get the version of the service",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "version"
+                ],
+                "summary": "Get the version of the service",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/version.VersionInfo"
                         }
                     }
                 }
@@ -282,7 +347,19 @@
         }
     },
     "definitions": {
+        "handler.APIError": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                },
+                "status_code": {
+                    "type": "integer"
+                }
+            }
+        },
         "model.Check": {
+            "description": "Check information.",
             "type": "object",
             "properties": {
                 "data": {
@@ -305,6 +382,7 @@
             }
         },
         "model.CreateUserRequest": {
+            "description": "Create user request.",
             "type": "object",
             "properties": {
                 "email": {
@@ -326,6 +404,7 @@
             }
         },
         "model.Health": {
+            "description": "Health information.",
             "type": "object",
             "properties": {
                 "checks": {
@@ -362,6 +441,7 @@
             }
         },
         "model.UpdateUserRequest": {
+            "description": "Update user request.",
             "type": "object",
             "properties": {
                 "email": {
@@ -379,6 +459,7 @@
             }
         },
         "model.User": {
+            "description": "User information.",
             "type": "object",
             "properties": {
                 "created_at": {
@@ -433,6 +514,32 @@
                 "size": {
                     "description": "Size is the number of elements in the current page.",
                     "type": "integer"
+                }
+            }
+        },
+        "version.VersionInfo": {
+            "type": "object",
+            "properties": {
+                "buildDate": {
+                    "type": "string"
+                },
+                "gitBranch": {
+                    "type": "string"
+                },
+                "gitCommit": {
+                    "type": "string"
+                },
+                "goVersion": {
+                    "type": "string"
+                },
+                "goVersionArch": {
+                    "type": "string"
+                },
+                "goVersionOS": {
+                    "type": "string"
+                },
+                "version": {
+                    "type": "string"
                 }
             }
         }

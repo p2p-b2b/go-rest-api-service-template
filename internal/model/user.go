@@ -17,6 +17,7 @@ var (
 )
 
 // User represents a user entity.
+// @Description User information.
 type User struct {
 	// ID is the unique identifier of the user.
 	ID uuid.UUID `json:"id"`
@@ -38,6 +39,7 @@ type User struct {
 }
 
 // CreateUserRequest represents the input for the CreateUser method.
+// @Description Create user request.
 type CreateUserRequest struct {
 	// ID is the unique identifier of the user.
 	ID uuid.UUID `json:"id"`
@@ -53,6 +55,7 @@ type CreateUserRequest struct {
 }
 
 // UpdateUserRequest represents the input for the UpdateUser method.
+// @Description Update user request.
 type UpdateUserRequest struct {
 	// FirstName is the first name of the user.
 	FirstName string `json:"first_name"`
@@ -65,6 +68,7 @@ type UpdateUserRequest struct {
 }
 
 // ListUserRequest represents the input for the ListUser method.
+// @Description List user request.
 type ListUserRequest struct {
 	// Sort is the field to sort by.
 	Sort string `json:"sort,omitempty"`
@@ -104,6 +108,8 @@ type ListUserResponse struct {
 	Paginator paginator.Paginator `json:"paginator,omitempty"`
 }
 
+// SelectAllUserQueryInput represents the input for the SelectAllUserQuery method.
+// @Description Select all users query input.
 type SelectAllUserQueryInput struct {
 	// Sort is the field to sort by.
 	Sort string `json:"sort,omitempty"`
@@ -118,6 +124,8 @@ type SelectAllUserQueryInput struct {
 	Paginator paginator.Paginator `json:"paginator,omitempty"`
 }
 
+// SelectAllUserQueryOutput represents the output for the SelectAllUserQuery method.
+// @Description Select all users query output.
 type SelectAllUserQueryOutput struct {
 	// Items is a list of users.
 	Items []*User `json:"data"`

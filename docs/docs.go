@@ -31,6 +31,12 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/model.Health"
                         }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handler.APIError"
+                        }
                     }
                 }
             }
@@ -51,6 +57,12 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/model.Health"
                         }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handler.APIError"
+                        }
                     }
                 }
             }
@@ -70,6 +82,12 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/model.Health"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handler.APIError"
                         }
                     }
                 }
@@ -136,10 +154,16 @@ const docTemplate = `{
                             "$ref": "#/definitions/model.ListUserResponse"
                         }
                     },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handler.APIError"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/handler.APIError"
                         }
                     }
                 }
@@ -174,10 +198,16 @@ const docTemplate = `{
                             "type": "string"
                         }
                     },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handler.APIError"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/handler.APIError"
                         }
                     }
                 }
@@ -209,10 +239,16 @@ const docTemplate = `{
                             "$ref": "#/definitions/model.User"
                         }
                     },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handler.APIError"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/handler.APIError"
                         }
                     }
                 }
@@ -251,10 +287,16 @@ const docTemplate = `{
                     "200": {
                         "description": "OK"
                     },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handler.APIError"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/handler.APIError"
                         }
                     }
                 }
@@ -278,10 +320,36 @@ const docTemplate = `{
                     "200": {
                         "description": "OK"
                     },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handler.APIError"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/handler.APIError"
+                        }
+                    }
+                }
+            }
+        },
+        "/version": {
+            "get": {
+                "description": "Get the version of the service",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "version"
+                ],
+                "summary": "Get the version of the service",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/version.VersionInfo"
                         }
                     }
                 }
@@ -289,7 +357,19 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "handler.APIError": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                },
+                "status_code": {
+                    "type": "integer"
+                }
+            }
+        },
         "model.Check": {
+            "description": "Check information.",
             "type": "object",
             "properties": {
                 "data": {
@@ -312,6 +392,7 @@ const docTemplate = `{
             }
         },
         "model.CreateUserRequest": {
+            "description": "Create user request.",
             "type": "object",
             "properties": {
                 "email": {
@@ -333,6 +414,7 @@ const docTemplate = `{
             }
         },
         "model.Health": {
+            "description": "Health information.",
             "type": "object",
             "properties": {
                 "checks": {
@@ -369,6 +451,7 @@ const docTemplate = `{
             }
         },
         "model.UpdateUserRequest": {
+            "description": "Update user request.",
             "type": "object",
             "properties": {
                 "email": {
@@ -386,6 +469,7 @@ const docTemplate = `{
             }
         },
         "model.User": {
+            "description": "User information.",
             "type": "object",
             "properties": {
                 "created_at": {
@@ -442,15 +526,41 @@ const docTemplate = `{
                     "type": "integer"
                 }
             }
+        },
+        "version.VersionInfo": {
+            "type": "object",
+            "properties": {
+                "buildDate": {
+                    "type": "string"
+                },
+                "gitBranch": {
+                    "type": "string"
+                },
+                "gitCommit": {
+                    "type": "string"
+                },
+                "goVersion": {
+                    "type": "string"
+                },
+                "goVersionArch": {
+                    "type": "string"
+                },
+                "goVersionOS": {
+                    "type": "string"
+                },
+                "version": {
+                    "type": "string"
+                }
+            }
         }
     }
 }`
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "1.0.0",
-	Host:             "localhost:8080",
-	BasePath:         "/",
+	Version:          "",
+	Host:             "",
+	BasePath:         "",
 	Schemes:          []string{},
 	Title:            "",
 	Description:      "This is a service template for building RESTful APIs in Go.\nIt uses a PostgreSQL database to store user information.\nThe service provides:\n- CRUD operations for users.\n- Health and version endpoints.\n- Configuration using environment variables or command line arguments.\n- Debug mode to enable debug logging.\n- TLS enabled to secure the communication.",

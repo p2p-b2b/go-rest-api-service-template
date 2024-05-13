@@ -1,6 +1,13 @@
-basePath: /
 definitions:
+  handler.APIError:
+    properties:
+      message:
+        type: string
+      status_code:
+        type: integer
+    type: object
   model.Check:
+    description: Check information.
     properties:
       data:
         additionalProperties: true
@@ -18,6 +25,7 @@ definitions:
         type: boolean
     type: object
   model.CreateUserRequest:
+    description: Create user request.
     properties:
       email:
         description: Email is the email address of the user.
@@ -33,6 +41,7 @@ definitions:
         type: string
     type: object
   model.Health:
+    description: Health information.
     properties:
       checks:
         description: Checks is a list of health checks.
@@ -56,6 +65,7 @@ definitions:
         description: Paginator is the paginator for the list of users.
     type: object
   model.UpdateUserRequest:
+    description: Update user request.
     properties:
       email:
         description: Email is the email address of the user.
@@ -68,6 +78,7 @@ definitions:
         type: string
     type: object
   model.User:
+    description: User information.
     properties:
       created_at:
         description: Email is the email address of the user.
@@ -109,7 +120,23 @@ definitions:
         description: Size is the number of elements in the current page.
         type: integer
     type: object
-host: localhost:8080
+  version.VersionInfo:
+    properties:
+      buildDate:
+        type: string
+      gitBranch:
+        type: string
+      gitCommit:
+        type: string
+      goVersion:
+        type: string
+      goVersionArch:
+        type: string
+      goVersionOS:
+        type: string
+      version:
+        type: string
+    type: object
 info:
   contact: {}
   description: |-
@@ -121,7 +148,6 @@ info:
     - Configuration using environment variables or command line arguments.
     - Debug mode to enable debug logging.
     - TLS enabled to secure the communication.
-  version: 1.0.0
 paths:
   /health:
     get:
@@ -133,6 +159,10 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/model.Health'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.APIError'
       summary: Get the health of the service
       tags:
       - health
@@ -146,6 +176,10 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/model.Health'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.APIError'
       summary: Get the health of the service
       tags:
       - health
@@ -159,6 +193,10 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/model.Health'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.APIError'
       summary: Get the health of the service
       tags:
       - health
@@ -201,10 +239,14 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/model.ListUserResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.APIError'
         "500":
           description: Internal Server Error
           schema:
-            type: string
+            $ref: '#/definitions/handler.APIError'
       summary: List all users
       tags:
       - users
@@ -228,10 +270,14 @@ paths:
           description: Created
           schema:
             type: string
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.APIError'
         "500":
           description: Internal Server Error
           schema:
-            type: string
+            $ref: '#/definitions/handler.APIError'
       summary: Create a new user, if the id is not provided, it will be generated
       tags:
       - users
@@ -247,10 +293,14 @@ paths:
       responses:
         "200":
           description: OK
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.APIError'
         "500":
           description: Internal Server Error
           schema:
-            type: string
+            $ref: '#/definitions/handler.APIError'
       summary: Delete a user
       tags:
       - users
@@ -269,10 +319,14 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/model.User'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.APIError'
         "500":
           description: Internal Server Error
           schema:
-            type: string
+            $ref: '#/definitions/handler.APIError'
       summary: Get a user by ID
       tags:
       - users
@@ -297,11 +351,28 @@ paths:
       responses:
         "200":
           description: OK
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.APIError'
         "500":
           description: Internal Server Error
           schema:
-            type: string
+            $ref: '#/definitions/handler.APIError'
       summary: Update a user
       tags:
       - users
+  /version:
+    get:
+      description: Get the version of the service
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/version.VersionInfo'
+      summary: Get the version of the service
+      tags:
+      - version
 swagger: "2.0"

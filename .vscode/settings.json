@@ -1,5 +1,7 @@
 {
   "cSpell.words": [
+    "allocs",
+    "cmdline",
     "dbname",
     "github",
     "gomock",
@@ -16,6 +18,7 @@
     "RESTAPI",
     "sslmode",
     "swaggo",
+    "threadcreate",
     "unmarshals",
     "usrs",
     "uuid"
