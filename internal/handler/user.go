@@ -85,7 +85,7 @@ func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	var user model.CreateUserRequest
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
-		WriteError(w, r, http.StatusBadRequest, ErrInvalidRequestBody.Error())
+		WriteError(w, r, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -135,13 +135,13 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	// convert the id to uuid.UUID
 	id, err := uuid.Parse(idParam)
 	if err != nil {
-		WriteError(w, r, http.StatusBadRequest, ErrInvalidID.Error())
+		WriteError(w, r, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	var user model.User
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
-		WriteError(w, r, http.StatusBadRequest, ErrInvalidRequestBody.Error())
+		WriteError(w, r, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -155,7 +155,7 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.service.UpdateUser(r.Context(), &user); err != nil {
-		WriteError(w, r, http.StatusInternalServerError, ErrInternalServerError.Error())
+		WriteError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -184,12 +184,12 @@ func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	// convert the id to uuid.UUID
 	id, err := uuid.Parse(idParam)
 	if err != nil {
-		WriteError(w, r, http.StatusBadRequest, ErrInvalidID.Error())
+		WriteError(w, r, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	if err := h.service.DeleteUser(r.Context(), id); err != nil {
-		WriteError(w, r, http.StatusInternalServerError, ErrInternalServerError.Error())
+		WriteError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
 }
@@ -214,7 +214,7 @@ func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 	var req model.ListUserRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		if err != io.EOF {
-			WriteError(w, r, http.StatusBadRequest, ErrInvalidRequestBody.Error())
+			WriteError(w, r, http.StatusBadRequest, err.Error())
 			return
 		}
 	}
@@ -271,7 +271,7 @@ func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 
 	usersResponse, err := h.service.ListUsers(r.Context(), params)
 	if err != nil {
-		WriteError(w, r, http.StatusInternalServerError, ErrInternalServerError.Error())
+		WriteError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -292,7 +292,7 @@ func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 	// write the response
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(usersResponse); err != nil {
-		WriteError(w, r, http.StatusInternalServerError, ErrInternalServerError.Error())
+		WriteError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
 }
