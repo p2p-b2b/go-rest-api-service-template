@@ -58,10 +58,10 @@ func TestUser_GetUserByID(t *testing.T) {
 				method:           http.MethodGet,
 				pathPattern:      "/users/{id}",
 				pathValue:        "/users/123e4567-e89b-12d3-a456-426614174000",
-				serviceError:     ErrInternalServer,
+				serviceError:     ErrInternalServerError,
 				expectedHTTPCode: http.StatusInternalServerError,
-				expectedBody:     ErrInternalServer.Error() + "\n",
-				mockCall:         mockService.EXPECT().GetUserByID(gomock.Any(), gomock.Any()).Return(nil, ErrInternalServer).Times(1),
+				expectedBody:     ErrInternalServerError.Error() + "\n",
+				mockCall:         mockService.EXPECT().GetUserByID(gomock.Any(), gomock.Any()).Return(nil, ErrInternalServerError).Times(1),
 			},
 			{
 				name:             "service success",

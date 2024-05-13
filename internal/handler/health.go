@@ -34,21 +34,18 @@ func NewHealthHandler(conf *HealthUserHandlerConfig) *HealthHandler {
 // @Router /healthz [get]
 // @Router /status [get]
 func (h *HealthHandler) Get(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-
 	health, err := h.service.UserHealthCheck(r.Context())
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		http.Error(w, ErrInternalServer.Error(), http.StatusInternalServerError)
+		WriteError(w, r, http.StatusInternalServerError, ErrInternalServerError.Error())
 		return
 	}
 
 	// write the response
 	if err := json.NewEncoder(w).Encode(health); err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		http.Error(w, ErrInternalServer.Error(), http.StatusInternalServerError)
+		WriteError(w, r, http.StatusInternalServerError, ErrInternalServerError.Error())
 		return
 	}
 
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 }
