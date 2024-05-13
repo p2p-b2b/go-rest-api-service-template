@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log/slog"
+	"regexp"
 	"strings"
 	"time"
 
@@ -257,8 +258,10 @@ func (s *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.Selec
 
 	// helper function to pretty print the query
 	prettyPrintQuery := func() string {
-		out := strings.ReplaceAll(query, "   ", "")
+		ws := regexp.MustCompile(`\s+`)
+		out := ws.ReplaceAllString(query, " ")
 		out = strings.ReplaceAll(out, "\n", "")
+		out = strings.TrimSpace(out)
 		return out
 	}
 	slog.Debug("SelectAll", "query", prettyPrintQuery())

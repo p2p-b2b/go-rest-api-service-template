@@ -164,10 +164,11 @@ func main() {
 	}
 	serverURL := fmt.Sprintf("%s://%s:%d", serverProtocol, SrvConfig.Address.Value, SrvConfig.Port.Value)
 	statusURL := fmt.Sprintf("%s/status", serverURL)
-	swaggerURL := fmt.Sprintf("%s/swagger", serverURL)
+	swaggerURLIndex := fmt.Sprintf("%s/swagger/index.html", serverURL)
+	swaggerURLDocs := fmt.Sprintf("%s/swagger/doc.json", serverURL)
 
 	// Configure Swagger
-	docs.SwaggerInfo.Host = serverURL
+	docs.SwaggerInfo.Host = fmt.Sprintf("%s:%d", SrvConfig.Address.Value, SrvConfig.Port.Value)
 	docs.SwaggerInfo.BasePath = "/"
 	docs.SwaggerInfo.Schemes = []string{serverProtocol}
 	docs.SwaggerInfo.Version = version.Version
@@ -175,10 +176,6 @@ func main() {
 	// Set the default logger
 	logger = slog.New(logHandler)
 	slog.SetDefault(logger)
-
-	slog.Debug("configuration", "database", DBConfig)
-	slog.Debug("configuration", "log", LogConfig)
-	slog.Debug("configuration", "server", SrvConfig)
 
 	// Context
 	ctx := context.Background()
@@ -266,7 +263,7 @@ func main() {
 	userHandler := handler.NewUserHandler(&handler.UserHandlerConfig{
 		Service: userService,
 	})
-	swaggerHandler := httpSwagger.Handler(httpSwagger.URL(swaggerURL + "/doc.json"))
+	swaggerHandler := httpSwagger.Handler(httpSwagger.URL(swaggerURLDocs))
 
 	// Register the handlers
 	mux.HandleFunc("GET /", swaggerHandler)
@@ -381,7 +378,7 @@ func main() {
 			"address", SrvConfig.Address.Value,
 			"port", SrvConfig.Port.Value,
 			"status", statusURL,
-			"swagger", swaggerURL+"/index.html",
+			"swagger", swaggerURLIndex,
 		)
 
 		// Check if the port is 443 and start the server with TLS
