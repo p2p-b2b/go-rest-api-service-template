@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"fmt"
 	"log/slog"
-	"regexp"
 	"strings"
 	"time"
 
@@ -70,9 +69,16 @@ func (s *PGSQLUserRepository) Insert(ctx context.Context, user *model.User) erro
 	ctx, cancel := context.WithTimeout(ctx, s.MaxQueryTimeout)
 	defer cancel()
 
-	const query = "INSERT INTO users (id, first_name, last_name, email) VALUES ($1, $2, $3, $4)"
+	query := fmt.Sprintf(`INSERT INTO users (id, first_name, last_name, email) VALUES ('%s', '%s', '%s', '%s')`,
+		user.ID,
+		user.FirstName,
+		user.LastName,
+		user.Email,
+	)
 
-	_, err := s.db.ExecContext(ctx, query, user.ID, user.FirstName, user.LastName, user.Email)
+	slog.Debug("Insert", "query", prettyPrint(query))
+
+	_, err := s.db.ExecContext(ctx, query)
 	if err != nil {
 		slog.Error("Insert", "error", err)
 		return err
@@ -112,7 +118,7 @@ func (s *PGSQLUserRepository) Update(ctx context.Context, user *model.User) erro
 		user.ID,
 	)
 
-	slog.Debug("Update", "query", query)
+	slog.Debug("Update", "query", prettyPrint(query))
 
 	_, err := s.db.ExecContext(ctx, query)
 	if err != nil {
@@ -148,7 +154,7 @@ func (s *PGSQLUserRepository) SelectByID(ctx context.Context, id uuid.UUID) (*mo
 
 	query := fmt.Sprintf(`SELECT id, first_name, last_name, email FROM users WHERE id = '%s'`, id)
 
-	slog.Debug("SelectByID", "query", query)
+	slog.Debug("SelectByID", "query", prettyPrint(query))
 
 	row := s.db.QueryRowContext(ctx, query)
 
@@ -257,14 +263,7 @@ func (s *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.Selec
 	)
 
 	// helper function to pretty print the query
-	prettyPrintQuery := func() string {
-		ws := regexp.MustCompile(`\s+`)
-		out := ws.ReplaceAllString(query, " ")
-		out = strings.ReplaceAll(out, "\n", "")
-		out = strings.TrimSpace(out)
-		return out
-	}
-	slog.Debug("SelectAll", "query", prettyPrintQuery())
+	slog.Debug("SelectAll", "query", prettyPrint(query))
 
 	// execute the query
 	rows, err := s.db.QueryContext(ctx, query)
