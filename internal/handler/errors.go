@@ -24,5 +24,12 @@ func WriteError(w http.ResponseWriter, r *http.Request, statusCode int, message 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
 	http.Error(w, message, statusCode)
-	slog.Error(message, "status_code", statusCode, "method", r.Method, "url", r.URL.Path)
+	slog.Error(message,
+		"status_code", statusCode,
+		"method", r.Method,
+		"url", r.URL.Path,
+		"query", r.URL.RawQuery,
+		"user_agent", r.UserAgent(),
+		"remote_addr", r.RemoteAddr,
+	)
 }

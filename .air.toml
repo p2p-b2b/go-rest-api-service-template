@@ -10,7 +10,7 @@ args_bin = [
 ]
 bin = "./build/go-rest-api-service-template"
 cmd = "make build"
-delay = 1000
+delay = 500
 exclude_dir = [
   "assets",
   "tmp",
