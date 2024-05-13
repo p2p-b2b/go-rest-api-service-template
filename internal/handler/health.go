@@ -30,6 +30,7 @@ func NewHealthHandler(conf *HealthUserHandlerConfig) *HealthHandler {
 // @Tags health
 // @Produce json
 // @Success 200 {object} model.Health
+// @Failure 500 {object} APIError
 // @Router /health [get]
 // @Router /healthz [get]
 // @Router /status [get]

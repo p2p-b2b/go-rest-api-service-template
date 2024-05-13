@@ -313,6 +313,7 @@ clean: ## Clean the environment
 	@printf "👉 Cleaning environment...\n"
 	$(call exec_cmd, go clean -n -x -i)
 	$(call exec_cmd, rm -rf $(BUILD_DIR) $(DIST_DIR) )
+	$(call exec_cmd, rm -rf ./tmp )
 
 .PHONY: help
 help: ## Display this help

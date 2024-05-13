@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"encoding/json"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -20,10 +21,28 @@ var (
 	ErrInvalidRequestBody = errors.New("invalid request body")
 )
 
+type APIError struct {
+	StatusCode int    `json:"status_code"`
+	Message    string `json:"message"`
+}
+
+func (e *APIError) Error() string {
+	return e.Message
+}
+
 func WriteError(w http.ResponseWriter, r *http.Request, statusCode int, message string) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
-	http.Error(w, message, statusCode)
+	// http.Error(w, message, statusCode)
+
+	var err APIError
+	err.StatusCode = statusCode
+	err.Message = message
+
+	if err := json.NewEncoder(w).Encode(err); err != nil {
+		slog.Error("failed to encode error response", "error", err)
+	}
+
 	slog.Error(message,
 		"status_code", statusCode,
 		"method", r.Method,

@@ -36,6 +36,7 @@ func (s *Status) UnmarshalJSON(data []byte) error {
 }
 
 // Check represents a health check.
+// @Description Check information.
 type Check struct {
 	// Name is the name of the check.
 	Name string `json:"name"`
@@ -51,6 +52,7 @@ type Check struct {
 }
 
 // Check represents a health check.
+// @Description Health information.
 type Health struct {
 	// Status is the status of the health check.
 	Status Status `json:"status"`

@@ -37,7 +37,8 @@ func NewUserHandler(conf *UserHandlerConfig) *UserHandler {
 // @Produce json
 // @Param id path string true "User ID"
 // @Success 200 {object} model.User
-// @Failure 500 {object} string
+// @Failure 400 {object} APIError
+// @Failure 500 {object} APIError
 // @Router /users/{id} [get]
 func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	idString := r.PathValue("id")
@@ -78,12 +79,13 @@ func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 // @Produce json
 // @Param user body model.CreateUserRequest true "CreateUserRequest"
 // @Success 201 {object} string
-// @Failure 500 {object} string
+// @Failure 400 {object} APIError
+// @Failure 500 {object} APIError
 // @Router /users [post]
 func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	var user model.CreateUserRequest
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
-		WriteError(w, r, http.StatusBadRequest, ErrInvalidRequestBody.Error())
+		WriteError(w, r, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -120,7 +122,8 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 // @Param id path string true "User ID"
 // @Param user body model.UpdateUserRequest true "User"
 // @Success 200
-// @Failure 500 {object} string
+// @Failure 400 {object} APIError
+// @Failure 500 {object} APIError
 // @Router /users/{id} [put]
 func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	idParam := r.PathValue("id")
@@ -132,13 +135,13 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	// convert the id to uuid.UUID
 	id, err := uuid.Parse(idParam)
 	if err != nil {
-		WriteError(w, r, http.StatusBadRequest, ErrInvalidID.Error())
+		WriteError(w, r, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	var user model.User
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
-		WriteError(w, r, http.StatusBadRequest, ErrInvalidRequestBody.Error())
+		WriteError(w, r, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -152,7 +155,7 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.service.UpdateUser(r.Context(), &user); err != nil {
-		WriteError(w, r, http.StatusInternalServerError, ErrInternalServerError.Error())
+		WriteError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -166,9 +169,12 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 // @Tags users
 // @Param id path string true "User ID"
 // @Success 200
-// @Failure 500 {object} string
+// @Failure 400 {object} APIError
+// @Failure 500 {object} APIError
 // @Router /users/{id} [delete]
 func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
 	idParam := r.PathValue("id")
 	if idParam == "" {
 		WriteError(w, r, http.StatusBadRequest, ErrIDRequired.Error())
@@ -178,17 +184,14 @@ func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	// convert the id to uuid.UUID
 	id, err := uuid.Parse(idParam)
 	if err != nil {
-		WriteError(w, r, http.StatusBadRequest, ErrInvalidID.Error())
+		WriteError(w, r, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	if err := h.service.DeleteUser(r.Context(), id); err != nil {
-		WriteError(w, r, http.StatusInternalServerError, ErrInternalServerError.Error())
+		WriteError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
 }
 
 // ListUsers Return a paginated list of users
@@ -204,13 +207,14 @@ func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 // @Param prev_token query string false "Previous cursor"
 // @Param limit query int false "Limit"
 // @Success 200 {object} model.ListUserResponse
-// @Failure 500 {object} string
+// @Failure 400 {object} APIError
+// @Failure 500 {object} APIError
 // @Router /users [get]
 func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 	var req model.ListUserRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		if err != io.EOF {
-			WriteError(w, r, http.StatusBadRequest, ErrInvalidRequestBody.Error())
+			WriteError(w, r, http.StatusBadRequest, err.Error())
 			return
 		}
 	}
@@ -267,7 +271,7 @@ func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 
 	usersResponse, err := h.service.ListUsers(r.Context(), params)
 	if err != nil {
-		WriteError(w, r, http.StatusInternalServerError, ErrInternalServerError.Error())
+		WriteError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -286,11 +290,9 @@ func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// write the response
+	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(usersResponse); err != nil {
-		WriteError(w, r, http.StatusInternalServerError, ErrInternalServerError.Error())
+		WriteError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
 }

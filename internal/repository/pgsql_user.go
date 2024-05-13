@@ -69,14 +69,22 @@ func (s *PGSQLUserRepository) Insert(ctx context.Context, user *model.User) erro
 	ctx, cancel := context.WithTimeout(ctx, s.MaxQueryTimeout)
 	defer cancel()
 
-	const query = "INSERT INTO users (id, first_name, last_name, email) VALUES ($1, $2, $3, $4)"
+	query := fmt.Sprintf(`INSERT INTO users (id, first_name, last_name, email) VALUES ('%s', '%s', '%s', '%s')`,
+		user.ID,
+		user.FirstName,
+		user.LastName,
+		user.Email,
+	)
 
-	_, err := s.db.ExecContext(ctx, query, user.ID, user.FirstName, user.LastName, user.Email)
+	slog.Debug("Insert", "query", prettyPrint(query))
+
+	_, err := s.db.ExecContext(ctx, query)
 	if err != nil {
 		slog.Error("Insert", "error", err)
+		return err
 	}
 
-	return err
+	return nil
 }
 
 // Update updates the user with the specified ID.
@@ -110,10 +118,15 @@ func (s *PGSQLUserRepository) Update(ctx context.Context, user *model.User) erro
 		user.ID,
 	)
 
-	slog.Debug("Update", "query", query)
+	slog.Debug("Update", "query", prettyPrint(query))
 
 	_, err := s.db.ExecContext(ctx, query)
-	return err
+	if err != nil {
+		slog.Error("Update", "error", err)
+		return err
+	}
+
+	return nil
 }
 
 // Delete deletes the user with the specified ID.
@@ -126,7 +139,12 @@ func (s *PGSQLUserRepository) Delete(ctx context.Context, id uuid.UUID) error {
 	slog.Debug("Delete", "query", query)
 
 	_, err := s.db.ExecContext(ctx, query)
-	return err
+	if err != nil {
+		slog.Error("Delete", "error", err)
+		return err
+	}
+
+	return nil
 }
 
 // SelectByID returns the user with the specified ID.
@@ -136,7 +154,7 @@ func (s *PGSQLUserRepository) SelectByID(ctx context.Context, id uuid.UUID) (*mo
 
 	query := fmt.Sprintf(`SELECT id, first_name, last_name, email FROM users WHERE id = '%s'`, id)
 
-	slog.Debug("SelectByID", "query", query)
+	slog.Debug("SelectByID", "query", prettyPrint(query))
 
 	row := s.db.QueryRowContext(ctx, query)
 
@@ -245,12 +263,7 @@ func (s *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.Selec
 	)
 
 	// helper function to pretty print the query
-	prettyPrintQuery := func() string {
-		out := strings.ReplaceAll(query, "   ", "")
-		out = strings.ReplaceAll(out, "\n", "")
-		return out
-	}
-	slog.Debug("SelectAll", "query", prettyPrintQuery())
+	slog.Debug("SelectAll", "query", prettyPrint(query))
 
 	// execute the query
 	rows, err := s.db.QueryContext(ctx, query)

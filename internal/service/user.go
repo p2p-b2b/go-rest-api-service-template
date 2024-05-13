@@ -57,6 +57,7 @@ func (s *DefaultUserService) UserHealthCheck(ctx context.Context) (model.Health,
 	dbStatus := model.StatusUp
 	err := s.repository.PingContext(ctx)
 	if err != nil {
+		slog.Error("Service HealthCheck", "error", err)
 		dbStatus = model.StatusDown
 	}
 
@@ -153,6 +154,7 @@ func (s *DefaultUserService) ListUsers(ctx context.Context, lur *model.ListUserR
 
 	users := qryOut.Items
 	if len(users) == 0 {
+		slog.Debug("Service List", "message", "no users found")
 		return &model.ListUserResponse{
 			Items:     users,
 			Paginator: paginator.Paginator{},

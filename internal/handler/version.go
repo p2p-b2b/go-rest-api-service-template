@@ -1,7 +1,7 @@
 package handler
 
 import (
-	"fmt"
+	"encoding/json"
 	"net/http"
 
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/version"
@@ -16,17 +16,27 @@ func NewVersionHandler() *VersionHandler {
 }
 
 // Get returns the version of the service
+// @Summary Get the version of the service
+// @Description Get the version of the service
+// @Tags version
+// @Produce json
+// @Success 200 {object} version.VersionInfo
+// @Router /version [get]
 func (h *VersionHandler) Get(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	fmt.Fprintf(w, `{"version":"%s","buildDate":"%s","gitCommit":"%s","gitBranch":"%s","goVersion":"%s","goVersionArch":"%s","goVersionOS":"%s"}`,
-		version.Version,
-		version.BuildDate,
-		version.GitCommit,
-		version.GitBranch,
-		version.GoVersion,
-		version.GoVersionArch,
-		version.GoVersionOS,
-	)
-	w.WriteHeader(http.StatusOK)
+	v := version.VersionInfo{
+		Version:       version.Version,
+		BuildDate:     version.BuildDate,
+		GitCommit:     version.GitCommit,
+		GitBranch:     version.GitBranch,
+		GoVersion:     version.GoVersion,
+		GoVersionArch: version.GoVersionArch,
+		GoVersionOS:   version.GoVersionOS,
+	}
+
+	if err := json.NewEncoder(w).Encode(v); err != nil {
+		WriteError(w, r, http.StatusInternalServerError, ErrInternalServerError.Error())
+		return
+	}
 }
