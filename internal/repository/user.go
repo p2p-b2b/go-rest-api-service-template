@@ -37,6 +37,9 @@ type UserRepository interface {
 	// SelectByID returns the user with the specified ID.
 	SelectByID(ctx context.Context, id uuid.UUID) (*model.User, error)
 
+	// SelectByEmail returns the user with the specified email.
+	SelectByEmail(ctx context.Context, email string) (*model.User, error)
+
 	// SelectAll returns a list of users.
 	SelectAll(ctx context.Context, params *model.SelectAllUserQueryInput) (*model.SelectAllUserQueryOutput, error)
 }

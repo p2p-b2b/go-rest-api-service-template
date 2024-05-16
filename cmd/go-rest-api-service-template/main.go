@@ -133,7 +133,7 @@ func init() {
 	case "error":
 		logHandlerOptions = &slog.HandlerOptions{Level: slog.LevelError}
 	default:
-		slog.Error("Invalid log level", "level", LogConfig.Level.Value)
+		slog.Error("invalid log level", "level", LogConfig.Level.Value)
 	}
 
 	// Set the log format and output
@@ -143,7 +143,7 @@ func init() {
 	case "json":
 		logHandler = slog.NewJSONHandler(LogConfig.Output.Value.File, logHandlerOptions)
 	default:
-		slog.Error("Invalid log format", "format", LogConfig.Format.Value)
+		slog.Error("invalid log format", "format", LogConfig.Format.Value)
 	}
 }
 
@@ -164,11 +164,12 @@ func main() {
 	}
 	serverURL := fmt.Sprintf("%s://%s:%d", serverProtocol, SrvConfig.Address.Value, SrvConfig.Port.Value)
 	statusURL := fmt.Sprintf("%s/status", serverURL)
+	serverHost := fmt.Sprintf("%s:%d", SrvConfig.Address.Value, SrvConfig.Port.Value)
 	swaggerURLIndex := fmt.Sprintf("%s/swagger/index.html", serverURL)
 	swaggerURLDocs := fmt.Sprintf("%s/swagger/doc.json", serverURL)
 
 	// Configure Swagger
-	docs.SwaggerInfo.Host = fmt.Sprintf("%s:%d", SrvConfig.Address.Value, SrvConfig.Port.Value)
+	docs.SwaggerInfo.Host = serverHost
 	docs.SwaggerInfo.BasePath = "/"
 	docs.SwaggerInfo.Schemes = []string{serverProtocol}
 	docs.SwaggerInfo.Version = version.Version
@@ -179,9 +180,6 @@ func main() {
 
 	// Context
 	ctx := context.Background()
-
-	// Create a new ServeMux
-	mux := http.NewServeMux()
 
 	// Create PGSQLUserStore
 	dbDSN := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=%s TimeZone=%s",
@@ -250,20 +248,19 @@ func main() {
 		}
 	}
 
-	// Create Service
-	userService := service.NewDefaultUserService(&service.DefaultUserServiceConfig{
-		Repository: userRepository,
-	})
+	// Create Services
+	userService := service.NewUserService(userRepository)
 
 	// Create handlers
 	versionHandler := handler.NewVersionHandler()
 	healthHandler := handler.NewHealthHandler(&handler.HealthUserHandlerConfig{
-		Service: userService,
+		UserService: userService,
 	})
-	userHandler := handler.NewUserHandler(&handler.UserHandlerConfig{
-		Service: userService,
-	})
+	userHandler := handler.NewUserHandler(userService)
 	swaggerHandler := httpSwagger.Handler(httpSwagger.URL(swaggerURLDocs))
+
+	// Create a new ServeMux
+	mux := http.NewServeMux()
 
 	// Register the handlers
 	mux.HandleFunc("GET /", swaggerHandler)
@@ -298,7 +295,7 @@ func main() {
 
 	// Configure the server
 	server := &http.Server{
-		Addr:    fmt.Sprintf("%s:%d", SrvConfig.Address.Value, SrvConfig.Port.Value),
+		Addr:    serverHost,
 		Handler: mux,
 	}
 
@@ -383,7 +380,7 @@ func main() {
 
 		// Check if the port is 443 and start the server with TLS
 		if SrvConfig.TLSEnabled.Value {
-			slog.Info("server using tls")
+			slog.Info("server using tls (https)")
 			if err := server.ListenAndServeTLS(
 				SrvConfig.CertificateFile.Value.Name(),
 				SrvConfig.PrivateKeyFile.Value.Name(),

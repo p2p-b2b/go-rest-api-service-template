@@ -13,20 +13,15 @@ import (
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/service"
 )
 
-// UserHandlerConfig represents the configuration for the UserHandler.
-type UserHandlerConfig struct {
-	Service service.UserService
-}
-
 // UserHandler represents the handler for the user.
 type UserHandler struct {
 	service service.UserService
 }
 
 // NewUserHandler creates a new UserHandler.
-func NewUserHandler(conf *UserHandlerConfig) *UserHandler {
+func NewUserHandler(service service.UserService) *UserHandler {
 	return &UserHandler{
-		service: conf.Service,
+		service: service,
 	}
 }
 

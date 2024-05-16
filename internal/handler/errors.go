@@ -16,9 +16,6 @@ var (
 
 	// ErrInternalServerError is returned when an internal server error occurs.
 	ErrInternalServerError = errors.New("internal server error")
-
-	// ErrInvalidRequestBody is returned when an invalid request body is provided.
-	ErrInvalidRequestBody = errors.New("invalid request body")
 )
 
 type APIError struct {
@@ -30,10 +27,16 @@ func (e *APIError) Error() string {
 	return e.Message
 }
 
+// WriteError writes an error log and response to the client with the given status code and message.
+// The message is also logged with the request details.
+// The response is in JSON format.
+// The status code should be one of the http.Status* constants.
+// The message should be a human-readable string.
+// The request details are logged with the error message.
+// The request details include the method, URL, query, user agent, and remote address.
 func WriteError(w http.ResponseWriter, r *http.Request, statusCode int, message string) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
-	// http.Error(w, message, statusCode)
 
 	var err APIError
 	err.StatusCode = statusCode

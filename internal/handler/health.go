@@ -9,18 +9,18 @@ import (
 
 // HealthUserHandlerConfig represents the configuration used to create a new HealthHandler.
 type HealthUserHandlerConfig struct {
-	Service service.UserService
+	UserService service.UserService
 }
 
 // HealthHandler represents the handler for the health of the service.
 type HealthHandler struct {
-	service service.UserService
+	userService service.UserService
 }
 
 // NewHealthHandler returns a new instance of HealthHandler.
 func NewHealthHandler(conf *HealthUserHandlerConfig) *HealthHandler {
 	return &HealthHandler{
-		service: conf.Service,
+		userService: conf.UserService,
 	}
 }
 
@@ -35,7 +35,7 @@ func NewHealthHandler(conf *HealthUserHandlerConfig) *HealthHandler {
 // @Router /healthz [get]
 // @Router /status [get]
 func (h *HealthHandler) Get(w http.ResponseWriter, r *http.Request) {
-	health, err := h.service.UserHealthCheck(r.Context())
+	health, err := h.userService.UserHealthCheck(r.Context())
 	if err != nil {
 		WriteError(w, r, http.StatusInternalServerError, ErrInternalServerError.Error())
 		return
