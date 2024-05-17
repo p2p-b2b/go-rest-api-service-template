@@ -64,13 +64,12 @@ func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	w.Header().Set("Content-Type", "application/json")
 	// encode and write the response
 	if err := json.NewEncoder(w).Encode(user); err != nil {
 		WriteError(w, r, http.StatusInternalServerError, ErrInternalServerError.Error())
 		return
 	}
-
-	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -113,7 +112,7 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusCreated)
 }
 
@@ -125,7 +124,7 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 // @Produce json
 // @Param id path string true "User ID"
 // @Param user body model.UpdateUserRequest true "User"
-// @Success 200
+// @Success 200 {object} string
 // @Failure 400 {object} APIError
 // @Failure 500 {object} APIError
 // @Router /users/{id} [put]
@@ -163,7 +162,7 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -172,13 +171,11 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 // @Description Delete a user
 // @Tags users
 // @Param id path string true "User ID"
-// @Success 200
+// @Success 200 {object} string
 // @Failure 400 {object} APIError
 // @Failure 500 {object} APIError
 // @Router /users/{id} [delete]
 func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-
 	idParam := r.PathValue("id")
 	if idParam == "" {
 		WriteError(w, r, http.StatusBadRequest, ErrIDRequired.Error())
@@ -196,6 +193,9 @@ func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 		WriteError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
+
+	w.Header().Set("Content-Type", "text/plain")
+	w.WriteHeader(http.StatusOK)
 }
 
 // ListUsers Return a paginated list of users
@@ -299,4 +299,5 @@ func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 		WriteError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
+	w.WriteHeader(http.StatusOK)
 }

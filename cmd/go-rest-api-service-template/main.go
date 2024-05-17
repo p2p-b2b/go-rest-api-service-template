@@ -2,17 +2,13 @@ package main
 
 import (
 	"context"
-	"crypto/tls"
 	"database/sql"
-	"errors"
 	"flag"
 	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
-	"os/signal"
 	"strings"
-	"syscall"
 
 	_ "github.com/lib/pq" // load the PostgreSQL driver for database/sql
 	// _ "github.com/go-sql-driver/mysql" // load the MySQL driver for database/sql
@@ -22,6 +18,7 @@ import (
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/config"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/handler"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/repository"
+	"github.com/p2p-b2b/go-rest-api-service-template/internal/server"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/service"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/version"
 )
@@ -154,6 +151,13 @@ func init() {
 // @description - Debug mode to enable debug logging.
 // @description - TLS enabled to secure the communication.
 func main() {
+	// Set the default logger
+	logger = slog.New(logHandler)
+	slog.SetDefault(logger)
+
+	// Default context
+	ctx := context.Background()
+
 	// Configure server URL information
 	serverProtocol := "http"
 	if SrvConfig.TLSEnabled.Value {
@@ -165,18 +169,17 @@ func main() {
 	swaggerURLIndex := fmt.Sprintf("%s/swagger/index.html", serverURL)
 	swaggerURLDocs := fmt.Sprintf("%s/swagger/doc.json", serverURL)
 
-	// Configure Swagger
+	slog.Info("server endpoints",
+		"url", serverURL,
+		"status", statusURL,
+		"swagger", swaggerURLIndex,
+	)
+
+	// Configure Swagger metadata
 	docs.SwaggerInfo.Host = serverHost
 	docs.SwaggerInfo.BasePath = "/"
 	docs.SwaggerInfo.Schemes = []string{serverProtocol}
 	docs.SwaggerInfo.Version = version.Version
-
-	// Set the default logger
-	logger = slog.New(logHandler)
-	slog.SetDefault(logger)
-
-	// Context
-	ctx := context.Background()
 
 	// Create PGSQLUserStore
 	dbDSN := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=%s TimeZone=%s",
@@ -266,111 +269,17 @@ func main() {
 		pprofHandler.RegisterRoutes(mux)
 	}
 
-	// Configure the server
-	server := &http.Server{
-		Addr:    serverHost,
-		Handler: mux,
-	}
-
-	// Configure the TLS
-	if SrvConfig.TLSEnabled.Value {
-		slog.Info("configuring tls")
-		if _, err := os.Stat(SrvConfig.CertificateFile.Value.Name()); os.IsNotExist(err) {
-			slog.Error("tls.crt file not found")
-			os.Exit(1)
-		}
-
-		if _, err := os.Stat(SrvConfig.PrivateKeyFile.Value.Name()); os.IsNotExist(err) {
-			slog.Error("tls.key file not found")
-			os.Exit(1)
-		}
-
-		tlsCfg := &tls.Config{
-			MinVersion:               tls.VersionTLS12,
-			CurvePreferences:         []tls.CurveID{tls.CurveP521, tls.CurveP384, tls.CurveP256},
-			PreferServerCipherSuites: true,
-			CipherSuites: []uint16{
-				tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
-				tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
-				tls.TLS_RSA_WITH_AES_256_GCM_SHA384,
-				tls.TLS_RSA_WITH_AES_256_CBC_SHA,
-			},
-		}
-		server.TLSConfig = tlsCfg
-		server.TLSNextProto = make(map[string]func(*http.Server, *tls.Conn, http.Handler), 0)
-	}
-
-	// Wait for a signal to shutdown
-	osSigChan := make(chan os.Signal, 1)
-	signal.Notify(osSigChan, os.Interrupt, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
-	stopChan := make(chan struct{})
-
-	ctx, cancel = context.WithTimeout(ctx, SrvConfig.ShutdownTimeout.Value)
-	defer cancel()
-
-	// Handle signals
-	go func() {
-		slog.Info("waiting for os signals...")
-		for {
-			select {
-			case sig := <-osSigChan:
-				slog.Debug("received signal", "signal", sig)
-
-				// Handle the signal to shutdown the server or reload
-				switch sig {
-				case os.Interrupt, syscall.SIGINT, syscall.SIGTERM:
-					slog.Warn("shutting down server...")
-					if err := server.Shutdown(ctx); err != nil {
-						slog.Error("server shutdown with error", "error", err)
-						os.Exit(1)
-					}
-					close(stopChan)
-					return
-				case syscall.SIGHUP:
-					slog.Warn("reloading server...")
-					// Reload the server
-					// This is where you would reload the server
-
-					return
-				default:
-					slog.Warn("unknown signal", "signal", sig)
-					return
-				}
-			case <-stopChan:
-				return
-			}
-		}
-	}()
+	httpServer := server.NewHttpServer(
+		server.ServerConfig{
+			Ctx:         ctx,
+			HttpHandler: mux,
+			Config:      SrvConfig,
+		})
 
 	// Start the server
-	go func() {
-		slog.Info("starting http server",
-			"address", SrvConfig.Address.Value,
-			"port", SrvConfig.Port.Value,
-			"status", statusURL,
-			"swagger", swaggerURLIndex,
-		)
-
-		// Check if the port is 443 and start the server with TLS
-		if SrvConfig.TLSEnabled.Value {
-			slog.Info("server using tls (https)")
-			if err := server.ListenAndServeTLS(
-				SrvConfig.CertificateFile.Value.Name(),
-				SrvConfig.PrivateKeyFile.Value.Name(),
-			); !errors.Is(err, http.ErrServerClosed) {
-				slog.Error("server error", "error", err)
-				os.Exit(1)
-			}
-		} else {
-			slog.Info("server using http")
-			if err := server.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
-				slog.Error("server error", "error", err)
-				os.Exit(1)
-			}
-		}
-	}()
+	go httpServer.Start()
 
 	// Wait for stopChan to close
-	<-stopChan
+	<-httpServer.Wait()
 	slog.Info("server stopped gracefully")
 }
