@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"strconv"
@@ -108,7 +109,12 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.service.CreateUser(r.Context(), &user); err != nil {
-		WriteError(w, r, http.StatusInternalServerError, ErrInternalServerError.Error())
+		if errors.Is(err, service.ErrIdAlreadyExists) {
+			WriteError(w, r, http.StatusConflict, err.Error())
+			return
+		}
+
+		WriteError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
 

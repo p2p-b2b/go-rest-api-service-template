@@ -7,6 +7,7 @@ import (
 	"runtime"
 
 	"github.com/google/uuid"
+	"github.com/lib/pq"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/model"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/paginator"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/repository"
@@ -40,12 +41,13 @@ type UserService interface {
 }
 
 var (
+	ErrGettingUserByID    = errors.New("error getting user by ID")
+	ErrGettingUserByEmail = errors.New("error getting user by email")
 	ErrInsertingUser      = errors.New("error inserting user")
+	ErrIdAlreadyExists    = errors.New("id already exists")
 	ErrUpdatingUser       = errors.New("error updating user")
 	ErrDeletingUser       = errors.New("error deleting user")
 	ErrListingUsers       = errors.New("error listing users")
-	ErrGettingUserByID    = errors.New("error getting user by ID")
-	ErrGettingUserByEmail = errors.New("error getting user by email")
 )
 
 type User struct {
@@ -147,7 +149,15 @@ func (s *User) CreateUser(ctx context.Context, user *model.CreateUserRequest) er
 	}
 
 	if err := s.repository.Insert(ctx, newUser); err != nil {
-		slog.Error("Service CreateUser", "error", err)
+		pqErr, ok := err.(*pq.Error)
+
+		slog.Error("Service CreateUser", "error", err, "error_code", pqErr.Code)
+		if ok {
+			if pqErr.Code == "23505" {
+				return ErrIdAlreadyExists
+			}
+		}
+
 		return ErrInsertingUser
 	}
 
