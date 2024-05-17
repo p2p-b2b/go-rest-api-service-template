@@ -7,21 +7,23 @@ import (
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/service"
 )
 
-// HealthUserHandlerConfig represents the configuration used to create a new HealthHandler.
-type HealthUserHandlerConfig struct {
-	UserService service.UserService
-}
-
 // HealthHandler represents the handler for the health of the service.
 type HealthHandler struct {
 	userService service.UserService
 }
 
 // NewHealthHandler returns a new instance of HealthHandler.
-func NewHealthHandler(conf *HealthUserHandlerConfig) *HealthHandler {
+func NewHealthHandler(us service.UserService) *HealthHandler {
 	return &HealthHandler{
-		userService: conf.UserService,
+		userService: us,
 	}
+}
+
+// RegisterRoutes registers the routes for the handler.
+func (h *HealthHandler) RegisterRoutes(mux *http.ServeMux) {
+	mux.HandleFunc("/health", h.Get)
+	mux.HandleFunc("/healthz", h.Get)
+	mux.HandleFunc("/status", h.Get)
 }
 
 // Get returns the health of the service

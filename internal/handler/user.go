@@ -25,6 +25,15 @@ func NewUserHandler(service service.UserService) *UserHandler {
 	}
 }
 
+// RegisterRoutes registers the routes for the user.
+func (h *UserHandler) RegisterRoutes(mux *http.ServeMux) {
+	mux.HandleFunc("GET /users/{id}", h.GetByID)
+	mux.HandleFunc("PUT /users/{id}", h.UpdateUser)
+	mux.HandleFunc("DELETE /users/{id}", h.DeleteUser)
+	mux.HandleFunc("POST /users", h.CreateUser)
+	mux.HandleFunc("GET /users", h.ListUsers)
+}
+
 // GetByID Get a user by ID
 // @Summary Get a user by ID
 // @Description Get a user by ID

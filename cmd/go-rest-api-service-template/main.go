@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"net/http/pprof"
 	"os"
 	"os/signal"
 	"strings"
@@ -25,8 +24,6 @@ import (
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/repository"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/service"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/version"
-
-	httpSwagger "github.com/swaggo/http-swagger/v2"
 )
 
 var (
@@ -253,44 +250,20 @@ func main() {
 
 	// Create handlers
 	versionHandler := handler.NewVersionHandler()
-	healthHandler := handler.NewHealthHandler(&handler.HealthUserHandlerConfig{
-		UserService: userService,
-	})
+	healthHandler := handler.NewHealthHandler(userService)
 	userHandler := handler.NewUserHandler(userService)
-	swaggerHandler := httpSwagger.Handler(httpSwagger.URL(swaggerURLDocs))
+	swaggerHandler := handler.NewSwaggerHandler(swaggerURLDocs)
+	pprofHandler := handler.NewPprofHandler()
 
-	// Create a new ServeMux
+	// Create a new ServeMux and register the handlers
 	mux := http.NewServeMux()
+	swaggerHandler.RegisterRoutes(mux)
+	healthHandler.RegisterRoutes(mux)
+	versionHandler.RegisterRoutes(mux)
+	userHandler.RegisterRoutes(mux)
 
-	// Register the handlers
-	mux.HandleFunc("GET /", swaggerHandler)
-
-	mux.HandleFunc("GET /version", versionHandler.Get)
-
-	mux.HandleFunc("GET /health", healthHandler.Get)
-	mux.HandleFunc("GET /healthz", healthHandler.Get)
-	mux.HandleFunc("GET /status", healthHandler.Get)
-
-	mux.HandleFunc("GET /users/{id}", userHandler.GetByID)
-	mux.HandleFunc("PUT /users/{id}", userHandler.UpdateUser)
-	mux.HandleFunc("DELETE /users/{id}", userHandler.DeleteUser)
-	mux.HandleFunc("POST /users", userHandler.CreateUser)
-	mux.HandleFunc("GET /users", userHandler.ListUsers)
-
-	// Configure pprof
 	if SrvConfig.PprofEnabled.Value {
-		slog.Info("configuring pprof")
-		mux.HandleFunc("GET /debug/pprof/", pprof.Index)
-		mux.HandleFunc("GET /debug/pprof/cmdline", pprof.Cmdline)
-		mux.HandleFunc("GET /debug/pprof/profile", pprof.Profile)
-		mux.HandleFunc("GET /debug/pprof/symbol", pprof.Symbol)
-		mux.HandleFunc("GET /debug/pprof/trace", pprof.Trace)
-		mux.HandleFunc("GET /debug/pprof/allocs", pprof.Handler("allocs").ServeHTTP)
-		mux.HandleFunc("GET /debug/pprof/block", pprof.Handler("block").ServeHTTP)
-		mux.HandleFunc("GET /debug/pprof/goroutine", pprof.Handler("goroutine").ServeHTTP)
-		mux.HandleFunc("GET /debug/pprof/heap", pprof.Handler("heap").ServeHTTP)
-		mux.HandleFunc("GET /debug/pprof/mutex", pprof.Handler("mutex").ServeHTTP)
-		mux.HandleFunc("GET /debug/pprof/threadcreate", pprof.Handler("threadcreate").ServeHTTP)
+		pprofHandler.RegisterRoutes(mux)
 	}
 
 	// Configure the server
