@@ -59,6 +59,15 @@ AWS_SAM_PROJECT_APP_NAME   ?= idpscim
 AWS_SAM_OS                 ?= linux
 AWS_SAM_ARCH               ?= arm64
 
+# detect operating system for sed command
+UNAME_S := $(shell uname -s)
+ifeq ($(UNAME_S),Linux)
+	SED_CMD := sed -i
+endif
+ifeq ($(UNAME_S),Darwin)
+	SED_CMD := sed -i .removeit
+endif
+
 ######## Functions ########
 # this is a funtion that will execute a command and print a message
 # MAKE_DEBUG=true make <target> will print the command
@@ -255,8 +264,9 @@ rename-project: clean ## Rename the project.  This must be the first command to 
 	$(if $(filter $(PROJECT_NAME), $(GIT_REPOSITORY_NAME)), \
 		$(call exec_cmd, echo project has the right name ) \
 	, \
-		$(call exec_cmd, find . -type f -exec sed -i 's/$(PROJECT_NAME)/$(GIT_REPOSITORY_NAME)/g' {} + ) \
+		$(call exec_cmd, grep -rl . | xargs $(SED_CMD) \"s/$(PROJECT_NAME)/$(GIT_REPOSITORY_NAME)/g\" ) \
 		$(call exec_cmd, mv cmd/$(PROJECT_NAME) cmd/$(GIT_REPOSITORY_NAME) ) \
+		$(call exec_cmd, find . -name \"*.removeit\" -exec rm -f {} + ) \
 	)
 
 ###############################################################################
