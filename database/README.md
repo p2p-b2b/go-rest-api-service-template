@@ -15,7 +15,7 @@ go install github.com/pressly/goose/v3/cmd/goose@latest
 Export the database connection string
 
 ```bash
-export DATABASE_DSN="host=localhost port=5432 user=username password=password dbname=go-template-service sslmode=disable TimeZone=UTC"
+export DATABASE_DSN="host=localhost port=5432 user=username password=password dbname=go-rest-api-service-template sslmode=disable TimeZone=UTC"
 ````
 
 ```bash
