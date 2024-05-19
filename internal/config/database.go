@@ -11,7 +11,7 @@ const (
 	DefaultDatabasePort     = 5432
 	DefaultDatabaseUsername = "username"
 	DefaultDatabasePassword = "password"
-	DefaultDatabaseName     = "go-template-service"
+	DefaultDatabaseName     = "go-rest-api-service-template"
 	DefaultDatabaseSSLMode  = "disable"
 	DefaultDatabaseTimeZone = "UTC"
 

@@ -32,7 +32,7 @@ spec:
         - name: POSTGRES_USER
           value: username
         - name: POSTGRES_DB
-          value: go-template-service
+          value: go-rest-api-service-template
       image: docker.io/library/postgres:16
       ports:
         - containerPort: 5432
