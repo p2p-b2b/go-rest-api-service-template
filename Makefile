@@ -250,7 +250,7 @@ start-dev-env: stop-dev-env install-air install-swag install-goose ## Run the ap
 		$(call exec_cmd, podman play kube dev-service-pod.yaml )
 
 .PHONY: rename-project
-rename-project: ## Rename the project.  This must be the first command to run after cloning the repository created from the template
+rename-project: clean ## Rename the project.  This must be the first command to run after cloning the repository created from the template
 	@printf "👉 Renaming project...\n"
 	$(if $(filter $(PROJECT_NAME), $(GIT_REPOSITORY_NAME)), \
 		$(call exec_cmd, echo project has the right name ) \
