@@ -252,14 +252,12 @@ start-dev-env: stop-dev-env install-air install-swag install-goose ## Run the ap
 .PHONY: rename-project
 rename-project: ## Rename the project.  This must be the first command to run after cloning the repository created from the template
 	@printf "👉 Renaming project...\n"
-	# check if the project name is the same as the repository name
 	$(if $(filter $(PROJECT_NAME), $(GIT_REPOSITORY_NAME)), \
-		$(call exec_cmd, echo "The project name is the same as the repository name, nothing to do" ) \
+		$(call exec_cmd, echo project has the right name ) \
 	, \
 		$(call exec_cmd, find . -type f -exec sed -i 's/$(PROJECT_NAME)/$(GIT_REPOSITORY_NAME)/g' {} + ) \
 		$(call exec_cmd, mv cmd/$(PROJECT_NAME) cmd/$(GIT_REPOSITORY_NAME) ) \
 	)
-
 
 ###############################################################################
 ##@ Container commands
