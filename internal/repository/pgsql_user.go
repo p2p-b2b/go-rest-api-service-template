@@ -26,18 +26,18 @@ type PGSQLUserRepository struct {
 	db *sql.DB
 
 	// MaxQueryTimeout is the maximum time a query can take.
-	MaxPingTimeout time.Duration
+	maxPingTimeout time.Duration
 
 	// MaxQueryTimeout is the maximum time a query can take.
-	MaxQueryTimeout time.Duration
+	maxQueryTimeout time.Duration
 }
 
 // NewPGSQLUserRepository creates a new PGSQLUserRepository.
 func NewPGSQLUserRepository(conf PGSQLUserRepositoryConfig) *PGSQLUserRepository {
 	return &PGSQLUserRepository{
 		db:              conf.DB,
-		MaxPingTimeout:  conf.MaxPingTimeout,
-		MaxQueryTimeout: conf.MaxQueryTimeout,
+		maxPingTimeout:  conf.MaxPingTimeout,
+		maxQueryTimeout: conf.MaxQueryTimeout,
 	}
 }
 
@@ -58,7 +58,7 @@ func (s *PGSQLUserRepository) Close() error {
 
 // PingContext verifies a connection to the repository is still alive, establishing a connection if necessary.
 func (s *PGSQLUserRepository) PingContext(ctx context.Context) error {
-	ctx, cancel := context.WithTimeout(ctx, s.MaxPingTimeout)
+	ctx, cancel := context.WithTimeout(ctx, s.maxPingTimeout)
 	defer cancel()
 
 	return s.db.PingContext(ctx)
@@ -66,10 +66,12 @@ func (s *PGSQLUserRepository) PingContext(ctx context.Context) error {
 
 // Insert a new user into the database.
 func (s *PGSQLUserRepository) Insert(ctx context.Context, user *model.User) error {
-	ctx, cancel := context.WithTimeout(ctx, s.MaxQueryTimeout)
+	ctx, cancel := context.WithTimeout(ctx, s.maxQueryTimeout)
 	defer cancel()
 
-	query := fmt.Sprintf(`INSERT INTO users (id, first_name, last_name, email) VALUES ('%s', '%s', '%s', '%s')`,
+	query := fmt.Sprintf(`
+        INSERT INTO users (id, first_name, last_name, email)
+        VALUES ('%s', '%s', '%s', '%s')`,
 		user.ID,
 		user.FirstName,
 		user.LastName,
@@ -80,7 +82,6 @@ func (s *PGSQLUserRepository) Insert(ctx context.Context, user *model.User) erro
 
 	_, err := s.db.ExecContext(ctx, query)
 	if err != nil {
-		slog.Error("Insert", "error", err)
 		return err
 	}
 
@@ -89,7 +90,7 @@ func (s *PGSQLUserRepository) Insert(ctx context.Context, user *model.User) erro
 
 // Update updates the user with the specified ID.
 func (s *PGSQLUserRepository) Update(ctx context.Context, user *model.User) error {
-	ctx, cancel := context.WithTimeout(ctx, s.MaxQueryTimeout)
+	ctx, cancel := context.WithTimeout(ctx, s.maxQueryTimeout)
 	defer cancel()
 
 	var queryFields []string
@@ -113,7 +114,9 @@ func (s *PGSQLUserRepository) Update(ctx context.Context, user *model.User) erro
 
 	fields := strings.Join(queryFields, ", ")
 
-	query := fmt.Sprintf(`UPDATE users SET %s WHERE id = '%s'`,
+	query := fmt.Sprintf(`
+        UPDATE users SET %s
+        WHERE id = '%s'`,
 		fields,
 		user.ID,
 	)
@@ -131,10 +134,14 @@ func (s *PGSQLUserRepository) Update(ctx context.Context, user *model.User) erro
 
 // Delete deletes the user with the specified ID.
 func (s *PGSQLUserRepository) Delete(ctx context.Context, id uuid.UUID) error {
-	ctx, cancel := context.WithTimeout(ctx, s.MaxQueryTimeout)
+	ctx, cancel := context.WithTimeout(ctx, s.maxQueryTimeout)
 	defer cancel()
 
-	query := fmt.Sprintf(`DELETE FROM users WHERE id = '%s'`, id)
+	query := fmt.Sprintf(`
+        DELETE FROM users
+        WHERE id = '%s'`,
+		id,
+	)
 
 	slog.Debug("Delete", "query", query)
 
@@ -149,10 +156,15 @@ func (s *PGSQLUserRepository) Delete(ctx context.Context, id uuid.UUID) error {
 
 // SelectByID returns the user with the specified ID.
 func (s *PGSQLUserRepository) SelectByID(ctx context.Context, id uuid.UUID) (*model.User, error) {
-	ctx, cancel := context.WithTimeout(ctx, s.MaxQueryTimeout)
+	ctx, cancel := context.WithTimeout(ctx, s.maxQueryTimeout)
 	defer cancel()
 
-	query := fmt.Sprintf(`SELECT id, first_name, last_name, email FROM users WHERE id = '%s'`, id)
+	query := fmt.Sprintf(`
+        SELECT id, first_name, last_name, email
+        FROM users
+        WHERE id = '%s'`,
+		id,
+	)
 
 	slog.Debug("SelectByID", "query", prettyPrint(query))
 
@@ -166,9 +178,33 @@ func (s *PGSQLUserRepository) SelectByID(ctx context.Context, id uuid.UUID) (*mo
 	return &u, nil
 }
 
+// SelectByEmail returns the user with the specified email.
+func (s *PGSQLUserRepository) SelectByEmail(ctx context.Context, email string) (*model.User, error) {
+	ctx, cancel := context.WithTimeout(ctx, s.maxQueryTimeout)
+	defer cancel()
+
+	query := fmt.Sprintf(`
+        SELECT id, first_name, last_name, email
+        FROM users
+        WHERE email = '%s'`,
+		email,
+	)
+
+	slog.Debug("SelectByEmail", "query", prettyPrint(query))
+
+	row := s.db.QueryRowContext(ctx, query)
+
+	var u model.User
+	if err := row.Scan(&u.ID, &u.FirstName, &u.LastName, &u.Email); err != nil {
+		return nil, err
+	}
+
+	return &u, nil
+}
+
 // SelectAll returns a list of users.
 func (s *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.SelectAllUserQueryInput) (*model.SelectAllUserQueryOutput, error) {
-	ctx, cancel := context.WithTimeout(ctx, s.MaxQueryTimeout)
+	ctx, cancel := context.WithTimeout(ctx, s.maxQueryTimeout)
 	defer cancel()
 
 	if params == nil {
@@ -193,7 +229,9 @@ func (s *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.Selec
 
 	// if both next and prev tokens are provided, use next token
 	if params.Paginator.NextToken != "" && params.Paginator.PrevToken != "" {
-		slog.Warn("SelectAll", "error", "both next and prev tokens are provided, going to use next token")
+		slog.Warn("SelectAll",
+			"message",
+			"both next and prev tokens are provided, going to use next token")
 
 		// clean the prev token
 		params.Paginator.PrevToken = ""

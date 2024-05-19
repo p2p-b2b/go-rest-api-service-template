@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"strconv"
@@ -13,21 +14,25 @@ import (
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/service"
 )
 
-// UserHandlerConfig represents the configuration for the UserHandler.
-type UserHandlerConfig struct {
-	Service service.UserService
-}
-
 // UserHandler represents the handler for the user.
 type UserHandler struct {
 	service service.UserService
 }
 
 // NewUserHandler creates a new UserHandler.
-func NewUserHandler(conf *UserHandlerConfig) *UserHandler {
+func NewUserHandler(service service.UserService) *UserHandler {
 	return &UserHandler{
-		service: conf.Service,
+		service: service,
 	}
+}
+
+// RegisterRoutes registers the routes for the user.
+func (h *UserHandler) RegisterRoutes(mux *http.ServeMux) {
+	mux.HandleFunc("GET /users/{id}", h.GetByID)
+	mux.HandleFunc("PUT /users/{id}", h.UpdateUser)
+	mux.HandleFunc("DELETE /users/{id}", h.DeleteUser)
+	mux.HandleFunc("POST /users", h.CreateUser)
+	mux.HandleFunc("GET /users", h.ListUsers)
 }
 
 // GetByID Get a user by ID
@@ -60,13 +65,12 @@ func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	w.Header().Set("Content-Type", "application/json")
 	// encode and write the response
 	if err := json.NewEncoder(w).Encode(user); err != nil {
 		WriteError(w, r, http.StatusInternalServerError, ErrInternalServerError.Error())
 		return
 	}
-
-	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -105,11 +109,16 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.service.CreateUser(r.Context(), &user); err != nil {
-		WriteError(w, r, http.StatusInternalServerError, ErrInternalServerError.Error())
+		if errors.Is(err, service.ErrIdAlreadyExists) {
+			WriteError(w, r, http.StatusConflict, err.Error())
+			return
+		}
+
+		WriteError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusCreated)
 }
 
@@ -121,7 +130,7 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 // @Produce json
 // @Param id path string true "User ID"
 // @Param user body model.UpdateUserRequest true "User"
-// @Success 200
+// @Success 200 {object} string
 // @Failure 400 {object} APIError
 // @Failure 500 {object} APIError
 // @Router /users/{id} [put]
@@ -159,7 +168,7 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -168,13 +177,11 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 // @Description Delete a user
 // @Tags users
 // @Param id path string true "User ID"
-// @Success 200
+// @Success 200 {object} string
 // @Failure 400 {object} APIError
 // @Failure 500 {object} APIError
 // @Router /users/{id} [delete]
 func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-
 	idParam := r.PathValue("id")
 	if idParam == "" {
 		WriteError(w, r, http.StatusBadRequest, ErrIDRequired.Error())
@@ -192,6 +199,9 @@ func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 		WriteError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
+
+	w.Header().Set("Content-Type", "text/plain")
+	w.WriteHeader(http.StatusOK)
 }
 
 // ListUsers Return a paginated list of users
@@ -295,4 +305,5 @@ func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 		WriteError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
+	w.WriteHeader(http.StatusOK)
 }

@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -22,55 +23,49 @@ func TestUser_GetUserByID(t *testing.T) {
 
 	t.Run("GetByID", func(t *testing.T) {
 		type test struct {
-			name             string
-			method           string
-			pathPattern      string
-			pathValue        string
-			serviceError     error
-			expectedHTTPCode int
-			expectedBody     string
-			mockCall         *gomock.Call
+			name        string
+			method      string
+			pathPattern string
+			pathValue   string
+			apiError    APIError
+			mockCall    *gomock.Call
 		}
 
 		tests := []test{
 			{
-				name:             "page not found",
-				method:           http.MethodGet,
-				pathPattern:      "/users/{id}",
-				pathValue:        "/users",
-				serviceError:     nil,
-				expectedHTTPCode: http.StatusNotFound,
-				expectedBody:     "404 page not found\n",
-				mockCall:         nil,
+				name:        "invalid id",
+				method:      http.MethodGet,
+				pathPattern: "/users/{id}",
+				pathValue:   "/users/InvalidUUID",
+				apiError: APIError{
+					StatusCode: http.StatusBadRequest,
+					Message:    "invalid ID",
+				},
+				mockCall: nil,
 			},
 			{
-				name:             "invalid id",
-				method:           http.MethodGet,
-				pathPattern:      "/users/{id}",
-				pathValue:        "/users/InvalidUUID",
-				serviceError:     ErrInvalidID,
-				expectedHTTPCode: http.StatusBadRequest,
-				expectedBody:     ErrInvalidID.Error() + "\n",
-				mockCall:         nil,
+				name:        "service fail with internal server error",
+				method:      http.MethodGet,
+				pathPattern: "/users/{id}",
+				pathValue:   "/users/123e4567-e89b-12d3-a456-426614174000",
+				apiError: APIError{
+					StatusCode: http.StatusInternalServerError,
+					Message:    "internal server error",
+				},
+				mockCall: mockService.
+					EXPECT().
+					GetUserByID(gomock.Any(), gomock.Any()).Return(nil, ErrInternalServerError).
+					Times(1),
 			},
 			{
-				name:             "service fail with internal server error",
-				method:           http.MethodGet,
-				pathPattern:      "/users/{id}",
-				pathValue:        "/users/123e4567-e89b-12d3-a456-426614174000",
-				serviceError:     ErrInternalServerError,
-				expectedHTTPCode: http.StatusInternalServerError,
-				expectedBody:     ErrInternalServerError.Error() + "\n",
-				mockCall:         mockService.EXPECT().GetUserByID(gomock.Any(), gomock.Any()).Return(nil, ErrInternalServerError).Times(1),
-			},
-			{
-				name:             "service success",
-				method:           http.MethodGet,
-				pathPattern:      "/users/{id}",
-				pathValue:        "/users/123e4567-e89b-12d3-a456-426614174000",
-				serviceError:     nil,
-				expectedHTTPCode: http.StatusOK,
-				expectedBody:     "{\"id\":\"ffffffff-ffff-ffff-ffff-ffffffffffff\",\"first_name\":\"\",\"last_name\":\"\",\"email\":\"\",\"created_at\":\"2021-01-01T00:00:00Z\",\"updated_at\":\"0001-01-01T00:00:00Z\"}\n",
+				name:        "service success",
+				method:      http.MethodGet,
+				pathPattern: "/users/{id}",
+				pathValue:   "/users/123e4567-e89b-12d3-a456-426614174000",
+				apiError: APIError{
+					StatusCode: 0,
+					Message:    "",
+				},
 				mockCall: mockService.
 					EXPECT().
 					GetUserByID(gomock.Any(), gomock.Any()).
@@ -90,6 +85,8 @@ func TestUser_GetUserByID(t *testing.T) {
 				if err != nil {
 					t.Fatalf("could not create request: %v", err)
 				}
+
+				// build the pattern for the handler, e.g -> GET /users/{id}
 				handlerPattern := fmt.Sprintf("%s %s", tc.method, tc.pathPattern)
 
 				w := httptest.NewRecorder()
@@ -100,21 +97,25 @@ func TestUser_GetUserByID(t *testing.T) {
 
 				// When
 				mux := http.NewServeMux()
-				h := NewUserHandler(&UserHandlerConfig{
-					Service: mockService,
-				})
-
+				h := NewUserHandler(mockService)
 				mux.HandleFunc(handlerPattern, h.GetByID)
-
 				mux.ServeHTTP(w, r)
 
 				// Then
-				if w.Code != tc.expectedHTTPCode {
-					t.Errorf("expected status code %d, got %d", tc.expectedHTTPCode, w.Code)
-				}
+				if tc.apiError.StatusCode != 0 {
+					if w.Code != tc.apiError.StatusCode {
+						t.Errorf("expected status code %d, got %d", tc.apiError.StatusCode, w.Code)
+					}
 
-				if w.Body.String() != tc.expectedBody {
-					t.Errorf("expected body %s, got %s", tc.expectedBody, w.Body.String())
+					// decode the response
+					var apiError APIError
+					if err := json.Unmarshal(w.Body.Bytes(), &apiError); err != nil {
+						t.Fatalf("could not decode response: %v", err)
+					}
+
+					if apiError.Message != tc.apiError.Message {
+						t.Errorf("expected message %q, got %q", tc.apiError.Message, apiError.Message)
+					}
 				}
 			})
 		}

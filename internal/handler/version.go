@@ -15,6 +15,11 @@ func NewVersionHandler() *VersionHandler {
 	return &VersionHandler{}
 }
 
+// RegisterRoutes registers the routes for the version of the service.
+func (h *VersionHandler) RegisterRoutes(mux *http.ServeMux) {
+	mux.HandleFunc("GET /version", h.Get)
+}
+
 // Get returns the version of the service
 // @Summary Get the version of the service
 // @Description Get the version of the service

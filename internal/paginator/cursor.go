@@ -51,7 +51,8 @@ type Paginator struct {
 // String returns the string representation of the paginator.
 func (p *Paginator) String() string {
 	limit := fmt.Sprintf("%d", p.Limit)
-	return fmt.Sprintf("next: %s, next_token: %s, prev: %s, prev_token: %s, size: %d, limit: %s",
+
+	return fmt.Sprintf("Paginator{next: %s, next_token: %s, prev: %s, prev_token: %s, size: %d, limit: %s}",
 		p.NextPage,
 		p.NextToken,
 		p.PrevPage,
@@ -91,7 +92,10 @@ func (p *Paginator) Validate() error {
 	return nil
 }
 
-// EncodeToken encodes the date and id into a base64 string.
+// EncodeToken encodes the date and id
+// into a base64 string after joining them with a separator.
+// use the package variables DataSeparator and DateFormat
+// to set the separator and the date format.
 func EncodeToken(id uuid.UUID, date time.Time) string {
 	payload := id.String() + DataSeparator + date.Format(DateFormat)
 	return base64.StdEncoding.EncodeToString([]byte(payload))

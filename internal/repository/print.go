@@ -8,8 +8,8 @@ import (
 func prettyPrint(query string) string {
 	ws := regexp.MustCompile(`\s+`)
 
-	out := ws.ReplaceAllString(query, " ")
-	out = strings.ReplaceAll(out, "\n", "")
+	out := strings.ReplaceAll(query, "\n", "")
+	out = ws.ReplaceAllString(out, " ")
 	out = strings.TrimSpace(out)
 
 	return out

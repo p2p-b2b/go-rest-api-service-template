@@ -7,6 +7,7 @@ import (
 	"runtime"
 
 	"github.com/google/uuid"
+	"github.com/lib/pq"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/model"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/paginator"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/repository"
@@ -23,6 +24,9 @@ type UserService interface {
 	// GetUserByID returns the user with the specified ID.
 	GetUserByID(ctx context.Context, id uuid.UUID) (*model.User, error)
 
+	// GetUserByEmail returns the user with the specified email.
+	GetUserByEmail(ctx context.Context, email string) (*model.User, error)
+
 	// CreateUser inserts a new user into the database.
 	CreateUser(ctx context.Context, user *model.CreateUserRequest) error
 
@@ -36,23 +40,29 @@ type UserService interface {
 	ListUsers(ctx context.Context, params *model.ListUserRequest) (*model.ListUserResponse, error)
 }
 
-type DefaultUserServiceConfig struct {
-	Repository repository.UserRepository
-}
+var (
+	ErrGettingUserByID    = errors.New("error getting user by ID")
+	ErrGettingUserByEmail = errors.New("error getting user by email")
+	ErrInsertingUser      = errors.New("error inserting user")
+	ErrIdAlreadyExists    = errors.New("id already exists")
+	ErrUpdatingUser       = errors.New("error updating user")
+	ErrDeletingUser       = errors.New("error deleting user")
+	ErrListingUsers       = errors.New("error listing users")
+)
 
-type DefaultUserService struct {
+type User struct {
 	repository repository.UserRepository
 }
 
 // NewUserService creates a new UserService.
-func NewDefaultUserService(conf *DefaultUserServiceConfig) *DefaultUserService {
-	return &DefaultUserService{
-		repository: conf.Repository,
+func NewUserService(repository repository.UserRepository) *User {
+	return &User{
+		repository: repository,
 	}
 }
 
 // UserHealthCheck verifies a connection to the repository is still alive.
-func (s *DefaultUserService) UserHealthCheck(ctx context.Context) (model.Health, error) {
+func (s *User) UserHealthCheck(ctx context.Context) (model.Health, error) {
 	// database
 	dbStatus := model.StatusUp
 	err := s.repository.PingContext(ctx)
@@ -99,12 +109,29 @@ func (s *DefaultUserService) UserHealthCheck(ctx context.Context) (model.Health,
 }
 
 // GetUserByID returns the user with the specified ID.
-func (s *DefaultUserService) GetUserByID(ctx context.Context, id uuid.UUID) (*model.User, error) {
-	return s.repository.SelectByID(ctx, id)
+func (s *User) GetUserByID(ctx context.Context, id uuid.UUID) (*model.User, error) {
+	user, err := s.repository.SelectByID(ctx, id)
+	if err != nil {
+		slog.Error("Service GetUserByID", "error", err)
+		return nil, ErrGettingUserByID
+	}
+
+	return user, nil
+}
+
+// GetUserByEmail returns the user with the specified email.
+func (s *User) GetUserByEmail(ctx context.Context, email string) (*model.User, error) {
+	user, err := s.repository.SelectByEmail(ctx, email)
+	if err != nil {
+		slog.Error("Service GetUserByEmail", "error", err)
+		return nil, ErrGettingUserByEmail
+	}
+
+	return user, nil
 }
 
 // CreateUser inserts a new user into the database.
-func (s *DefaultUserService) CreateUser(ctx context.Context, user *model.CreateUserRequest) error {
+func (s *User) CreateUser(ctx context.Context, user *model.CreateUserRequest) error {
 	if user == nil {
 		return errors.New("user is nil")
 	}
@@ -121,21 +148,44 @@ func (s *DefaultUserService) CreateUser(ctx context.Context, user *model.CreateU
 		Email:     user.Email,
 	}
 
-	return s.repository.Insert(ctx, newUser)
+	if err := s.repository.Insert(ctx, newUser); err != nil {
+		pqErr, ok := err.(*pq.Error)
+
+		slog.Error("Service CreateUser", "error", err, "error_code", pqErr.Code)
+		if ok {
+			if pqErr.Code == "23505" {
+				return ErrIdAlreadyExists
+			}
+		}
+
+		return ErrInsertingUser
+	}
+
+	return nil
 }
 
 // UpdateUser updates the user with the specified ID.
-func (s *DefaultUserService) UpdateUser(ctx context.Context, user *model.User) error {
-	return s.repository.Update(ctx, user)
+func (s *User) UpdateUser(ctx context.Context, user *model.User) error {
+	if err := s.repository.Update(ctx, user); err != nil {
+		slog.Error("Service UpdateUser", "error", err)
+		return ErrUpdatingUser
+	}
+
+	return nil
 }
 
 // DeleteUser deletes the user with the specified ID.
-func (s *DefaultUserService) DeleteUser(ctx context.Context, id uuid.UUID) error {
-	return s.repository.Delete(ctx, id)
+func (s *User) DeleteUser(ctx context.Context, id uuid.UUID) error {
+	if err := s.repository.Delete(ctx, id); err != nil {
+		slog.Error("Service DeleteUser", "error", err)
+		return ErrDeletingUser
+	}
+
+	return nil
 }
 
 // ListUsers returns a list of users.
-func (s *DefaultUserService) ListUsers(ctx context.Context, lur *model.ListUserRequest) (*model.ListUserResponse, error) {
+func (s *User) ListUsers(ctx context.Context, lur *model.ListUserRequest) (*model.ListUserResponse, error) {
 	qParams := &model.SelectAllUserQueryInput{
 		Sort:      lur.Sort,
 		Filter:    lur.Filter,
@@ -145,8 +195,8 @@ func (s *DefaultUserService) ListUsers(ctx context.Context, lur *model.ListUserR
 
 	qryOut, err := s.repository.SelectAll(ctx, qParams)
 	if err != nil {
-		slog.Error("Service List", "error", err)
-		return nil, err
+		slog.Error("Service ListUsers", "error", err)
+		return nil, ErrListingUsers
 	}
 	if qryOut == nil {
 		return nil, nil
