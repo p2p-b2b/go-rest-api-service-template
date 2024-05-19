@@ -4,6 +4,10 @@ EXECUTABLES = go zip shasum podman
 K := $(foreach exec,$(EXECUTABLES),\
   $(if $(shell which $(exec)),some string,$(error "No $(exec) in PATH)))
 
+# this is used to rename the repository when is created from the template
+# we will use the git remote url to get the repository name
+GIT_REPOSITORY_NAME ?= $(shell git remote get-url origin | cut -d '/' -f 2 | cut -d '.' -f 1)
+
 PROJECT_NAME      ?= $(shell grep module go.mod | cut -d '/' -f 3)
 PROJECT_NAMESPACE ?= $(shell grep module go.mod | cut -d '/' -f 2 )
 PROJECT_MODULES_PATH := $(shell ls -d cmd/*)
@@ -242,8 +246,20 @@ stop-dev-env: ## Run the application in development mode
 .PHONY: start-dev-env
 start-dev-env: stop-dev-env install-air install-swag install-goose ## Run the application in development mode.  WARNING: This will stop the current running application deleting the data
 	@printf "👉 Running application in development mode...\n"
-		$(call exec_cmd, mkdir -p /tmp/go-rest-api-service-template-db-volume-host )
+		$(call exec_cmd, mkdir -p /tmp/$(PROJECT_NAME)-db-volume-host )
 		$(call exec_cmd, podman play kube dev-service-pod.yaml )
+
+.PHONY: rename-project
+rename-project: ## Rename the project.  This must be the first command to run after cloning the repository created from the template
+	@printf "👉 Renaming project...\n"
+	# check if the project name is the same as the repository name
+	$(if $(filter $(PROJECT_NAME), $(GIT_REPOSITORY_NAME)), \
+		$(call exec_cmd, echo "The project name is the same as the repository name, nothing to do" ) \
+	, \
+		$(call exec_cmd, find . -type f -exec sed -i 's/$(PROJECT_NAME)/$(GIT_REPOSITORY_NAME)/g' {} + ) \
+		$(call exec_cmd, mv cmd/$(PROJECT_NAME) cmd/$(GIT_REPOSITORY_NAME) ) \
+	)
+
 
 ###############################################################################
 ##@ Container commands
