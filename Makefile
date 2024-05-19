@@ -75,15 +75,15 @@ endif
 # NOTE: if the dommand has a > it will print the output into the original redirect of the command
 define exec_cmd
 $(if $(filter $(MAKE_DEBUG),true),\
-	$1 \
+	${1} \
 , \
 	$(if $(filter $(MAKE_STOP_ON_ERRORS),true),\
-		@$1  > /dev/null 2>&1 && printf "  🤞 ${1} ✅\n" || (printf "  ${1} ❌ 🖕\n"; exit 1) \
+		@${1}  > /dev/null 2>&1 && printf "  🤞 ${1} ✅\n" || (printf "  ${1} ❌ 🖕\n"; exit 1) \
 	, \
 		$(if $(findstring >, $1),\
-			@$1 2>/dev/null && printf "  🤞 ${1} ✅\n" || printf "  ${1} ❌ 🖕\n" \
+			@${1} 2>/dev/null && printf "  🤞 ${1} ✅\n" || printf "  ${1} ❌ 🖕\n" \
 		, \
-			@$1 > /dev/null 2>&1 && printf '  🤞 ${1} ✅\n' || printf '  ${1} ❌ 🖕\n' \
+			@${1} > /dev/null 2>&1 && printf '  🤞 ${1} ✅\n' || printf '  ${1} ❌ 🖕\n' \
 		) \
 	) \
 )
@@ -264,9 +264,9 @@ rename-project: clean ## Rename the project.  This must be the first command to 
 	$(if $(filter $(PROJECT_NAME), $(GIT_REPOSITORY_NAME)), \
 		$(call exec_cmd, echo project has the right name ) \
 	, \
-		$(call exec_cmd, grep -rl . | xargs $(SED_CMD) \"s/$(PROJECT_NAME)/$(GIT_REPOSITORY_NAME)/g\" ) \
+		$(call exec_cmd, grep -rl '$(PROJECT_NAME)' | xargs $(SED_CMD) 's|$(PROJECT_NAME)|$(GIT_REPOSITORY_NAME)|g' ) \
+		$(call exec_cmd, find . -name '*.removeit' -exec rm -f {} + ) \
 		$(call exec_cmd, mv cmd/$(PROJECT_NAME) cmd/$(GIT_REPOSITORY_NAME) ) \
-		$(call exec_cmd, find . -name \"*.removeit\" -exec rm -f {} + ) \
 	)
 
 ###############################################################################
