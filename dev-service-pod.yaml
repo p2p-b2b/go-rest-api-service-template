@@ -40,9 +40,55 @@ spec:
       volumeMounts:
         - name: go-rest-api-service-template-db-volume-host
           mountPath: /var/lib/postgresq/data
+    - name: grafana
+      args:
+        - grafana
+      image: docker.io/grafana/grafana:latest
+      ports:
+        - containerPort: 3000
+          hostPort: 3000
+          protocol: TCP
+    - name: tempo
+      args:
+      - --config.file=/mnt/config/tempo-local-config.yaml
+      image: docker.io/grafana/tempo:latest
+      ports:
+        - containerPort: 3200
+          hostPort: 3200
+          protocol: TCP
+        - containerPort: 4317
+          hostPort: 4317
+          protocol: TCP
+        - containerPort: 4318
+          hostPort: 4318
+          protocol: TCP
+        - containerPort: 9097
+          hostPort: 9097
+          protocol: TCP
+        - containerPort: 9411
+          hostPort: 9411
+          protocol: TCP
+        - containerPort: 14268
+          hostPort: 14268
+          protocol: TCP
+      volumeMounts:
+        - mountPath: /tmp/tempo:Z
+          name: tempo
+        - mountPath: /mnt/config/tempo-local-config.yaml:Z
+          name: tempo-config
 
   volumes:
     - name: go-rest-api-service-template-db-volume-host
       hostPath:
         path: /tmp/go-rest-api-service-template-db-volume-host
         type: Directory
+    - name: tempo
+      hostPath:
+        path: /tmp/go-rest-api-service-template-tempo-volume-host
+        type: Directory
+    - name: tempo-config
+      hostPath:
+        path: ./tempo-local-config.yaml
+        type: File
+    
+    

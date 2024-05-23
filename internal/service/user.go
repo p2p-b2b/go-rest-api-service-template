@@ -11,6 +11,7 @@ import (
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/model"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/paginator"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/repository"
+	"go.opentelemetry.io/otel/trace"
 )
 
 // this is a mockgen command to generate a mock for UserService
@@ -50,14 +51,20 @@ var (
 	ErrListingUsers       = errors.New("error listing users")
 )
 
+type UserConf struct {
+	Repository repository.UserRepository
+	Ot         trace.Tracer
+}
 type User struct {
 	repository repository.UserRepository
+	ot         trace.Tracer
 }
 
 // NewUserService creates a new UserService.
-func NewUserService(repository repository.UserRepository) *User {
+func NewUserService(conf UserConf) *User {
 	return &User{
-		repository: repository,
+		repository: conf.Repository,
+		ot:         conf.Ot,
 	}
 }
 
@@ -110,6 +117,8 @@ func (s *User) UserHealthCheck(ctx context.Context) (model.Health, error) {
 
 // GetUserByID returns the user with the specified ID.
 func (s *User) GetUserByID(ctx context.Context, id uuid.UUID) (*model.User, error) {
+	_, span := s.ot.Start(ctx, "DB: GetUserByID")
+	defer span.End()
 	user, err := s.repository.SelectByID(ctx, id)
 	if err != nil {
 		slog.Error("Service GetUserByID", "error", err)
@@ -121,6 +130,9 @@ func (s *User) GetUserByID(ctx context.Context, id uuid.UUID) (*model.User, erro
 
 // GetUserByEmail returns the user with the specified email.
 func (s *User) GetUserByEmail(ctx context.Context, email string) (*model.User, error) {
+	_, span := s.ot.Start(ctx, "DB: GetUserByMail")
+	defer span.End()
+
 	user, err := s.repository.SelectByEmail(ctx, email)
 	if err != nil {
 		slog.Error("Service GetUserByEmail", "error", err)
@@ -132,6 +144,9 @@ func (s *User) GetUserByEmail(ctx context.Context, email string) (*model.User, e
 
 // CreateUser inserts a new user into the database.
 func (s *User) CreateUser(ctx context.Context, user *model.CreateUserRequest) error {
+	_, span := s.ot.Start(ctx, "DB: CreateUser")
+	defer span.End()
+
 	if user == nil {
 		return errors.New("user is nil")
 	}
@@ -166,6 +181,9 @@ func (s *User) CreateUser(ctx context.Context, user *model.CreateUserRequest) er
 
 // UpdateUser updates the user with the specified ID.
 func (s *User) UpdateUser(ctx context.Context, user *model.User) error {
+	_, span := s.ot.Start(ctx, "DB: UpdateUser")
+	defer span.End()
+
 	if err := s.repository.Update(ctx, user); err != nil {
 		slog.Error("Service UpdateUser", "error", err)
 		return ErrUpdatingUser
@@ -176,6 +194,9 @@ func (s *User) UpdateUser(ctx context.Context, user *model.User) error {
 
 // DeleteUser deletes the user with the specified ID.
 func (s *User) DeleteUser(ctx context.Context, id uuid.UUID) error {
+	_, span := s.ot.Start(ctx, "DB: DeleteUser")
+	defer span.End()
+
 	if err := s.repository.Delete(ctx, id); err != nil {
 		slog.Error("Service DeleteUser", "error", err)
 		return ErrDeletingUser
@@ -186,6 +207,10 @@ func (s *User) DeleteUser(ctx context.Context, id uuid.UUID) error {
 
 // ListUsers returns a list of users.
 func (s *User) ListUsers(ctx context.Context, lur *model.ListUserRequest) (*model.ListUserResponse, error) {
+
+	_, span := s.ot.Start(ctx, "DB: ListUsers")
+	defer span.End()
+
 	qParams := &model.SelectAllUserQueryInput{
 		Sort:      lur.Sort,
 		Filter:    lur.Filter,

@@ -95,9 +95,13 @@ func TestUser_GetUserByID(t *testing.T) {
 					gomock.InOrder(tc.mockCall)
 				}
 
+				//Create handler config
+				userHandlerConf := UserHandlerConf{
+					Service: mockService,
+				}
 				// When
 				mux := http.NewServeMux()
-				h := NewUserHandler(mockService)
+				h := NewUserHandler(userHandlerConf)
 				mux.HandleFunc(handlerPattern, h.GetByID)
 				mux.ServeHTTP(w, r)
 

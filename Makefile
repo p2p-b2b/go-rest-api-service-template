@@ -250,13 +250,18 @@ install-goose: ## Install goose for database migrations (
 .PHONY: stop-dev-env
 stop-dev-env: ## Run the application in development mode
 	@printf "👉 Stopping application in development mode...\n"
-		$(call exec_cmd, podman play kube --force --down dev-service-pod.yaml )
+		$(call exec_cmd, podman play kube --down dev-service-pod.yaml )
+
+
 
 .PHONY: start-dev-env
 start-dev-env: stop-dev-env install-air install-swag install-goose ## Run the application in development mode.  WARNING: This will stop the current running application deleting the data
 	@printf "👉 Running application in development mode...\n"
 		$(call exec_cmd, mkdir -p /tmp/$(PROJECT_NAME)-db-volume-host )
+		$(call exec_cmd, mkdir -p /tmp/$(PROJECT_NAME)-tempo-volume-host )
+		$(call exec_cmd, chmod 777 /tmp/$(PROJECT_NAME)-tempo-volume-host )
 		$(call exec_cmd, podman play kube dev-service-pod.yaml )
+		
 
 .PHONY: rename-project
 rename-project: clean ## Rename the project.  This must be the first command to run after cloning the repository created from the template

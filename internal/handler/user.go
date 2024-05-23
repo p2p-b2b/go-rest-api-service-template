@@ -3,31 +3,46 @@ package handler
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"strconv"
 	"strings"
 
 	"github.com/google/uuid"
+	"github.com/p2p-b2b/go-rest-api-service-template/internal/config"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/model"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/paginator"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/service"
+	"go.opentelemetry.io/otel/trace"
 )
 
 // UserHandler represents the handler for the user.
+type UserHandlerConf struct {
+	Service     service.UserService
+	Ot          trace.Tracer
+	UserMetrics config.Metrics
+}
+
+// UserHandler represents the handler for the user.
 type UserHandler struct {
-	service service.UserService
+	service     service.UserService
+	ot          trace.Tracer
+	userMetrics config.Metrics
 }
 
 // NewUserHandler creates a new UserHandler.
-func NewUserHandler(service service.UserService) *UserHandler {
+func NewUserHandler(conf UserHandlerConf) *UserHandler {
 	return &UserHandler{
-		service: service,
+		service:     conf.Service,
+		ot:          conf.Ot,
+		userMetrics: conf.UserMetrics,
 	}
 }
 
 // RegisterRoutes registers the routes for the user.
 func (h *UserHandler) RegisterRoutes(mux *http.ServeMux) {
+
 	mux.HandleFunc("GET /users/{id}", h.GetByID)
 	mux.HandleFunc("PUT /users/{id}", h.UpdateUser)
 	mux.HandleFunc("DELETE /users/{id}", h.DeleteUser)
@@ -46,9 +61,14 @@ func (h *UserHandler) RegisterRoutes(mux *http.ServeMux) {
 // @Failure 500 {object} APIError
 // @Router /users/{id} [get]
 func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
+
+	ctx, span := h.ot.Start(r.Context(), fmt.Sprintf("%s %s", r.URL.Path[:strings.LastIndex(r.URL.Path, "/")], r.Method))
+	defer span.End()
+
 	idString := r.PathValue("id")
 	if idString == "" {
 		WriteError(w, r, http.StatusBadRequest, ErrIDRequired.Error())
+		h.recordMetrics(r.URL.Path[:strings.LastIndex(r.URL.Path, "/")], http.StatusBadRequest, r.Method)
 		return
 	}
 
@@ -56,12 +76,14 @@ func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	id, err := uuid.Parse(idString)
 	if err != nil {
 		WriteError(w, r, http.StatusBadRequest, ErrInvalidID.Error())
+		h.recordMetrics(r.URL.Path[:strings.LastIndex(r.URL.Path, "/")], http.StatusBadRequest, r.Method)
 		return
 	}
 
-	user, err := h.service.GetUserByID(r.Context(), id)
+	user, err := h.service.GetUserByID(ctx, id)
 	if err != nil {
 		WriteError(w, r, http.StatusInternalServerError, ErrInternalServerError.Error())
+		h.recordMetrics(r.URL.Path[:strings.LastIndex(r.URL.Path, "/")], http.StatusInternalServerError, r.Method)
 		return
 	}
 
@@ -69,9 +91,13 @@ func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	// encode and write the response
 	if err := json.NewEncoder(w).Encode(user); err != nil {
 		WriteError(w, r, http.StatusInternalServerError, ErrInternalServerError.Error())
+		h.recordMetrics(r.URL.Path[:strings.LastIndex(r.URL.Path, "/")], http.StatusInternalServerError, r.Method)
 		return
 	}
+	h.recordMetrics(r.URL.Path[:strings.LastIndex(r.URL.Path, "/")], http.StatusOK, r.Method)
+	//logger.InfoContext(ctx, "Result sucess")
 	w.WriteHeader(http.StatusOK)
+
 }
 
 // CreateUser Create a new user
@@ -87,38 +113,49 @@ func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} APIError
 // @Router /users [post]
 func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
+
+	_, span := h.ot.Start(r.Context(), fmt.Sprintf("%s %s", r.URL.Path[:strings.LastIndex(r.URL.Path, "/")], r.Method))
+	defer span.End()
+
 	var user model.CreateUserRequest
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
 		WriteError(w, r, http.StatusBadRequest, err.Error())
+		h.recordMetrics(r.URL.Path[:strings.LastIndex(r.URL.Path, "/")], http.StatusBadRequest, r.Method)
 		return
 	}
 
 	if user.FirstName == "" {
 		WriteError(w, r, http.StatusBadRequest, "First name is required")
+		h.recordMetrics(r.URL.Path[:strings.LastIndex(r.URL.Path, "/")], http.StatusBadRequest, r.Method)
 		return
 	}
 
 	if user.LastName == "" {
 		WriteError(w, r, http.StatusBadRequest, "Last name is required")
+		h.recordMetrics(r.URL.Path[:strings.LastIndex(r.URL.Path, "/")], http.StatusBadRequest, r.Method)
 		return
 	}
 
 	if user.Email == "" {
 		WriteError(w, r, http.StatusBadRequest, "Email is required")
+		h.recordMetrics(r.URL.Path[:strings.LastIndex(r.URL.Path, "/")], http.StatusBadRequest, r.Method)
 		return
 	}
 
 	if err := h.service.CreateUser(r.Context(), &user); err != nil {
 		if errors.Is(err, service.ErrIdAlreadyExists) {
 			WriteError(w, r, http.StatusConflict, err.Error())
+			h.recordMetrics(r.URL.Path[:strings.LastIndex(r.URL.Path, "/")], http.StatusConflict, r.Method)
 			return
 		}
 
 		WriteError(w, r, http.StatusInternalServerError, err.Error())
+		h.recordMetrics(r.URL.Path[:strings.LastIndex(r.URL.Path, "/")], http.StatusInternalServerError, r.Method)
 		return
 	}
 
 	w.Header().Set("Content-Type", "text/plain")
+	h.recordMetrics(r.URL.Path[:strings.LastIndex(r.URL.Path, "/")], http.StatusOK, r.Method)
 	w.WriteHeader(http.StatusCreated)
 }
 
@@ -135,9 +172,14 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} APIError
 // @Router /users/{id} [put]
 func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
+
+	_, span := h.ot.Start(r.Context(), fmt.Sprintf("%s %s", r.URL.Path[:strings.LastIndex(r.URL.Path, "/")], r.Method))
+	defer span.End()
+
 	idParam := r.PathValue("id")
 	if idParam == "" {
 		WriteError(w, r, http.StatusBadRequest, ErrIDRequired.Error())
+		h.recordMetrics(r.URL.Path[:strings.LastIndex(r.URL.Path, "/")], http.StatusBadRequest, r.Method)
 		return
 	}
 
@@ -145,12 +187,14 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	id, err := uuid.Parse(idParam)
 	if err != nil {
 		WriteError(w, r, http.StatusBadRequest, err.Error())
+		h.recordMetrics(r.URL.Path[:strings.LastIndex(r.URL.Path, "/")], http.StatusBadRequest, r.Method)
 		return
 	}
 
 	var user model.User
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
 		WriteError(w, r, http.StatusBadRequest, err.Error())
+		h.recordMetrics(r.URL.Path[:strings.LastIndex(r.URL.Path, "/")], http.StatusBadRequest, r.Method)
 		return
 	}
 
@@ -160,15 +204,18 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	// at least one field must be updated
 	if user.FirstName == "" && user.LastName == "" && user.Email == "" {
 		WriteError(w, r, http.StatusBadRequest, "At least one field must be updated")
+		h.recordMetrics(r.URL.Path[:strings.LastIndex(r.URL.Path, "/")], http.StatusBadRequest, r.Method)
 		return
 	}
 
 	if err := h.service.UpdateUser(r.Context(), &user); err != nil {
 		WriteError(w, r, http.StatusInternalServerError, err.Error())
+		h.recordMetrics(r.URL.Path[:strings.LastIndex(r.URL.Path, "/")], http.StatusInternalServerError, r.Method)
 		return
 	}
 
 	w.Header().Set("Content-Type", "text/plain")
+	h.recordMetrics(r.URL.Path[:strings.LastIndex(r.URL.Path, "/")], http.StatusOK, r.Method)
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -182,9 +229,14 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} APIError
 // @Router /users/{id} [delete]
 func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
+
+	_, span := h.ot.Start(r.Context(), fmt.Sprintf("%s %s", r.URL.Path[:strings.LastIndex(r.URL.Path, "/")], r.Method))
+	defer span.End()
+
 	idParam := r.PathValue("id")
 	if idParam == "" {
 		WriteError(w, r, http.StatusBadRequest, ErrIDRequired.Error())
+		h.recordMetrics(r.URL.Path[:strings.LastIndex(r.URL.Path, "/")], http.StatusBadRequest, r.Method)
 		return
 	}
 
@@ -192,15 +244,18 @@ func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	id, err := uuid.Parse(idParam)
 	if err != nil {
 		WriteError(w, r, http.StatusBadRequest, err.Error())
+		h.recordMetrics(r.URL.Path[:strings.LastIndex(r.URL.Path, "/")], http.StatusBadRequest, r.Method)
 		return
 	}
 
 	if err := h.service.DeleteUser(r.Context(), id); err != nil {
 		WriteError(w, r, http.StatusInternalServerError, err.Error())
+		h.recordMetrics(r.URL.Path[:strings.LastIndex(r.URL.Path, "/")], http.StatusInternalServerError, r.Method)
 		return
 	}
 
 	w.Header().Set("Content-Type", "text/plain")
+	h.recordMetrics(r.URL.Path[:strings.LastIndex(r.URL.Path, "/")], http.StatusOK, r.Method)
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -221,10 +276,15 @@ func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} APIError
 // @Router /users [get]
 func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
+
+	_, span := h.ot.Start(r.Context(), fmt.Sprintf("%s %s", r.URL.Path[:strings.LastIndex(r.URL.Path, "/")], r.Method))
+	defer span.End()
+
 	var req model.ListUserRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		if err != io.EOF {
 			WriteError(w, r, http.StatusBadRequest, err.Error())
+			h.recordMetrics(r.URL.Path[:strings.LastIndex(r.URL.Path, "/")], http.StatusBadRequest, r.Method)
 			return
 		}
 	}
@@ -256,11 +316,13 @@ func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 		limit, err = strconv.Atoi(limitString)
 		if err != nil {
 			WriteError(w, r, http.StatusBadRequest, "Invalid limit")
+			h.recordMetrics(r.URL.Path[:strings.LastIndex(r.URL.Path, "/")], http.StatusBadRequest, r.Method)
 			return
 		}
 
 		if limit < 0 {
 			WriteError(w, r, http.StatusBadRequest, "Limit must be greater than or equal to 0")
+			h.recordMetrics(r.URL.Path[:strings.LastIndex(r.URL.Path, "/")], http.StatusBadRequest, r.Method)
 			return
 		}
 		if limit == 0 {
@@ -282,6 +344,7 @@ func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 	usersResponse, err := h.service.ListUsers(r.Context(), params)
 	if err != nil {
 		WriteError(w, r, http.StatusInternalServerError, err.Error())
+		h.recordMetrics(r.URL.Path[:strings.LastIndex(r.URL.Path, "/")], http.StatusInternalServerError, r.Method)
 		return
 	}
 
@@ -303,7 +366,14 @@ func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(usersResponse); err != nil {
 		WriteError(w, r, http.StatusInternalServerError, err.Error())
+		h.recordMetrics(r.URL.Path[:strings.LastIndex(r.URL.Path, "/")], http.StatusInternalServerError, r.Method)
 		return
 	}
 	w.WriteHeader(http.StatusOK)
+}
+
+func (h *UserHandler) recordMetrics(path string, statusCode int, method string) {
+
+	h.userMetrics.Http_calls.WithLabelValues(path, strconv.Itoa(statusCode), method).Inc()
+
 }

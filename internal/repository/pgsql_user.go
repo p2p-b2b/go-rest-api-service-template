@@ -11,12 +11,14 @@ import (
 	"github.com/google/uuid"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/model"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/paginator"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type PGSQLUserRepositoryConfig struct {
 	DB              *sql.DB
 	MaxPingTimeout  time.Duration
 	MaxQueryTimeout time.Duration
+	Ot              trace.Tracer
 }
 
 // this implement repository.UserRepository
@@ -30,6 +32,9 @@ type PGSQLUserRepository struct {
 
 	// MaxQueryTimeout is the maximum time a query can take.
 	maxQueryTimeout time.Duration
+
+	// Tracer for openTelemetry
+	ot trace.Tracer
 }
 
 // NewPGSQLUserRepository creates a new PGSQLUserRepository.
@@ -38,6 +43,7 @@ func NewPGSQLUserRepository(conf PGSQLUserRepositoryConfig) *PGSQLUserRepository
 		db:              conf.DB,
 		maxPingTimeout:  conf.MaxPingTimeout,
 		maxQueryTimeout: conf.MaxQueryTimeout,
+		ot:              conf.Ot,
 	}
 }
 
