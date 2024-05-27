@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"flag"
 	"fmt"
-	"log"
 	"log/slog"
 	"net/http"
 	"os"
@@ -19,33 +18,24 @@ import (
 	"github.com/p2p-b2b/go-rest-api-service-template/docs"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/config"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/handler"
+	"github.com/p2p-b2b/go-rest-api-service-template/internal/opentracing"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/repository"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/server"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/service"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/version"
-
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
-	"go.opentelemetry.io/otel/sdk/resource"
-	oteltrace "go.opentelemetry.io/otel/sdk/trace"
-	semconv "go.opentelemetry.io/otel/semconv/v1.24.0"
-	"go.opentelemetry.io/otel/trace"
 )
 
 var (
 	appName = "go-rest-api-service-template"
 
-	LogConfig     = config.NewLogConfig()
-	SrvConfig     = config.NewServerConfig()
-	DBConfig      = config.NewDatabaseConfig()
-	OTConfig      = config.NewOpenTracingConfig()
-	MetricsConfig = config.NewMetricsConfig(appName)
+	LogConfig = config.NewLogConfig()
+	SrvConfig = config.NewServerConfig()
+	DBConfig  = config.NewDatabaseConfig()
+	OTConfig  = config.NewOpenTracingConfig(appName)
 
 	logHandler        slog.Handler
 	logHandlerOptions *slog.HandlerOptions
 	logger            *slog.Logger
-
-	tracer trace.Tracer
 )
 
 func init() {
@@ -88,9 +78,6 @@ func init() {
 	flag.StringVar(&OTConfig.OTLPEndpoint.Value, OTConfig.OTLPEndpoint.FlagName, config.DefaultOTLPEndpoint, OTConfig.OTLPEndpoint.FlagDescription)
 	flag.IntVar(&OTConfig.OTLPPort.Value, OTConfig.OTLPPort.FlagName, config.DefaultOTLPPort, OTConfig.OTLPPort.FlagDescription)
 
-	//Opentrace configuration values
-	flag.StringVar(&MetricsConfig.MetricsPath.Value, MetricsConfig.MetricsPath.FlagName, config.DefaultMetricsPath, MetricsConfig.MetricsPath.FlagDescription)
-
 	// Parse the command line arguments
 	flag.Bool("help", false, "Show this help message")
 	flag.Parse()
@@ -132,7 +119,6 @@ func init() {
 	DBConfig.PaseEnvVars()
 	LogConfig.ParseEnvVars()
 	OTConfig.PaseEnvVars()
-	MetricsConfig.PaseEnvVars()
 
 	// Set the log level
 	if flag.Lookup("debug").Value.(flag.Getter).Get().(bool) {
@@ -162,40 +148,6 @@ func init() {
 		slog.Error("invalid log format", "format", LogConfig.Format.Value)
 	}
 
-}
-
-// OTLP Exporter
-func newOTLPExporter(ctx context.Context) (oteltrace.SpanExporter, error) {
-	// Change default HTTPS -> HTTP
-	insecureOpt := otlptracehttp.WithInsecure()
-
-	// Update default OTLP reciver endpoint
-	endpointOpt := otlptracehttp.WithEndpoint(fmt.Sprintf("%s:%d", OTConfig.OTLPEndpoint.Value, OTConfig.OTLPPort.Value))
-	//endpointOpt := otlptracehttp.WithEndpoint("localhost:4318")
-
-	return otlptracehttp.New(ctx, insecureOpt, endpointOpt)
-}
-
-// TracerProvider is an OpenTelemetry TracerProvider.
-// It provides Tracers to instrumentation so it can trace operational flow through a system.
-func newTraceProvider(exp oteltrace.SpanExporter) *oteltrace.TracerProvider {
-	// Ensure default SDK resources and the required service name are set.
-	r, err := resource.Merge(
-		resource.Default(),
-		resource.NewWithAttributes(
-			semconv.SchemaURL,
-			semconv.ServiceName(appName),
-		),
-	)
-
-	if err != nil {
-		panic(err)
-	}
-
-	return oteltrace.NewTracerProvider(
-		oteltrace.WithBatcher(exp),
-		oteltrace.WithResource(r),
-	)
 }
 
 // @tile Golang RESTful API Service Template
@@ -305,26 +257,15 @@ func main() {
 		}
 	}
 
-	metric := config.NewMetrics(MetricsConfig)
-	// For testing to print out traces to the console
-	//exp, err := newConsoleExporter()
-	exp, err := newOTLPExporter(ctx)
+	//create OpenTrace
+	otracing := opentracing.NewOpentracing(OTConfig)
+	otracing.SetContext(ctx)
 
-	if err != nil {
-		log.Fatalf("failed to initialize exporter: %v", err)
-	}
+	//Start tracing
+	otracing.SetupOTelSDK()
 
-	// Create a new tracer provider with a batch span processor and the given exporter.
-	tp := newTraceProvider(exp)
-
-	// Handle shutdown properly so nothing leaks.
-	defer func() { _ = tp.Shutdown(ctx) }()
-
-	otel.SetTracerProvider(tp)
-
-	// Finally, set the tracer that can be used for this package.
-	tracer = tp.Tracer(appName)
-
+	//Set tracer
+	tracer := otracing.GetTracerProvider().Tracer(appName)
 	//Create user Service config
 	userServiceConf := service.UserConf{
 		Repository: userRepository,
@@ -336,9 +277,8 @@ func main() {
 
 	//Create handler config
 	userHandlerConf := handler.UserHandlerConf{
-		Service:     userService,
-		Ot:          tracer,
-		UserMetrics: *metric,
+		Service: userService,
+		Ot:      tracer,
 	}
 
 	// Create handlers
@@ -354,7 +294,6 @@ func main() {
 	healthHandler.RegisterRoutes(mux)
 	versionHandler.RegisterRoutes(mux)
 	userHandler.RegisterRoutes(mux)
-	metric.RegisterRoutes(mux)
 
 	if SrvConfig.PprofEnabled.Value {
 		pprofHandler.RegisterRoutes(mux)
