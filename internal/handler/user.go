@@ -11,28 +11,43 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/model"
+	opentelemetry "github.com/p2p-b2b/go-rest-api-service-template/internal/opentracing"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/paginator"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/service"
-	"go.opentelemetry.io/otel/trace"
+	"go.opentelemetry.io/otel/attribute"
+	otelMetric "go.opentelemetry.io/otel/metric"
 )
+
+// Mertics struct for user handler
+type Metrics struct {
+	http_count otelMetric.Int64Counter
+}
 
 // UserHandler represents the handler for the user.
 type UserHandlerConf struct {
 	Service service.UserService
-	Ot      trace.Tracer
+	Ot      *opentelemetry.Opentelemetry
 }
 
 // UserHandler represents the handler for the user.
 type UserHandler struct {
-	service service.UserService
-	ot      trace.Tracer
+	service   service.UserService
+	ot        *opentelemetry.Opentelemetry
+	mymetrics Metrics
 }
 
 // NewUserHandler creates a new UserHandler.
 func NewUserHandler(conf UserHandlerConf) *UserHandler {
+
+	http_metric, _ := conf.Ot.GetMeterProdider().Meter("scope").Int64Counter("http.calls", otelMetric.WithDescription("The number of http calls"))
+	metrics := Metrics{
+		http_count: http_metric,
+	}
+
 	return &UserHandler{
-		service: conf.Service,
-		ot:      conf.Ot,
+		service:   conf.Service,
+		ot:        conf.Ot,
+		mymetrics: metrics,
 	}
 }
 
@@ -58,11 +73,12 @@ func (h *UserHandler) RegisterRoutes(mux *http.ServeMux) {
 // @Router /users/{id} [get]
 func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 
-	ctx, span := h.ot.Start(r.Context(), fmt.Sprintf("%s %s", r.URL.Path[:strings.LastIndex(r.URL.Path, "/")], r.Method))
+	ctx, span := h.ot.GetTrace().Start(r.Context(), fmt.Sprintf("User handler: %s %s", r.URL.Path[:strings.LastIndex(r.URL.Path, "/")], r.Method))
 	defer span.End()
 
 	idString := r.PathValue("id")
 	if idString == "" {
+		h.mymetrics.http_count.Add(ctx, 1, otelMetric.WithAttributes(attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest))))
 		WriteError(w, r, http.StatusBadRequest, ErrIDRequired.Error())
 		return
 	}
@@ -70,12 +86,14 @@ func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	// convert the id to uuid.UUID
 	id, err := uuid.Parse(idString)
 	if err != nil {
+		h.mymetrics.http_count.Add(ctx, 1, otelMetric.WithAttributes(attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest))))
 		WriteError(w, r, http.StatusBadRequest, ErrInvalidID.Error())
 		return
 	}
 
 	user, err := h.service.GetUserByID(ctx, id)
 	if err != nil {
+		h.mymetrics.http_count.Add(ctx, 1, otelMetric.WithAttributes(attribute.String("code", fmt.Sprintf("%d", http.StatusInternalServerError))))
 		WriteError(w, r, http.StatusInternalServerError, ErrInternalServerError.Error())
 		return
 	}
@@ -83,10 +101,12 @@ func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	// encode and write the response
 	if err := json.NewEncoder(w).Encode(user); err != nil {
+		h.mymetrics.http_count.Add(ctx, 1, otelMetric.WithAttributes(attribute.String("code", fmt.Sprintf("%d", http.StatusInternalServerError))))
 		WriteError(w, r, http.StatusInternalServerError, ErrInternalServerError.Error())
 		return
 	}
 	//logger.InfoContext(ctx, "Result sucess")
+	h.mymetrics.http_count.Add(ctx, 1, otelMetric.WithAttributes(attribute.String("code", fmt.Sprintf("%d", http.StatusOK))))
 	w.WriteHeader(http.StatusOK)
 
 }
@@ -104,8 +124,7 @@ func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} APIError
 // @Router /users [post]
 func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
-
-	_, span := h.ot.Start(r.Context(), fmt.Sprintf("%s %s", r.URL.Path[:strings.LastIndex(r.URL.Path, "/")], r.Method))
+	_, span := h.ot.GetTrace().Start(r.Context(), fmt.Sprintf("%s %s", r.URL.Path[:strings.LastIndex(r.URL.Path, "/")], r.Method))
 	defer span.End()
 
 	var user model.CreateUserRequest
@@ -157,7 +176,7 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 // @Router /users/{id} [put]
 func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 
-	_, span := h.ot.Start(r.Context(), fmt.Sprintf("%s %s", r.URL.Path[:strings.LastIndex(r.URL.Path, "/")], r.Method))
+	_, span := h.ot.GetTrace().Start(r.Context(), fmt.Sprintf("%s %s", r.URL.Path[:strings.LastIndex(r.URL.Path, "/")], r.Method))
 	defer span.End()
 
 	idParam := r.PathValue("id")
@@ -208,7 +227,7 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 // @Router /users/{id} [delete]
 func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 
-	_, span := h.ot.Start(r.Context(), fmt.Sprintf("%s %s", r.URL.Path[:strings.LastIndex(r.URL.Path, "/")], r.Method))
+	_, span := h.ot.GetTrace().Start(r.Context(), fmt.Sprintf("%s %s", r.URL.Path[:strings.LastIndex(r.URL.Path, "/")], r.Method))
 	defer span.End()
 
 	idParam := r.PathValue("id")
@@ -251,7 +270,7 @@ func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 // @Router /users [get]
 func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 
-	_, span := h.ot.Start(r.Context(), fmt.Sprintf("%s %s", r.URL.Path[:strings.LastIndex(r.URL.Path, "/")], r.Method))
+	_, span := h.ot.GetTrace().Start(r.Context(), fmt.Sprintf("%s %s", r.URL.Path[:strings.LastIndex(r.URL.Path, "/")], r.Method))
 	defer span.End()
 
 	var req model.ListUserRequest

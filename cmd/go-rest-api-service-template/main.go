@@ -18,7 +18,7 @@ import (
 	"github.com/p2p-b2b/go-rest-api-service-template/docs"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/config"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/handler"
-	"github.com/p2p-b2b/go-rest-api-service-template/internal/opentracing"
+	opentelemetry "github.com/p2p-b2b/go-rest-api-service-template/internal/opentracing"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/repository"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/server"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/service"
@@ -31,7 +31,7 @@ var (
 	LogConfig = config.NewLogConfig()
 	SrvConfig = config.NewServerConfig()
 	DBConfig  = config.NewDatabaseConfig()
-	OTConfig  = config.NewOpenTracingConfig(appName)
+	OTConfig  = config.NewOpenTelemetryConfig(appName)
 
 	logHandler        slog.Handler
 	logHandlerOptions *slog.HandlerOptions
@@ -74,9 +74,12 @@ func init() {
 	flag.IntVar(&DBConfig.MaxOpenConns.Value, DBConfig.MaxOpenConns.FlagName, config.DefaultDatabaseMaxOpenConns, DBConfig.MaxOpenConns.FlagDescription)
 	flag.BoolVar(&DBConfig.MigrationEnable.Value, DBConfig.MigrationEnable.FlagName, config.DefaultDatabaseMigrationEnable, DBConfig.MigrationEnable.FlagDescription)
 
-	//Opentrace configuration values
-	flag.StringVar(&OTConfig.OTLPEndpoint.Value, OTConfig.OTLPEndpoint.FlagName, config.DefaultOTLPEndpoint, OTConfig.OTLPEndpoint.FlagDescription)
-	flag.IntVar(&OTConfig.OTLPPort.Value, OTConfig.OTLPPort.FlagName, config.DefaultOTLPPort, OTConfig.OTLPPort.FlagDescription)
+	//OpenTelemetry configuration values
+	flag.StringVar(&OTConfig.OTLPTraceEndpoint.Value, OTConfig.OTLPTraceEndpoint.FlagName, config.DefaultOTLPTraceEndpoint, OTConfig.OTLPTraceEndpoint.FlagDescription)
+	flag.IntVar(&OTConfig.OTLPTracePort.Value, OTConfig.OTLPTracePort.FlagName, config.DefaultOTLPTracePort, OTConfig.OTLPTracePort.FlagDescription)
+	flag.StringVar(&OTConfig.OTLPMetricEndpoint.Value, OTConfig.OTLPMetricEndpoint.FlagName, config.DefaultOTLPMetricEndpoint, OTConfig.OTLPTraceEndpoint.FlagDescription)
+	flag.IntVar(&OTConfig.OTLPMetricPort.Value, OTConfig.OTLPMetricPort.FlagName, config.DefaultOTLPMetricPort, OTConfig.OTLPMetricPort.FlagDescription)
+	flag.IntVar(&OTConfig.OTLPMetricInterval.Value, OTConfig.OTLPMetricInterval.FlagName, config.DefaultOTLPMetricInterval, OTConfig.OTLPMetricInterval.FlagDescription)
 
 	// Parse the command line arguments
 	flag.Bool("help", false, "Show this help message")
@@ -229,18 +232,25 @@ func main() {
 		"conn_max_idle_time", DBConfig.ConnMaxIdleTime.Value,
 	)
 
+	// Test database connection
+	ctx, cancel := context.WithTimeout(ctx, DBConfig.MaxPingTimeout.Value)
+	defer cancel()
+
+	//create OpenTelemetry
+	otelemetry := opentelemetry.NewOpenTelemetry(ctx, appName, OTConfig)
+
+	//Start tracing
+	otelemetry.SetupOTelSDK()
+
 	// Create a new userRepository
 	userRepository := repository.NewPGSQLUserRepository(
 		repository.PGSQLUserRepositoryConfig{
 			DB:              db,
 			MaxPingTimeout:  DBConfig.MaxPingTimeout.Value,
 			MaxQueryTimeout: DBConfig.MaxQueryTimeout.Value,
+			Ot:              otelemetry,
 		},
 	)
-
-	// Test database connection
-	ctx, cancel := context.WithTimeout(ctx, DBConfig.MaxPingTimeout.Value)
-	defer cancel()
 
 	slog.Info("testing database connection...", "dsn", dbDSN)
 	if err := userRepository.PingContext(ctx); err != nil {
@@ -257,19 +267,10 @@ func main() {
 		}
 	}
 
-	//create OpenTrace
-	otracing := opentracing.NewOpentracing(OTConfig)
-	otracing.SetContext(ctx)
-
-	//Start tracing
-	otracing.SetupOTelSDK()
-
-	//Set tracer
-	tracer := otracing.GetTracerProvider().Tracer(appName)
 	//Create user Service config
 	userServiceConf := service.UserConf{
 		Repository: userRepository,
-		Ot:         tracer,
+		Ot:         otelemetry,
 	}
 
 	// Create user Services
@@ -278,7 +279,7 @@ func main() {
 	//Create handler config
 	userHandlerConf := handler.UserHandlerConf{
 		Service: userService,
-		Ot:      tracer,
+		Ot:      otelemetry,
 	}
 
 	// Create handlers

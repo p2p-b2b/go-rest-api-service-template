@@ -259,7 +259,9 @@ start-dev-env: stop-dev-env install-air install-swag install-goose ## Run the ap
 	@printf "👉 Running application in development mode...\n"
 		$(call exec_cmd, mkdir -p /tmp/$(PROJECT_NAME)-db-volume-host )
 		$(call exec_cmd, mkdir -p /tmp/$(PROJECT_NAME)-tempo-volume-host )
+		$(call exec_cmd, mkdir -p /tmp/$(PROJECT_NAME)-prometheus-volume-host)
 		$(call exec_cmd, chmod 777 /tmp/$(PROJECT_NAME)-tempo-volume-host )
+		$(call exec_cmd, chmod 777 /tmp/$(PROJECT_NAME)-prometheus-volume-host )
 		$(call exec_cmd, podman play kube dev-service-pod.yaml )
 		
 

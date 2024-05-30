@@ -76,6 +76,24 @@ spec:
           name: tempo
         - mountPath: /mnt/config/tempo-local-config.yaml:Z
           name: tempo-config
+    - name: prometheus
+      args:
+        - '--config.file=/etc/prometheus/prometheus.yml'
+        - '--storage.tsdb.path=/prometheus'
+        - '--web.console.libraries=/etc/prometheus/console_libraries'
+        - '--web.console.templates=/etc/prometheus/consoles'
+        - '--web.enable-lifecycle'
+        - '--enable-feature=otlp-write-receiver'
+      image: docker.io/prom/prometheus:latest
+      ports:
+      - containerPort: 9090
+        hostPort: 9090
+        protocol: TCP
+      volumeMounts:
+      - mountPath: /prometheus:Z
+        name: prometheus
+      - mountPath: /etc/prometheus/prometheus.yml:Z
+        name: prometheus-config
 
   volumes:
     - name: go-rest-api-service-template-db-volume-host
@@ -89,6 +107,14 @@ spec:
     - name: tempo-config
       hostPath:
         path: ./tempo-local-config.yaml
+        type: File
+    - name: prometheus
+      hostPath:
+        path: /tmp/go-rest-api-service-template-prometheus-volume-host
+        type: Directory
+    - name: prometheus-config
+      hostPath:
+        path: ./prometheus.yaml
         type: File
     
     

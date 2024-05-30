@@ -10,15 +10,21 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/model"
+	opentelemetry "github.com/p2p-b2b/go-rest-api-service-template/internal/opentracing"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/paginator"
-	"go.opentelemetry.io/otel/trace"
+	otelMetric "go.opentelemetry.io/otel/metric"
 )
+
+// Mertics struct for user service
+type Metrics struct {
+	user_select otelMetric.Int64Counter
+}
 
 type PGSQLUserRepositoryConfig struct {
 	DB              *sql.DB
 	MaxPingTimeout  time.Duration
 	MaxQueryTimeout time.Duration
-	Ot              trace.Tracer
+	Ot              *opentelemetry.Opentelemetry
 }
 
 // this implement repository.UserRepository
@@ -34,16 +40,25 @@ type PGSQLUserRepository struct {
 	maxQueryTimeout time.Duration
 
 	// Tracer for openTelemetry
-	ot trace.Tracer
+	ot *opentelemetry.Opentelemetry
+
+	//Repository metrics
+	mymetrics Metrics
 }
 
 // NewPGSQLUserRepository creates a new PGSQLUserRepository.
 func NewPGSQLUserRepository(conf PGSQLUserRepositoryConfig) *PGSQLUserRepository {
+	user_select, _ := conf.Ot.GetMeterProdider().Meter("scope").Int64Counter("user.select", otelMetric.WithDescription("The number of user service"))
+	metrics := Metrics{
+		user_select: user_select,
+	}
+
 	return &PGSQLUserRepository{
 		db:              conf.DB,
 		maxPingTimeout:  conf.MaxPingTimeout,
 		maxQueryTimeout: conf.MaxQueryTimeout,
 		ot:              conf.Ot,
+		mymetrics:       metrics,
 	}
 }
 
@@ -162,6 +177,10 @@ func (s *PGSQLUserRepository) Delete(ctx context.Context, id uuid.UUID) error {
 
 // SelectByID returns the user with the specified ID.
 func (s *PGSQLUserRepository) SelectByID(ctx context.Context, id uuid.UUID) (*model.User, error) {
+
+	ctx, span := s.ot.GetTrace().Start(ctx, "DB Query: SelectByID")
+	defer span.End()
+
 	ctx, cancel := context.WithTimeout(ctx, s.maxQueryTimeout)
 	defer cancel()
 
@@ -180,7 +199,7 @@ func (s *PGSQLUserRepository) SelectByID(ctx context.Context, id uuid.UUID) (*mo
 	if err := row.Scan(&u.ID, &u.FirstName, &u.LastName, &u.Email); err != nil {
 		return nil, err
 	}
-
+	s.mymetrics.user_select.Add(ctx, 1)
 	return &u, nil
 }
 

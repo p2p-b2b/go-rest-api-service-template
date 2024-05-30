@@ -1,4 +1,4 @@
-package opentracing
+package opentelemetry
 
 import (
 	"context"
@@ -8,45 +8,60 @@ import (
 
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/config"
 	"go.opentelemetry.io/otel"
+
+	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
-	"go.opentelemetry.io/otel/exporters/stdout/stdoutlog"
-	"go.opentelemetry.io/otel/exporters/stdout/stdoutmetric"
+	otelMetric "go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/propagation"
-	"go.opentelemetry.io/otel/sdk/log"
 	"go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
 	"go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
+	trc "go.opentelemetry.io/otel/trace"
 )
 
-// OpenTrace represents the tracing of the service
-type OpenTrace struct {
-	otlpendpoint           string
-	otlport                int
-	ctx                    context.Context
-	otTraceProvider        *trace.TracerProvider
-	otlAttr_ServiceName    string
-	otlAttr_ServiceVersion string
+type Metrics struct {
+	HttpCnt otelMetric.Int64Counter
 }
 
-func NewOpentracing(conf *config.OpenTraceConfig) *OpenTrace {
-	return &OpenTrace{
-		otlpendpoint:           conf.OTLPEndpoint.Value,
-		otlport:                conf.OTLPPort.Value,
+// OpenTrace represents the tracing of the service
+type Opentelemetry struct {
+	otlptraceendpoint      string
+	otltraceport           int
+	otlpmetricendpoint     string
+	otlmetricport          int
+	otlmetricinterval      int
+	ctx                    context.Context
+	otlAttr_ServiceName    string
+	otlAttr_ServiceVersion string
+	trace                  trc.Tracer
+	appName                string
+	meterProvider          *metric.MeterProvider
+}
+
+func NewOpenTelemetry(ctx context.Context, appName string, conf *config.OpenTelemetryConfig) *Opentelemetry {
+	return &Opentelemetry{
+		otlptraceendpoint:      conf.OTLPTraceEndpoint.Value,
+		otltraceport:           conf.OTLPTracePort.Value,
+		otlpmetricendpoint:     conf.OTLPMetricEndpoint.Value,
+		otlmetricport:          conf.OTLPMetricPort.Value,
+		otlmetricinterval:      conf.OTLPMetricInterval.Value,
 		otlAttr_ServiceName:    conf.OTLAttr_ServiceName,
 		otlAttr_ServiceVersion: conf.OTLAttr_ServiceVersion.Value,
+		ctx:                    ctx,
+		appName:                appName,
 	}
 }
 
-func (o *OpenTrace) SetContext(ctx context.Context) {
-	o.ctx = ctx
+func (o *Opentelemetry) GetTrace() trc.Tracer {
+	return o.trace
 }
 
-func (o *OpenTrace) GetTracerProvider() *trace.TracerProvider {
-	return o.otTraceProvider
+func (o *Opentelemetry) GetMeterProdider() *metric.MeterProvider {
+	return o.meterProvider
 }
 
-func (o *OpenTrace) SetupOTelSDK() (shutdown func(context.Context) error, err error) {
+func (o *Opentelemetry) SetupOTelSDK() (shutdown func(context.Context) error, err error) {
 	var shutdownFuncs []func(context.Context) error
 
 	// shutdown calls cleanup functions registered via shutdownFuncs.
@@ -72,22 +87,24 @@ func (o *OpenTrace) SetupOTelSDK() (shutdown func(context.Context) error, err er
 
 	// Set up trace provider.
 	tracerProvider, err := o.newTraceProvider(o.ctx)
+
 	if err != nil {
 		handleErr(err)
 		return
 	}
 	shutdownFuncs = append(shutdownFuncs, tracerProvider.Shutdown)
 	otel.SetTracerProvider(tracerProvider)
-	o.otTraceProvider = tracerProvider
+	o.trace = tracerProvider.Tracer(o.appName)
 
-	// Set up meter provider.
-	// meterProvider, err := newMeterProvider()
-	// if err != nil {
-	// 	handleErr(err)
-	// 	return
-	// }
-	// shutdownFuncs = append(shutdownFuncs, meterProvider.Shutdown)
-	// otel.SetMeterProvider(meterProvider)
+	//Set up meter provider.
+	meterProvider, err := o.newMeterProvider(o.ctx)
+	if err != nil {
+		handleErr(err)
+		return
+	}
+	shutdownFuncs = append(shutdownFuncs, meterProvider.Shutdown)
+	otel.SetMeterProvider(meterProvider)
+	o.meterProvider = meterProvider
 
 	// Set up logger provider.
 	// loggerProvider, err := newLoggerProvider()
@@ -108,7 +125,7 @@ func newPropagator() propagation.TextMapPropagator {
 	)
 }
 
-func (o *OpenTrace) newTraceProvider(ctx context.Context) (*trace.TracerProvider, error) {
+func (o *Opentelemetry) newTraceProvider(ctx context.Context) (*trace.TracerProvider, error) {
 
 	insecureOpt := otlptracehttp.WithInsecure()
 
@@ -120,7 +137,7 @@ func (o *OpenTrace) newTraceProvider(ctx context.Context) (*trace.TracerProvider
 	)
 
 	// Update default OTLP reciver endpoint
-	endpointOpt := otlptracehttp.WithEndpoint(fmt.Sprintf("%s:%d", o.otlpendpoint, o.otlport))
+	endpointOpt := otlptracehttp.WithEndpoint(fmt.Sprintf("%s:%d", o.otlptraceendpoint, o.otltraceport))
 	spanExporter, _ := otlptracehttp.New(ctx, insecureOpt, endpointOpt)
 
 	traceProvider := trace.NewTracerProvider(trace.WithBatcher(spanExporter), trace.WithResource(res))
@@ -128,28 +145,40 @@ func (o *OpenTrace) newTraceProvider(ctx context.Context) (*trace.TracerProvider
 	return traceProvider, nil
 }
 
-func newMeterProvider() (*metric.MeterProvider, error) {
-	metricExporter, err := stdoutmetric.New()
+func (o *Opentelemetry) newMeterProvider(ctx context.Context) (*metric.MeterProvider, error) {
+
+	//Create resources to set service name and service version
+
+	res := resource.NewWithAttributes(
+		semconv.SchemaURL,
+		semconv.ServiceNameKey.String(o.otlAttr_ServiceName),
+		semconv.ServiceVersionKey.String(o.otlAttr_ServiceVersion),
+	)
+
+	metricExporter, err := otlpmetrichttp.New(ctx, otlpmetrichttp.WithInsecure(),
+		otlpmetrichttp.WithEndpointURL(fmt.Sprintf("http://%s:%d/api/v1/otlp/v1/metrics", o.otlpmetricendpoint, o.otlmetricport)))
+
 	if err != nil {
 		return nil, err
 	}
 
 	meterProvider := metric.NewMeterProvider(
+		metric.WithResource(res),
 		metric.WithReader(metric.NewPeriodicReader(metricExporter,
 			// Default is 1m. Set to 3s for demonstrative purposes.
-			metric.WithInterval(3*time.Second))),
+			metric.WithInterval(time.Duration(o.otlmetricinterval)*time.Second))),
 	)
 	return meterProvider, nil
 }
 
-func newLoggerProvider() (*log.LoggerProvider, error) {
-	logExporter, err := stdoutlog.New()
-	if err != nil {
-		return nil, err
-	}
+// func newLoggerProvider() (*log.LoggerProvider, error) {
+// 	logExporter, err := stdoutlog.New()
+// 	if err != nil {
+// 		return nil, err
+// 	}
 
-	loggerProvider := log.NewLoggerProvider(
-		log.WithProcessor(log.NewBatchProcessor(logExporter)),
-	)
-	return loggerProvider, nil
-}
+// 	loggerProvider := log.NewLoggerProvider(
+// 		log.WithProcessor(log.NewBatchProcessor(logExporter)),
+// 	)
+// 	return loggerProvider, nil
+// }
