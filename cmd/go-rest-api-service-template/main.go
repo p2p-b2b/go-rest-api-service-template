@@ -236,10 +236,10 @@ func main() {
 	defer cancel()
 
 	// create OpenTelemetry
-	otelemetry := o11y.New(ctx, appName, OTConfig)
+	telemetry := o11y.New(ctx, OTConfig)
 
 	// Start tracing
-	otelemetry.SetupOTelSDK()
+	telemetry.SetupOTelSDK()
 
 	// Create a new userRepository
 	userRepository := repository.NewPGSQLUserRepository(
@@ -247,7 +247,7 @@ func main() {
 			DB:              db,
 			MaxPingTimeout:  DBConfig.MaxPingTimeout.Value,
 			MaxQueryTimeout: DBConfig.MaxQueryTimeout.Value,
-			Ot:              otelemetry,
+			Ot:              telemetry,
 		},
 	)
 
@@ -269,7 +269,7 @@ func main() {
 	// Create user Service config
 	userServiceConf := service.UserConf{
 		Repository: userRepository,
-		Ot:         otelemetry,
+		Ot:         telemetry,
 	}
 
 	// Create user Services
@@ -278,7 +278,7 @@ func main() {
 	// Create handler config
 	userHandlerConf := handler.UserHandlerConf{
 		Service: userService,
-		Ot:      otelemetry,
+		Ot:      telemetry,
 	}
 
 	// Create handlers

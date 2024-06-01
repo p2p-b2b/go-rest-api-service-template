@@ -11,18 +11,13 @@ import (
 
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
-	otelMetric "go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
 	"go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
-	trc "go.opentelemetry.io/otel/trace"
+	tracer "go.opentelemetry.io/otel/trace"
 )
-
-type Metrics struct {
-	HttpCnt otelMetric.Int64Counter
-}
 
 // OpenTrace represents the tracing of the service
 type OpenTelemetry struct {
@@ -34,12 +29,11 @@ type OpenTelemetry struct {
 	AttributeServiceName    string
 	AttributeServiceVersion string
 	ctx                     context.Context
-	trace                   trc.Tracer
-	appName                 string
+	tracer                  tracer.Tracer
 	meterProvider           *metric.MeterProvider
 }
 
-func New(ctx context.Context, appName string, conf *config.OpenTelemetryConfig) *OpenTelemetry {
+func New(ctx context.Context, conf *config.OpenTelemetryConfig) *OpenTelemetry {
 	return &OpenTelemetry{
 		traceEndpoint:        conf.TraceEndpoint.Value,
 		tracePort:            conf.TracePort.Value,
@@ -48,12 +42,11 @@ func New(ctx context.Context, appName string, conf *config.OpenTelemetryConfig) 
 		metricInterval:       conf.MetricInterval.Value,
 		AttributeServiceName: conf.AttributeServiceName,
 		ctx:                  ctx,
-		appName:              appName,
 	}
 }
 
-func (o *OpenTelemetry) GetTrace() trc.Tracer {
-	return o.trace
+func (o *OpenTelemetry) GetTrace() tracer.Tracer {
+	return o.tracer
 }
 
 func (o *OpenTelemetry) GetMeterProvider() *metric.MeterProvider {
@@ -92,7 +85,7 @@ func (o *OpenTelemetry) SetupOTelSDK() (shutdown func(context.Context) error, er
 	}
 	shutdownFuncs = append(shutdownFuncs, tracerProvider.Shutdown)
 	otel.SetTracerProvider(tracerProvider)
-	o.trace = tracerProvider.Tracer(o.appName)
+	o.tracer = tracerProvider.Tracer(o.AttributeServiceName)
 
 	// Set up meter provider.
 	meterProvider, err := o.newMeterProvider(o.ctx)
