@@ -10,7 +10,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/model"
-	opentelemetry "github.com/p2p-b2b/go-rest-api-service-template/internal/opentelemetry"
+	opentelemetry "github.com/p2p-b2b/go-rest-api-service-template/internal/o11y"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/paginator"
 	otelMetric "go.opentelemetry.io/otel/metric"
 )

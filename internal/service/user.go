@@ -9,7 +9,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/lib/pq"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/model"
-	opentelemetry "github.com/p2p-b2b/go-rest-api-service-template/internal/opentelemetry"
+	"github.com/p2p-b2b/go-rest-api-service-template/internal/o11y"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/paginator"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/repository"
 	otelMetric "go.opentelemetry.io/otel/metric"
@@ -59,11 +59,11 @@ var (
 
 type UserConf struct {
 	Repository repository.UserRepository
-	Ot         *opentelemetry.OpenTelemetry
+	Ot         *o11y.OpenTelemetry
 }
 type User struct {
 	repository repository.UserRepository
-	ot         *opentelemetry.OpenTelemetry
+	ot         *o11y.OpenTelemetry
 	metrics    Metrics
 }
 

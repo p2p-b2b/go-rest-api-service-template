@@ -18,7 +18,7 @@ import (
 	"github.com/p2p-b2b/go-rest-api-service-template/docs"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/config"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/handler"
-	opentelemetry "github.com/p2p-b2b/go-rest-api-service-template/internal/opentelemetry"
+	"github.com/p2p-b2b/go-rest-api-service-template/internal/o11y"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/repository"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/server"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/service"
@@ -236,7 +236,7 @@ func main() {
 	defer cancel()
 
 	// create OpenTelemetry
-	otelemetry := opentelemetry.New(ctx, appName, OTConfig)
+	otelemetry := o11y.New(ctx, appName, OTConfig)
 
 	// Start tracing
 	otelemetry.SetupOTelSDK()

@@ -1,4 +1,4 @@
-package opentelemetry
+package o11y
 
 import (
 	"context"
@@ -26,14 +26,14 @@ type Metrics struct {
 
 // OpenTrace represents the tracing of the service
 type OpenTelemetry struct {
-	TraceEndpoint           string
-	otltraceport            int
-	MetricEndpoint          string
-	otlmetricport           int
-	otlmetricinterval       time.Duration
-	ctx                     context.Context
+	traceEndpoint           string
+	tracePort               int
+	metricEndpoint          string
+	metricPort              int
+	metricInterval          time.Duration
 	AttributeServiceName    string
 	AttributeServiceVersion string
+	ctx                     context.Context
 	trace                   trc.Tracer
 	appName                 string
 	meterProvider           *metric.MeterProvider
@@ -41,11 +41,11 @@ type OpenTelemetry struct {
 
 func New(ctx context.Context, appName string, conf *config.OpenTelemetryConfig) *OpenTelemetry {
 	return &OpenTelemetry{
-		TraceEndpoint:        conf.TraceEndpoint.Value,
-		otltraceport:         conf.TracePort.Value,
-		MetricEndpoint:       conf.MetricEndpoint.Value,
-		otlmetricport:        conf.MetricPort.Value,
-		otlmetricinterval:    conf.MetricInterval.Value,
+		traceEndpoint:        conf.TraceEndpoint.Value,
+		tracePort:            conf.TracePort.Value,
+		metricEndpoint:       conf.MetricEndpoint.Value,
+		metricPort:           conf.MetricPort.Value,
+		metricInterval:       conf.MetricInterval.Value,
 		AttributeServiceName: conf.AttributeServiceName,
 		ctx:                  ctx,
 		appName:              appName,
@@ -133,8 +133,8 @@ func (o *OpenTelemetry) newTraceProvider(ctx context.Context) (*trace.TracerProv
 		semconv.ServiceVersionKey.String(o.AttributeServiceVersion),
 	)
 
-	// Update default OTLP reciver endpoint
-	endpointOpt := otlptracehttp.WithEndpoint(fmt.Sprintf("%s:%d", o.TraceEndpoint, o.otltraceport))
+	// Update default OTLP receiver endpoint
+	endpointOpt := otlptracehttp.WithEndpoint(fmt.Sprintf("%s:%d", o.traceEndpoint, o.tracePort))
 	spanExporter, _ := otlptracehttp.New(ctx, insecureOpt, endpointOpt)
 
 	traceProvider := trace.NewTracerProvider(trace.WithBatcher(spanExporter), trace.WithResource(res))
@@ -152,7 +152,7 @@ func (o *OpenTelemetry) newMeterProvider(ctx context.Context) (*metric.MeterProv
 	)
 
 	metricExporter, err := otlpmetrichttp.New(ctx, otlpmetrichttp.WithInsecure(),
-		otlpmetrichttp.WithEndpointURL(fmt.Sprintf("http://%s:%d/api/v1/otlp/v1/metrics", o.MetricEndpoint, o.otlmetricport)))
+		otlpmetrichttp.WithEndpointURL(fmt.Sprintf("http://%s:%d/api/v1/otlp/v1/metrics", o.metricEndpoint, o.metricPort)))
 	if err != nil {
 		return nil, err
 	}
@@ -160,7 +160,7 @@ func (o *OpenTelemetry) newMeterProvider(ctx context.Context) (*metric.MeterProv
 	meterProvider := metric.NewMeterProvider(
 		metric.WithResource(res),
 		metric.WithReader(
-			metric.NewPeriodicReader(metricExporter, metric.WithInterval(o.otlmetricinterval)),
+			metric.NewPeriodicReader(metricExporter, metric.WithInterval(o.metricInterval)),
 		),
 	)
 

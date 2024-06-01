@@ -11,7 +11,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/model"
-	opentelemetry "github.com/p2p-b2b/go-rest-api-service-template/internal/opentelemetry"
+	"github.com/p2p-b2b/go-rest-api-service-template/internal/o11y"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/paginator"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/service"
 	"go.opentelemetry.io/otel/attribute"
@@ -26,13 +26,13 @@ type Metrics struct {
 // UserHandler represents the handler for the user.
 type UserHandlerConf struct {
 	Service service.UserService
-	Ot      *opentelemetry.OpenTelemetry
+	Ot      *o11y.OpenTelemetry
 }
 
 // UserHandler represents the handler for the user.
 type UserHandler struct {
 	service service.UserService
-	ot      *opentelemetry.OpenTelemetry
+	ot      *o11y.OpenTelemetry
 	metrics Metrics
 }
 
