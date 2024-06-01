@@ -106,7 +106,7 @@ spec:
         type: Directory
     - name: tempo-config
       hostPath:
-        path: dev-env/tempo-local-config.yaml
+        path: /tmp/go-rest-api-service-template-dev-env/tempo-local-config.yaml
         type: File
     - name: prometheus
       hostPath:
@@ -114,5 +114,5 @@ spec:
         type: Directory
     - name: prometheus-config
       hostPath:
-        path: dev-env/prometheus.yaml
+        path: /tmp/go-rest-api-service-template-dev-env/prometheus.yaml
         type: File

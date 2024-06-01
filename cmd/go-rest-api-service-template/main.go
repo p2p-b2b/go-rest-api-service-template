@@ -77,8 +77,12 @@ func init() {
 	// OpenTelemetry configuration values
 	flag.StringVar(&OTConfig.TraceEndpoint.Value, OTConfig.TraceEndpoint.FlagName, config.DefaultTraceEndpoint, OTConfig.TraceEndpoint.FlagDescription)
 	flag.IntVar(&OTConfig.TracePort.Value, OTConfig.TracePort.FlagName, config.DefaultTracePort, OTConfig.TracePort.FlagDescription)
+	flag.StringVar(&OTConfig.TraceExporter.Value, OTConfig.TraceExporter.FlagName, config.DefaultTraceExporter, OTConfig.TraceExporter.FlagDescription)
+	flag.DurationVar(&OTConfig.TraceExporterBatchTimeout.Value, OTConfig.TraceExporterBatchTimeout.FlagName, config.DefaultTraceExporterBatchTimeout, OTConfig.TraceExporterBatchTimeout.FlagDescription)
+
 	flag.StringVar(&OTConfig.MetricEndpoint.Value, OTConfig.MetricEndpoint.FlagName, config.DefaultMetricEndpoint, OTConfig.TraceEndpoint.FlagDescription)
 	flag.IntVar(&OTConfig.MetricPort.Value, OTConfig.MetricPort.FlagName, config.DefaultMetricPort, OTConfig.MetricPort.FlagDescription)
+	flag.StringVar(&OTConfig.MetricExporter.Value, OTConfig.MetricExporter.FlagName, config.DefaultMetricExporter, OTConfig.MetricExporter.FlagDescription)
 	flag.DurationVar(&OTConfig.MetricInterval.Value, OTConfig.MetricInterval.FlagName, config.DefaultMetricInterval, OTConfig.MetricInterval.FlagDescription)
 
 	// Parse the command line arguments
@@ -170,6 +174,10 @@ func main() {
 	// Default context
 	ctx := context.Background()
 
+	// create OpenTelemetry
+	telemetry := o11y.New(ctx, OTConfig)
+	telemetry.SetupOTelSDK()
+
 	// Configure server URL information
 	serverProtocol := "http"
 	if SrvConfig.TLSEnabled.Value {
@@ -236,19 +244,13 @@ func main() {
 	ctx, cancel := context.WithTimeout(ctx, DBConfig.MaxPingTimeout.Value)
 	defer cancel()
 
-	// create OpenTelemetry
-	telemetry := o11y.New(ctx, OTConfig)
-
-	// Start tracing
-	telemetry.SetupOTelSDK()
-
 	// Create a new userRepository
 	userRepository := repository.NewPGSQLUserRepository(
 		repository.PGSQLUserRepositoryConfig{
 			DB:              db,
 			MaxPingTimeout:  DBConfig.MaxPingTimeout.Value,
 			MaxQueryTimeout: DBConfig.MaxQueryTimeout.Value,
-			Ot:              telemetry,
+			OT:              telemetry,
 		},
 	)
 
@@ -270,7 +272,7 @@ func main() {
 	// Create user Service config
 	userServiceConf := service.UserConf{
 		Repository: userRepository,
-		Ot:         telemetry,
+		OT:         telemetry,
 	}
 
 	// Create user Services
@@ -279,7 +281,7 @@ func main() {
 	// Create handler config
 	userHandlerConf := handler.UserHandlerConf{
 		Service: userService,
-		Ot:      telemetry,
+		OT:      telemetry,
 	}
 
 	// Create handlers

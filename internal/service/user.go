@@ -12,16 +12,11 @@ import (
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/o11y"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/paginator"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/repository"
-	otelMetric "go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/attribute"
 )
 
 // this is a mockgen command to generate a mock for UserService
 //go:generate go run github.com/golang/mock/mockgen@v1.6.0 -package=mocks -destination=../../mocks/service/user.go -source=user.go UserService
-
-// Metrics struct for user service
-type Metrics struct {
-	serviceCount otelMetric.Int64Counter
-}
 
 // UserService represents a service for managing users.
 type UserService interface {
@@ -59,30 +54,26 @@ var (
 
 type UserConf struct {
 	Repository repository.UserRepository
-	Ot         *o11y.OpenTelemetry
+	OT         *o11y.OpenTelemetry
 }
 type User struct {
 	repository repository.UserRepository
 	ot         *o11y.OpenTelemetry
-	metrics    Metrics
 }
 
 // NewUserService creates a new UserService.
 func NewUserService(conf UserConf) *User {
-	m, _ := conf.Ot.GetMeterProvider().Meter("scope").Int64Counter("service.calls", otelMetric.WithDescription("The number of user service"))
-	metrics := Metrics{
-		serviceCount: m,
-	}
-
 	return &User{
 		repository: conf.Repository,
-		ot:         conf.Ot,
-		metrics:    metrics,
+		ot:         conf.OT,
 	}
 }
 
 // UserHealthCheck verifies a connection to the repository is still alive.
 func (s *User) UserHealthCheck(ctx context.Context) (model.Health, error) {
+	ctx, span := s.ot.Tracer.Start(ctx, "User Service: UserHealthCheck")
+	defer span.End()
+
 	// database
 	dbStatus := model.StatusUp
 	err := s.repository.PingContext(ctx)
@@ -130,8 +121,10 @@ func (s *User) UserHealthCheck(ctx context.Context) (model.Health, error) {
 
 // GetUserByID returns the user with the specified ID.
 func (s *User) GetUserByID(ctx context.Context, id uuid.UUID) (*model.User, error) {
-	_, span := s.ot.GetTrace().Start(ctx, "User Service: GetUserByID")
+	ctx, span := s.ot.Tracer.Start(ctx, "User Service: GetUserByID")
 	defer span.End()
+
+	span.SetAttributes(attribute.String("user.id", id.String()))
 
 	user, err := s.repository.SelectByID(ctx, id)
 	if err != nil {
@@ -139,14 +132,15 @@ func (s *User) GetUserByID(ctx context.Context, id uuid.UUID) (*model.User, erro
 		return nil, ErrGettingUserByID
 	}
 
-	s.metrics.serviceCount.Add(ctx, 1)
 	return user, nil
 }
 
 // GetUserByEmail returns the user with the specified email.
 func (s *User) GetUserByEmail(ctx context.Context, email string) (*model.User, error) {
-	_, span := s.ot.GetTrace().Start(ctx, "DB: GetUserByMail")
+	ctx, span := s.ot.Tracer.Start(ctx, "User Service: GetUserByEmail")
 	defer span.End()
+
+	span.SetAttributes(attribute.String("user.email", email))
 
 	user, err := s.repository.SelectByEmail(ctx, email)
 	if err != nil {
@@ -159,8 +153,14 @@ func (s *User) GetUserByEmail(ctx context.Context, email string) (*model.User, e
 
 // CreateUser inserts a new user into the database.
 func (s *User) CreateUser(ctx context.Context, user *model.CreateUserRequest) error {
-	_, span := s.ot.GetTrace().Start(ctx, "DB: CreateUser")
+	ctx, span := s.ot.Tracer.Start(ctx, "User Service: CreateUser")
 	defer span.End()
+
+	span.SetAttributes(
+		attribute.String("user.first_name", user.FirstName),
+		attribute.String("user.last_name", user.LastName),
+		attribute.String("user.email", user.Email),
+	)
 
 	if user == nil {
 		return errors.New("user is nil")
@@ -196,8 +196,15 @@ func (s *User) CreateUser(ctx context.Context, user *model.CreateUserRequest) er
 
 // UpdateUser updates the user with the specified ID.
 func (s *User) UpdateUser(ctx context.Context, user *model.User) error {
-	_, span := s.ot.GetTrace().Start(ctx, "DB: UpdateUser")
+	ctx, span := s.ot.Tracer.Start(ctx, "User Service: UpdateUser")
 	defer span.End()
+
+	span.SetAttributes(
+		attribute.String("user.id", user.ID.String()),
+		attribute.String("user.first_name", user.FirstName),
+		attribute.String("user.last_name", user.LastName),
+		attribute.String("user.email", user.Email),
+	)
 
 	if err := s.repository.Update(ctx, user); err != nil {
 		slog.Error("Service UpdateUser", "error", err)
@@ -209,8 +216,10 @@ func (s *User) UpdateUser(ctx context.Context, user *model.User) error {
 
 // DeleteUser deletes the user with the specified ID.
 func (s *User) DeleteUser(ctx context.Context, id uuid.UUID) error {
-	_, span := s.ot.GetTrace().Start(ctx, "DB: DeleteUser")
+	ctx, span := s.ot.Tracer.Start(ctx, "User Service: DeleteUser")
 	defer span.End()
+
+	span.SetAttributes(attribute.String("user.id", id.String()))
 
 	if err := s.repository.Delete(ctx, id); err != nil {
 		slog.Error("Service DeleteUser", "error", err)
@@ -222,8 +231,15 @@ func (s *User) DeleteUser(ctx context.Context, id uuid.UUID) error {
 
 // ListUsers returns a list of users.
 func (s *User) ListUsers(ctx context.Context, lur *model.ListUserRequest) (*model.ListUserResponse, error) {
-	_, span := s.ot.GetTrace().Start(ctx, "DB: ListUsers")
+	ctx, span := s.ot.Tracer.Start(ctx, "User Service: ListUsers")
 	defer span.End()
+
+	span.SetAttributes(
+		attribute.String("sort", lur.Sort),
+		attribute.StringSlice("filter", lur.Filter),
+		attribute.StringSlice("fields", lur.Fields),
+		attribute.Int("limit", lur.Paginator.Limit),
+	)
 
 	qParams := &model.SelectAllUserQueryInput{
 		Sort:      lur.Sort,
