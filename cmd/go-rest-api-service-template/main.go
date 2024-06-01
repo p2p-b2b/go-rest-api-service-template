@@ -18,7 +18,7 @@ import (
 	"github.com/p2p-b2b/go-rest-api-service-template/docs"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/config"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/handler"
-	opentelemetry "github.com/p2p-b2b/go-rest-api-service-template/internal/opentracing"
+	opentelemetry "github.com/p2p-b2b/go-rest-api-service-template/internal/opentelemetry"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/repository"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/server"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/service"
@@ -31,7 +31,7 @@ var (
 	LogConfig = config.NewLogConfig()
 	SrvConfig = config.NewServerConfig()
 	DBConfig  = config.NewDatabaseConfig()
-	OTConfig  = config.NewOpenTelemetryConfig(appName)
+	OTConfig  = config.NewOpenTelemetryConfig(appName, version.Version)
 
 	logHandler        slog.Handler
 	logHandlerOptions *slog.HandlerOptions
@@ -74,12 +74,12 @@ func init() {
 	flag.IntVar(&DBConfig.MaxOpenConns.Value, DBConfig.MaxOpenConns.FlagName, config.DefaultDatabaseMaxOpenConns, DBConfig.MaxOpenConns.FlagDescription)
 	flag.BoolVar(&DBConfig.MigrationEnable.Value, DBConfig.MigrationEnable.FlagName, config.DefaultDatabaseMigrationEnable, DBConfig.MigrationEnable.FlagDescription)
 
-	//OpenTelemetry configuration values
-	flag.StringVar(&OTConfig.OTLPTraceEndpoint.Value, OTConfig.OTLPTraceEndpoint.FlagName, config.DefaultOTLPTraceEndpoint, OTConfig.OTLPTraceEndpoint.FlagDescription)
-	flag.IntVar(&OTConfig.OTLPTracePort.Value, OTConfig.OTLPTracePort.FlagName, config.DefaultOTLPTracePort, OTConfig.OTLPTracePort.FlagDescription)
-	flag.StringVar(&OTConfig.OTLPMetricEndpoint.Value, OTConfig.OTLPMetricEndpoint.FlagName, config.DefaultOTLPMetricEndpoint, OTConfig.OTLPTraceEndpoint.FlagDescription)
-	flag.IntVar(&OTConfig.OTLPMetricPort.Value, OTConfig.OTLPMetricPort.FlagName, config.DefaultOTLPMetricPort, OTConfig.OTLPMetricPort.FlagDescription)
-	flag.IntVar(&OTConfig.OTLPMetricInterval.Value, OTConfig.OTLPMetricInterval.FlagName, config.DefaultOTLPMetricInterval, OTConfig.OTLPMetricInterval.FlagDescription)
+	// OpenTelemetry configuration values
+	flag.StringVar(&OTConfig.TraceEndpoint.Value, OTConfig.TraceEndpoint.FlagName, config.DefaultTraceEndpoint, OTConfig.TraceEndpoint.FlagDescription)
+	flag.IntVar(&OTConfig.TracePort.Value, OTConfig.TracePort.FlagName, config.DefaultTracePort, OTConfig.TracePort.FlagDescription)
+	flag.StringVar(&OTConfig.MetricEndpoint.Value, OTConfig.MetricEndpoint.FlagName, config.DefaultMetricEndpoint, OTConfig.TraceEndpoint.FlagDescription)
+	flag.IntVar(&OTConfig.MetricPort.Value, OTConfig.MetricPort.FlagName, config.DefaultMetricPort, OTConfig.MetricPort.FlagDescription)
+	flag.DurationVar(&OTConfig.MetricInterval.Value, OTConfig.MetricInterval.FlagName, config.DefaultMetricInterval, OTConfig.MetricInterval.FlagDescription)
 
 	// Parse the command line arguments
 	flag.Bool("help", false, "Show this help message")
@@ -150,7 +150,6 @@ func init() {
 	default:
 		slog.Error("invalid log format", "format", LogConfig.Format.Value)
 	}
-
 }
 
 // @tile Golang RESTful API Service Template
@@ -236,10 +235,10 @@ func main() {
 	ctx, cancel := context.WithTimeout(ctx, DBConfig.MaxPingTimeout.Value)
 	defer cancel()
 
-	//create OpenTelemetry
-	otelemetry := opentelemetry.NewOpenTelemetry(ctx, appName, OTConfig)
+	// create OpenTelemetry
+	otelemetry := opentelemetry.New(ctx, appName, OTConfig)
 
-	//Start tracing
+	// Start tracing
 	otelemetry.SetupOTelSDK()
 
 	// Create a new userRepository
@@ -267,7 +266,7 @@ func main() {
 		}
 	}
 
-	//Create user Service config
+	// Create user Service config
 	userServiceConf := service.UserConf{
 		Repository: userRepository,
 		Ot:         otelemetry,
@@ -276,7 +275,7 @@ func main() {
 	// Create user Services
 	userService := service.NewUserService(userServiceConf)
 
-	//Create handler config
+	// Create handler config
 	userHandlerConf := handler.UserHandlerConf{
 		Service: userService,
 		Ot:      otelemetry,

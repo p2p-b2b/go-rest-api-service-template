@@ -5,7 +5,6 @@ import (
 )
 
 const (
-	// Default Database Configuration
 	DefaultDatabaseKind     = "postgres"
 	DefaultDatabaseAddress  = "localhost"
 	DefaultDatabasePort     = 5432

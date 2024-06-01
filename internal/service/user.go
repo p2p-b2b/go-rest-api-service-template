@@ -9,7 +9,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/lib/pq"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/model"
-	opentelemetry "github.com/p2p-b2b/go-rest-api-service-template/internal/opentracing"
+	opentelemetry "github.com/p2p-b2b/go-rest-api-service-template/internal/opentelemetry"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/paginator"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/repository"
 	otelMetric "go.opentelemetry.io/otel/metric"
@@ -18,7 +18,7 @@ import (
 // this is a mockgen command to generate a mock for UserService
 //go:generate go run github.com/golang/mock/mockgen@v1.6.0 -package=mocks -destination=../../mocks/service/user.go -source=user.go UserService
 
-// Mertics struct for user service
+// Metrics struct for user service
 type Metrics struct {
 	service_count otelMetric.Int64Counter
 }
@@ -59,18 +59,17 @@ var (
 
 type UserConf struct {
 	Repository repository.UserRepository
-	Ot         *opentelemetry.Opentelemetry
+	Ot         *opentelemetry.OpenTelemetry
 }
 type User struct {
 	repository repository.UserRepository
-	ot         *opentelemetry.Opentelemetry
-	mymetrics  Metrics
+	ot         *opentelemetry.OpenTelemetry
+	metrics    Metrics
 }
 
 // NewUserService creates a new UserService.
 func NewUserService(conf UserConf) *User {
-
-	http_metric, _ := conf.Ot.GetMeterProdider().Meter("scope").Int64Counter("service.calls", otelMetric.WithDescription("The number of user service"))
+	http_metric, _ := conf.Ot.GetMeterProvider().Meter("scope").Int64Counter("service.calls", otelMetric.WithDescription("The number of user service"))
 	metrics := Metrics{
 		service_count: http_metric,
 	}
@@ -78,7 +77,7 @@ func NewUserService(conf UserConf) *User {
 	return &User{
 		repository: conf.Repository,
 		ot:         conf.Ot,
-		mymetrics:  metrics,
+		metrics:    metrics,
 	}
 }
 
@@ -140,7 +139,7 @@ func (s *User) GetUserByID(ctx context.Context, id uuid.UUID) (*model.User, erro
 		return nil, ErrGettingUserByID
 	}
 
-	s.mymetrics.service_count.Add(ctx, 1)
+	s.metrics.service_count.Add(ctx, 1)
 	return user, nil
 }
 
@@ -223,7 +222,6 @@ func (s *User) DeleteUser(ctx context.Context, id uuid.UUID) error {
 
 // ListUsers returns a list of users.
 func (s *User) ListUsers(ctx context.Context, lur *model.ListUserRequest) (*model.ListUserResponse, error) {
-
 	_, span := s.ot.GetTrace().Start(ctx, "DB: ListUsers")
 	defer span.End()
 

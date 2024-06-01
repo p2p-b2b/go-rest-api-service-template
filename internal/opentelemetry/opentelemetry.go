@@ -25,43 +25,42 @@ type Metrics struct {
 }
 
 // OpenTrace represents the tracing of the service
-type Opentelemetry struct {
-	otlptraceendpoint      string
-	otltraceport           int
-	otlpmetricendpoint     string
-	otlmetricport          int
-	otlmetricinterval      int
-	ctx                    context.Context
-	otlAttr_ServiceName    string
-	otlAttr_ServiceVersion string
-	trace                  trc.Tracer
-	appName                string
-	meterProvider          *metric.MeterProvider
+type OpenTelemetry struct {
+	TraceEndpoint           string
+	otltraceport            int
+	MetricEndpoint          string
+	otlmetricport           int
+	otlmetricinterval       time.Duration
+	ctx                     context.Context
+	AttributeServiceName    string
+	AttributeServiceVersion string
+	trace                   trc.Tracer
+	appName                 string
+	meterProvider           *metric.MeterProvider
 }
 
-func NewOpenTelemetry(ctx context.Context, appName string, conf *config.OpenTelemetryConfig) *Opentelemetry {
-	return &Opentelemetry{
-		otlptraceendpoint:      conf.OTLPTraceEndpoint.Value,
-		otltraceport:           conf.OTLPTracePort.Value,
-		otlpmetricendpoint:     conf.OTLPMetricEndpoint.Value,
-		otlmetricport:          conf.OTLPMetricPort.Value,
-		otlmetricinterval:      conf.OTLPMetricInterval.Value,
-		otlAttr_ServiceName:    conf.OTLAttr_ServiceName,
-		otlAttr_ServiceVersion: conf.OTLAttr_ServiceVersion.Value,
-		ctx:                    ctx,
-		appName:                appName,
+func New(ctx context.Context, appName string, conf *config.OpenTelemetryConfig) *OpenTelemetry {
+	return &OpenTelemetry{
+		TraceEndpoint:        conf.TraceEndpoint.Value,
+		otltraceport:         conf.TracePort.Value,
+		MetricEndpoint:       conf.MetricEndpoint.Value,
+		otlmetricport:        conf.MetricPort.Value,
+		otlmetricinterval:    conf.MetricInterval.Value,
+		AttributeServiceName: conf.AttributeServiceName,
+		ctx:                  ctx,
+		appName:              appName,
 	}
 }
 
-func (o *Opentelemetry) GetTrace() trc.Tracer {
+func (o *OpenTelemetry) GetTrace() trc.Tracer {
 	return o.trace
 }
 
-func (o *Opentelemetry) GetMeterProdider() *metric.MeterProvider {
+func (o *OpenTelemetry) GetMeterProvider() *metric.MeterProvider {
 	return o.meterProvider
 }
 
-func (o *Opentelemetry) SetupOTelSDK() (shutdown func(context.Context) error, err error) {
+func (o *OpenTelemetry) SetupOTelSDK() (shutdown func(context.Context) error, err error) {
 	var shutdownFuncs []func(context.Context) error
 
 	// shutdown calls cleanup functions registered via shutdownFuncs.
@@ -87,7 +86,6 @@ func (o *Opentelemetry) SetupOTelSDK() (shutdown func(context.Context) error, er
 
 	// Set up trace provider.
 	tracerProvider, err := o.newTraceProvider(o.ctx)
-
 	if err != nil {
 		handleErr(err)
 		return
@@ -96,7 +94,7 @@ func (o *Opentelemetry) SetupOTelSDK() (shutdown func(context.Context) error, er
 	otel.SetTracerProvider(tracerProvider)
 	o.trace = tracerProvider.Tracer(o.appName)
 
-	//Set up meter provider.
+	// Set up meter provider.
 	meterProvider, err := o.newMeterProvider(o.ctx)
 	if err != nil {
 		handleErr(err)
@@ -125,19 +123,18 @@ func newPropagator() propagation.TextMapPropagator {
 	)
 }
 
-func (o *Opentelemetry) newTraceProvider(ctx context.Context) (*trace.TracerProvider, error) {
-
+func (o *OpenTelemetry) newTraceProvider(ctx context.Context) (*trace.TracerProvider, error) {
 	insecureOpt := otlptracehttp.WithInsecure()
 
-	//Create resources to set service name and service version
+	// Create resources to set service name and service version
 	res := resource.NewWithAttributes(
 		semconv.SchemaURL,
-		semconv.ServiceNameKey.String(o.otlAttr_ServiceName),
-		semconv.ServiceVersionKey.String(o.otlAttr_ServiceVersion),
+		semconv.ServiceNameKey.String(o.AttributeServiceName),
+		semconv.ServiceVersionKey.String(o.AttributeServiceVersion),
 	)
 
 	// Update default OTLP reciver endpoint
-	endpointOpt := otlptracehttp.WithEndpoint(fmt.Sprintf("%s:%d", o.otlptraceendpoint, o.otltraceport))
+	endpointOpt := otlptracehttp.WithEndpoint(fmt.Sprintf("%s:%d", o.TraceEndpoint, o.otltraceport))
 	spanExporter, _ := otlptracehttp.New(ctx, insecureOpt, endpointOpt)
 
 	traceProvider := trace.NewTracerProvider(trace.WithBatcher(spanExporter), trace.WithResource(res))
@@ -145,29 +142,28 @@ func (o *Opentelemetry) newTraceProvider(ctx context.Context) (*trace.TracerProv
 	return traceProvider, nil
 }
 
-func (o *Opentelemetry) newMeterProvider(ctx context.Context) (*metric.MeterProvider, error) {
-
-	//Create resources to set service name and service version
+func (o *OpenTelemetry) newMeterProvider(ctx context.Context) (*metric.MeterProvider, error) {
+	// Create resources to set service name and service version
 
 	res := resource.NewWithAttributes(
 		semconv.SchemaURL,
-		semconv.ServiceNameKey.String(o.otlAttr_ServiceName),
-		semconv.ServiceVersionKey.String(o.otlAttr_ServiceVersion),
+		semconv.ServiceNameKey.String(o.AttributeServiceName),
+		semconv.ServiceVersionKey.String(o.AttributeServiceVersion),
 	)
 
 	metricExporter, err := otlpmetrichttp.New(ctx, otlpmetrichttp.WithInsecure(),
-		otlpmetrichttp.WithEndpointURL(fmt.Sprintf("http://%s:%d/api/v1/otlp/v1/metrics", o.otlpmetricendpoint, o.otlmetricport)))
-
+		otlpmetrichttp.WithEndpointURL(fmt.Sprintf("http://%s:%d/api/v1/otlp/v1/metrics", o.MetricEndpoint, o.otlmetricport)))
 	if err != nil {
 		return nil, err
 	}
 
 	meterProvider := metric.NewMeterProvider(
 		metric.WithResource(res),
-		metric.WithReader(metric.NewPeriodicReader(metricExporter,
-			// Default is 1m. Set to 3s for demonstrative purposes.
-			metric.WithInterval(time.Duration(o.otlmetricinterval)*time.Second))),
+		metric.WithReader(
+			metric.NewPeriodicReader(metricExporter, metric.WithInterval(o.otlmetricinterval)),
+		),
 	)
+
 	return meterProvider, nil
 }
 

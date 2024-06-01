@@ -50,7 +50,7 @@ spec:
           protocol: TCP
     - name: tempo
       args:
-      - --config.file=/mnt/config/tempo-local-config.yaml
+        - --config.file=/mnt/config/tempo-local-config.yaml
       image: docker.io/grafana/tempo:latest
       ports:
         - containerPort: 3200
@@ -78,22 +78,22 @@ spec:
           name: tempo-config
     - name: prometheus
       args:
-        - '--config.file=/etc/prometheus/prometheus.yml'
-        - '--storage.tsdb.path=/prometheus'
-        - '--web.console.libraries=/etc/prometheus/console_libraries'
-        - '--web.console.templates=/etc/prometheus/consoles'
-        - '--web.enable-lifecycle'
-        - '--enable-feature=otlp-write-receiver'
+        - "--config.file=/etc/prometheus/prometheus.yml"
+        - "--storage.tsdb.path=/prometheus"
+        - "--web.console.libraries=/etc/prometheus/console_libraries"
+        - "--web.console.templates=/etc/prometheus/consoles"
+        - "--web.enable-lifecycle"
+        - "--enable-feature=otlp-write-receiver"
       image: docker.io/prom/prometheus:latest
       ports:
-      - containerPort: 9090
-        hostPort: 9090
-        protocol: TCP
+        - containerPort: 9090
+          hostPort: 9090
+          protocol: TCP
       volumeMounts:
-      - mountPath: /prometheus:Z
-        name: prometheus
-      - mountPath: /etc/prometheus/prometheus.yml:Z
-        name: prometheus-config
+        - mountPath: /prometheus:Z
+          name: prometheus
+        - mountPath: /etc/prometheus/prometheus.yml:Z
+          name: prometheus-config
 
   volumes:
     - name: go-rest-api-service-template-db-volume-host
@@ -116,5 +116,3 @@ spec:
       hostPath:
         path: ./prometheus.yaml
         type: File
-    
-    
