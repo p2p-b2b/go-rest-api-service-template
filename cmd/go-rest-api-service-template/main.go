@@ -119,8 +119,9 @@ func init() {
 
 	// Get Configuration from Environment Variables
 	// and override the values when they are set
-	DBConfig.PaseEnvVars()
 	LogConfig.ParseEnvVars()
+	SrvConfig.ParseEnvVars()
+	DBConfig.PaseEnvVars()
 	OTConfig.PaseEnvVars()
 
 	// Set the log level
