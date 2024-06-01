@@ -20,7 +20,7 @@ import (
 
 // Metrics struct for user service
 type Metrics struct {
-	service_count otelMetric.Int64Counter
+	serviceCount otelMetric.Int64Counter
 }
 
 // UserService represents a service for managing users.
@@ -69,9 +69,9 @@ type User struct {
 
 // NewUserService creates a new UserService.
 func NewUserService(conf UserConf) *User {
-	http_metric, _ := conf.Ot.GetMeterProvider().Meter("scope").Int64Counter("service.calls", otelMetric.WithDescription("The number of user service"))
+	m, _ := conf.Ot.GetMeterProvider().Meter("scope").Int64Counter("service.calls", otelMetric.WithDescription("The number of user service"))
 	metrics := Metrics{
-		service_count: http_metric,
+		serviceCount: m,
 	}
 
 	return &User{
@@ -139,7 +139,7 @@ func (s *User) GetUserByID(ctx context.Context, id uuid.UUID) (*model.User, erro
 		return nil, ErrGettingUserByID
 	}
 
-	s.metrics.service_count.Add(ctx, 1)
+	s.metrics.serviceCount.Add(ctx, 1)
 	return user, nil
 }
 

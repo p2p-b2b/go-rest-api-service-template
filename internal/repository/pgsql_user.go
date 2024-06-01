@@ -17,7 +17,7 @@ import (
 
 // Metrics struct for user service
 type Metrics struct {
-	user_select otelMetric.Int64Counter
+	userSelect otelMetric.Int64Counter
 }
 
 type PGSQLUserRepositoryConfig struct {
@@ -48,9 +48,9 @@ type PGSQLUserRepository struct {
 
 // NewPGSQLUserRepository creates a new PGSQLUserRepository.
 func NewPGSQLUserRepository(conf PGSQLUserRepositoryConfig) *PGSQLUserRepository {
-	user_select, _ := conf.Ot.GetMeterProvider().Meter("scope").Int64Counter("user.select", otelMetric.WithDescription("The number of user service"))
+	m, _ := conf.Ot.GetMeterProvider().Meter("scope").Int64Counter("user.select", otelMetric.WithDescription("The number of user service"))
 	metrics := Metrics{
-		user_select: user_select,
+		userSelect: m,
 	}
 
 	return &PGSQLUserRepository{
@@ -198,7 +198,7 @@ func (s *PGSQLUserRepository) SelectByID(ctx context.Context, id uuid.UUID) (*mo
 	if err := row.Scan(&u.ID, &u.FirstName, &u.LastName, &u.Email); err != nil {
 		return nil, err
 	}
-	s.metrics.user_select.Add(ctx, 1)
+	s.metrics.userSelect.Add(ctx, 1)
 	return &u, nil
 }
 

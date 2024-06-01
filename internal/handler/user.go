@@ -20,7 +20,7 @@ import (
 
 // Metrics struct for user handler
 type Metrics struct {
-	http_count otelMetric.Int64Counter
+	httpCalls otelMetric.Int64Counter
 }
 
 // UserHandler represents the handler for the user.
@@ -38,9 +38,9 @@ type UserHandler struct {
 
 // NewUserHandler creates a new UserHandler.
 func NewUserHandler(conf UserHandlerConf) *UserHandler {
-	http_metric, _ := conf.Ot.GetMeterProvider().Meter("scope").Int64Counter("http.calls", otelMetric.WithDescription("The number of http calls"))
+	m, _ := conf.Ot.GetMeterProvider().Meter("scope").Int64Counter("http.calls", otelMetric.WithDescription("The number of http calls"))
 	metrics := Metrics{
-		http_count: http_metric,
+		httpCalls: m,
 	}
 
 	return &UserHandler{
@@ -75,7 +75,7 @@ func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 
 	idString := r.PathValue("id")
 	if idString == "" {
-		h.metrics.http_count.Add(ctx, 1, otelMetric.WithAttributes(attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest))))
+		h.metrics.httpCalls.Add(ctx, 1, otelMetric.WithAttributes(attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest))))
 		WriteError(w, r, http.StatusBadRequest, ErrIDRequired.Error())
 		return
 	}
@@ -83,14 +83,14 @@ func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	// convert the id to uuid.UUID
 	id, err := uuid.Parse(idString)
 	if err != nil {
-		h.metrics.http_count.Add(ctx, 1, otelMetric.WithAttributes(attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest))))
+		h.metrics.httpCalls.Add(ctx, 1, otelMetric.WithAttributes(attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest))))
 		WriteError(w, r, http.StatusBadRequest, ErrInvalidID.Error())
 		return
 	}
 
 	user, err := h.service.GetUserByID(ctx, id)
 	if err != nil {
-		h.metrics.http_count.Add(ctx, 1, otelMetric.WithAttributes(attribute.String("code", fmt.Sprintf("%d", http.StatusInternalServerError))))
+		h.metrics.httpCalls.Add(ctx, 1, otelMetric.WithAttributes(attribute.String("code", fmt.Sprintf("%d", http.StatusInternalServerError))))
 		WriteError(w, r, http.StatusInternalServerError, ErrInternalServerError.Error())
 		return
 	}
@@ -98,12 +98,12 @@ func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	// encode and write the response
 	if err := json.NewEncoder(w).Encode(user); err != nil {
-		h.metrics.http_count.Add(ctx, 1, otelMetric.WithAttributes(attribute.String("code", fmt.Sprintf("%d", http.StatusInternalServerError))))
+		h.metrics.httpCalls.Add(ctx, 1, otelMetric.WithAttributes(attribute.String("code", fmt.Sprintf("%d", http.StatusInternalServerError))))
 		WriteError(w, r, http.StatusInternalServerError, ErrInternalServerError.Error())
 		return
 	}
 	// logger.InfoContext(ctx, "Result sucess")
-	h.metrics.http_count.Add(ctx, 1, otelMetric.WithAttributes(attribute.String("code", fmt.Sprintf("%d", http.StatusOK))))
+	h.metrics.httpCalls.Add(ctx, 1, otelMetric.WithAttributes(attribute.String("code", fmt.Sprintf("%d", http.StatusOK))))
 	w.WriteHeader(http.StatusOK)
 }
 
