@@ -13,6 +13,7 @@ import (
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/o11y"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/paginator"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 )
 
 type PGSQLUserRepositoryConfig struct {
@@ -95,6 +96,9 @@ func (r *PGSQLUserRepository) Insert(ctx context.Context, user *model.User) erro
 
 	_, err := r.db.ExecContext(ctx, query)
 	if err != nil {
+		span.SetStatus(codes.Error, "query failed")
+		span.RecordError(err)
+		slog.Error("Insert", "error", err)
 		return err
 	}
 
@@ -143,6 +147,8 @@ func (r *PGSQLUserRepository) Update(ctx context.Context, user *model.User) erro
 
 	_, err := r.db.ExecContext(ctx, query)
 	if err != nil {
+		span.SetStatus(codes.Error, "query failed")
+		span.RecordError(err)
 		slog.Error("Update", "error", err)
 		return err
 	}
@@ -170,6 +176,8 @@ func (r *PGSQLUserRepository) Delete(ctx context.Context, id uuid.UUID) error {
 
 	_, err := r.db.ExecContext(ctx, query)
 	if err != nil {
+		span.SetStatus(codes.Error, "query failed")
+		span.RecordError(err)
 		slog.Error("Delete", "error", err)
 		return err
 	}
@@ -200,6 +208,9 @@ func (r *PGSQLUserRepository) SelectByID(ctx context.Context, id uuid.UUID) (*mo
 
 	var u model.User
 	if err := row.Scan(&u.ID, &u.FirstName, &u.LastName, &u.Email); err != nil {
+		span.SetStatus(codes.Error, "scan failed")
+		span.RecordError(err)
+		slog.Error("SelectByID", "error", err)
 		return nil, err
 	}
 	return &u, nil
@@ -228,6 +239,9 @@ func (r *PGSQLUserRepository) SelectByEmail(ctx context.Context, email string) (
 
 	var u model.User
 	if err := row.Scan(&u.ID, &u.FirstName, &u.LastName, &u.Email); err != nil {
+		span.SetStatus(codes.Error, "scan failed")
+		span.RecordError(err)
+		slog.Error("SelectByEmail", "error", err)
 		return nil, err
 	}
 
@@ -286,6 +300,8 @@ func (r *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.Selec
 		// decode the token
 		id, createdAt, err := paginator.DecodeToken(params.Paginator.NextToken)
 		if err != nil {
+			span.SetStatus(codes.Error, "invalid token")
+			span.RecordError(err)
 			slog.Error("SelectAll", "error", err)
 			return nil, err
 		}
@@ -308,6 +324,8 @@ func (r *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.Selec
 		// decode the token
 		id, createdAt, err := paginator.DecodeToken(params.Paginator.PrevToken)
 		if err != nil {
+			span.SetStatus(codes.Error, "invalid token")
+			span.RecordError(err)
 			slog.Error("SelectAll", "error", err)
 			return nil, err
 		}
@@ -350,6 +368,8 @@ func (r *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.Selec
 	// execute the query
 	rows, err := r.db.QueryContext(ctx, query)
 	if err != nil {
+		span.SetStatus(codes.Error, "query failed")
+		span.RecordError(err)
 		slog.Error("SelectAll", "error", err)
 		return nil, err
 	}
@@ -359,6 +379,8 @@ func (r *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.Selec
 	for rows.Next() {
 		var u model.User
 		if err := rows.Scan(&u.ID, &u.FirstName, &u.LastName, &u.Email, &u.CreatedAt, &u.UpdatedAt); err != nil {
+			span.SetStatus(codes.Error, "scan failed")
+			span.RecordError(err)
 			slog.Error("SelectAll", "error", err)
 			return nil, err
 		}
@@ -366,6 +388,8 @@ func (r *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.Selec
 	}
 
 	if err := rows.Err(); err != nil {
+		span.SetStatus(codes.Error, "rows failed")
+		span.RecordError(err)
 		slog.Error("SelectAll", "error", err)
 		return nil, err
 	}

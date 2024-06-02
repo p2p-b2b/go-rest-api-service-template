@@ -14,7 +14,7 @@ import (
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/paginator"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/service"
 	"go.opentelemetry.io/otel/attribute"
-	oteltrace "go.opentelemetry.io/otel/trace"
+	"go.opentelemetry.io/otel/codes"
 )
 
 // UserHandler represents the handler for the user.
@@ -67,7 +67,8 @@ func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 
 	idString := r.PathValue("id")
 	if idString == "" {
-		span.AddEvent("ID required", oteltrace.WithAttributes(attribute.String("error", ErrIDRequired.Error())))
+		span.SetStatus(codes.Error, ErrIDRequired.Error())
+		span.RecordError(ErrIDRequired)
 		WriteError(w, r, http.StatusBadRequest, ErrIDRequired.Error())
 		return
 	}
@@ -75,14 +76,16 @@ func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	// convert the id to uuid.UUID
 	id, err := uuid.Parse(idString)
 	if err != nil {
-		span.AddEvent("Error parsing ID", oteltrace.WithAttributes(attribute.String("error", err.Error())))
+		span.SetStatus(codes.Error, ErrInvalidID.Error())
+		span.RecordError(ErrInvalidID)
 		WriteError(w, r, http.StatusBadRequest, ErrInvalidID.Error())
 		return
 	}
 
 	user, err := h.service.GetUserByID(ctx, id)
 	if err != nil {
-		span.AddEvent("Error getting user by ID", oteltrace.WithAttributes(attribute.String("error", err.Error())))
+		span.SetStatus(codes.Error, ErrInternalServerError.Error())
+		span.RecordError(err)
 		WriteError(w, r, http.StatusInternalServerError, ErrInternalServerError.Error())
 		return
 	}
@@ -91,7 +94,8 @@ func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	// encode and write the response
 	if err := json.NewEncoder(w).Encode(user); err != nil {
-		span.AddEvent("Error encoding response", oteltrace.WithAttributes(attribute.String("error", err.Error())))
+		span.SetStatus(codes.Error, ErrInternalServerError.Error())
+		span.RecordError(err)
 		WriteError(w, r, http.StatusInternalServerError, ErrInternalServerError.Error())
 		return
 	}
@@ -120,37 +124,43 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 
 	var user model.CreateUserRequest
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
-		span.AddEvent("Error decoding request", oteltrace.WithAttributes(attribute.String("error", err.Error())))
+		span.SetStatus(codes.Error, err.Error())
+		span.RecordError(err)
 		WriteError(w, r, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	if user.FirstName == "" {
-		span.AddEvent("First name is required", oteltrace.WithAttributes(attribute.String("error", "First name is required")))
+		span.SetStatus(codes.Error, "First name is required")
+		span.RecordError(errors.New("first name is required"))
 		WriteError(w, r, http.StatusBadRequest, "First name is required")
 		return
 	}
 
 	if user.LastName == "" {
-		span.AddEvent("Last name is required", oteltrace.WithAttributes(attribute.String("error", "Last name is required")))
+		span.SetStatus(codes.Error, "Last name is required")
+		span.RecordError(errors.New("last name is required"))
 		WriteError(w, r, http.StatusBadRequest, "Last name is required")
 		return
 	}
 
 	if user.Email == "" {
-		span.AddEvent("Email is required", oteltrace.WithAttributes(attribute.String("error", "Email is required")))
+		span.SetStatus(codes.Error, "Email is required")
+		span.RecordError(errors.New("email is required"))
 		WriteError(w, r, http.StatusBadRequest, "Email is required")
 		return
 	}
 
 	if err := h.service.CreateUser(ctx, &user); err != nil {
 		if errors.Is(err, service.ErrIdAlreadyExists) {
-			span.AddEvent("ID already exists", oteltrace.WithAttributes(attribute.String("error", err.Error())))
+			span.SetStatus(codes.Error, err.Error())
+			span.RecordError(err)
 			WriteError(w, r, http.StatusConflict, err.Error())
 			return
 		}
 
-		span.AddEvent("Error creating user", oteltrace.WithAttributes(attribute.String("error", err.Error())))
+		span.SetStatus(codes.Error, err.Error())
+		span.RecordError(err)
 		WriteError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -182,7 +192,8 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 
 	idParam := r.PathValue("id")
 	if idParam == "" {
-		span.AddEvent("ID required", oteltrace.WithAttributes(attribute.String("error", ErrIDRequired.Error())))
+		span.SetStatus(codes.Error, ErrIDRequired.Error())
+		span.RecordError(ErrIDRequired)
 		WriteError(w, r, http.StatusBadRequest, ErrIDRequired.Error())
 		return
 	}
@@ -190,14 +201,16 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	// convert the id to uuid.UUID
 	id, err := uuid.Parse(idParam)
 	if err != nil {
-		span.AddEvent("Error parsing ID", oteltrace.WithAttributes(attribute.String("error", err.Error())))
+		span.SetStatus(codes.Error, err.Error())
+		span.RecordError(err)
 		WriteError(w, r, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	var user model.User
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
-		span.AddEvent("Error decoding request", oteltrace.WithAttributes(attribute.String("error", err.Error())))
+		span.SetStatus(codes.Error, err.Error())
+		span.RecordError(err)
 		WriteError(w, r, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -208,7 +221,8 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 
 	// at least one field must be updated
 	if user.FirstName == "" && user.LastName == "" && user.Email == "" {
-		span.AddEvent("At least one field must be updated", oteltrace.WithAttributes(attribute.String("error", "At least one field must be updated")))
+		span.SetStatus(codes.Error, "At least one field must be updated")
+		span.RecordError(errors.New("at least one field must be updated"))
 		WriteError(w, r, http.StatusBadRequest, "At least one field must be updated")
 		return
 	}
@@ -216,7 +230,8 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusOK)
 	if err := h.service.UpdateUser(ctx, &user); err != nil {
-		span.AddEvent("Error updating user", oteltrace.WithAttributes(attribute.String("error", err.Error())))
+		span.SetStatus(codes.Error, err.Error())
+		span.RecordError(err)
 		WriteError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -242,7 +257,8 @@ func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 
 	idParam := r.PathValue("id")
 	if idParam == "" {
-		span.AddEvent("ID required", oteltrace.WithAttributes(attribute.String("error", ErrIDRequired.Error())))
+		span.SetStatus(codes.Error, ErrIDRequired.Error())
+		span.RecordError(ErrIDRequired)
 		WriteError(w, r, http.StatusBadRequest, ErrIDRequired.Error())
 		return
 	}
@@ -250,7 +266,8 @@ func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	// convert the id to uuid.UUID
 	id, err := uuid.Parse(idParam)
 	if err != nil {
-		span.AddEvent("Error parsing ID", oteltrace.WithAttributes(attribute.String("error", err.Error())))
+		span.SetStatus(codes.Error, err.Error())
+		span.RecordError(err)
 		WriteError(w, r, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -258,7 +275,8 @@ func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusOK)
 	if err := h.service.DeleteUser(ctx, id); err != nil {
-		span.AddEvent("Error deleting user", oteltrace.WithAttributes(attribute.String("error", err.Error())))
+		span.SetStatus(codes.Error, err.Error())
+		span.RecordError(err)
 		WriteError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -292,6 +310,8 @@ func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 	var req model.ListUserRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		if err != io.EOF {
+			span.SetStatus(codes.Error, err.Error())
+			span.RecordError(err)
 			WriteError(w, r, http.StatusBadRequest, err.Error())
 			return
 		}
@@ -323,11 +343,15 @@ func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 	if limitString != "" {
 		limit, err = strconv.Atoi(limitString)
 		if err != nil {
+			span.SetStatus(codes.Error, "Invalid limit")
+			span.RecordError(err)
 			WriteError(w, r, http.StatusBadRequest, "Invalid limit")
 			return
 		}
 
 		if limit < 0 {
+			span.SetStatus(codes.Error, "Limit must be greater than or equal to 0")
+			span.RecordError(err)
 			WriteError(w, r, http.StatusBadRequest, "Limit must be greater than or equal to 0")
 			return
 		}
@@ -349,7 +373,8 @@ func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 
 	usersResponse, err := h.service.ListUsers(ctx, params)
 	if err != nil {
-		span.AddEvent("Error listing users", oteltrace.WithAttributes(attribute.String("error", err.Error())))
+		span.SetStatus(codes.Error, err.Error())
+		span.RecordError(err)
 		WriteError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -372,7 +397,8 @@ func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	// write the response
 	if err := json.NewEncoder(w).Encode(usersResponse); err != nil {
-		span.AddEvent("Error encoding response", oteltrace.WithAttributes(attribute.String("error", err.Error())))
+		span.SetStatus(codes.Error, err.Error())
+		span.RecordError(err)
 		WriteError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}

@@ -13,6 +13,7 @@ import (
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/paginator"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/repository"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 )
 
 // this is a mockgen command to generate a mock for UserService
@@ -128,6 +129,8 @@ func (s *User) GetUserByID(ctx context.Context, id uuid.UUID) (*model.User, erro
 
 	user, err := s.repository.SelectByID(ctx, id)
 	if err != nil {
+		span.SetStatus(codes.Error, "Error getting user by ID")
+		span.RecordError(err)
 		slog.Error("Service GetUserByID", "error", err)
 		return nil, ErrGettingUserByID
 	}
@@ -144,6 +147,8 @@ func (s *User) GetUserByEmail(ctx context.Context, email string) (*model.User, e
 
 	user, err := s.repository.SelectByEmail(ctx, email)
 	if err != nil {
+		span.SetStatus(codes.Error, "Error getting user by email")
+		span.RecordError(err)
 		slog.Error("Service GetUserByEmail", "error", err)
 		return nil, ErrGettingUserByEmail
 	}
@@ -163,6 +168,8 @@ func (s *User) CreateUser(ctx context.Context, user *model.CreateUserRequest) er
 	)
 
 	if user == nil {
+		span.SetStatus(codes.Error, "User is nil")
+		span.RecordError(errors.New("user is nil"))
 		return errors.New("user is nil")
 	}
 
@@ -184,6 +191,8 @@ func (s *User) CreateUser(ctx context.Context, user *model.CreateUserRequest) er
 		slog.Error("Service CreateUser", "error", err, "error_code", pqErr.Code)
 		if ok {
 			if pqErr.Code == "23505" {
+				span.SetStatus(codes.Error, "ID already exists")
+				span.RecordError(ErrIdAlreadyExists)
 				return ErrIdAlreadyExists
 			}
 		}
@@ -207,6 +216,8 @@ func (s *User) UpdateUser(ctx context.Context, user *model.User) error {
 	)
 
 	if err := s.repository.Update(ctx, user); err != nil {
+		span.SetStatus(codes.Error, "Error updating user")
+		span.RecordError(err)
 		slog.Error("Service UpdateUser", "error", err)
 		return ErrUpdatingUser
 	}
@@ -222,6 +233,8 @@ func (s *User) DeleteUser(ctx context.Context, id uuid.UUID) error {
 	span.SetAttributes(attribute.String("user.id", id.String()))
 
 	if err := s.repository.Delete(ctx, id); err != nil {
+		span.SetStatus(codes.Error, "Error deleting user")
+		span.RecordError(err)
 		slog.Error("Service DeleteUser", "error", err)
 		return ErrDeletingUser
 	}
@@ -250,6 +263,8 @@ func (s *User) ListUsers(ctx context.Context, lur *model.ListUserRequest) (*mode
 
 	qryOut, err := s.repository.SelectAll(ctx, qParams)
 	if err != nil {
+		span.SetStatus(codes.Error, "Error listing users")
+		span.RecordError(err)
 		slog.Error("Service ListUsers", "error", err)
 		return nil, ErrListingUsers
 	}
