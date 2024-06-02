@@ -15,7 +15,10 @@ import (
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/service"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/metric"
 )
+
+var handlerCalls metric.Int64Counter
 
 // UserHandler represents the handler for the user.
 type UserHandlerConf struct {
@@ -46,6 +49,17 @@ func (h *UserHandler) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /users", h.ListUsers)
 }
 
+// RegisterMetrics registers the metrics for the user handler.
+func (h *UserHandler) RegisterMetrics() error {
+	var err error
+	handlerCalls, err = h.ot.Metrics.Meter.Int64Counter(
+		"handler_calls",
+		metric.WithDescription("The number of calls to the user handler"),
+	)
+
+	return err
+}
+
 // GetByID Get a user by ID
 // @Summary Get a user by ID
 // @Description Get a user by ID
@@ -64,6 +78,14 @@ func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 		attribute.String("http.method", r.Method),
 		attribute.String("http.path", r.URL.Path),
 	)
+
+	// // increment the counter
+	// counter.Add(ctx, 1,
+	// 	metric.WithAttributes(
+	// 		attribute.String("path", r.URL.Path),
+	// 		attribute.String("method", r.Method),
+	// 	),
+	// )
 
 	idString := r.PathValue("id")
 	if idString == "" {

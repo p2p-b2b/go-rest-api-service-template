@@ -299,6 +299,9 @@ func main() {
 	swaggerHandler := handler.NewSwaggerHandler(swaggerURLDocs)
 	pprofHandler := handler.NewPprofHandler()
 
+	// register metrics
+	userHandler.RegisterMetrics()
+
 	// Create a new ServeMux and register the handlers
 	mux := http.NewServeMux()
 	swaggerHandler.RegisterRoutes(mux)
