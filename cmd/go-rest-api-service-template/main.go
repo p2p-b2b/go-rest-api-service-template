@@ -175,8 +175,16 @@ func main() {
 	ctx := context.Background()
 
 	// create OpenTelemetry
-	telemetry := o11y.New(ctx, OTConfig)
-	telemetry.SetupOTelSDK()
+	telemetry, err := o11y.New(ctx, OTConfig)
+	if err != nil {
+		slog.Error("error creating OpenTelemetry", "error", err)
+		os.Exit(1)
+	}
+
+	if err := telemetry.Start(); err != nil {
+		slog.Error("error starting telemetry", "error", err)
+		os.Exit(1)
+	}
 
 	// Configure server URL information
 	serverProtocol := "http"
@@ -314,5 +322,10 @@ func main() {
 
 	// Wait for stopChan to close
 	<-httpServer.Wait()
+
+	// Shutdown OpenTelemetry
+	slog.Info("shutting down OpenTelemetry")
+	telemetry.Shutdown()
+
 	slog.Info("server stopped gracefully")
 }

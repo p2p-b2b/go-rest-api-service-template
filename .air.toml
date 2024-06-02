@@ -21,6 +21,8 @@ exclude_dir = [
   "docs",
   "build",
   "mocks",
+  "dev-env",
+  "test",
 ]
 exclude_file = [
   "docs/docs.go",

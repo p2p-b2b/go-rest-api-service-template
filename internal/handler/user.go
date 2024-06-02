@@ -56,7 +56,7 @@ func (h *UserHandler) RegisterRoutes(mux *http.ServeMux) {
 // @Failure 500 {object} APIError
 // @Router /users/{id} [get]
 func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
-	ctx, span := h.ot.Tracer.Start(r.Context(), "User handler: GetByID")
+	ctx, span := h.ot.Traces.Tracer.Start(r.Context(), "User handler: GetByID")
 	defer span.End()
 
 	span.SetAttributes(
@@ -87,15 +87,13 @@ func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 	// encode and write the response
 	if err := json.NewEncoder(w).Encode(user); err != nil {
 		// h.metrics.httpCalls.Add(ctx, 1, otelMetric.WithAttributes(attribute.String("code", fmt.Sprintf("%d", http.StatusInternalServerError))))
 		WriteError(w, r, http.StatusInternalServerError, ErrInternalServerError.Error())
 		return
 	}
-	// logger.InfoContext(ctx, "Result sucess")
-	// h.metrics.httpCalls.Add(ctx, 1, otelMetric.WithAttributes(attribute.String("code", fmt.Sprintf("%d", http.StatusOK))))
-	w.WriteHeader(http.StatusOK)
 }
 
 // CreateUser Create a new user
@@ -111,7 +109,7 @@ func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} APIError
 // @Router /users [post]
 func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
-	ctx, span := h.ot.Tracer.Start(r.Context(), "User handler: CreateUser")
+	ctx, span := h.ot.Traces.Tracer.Start(r.Context(), "User handler: CreateUser")
 	defer span.End()
 
 	span.SetAttributes(
@@ -167,7 +165,7 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} APIError
 // @Router /users/{id} [put]
 func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
-	ctx, span := h.ot.Tracer.Start(r.Context(), "User handler: UpdateUser")
+	ctx, span := h.ot.Traces.Tracer.Start(r.Context(), "User handler: UpdateUser")
 	defer span.End()
 
 	span.SetAttributes(
@@ -203,13 +201,12 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	w.Header().Set("Content-Type", "text/plain")
+	w.WriteHeader(http.StatusOK)
 	if err := h.service.UpdateUser(ctx, &user); err != nil {
 		WriteError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
-
-	w.Header().Set("Content-Type", "text/plain")
-	w.WriteHeader(http.StatusOK)
 }
 
 // DeleteUser Delete a user
@@ -222,7 +219,7 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} APIError
 // @Router /users/{id} [delete]
 func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
-	ctx, span := h.ot.Tracer.Start(r.Context(), "User handler: DeleteUser")
+	ctx, span := h.ot.Traces.Tracer.Start(r.Context(), "User handler: DeleteUser")
 	defer span.End()
 
 	span.SetAttributes(
@@ -243,13 +240,12 @@ func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	w.Header().Set("Content-Type", "text/plain")
+	w.WriteHeader(http.StatusOK)
 	if err := h.service.DeleteUser(ctx, id); err != nil {
 		WriteError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
-
-	w.Header().Set("Content-Type", "text/plain")
-	w.WriteHeader(http.StatusOK)
 }
 
 // ListUsers Return a paginated list of users
@@ -269,7 +265,7 @@ func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} APIError
 // @Router /users [get]
 func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
-	ctx, span := h.ot.Tracer.Start(r.Context(), "User handler: ListUsers")
+	ctx, span := h.ot.Traces.Tracer.Start(r.Context(), "User handler: ListUsers")
 	defer span.End()
 
 	span.SetAttributes(
@@ -355,11 +351,11 @@ func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 		usersResponse.Paginator.PrevPage = serverURL + r.URL.Path + "?prev_token=" + usersResponse.Paginator.PrevToken + "&limit=" + strconv.Itoa(limit)
 	}
 
-	// write the response
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	// write the response
 	if err := json.NewEncoder(w).Encode(usersResponse); err != nil {
 		WriteError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
-	w.WriteHeader(http.StatusOK)
 }

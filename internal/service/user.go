@@ -71,7 +71,7 @@ func NewUserService(conf UserConf) *User {
 
 // UserHealthCheck verifies a connection to the repository is still alive.
 func (s *User) UserHealthCheck(ctx context.Context) (model.Health, error) {
-	ctx, span := s.ot.Tracer.Start(ctx, "User Service: UserHealthCheck")
+	ctx, span := s.ot.Traces.Tracer.Start(ctx, "User Service: UserHealthCheck")
 	defer span.End()
 
 	// database
@@ -121,7 +121,7 @@ func (s *User) UserHealthCheck(ctx context.Context) (model.Health, error) {
 
 // GetUserByID returns the user with the specified ID.
 func (s *User) GetUserByID(ctx context.Context, id uuid.UUID) (*model.User, error) {
-	ctx, span := s.ot.Tracer.Start(ctx, "User Service: GetUserByID")
+	ctx, span := s.ot.Traces.Tracer.Start(ctx, "User Service: GetUserByID")
 	defer span.End()
 
 	span.SetAttributes(attribute.String("user.id", id.String()))
@@ -137,7 +137,7 @@ func (s *User) GetUserByID(ctx context.Context, id uuid.UUID) (*model.User, erro
 
 // GetUserByEmail returns the user with the specified email.
 func (s *User) GetUserByEmail(ctx context.Context, email string) (*model.User, error) {
-	ctx, span := s.ot.Tracer.Start(ctx, "User Service: GetUserByEmail")
+	ctx, span := s.ot.Traces.Tracer.Start(ctx, "User Service: GetUserByEmail")
 	defer span.End()
 
 	span.SetAttributes(attribute.String("user.email", email))
@@ -153,7 +153,7 @@ func (s *User) GetUserByEmail(ctx context.Context, email string) (*model.User, e
 
 // CreateUser inserts a new user into the database.
 func (s *User) CreateUser(ctx context.Context, user *model.CreateUserRequest) error {
-	ctx, span := s.ot.Tracer.Start(ctx, "User Service: CreateUser")
+	ctx, span := s.ot.Traces.Tracer.Start(ctx, "User Service: CreateUser")
 	defer span.End()
 
 	span.SetAttributes(
@@ -196,7 +196,7 @@ func (s *User) CreateUser(ctx context.Context, user *model.CreateUserRequest) er
 
 // UpdateUser updates the user with the specified ID.
 func (s *User) UpdateUser(ctx context.Context, user *model.User) error {
-	ctx, span := s.ot.Tracer.Start(ctx, "User Service: UpdateUser")
+	ctx, span := s.ot.Traces.Tracer.Start(ctx, "User Service: UpdateUser")
 	defer span.End()
 
 	span.SetAttributes(
@@ -216,7 +216,7 @@ func (s *User) UpdateUser(ctx context.Context, user *model.User) error {
 
 // DeleteUser deletes the user with the specified ID.
 func (s *User) DeleteUser(ctx context.Context, id uuid.UUID) error {
-	ctx, span := s.ot.Tracer.Start(ctx, "User Service: DeleteUser")
+	ctx, span := s.ot.Traces.Tracer.Start(ctx, "User Service: DeleteUser")
 	defer span.End()
 
 	span.SetAttributes(attribute.String("user.id", id.String()))
@@ -231,7 +231,7 @@ func (s *User) DeleteUser(ctx context.Context, id uuid.UUID) error {
 
 // ListUsers returns a list of users.
 func (s *User) ListUsers(ctx context.Context, lur *model.ListUserRequest) (*model.ListUserResponse, error) {
-	ctx, span := s.ot.Tracer.Start(ctx, "User Service: ListUsers")
+	ctx, span := s.ot.Traces.Tracer.Start(ctx, "User Service: ListUsers")
 	defer span.End()
 
 	span.SetAttributes(
