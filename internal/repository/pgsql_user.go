@@ -14,7 +14,10 @@ import (
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/paginator"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/metric"
 )
+
+var repositoryCalls metric.Int64Counter
 
 type PGSQLUserRepositoryConfig struct {
 	DB              *sql.DB
@@ -47,6 +50,17 @@ func NewPGSQLUserRepository(conf PGSQLUserRepositoryConfig) *PGSQLUserRepository
 		maxQueryTimeout: conf.MaxQueryTimeout,
 		ot:              conf.OT,
 	}
+}
+
+// RegisterMetrics registers the metrics for the user handler.
+func (s *PGSQLUserRepository) RegisterMetrics() error {
+	var err error
+	repositoryCalls, err = s.ot.Metrics.Meter.Int64Counter(
+		"repository_calls",
+		metric.WithDescription("The number of calls to the user repository"),
+	)
+
+	return err
 }
 
 // DriverName returns the name of the driver.
@@ -99,9 +113,17 @@ func (r *PGSQLUserRepository) Insert(ctx context.Context, user *model.User) erro
 		span.SetStatus(codes.Error, "query failed")
 		span.RecordError(err)
 		slog.Error("Insert", "error", err)
+		repositoryCalls.Add(ctx, 1,
+			metric.WithAttributes(attribute.String("method", "Insert")),
+			metric.WithAttributes(attribute.String("successful", fmt.Sprintf("%t", false))),
+		)
 		return err
 	}
 
+	repositoryCalls.Add(ctx, 1,
+		metric.WithAttributes(attribute.String("method", "Insert")),
+		metric.WithAttributes(attribute.String("successful", fmt.Sprintf("%t", true))),
+	)
 	return nil
 }
 
@@ -150,9 +172,17 @@ func (r *PGSQLUserRepository) Update(ctx context.Context, user *model.User) erro
 		span.SetStatus(codes.Error, "query failed")
 		span.RecordError(err)
 		slog.Error("Update", "error", err)
+		repositoryCalls.Add(ctx, 1,
+			metric.WithAttributes(attribute.String("method", "Update")),
+			metric.WithAttributes(attribute.String("successful", fmt.Sprintf("%t", false))),
+		)
 		return err
 	}
 
+	repositoryCalls.Add(ctx, 1,
+		metric.WithAttributes(attribute.String("method", "Update")),
+		metric.WithAttributes(attribute.String("successful", fmt.Sprintf("%t", true))),
+	)
 	return nil
 }
 
@@ -179,9 +209,17 @@ func (r *PGSQLUserRepository) Delete(ctx context.Context, id uuid.UUID) error {
 		span.SetStatus(codes.Error, "query failed")
 		span.RecordError(err)
 		slog.Error("Delete", "error", err)
+		repositoryCalls.Add(ctx, 1,
+			metric.WithAttributes(attribute.String("method", "Delete")),
+			metric.WithAttributes(attribute.String("successful", fmt.Sprintf("%t", false))),
+		)
 		return err
 	}
 
+	repositoryCalls.Add(ctx, 1,
+		metric.WithAttributes(attribute.String("method", "Delete")),
+		metric.WithAttributes(attribute.String("successful", fmt.Sprintf("%t", true))),
+	)
 	return nil
 }
 
@@ -211,8 +249,17 @@ func (r *PGSQLUserRepository) SelectByID(ctx context.Context, id uuid.UUID) (*mo
 		span.SetStatus(codes.Error, "scan failed")
 		span.RecordError(err)
 		slog.Error("SelectByID", "error", err)
+		repositoryCalls.Add(ctx, 1,
+			metric.WithAttributes(attribute.String("method", "SelectByID")),
+			metric.WithAttributes(attribute.String("successful", fmt.Sprintf("%t", false))),
+		)
 		return nil, err
 	}
+
+	repositoryCalls.Add(ctx, 1,
+		metric.WithAttributes(attribute.String("method", "SelectByID")),
+		metric.WithAttributes(attribute.String("successful", fmt.Sprintf("%t", true))),
+	)
 	return &u, nil
 }
 
@@ -242,9 +289,17 @@ func (r *PGSQLUserRepository) SelectByEmail(ctx context.Context, email string) (
 		span.SetStatus(codes.Error, "scan failed")
 		span.RecordError(err)
 		slog.Error("SelectByEmail", "error", err)
+		repositoryCalls.Add(ctx, 1,
+			metric.WithAttributes(attribute.String("method", "SelectByEmail")),
+			metric.WithAttributes(attribute.String("successful", fmt.Sprintf("%t", true))),
+		)
 		return nil, err
 	}
 
+	repositoryCalls.Add(ctx, 1,
+		metric.WithAttributes(attribute.String("method", "SelectByEmail")),
+		metric.WithAttributes(attribute.String("successful", fmt.Sprintf("%t", true))),
+	)
 	return &u, nil
 }
 
@@ -327,6 +382,10 @@ func (r *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.Selec
 			span.SetStatus(codes.Error, "invalid token")
 			span.RecordError(err)
 			slog.Error("SelectAll", "error", err)
+			repositoryCalls.Add(ctx, 1,
+				metric.WithAttributes(attribute.String("method", "SelectByEmail")),
+				metric.WithAttributes(attribute.String("successful", fmt.Sprintf("%t", false))),
+			)
 			return nil, err
 		}
 
@@ -382,6 +441,10 @@ func (r *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.Selec
 			span.SetStatus(codes.Error, "scan failed")
 			span.RecordError(err)
 			slog.Error("SelectAll", "error", err)
+			repositoryCalls.Add(ctx, 1,
+				metric.WithAttributes(attribute.String("method", "SelectAll")),
+				metric.WithAttributes(attribute.String("successful", fmt.Sprintf("%t", false))),
+			)
 			return nil, err
 		}
 		users = append(users, &u)
@@ -391,6 +454,10 @@ func (r *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.Selec
 		span.SetStatus(codes.Error, "rows failed")
 		span.RecordError(err)
 		slog.Error("SelectAll", "error", err)
+		repositoryCalls.Add(ctx, 1,
+			metric.WithAttributes(attribute.String("method", "SelectAll")),
+			metric.WithAttributes(attribute.String("successful", fmt.Sprintf("%t", false))),
+		)
 		return nil, err
 	}
 
@@ -418,6 +485,11 @@ func (r *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.Selec
 			Limit:     params.Paginator.Limit,
 		},
 	}
+
+	repositoryCalls.Add(ctx, 1,
+		metric.WithAttributes(attribute.String("method", "SelectAll")),
+		metric.WithAttributes(attribute.String("successful", fmt.Sprintf("%t", true))),
+	)
 
 	return ret, nil
 }

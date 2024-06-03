@@ -10,6 +10,7 @@ const (
 	DefaultTracePort                 = 4318
 	DefaultTraceExporter             = "console"
 	DefaultTraceExporterBatchTimeout = 5 * time.Second
+	DefaultTraceSampling             = 100
 
 	DefaultMetricEndpoint = "localhost"
 	DefaultMetricPort     = 9090
@@ -22,6 +23,7 @@ type OpenTelemetryConfig struct {
 	TracePort                 Field[int]
 	TraceExporter             Field[string]
 	TraceExporterBatchTimeout Field[time.Duration]
+	TraceSampling             Field[int]
 
 	MetricEndpoint Field[string]
 	MetricPort     Field[int]
@@ -38,6 +40,7 @@ func NewOpenTelemetryConfig(appName string, appVersion string) *OpenTelemetryCon
 		TracePort:                 NewField("opentelemetry.trace.port", "OPENTELEMETRY_TRACE_PORT", "OpenTelemetry Port to send traces to", DefaultTracePort),
 		TraceExporter:             NewField("opentelemetry.trace.exporter", "OPENTELEMETRY_TRACE_EXPORTER", "OpenTelemetry Exporter to send traces to ["+TraceExporters+"]", DefaultTraceExporter),
 		TraceExporterBatchTimeout: NewField("opentelemetry.trace.exporter.batch.timeout", "OPENTELEMETRY_TRACE_EXPORTER_BATCH_TIMEOUT", "OpenTelemetry Exporter Batch Timeout", DefaultTraceExporterBatchTimeout),
+		TraceSampling:             NewField("opentelemetry.trace.sampling", "OPENTELEMETRY_TRACE_SAMPLING", "OpenTelemetry Exporter trace sampling", DefaultTraceSampling),
 
 		MetricEndpoint: NewField("opentelemetry.metric.endpoint", "OPENTELEMETRY_METRIC_ENDPOINT", "OpenTelemetry Endpoint to send metrics to", DefaultMetricEndpoint),
 		MetricPort:     NewField("opentelemetry.metric.port", "OPENTELEMETRY_METRIC_PORT", "OpenTelemetry Port to send metrics to", DefaultMetricPort),
@@ -56,6 +59,7 @@ func (c *OpenTelemetryConfig) PaseEnvVars() {
 	c.TracePort.Value = GetEnv(c.TracePort.EnVarName, c.TracePort.Value)
 	c.TraceExporter.Value = GetEnv(c.TraceExporter.EnVarName, c.TraceExporter.Value)
 	c.TraceExporterBatchTimeout.Value = GetEnv(c.TraceExporterBatchTimeout.EnVarName, c.TraceExporterBatchTimeout.Value)
+	c.TraceSampling.Value = GetEnv(c.TraceSampling.EnVarName, c.TraceSampling.Value)
 
 	c.MetricEndpoint.Value = GetEnv(c.MetricEndpoint.EnVarName, c.MetricEndpoint.Value)
 	c.MetricPort.Value = GetEnv(c.MetricPort.EnVarName, c.MetricPort.Value)

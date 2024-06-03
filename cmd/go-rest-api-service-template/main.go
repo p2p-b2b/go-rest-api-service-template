@@ -79,6 +79,7 @@ func init() {
 	flag.IntVar(&OTConfig.TracePort.Value, OTConfig.TracePort.FlagName, config.DefaultTracePort, OTConfig.TracePort.FlagDescription)
 	flag.StringVar(&OTConfig.TraceExporter.Value, OTConfig.TraceExporter.FlagName, config.DefaultTraceExporter, OTConfig.TraceExporter.FlagDescription)
 	flag.DurationVar(&OTConfig.TraceExporterBatchTimeout.Value, OTConfig.TraceExporterBatchTimeout.FlagName, config.DefaultTraceExporterBatchTimeout, OTConfig.TraceExporterBatchTimeout.FlagDescription)
+	flag.IntVar(&OTConfig.TraceSampling.Value, OTConfig.TraceSampling.FlagName, config.DefaultTraceSampling, OTConfig.TraceSampling.FlagDescription)
 
 	flag.StringVar(&OTConfig.MetricEndpoint.Value, OTConfig.MetricEndpoint.FlagName, config.DefaultMetricEndpoint, OTConfig.TraceEndpoint.FlagDescription)
 	flag.IntVar(&OTConfig.MetricPort.Value, OTConfig.MetricPort.FlagName, config.DefaultMetricPort, OTConfig.MetricPort.FlagDescription)
@@ -301,6 +302,8 @@ func main() {
 
 	// register metrics
 	userHandler.RegisterMetrics()
+	userService.RegisterMetrics()
+	userRepository.RegisterMetrics()
 
 	// Create a new ServeMux and register the handlers
 	mux := http.NewServeMux()

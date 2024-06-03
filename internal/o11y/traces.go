@@ -125,12 +125,16 @@ func (o *OpenTelemetryTracer) newTraceExporter(ctx context.Context) (trace.SpanE
 }
 
 func (o *OpenTelemetryTracer) newTraceProvider(exp trace.SpanExporter) (*trace.TracerProvider, error) {
+
+	sampler := trace.TraceIDRatioBased(0.5)
+
 	p := trace.NewTracerProvider(
 		trace.WithResource(o.res),
 		trace.WithBatcher(
 			exp,
 			trace.WithBatchTimeout(o.traceExporterBatchTimeout),
 		),
+		trace.WithSampler(sampler),
 	)
 
 	return p, nil

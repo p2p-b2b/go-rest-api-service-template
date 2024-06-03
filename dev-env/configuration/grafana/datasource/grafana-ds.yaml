@@ -1,0 +1,9 @@
+datasources:
+  - name: Traces
+    type: tempo
+    orgId: 1
+    url: http://dev-service-pod-tempo:3200
+  - name: Prometheus
+    type: prometheus
+    orgId: 1
+    url: http://dev-service-pod-prometheus:9090

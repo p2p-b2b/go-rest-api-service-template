@@ -3,6 +3,7 @@ package handler
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"strconv"
@@ -86,11 +87,18 @@ func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	// 		attribute.String("method", r.Method),
 	// 	),
 	// )
+	// )r.URL.Path[:strings.LastIndex(r.URL.Path, "/")]
 
 	idString := r.PathValue("id")
 	if idString == "" {
 		span.SetStatus(codes.Error, ErrIDRequired.Error())
 		span.RecordError(ErrIDRequired)
+		handlerCalls.Add(ctx, 1,
+			metric.WithAttributes(attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)),
+				attribute.String("method", r.Method),
+				attribute.String("path", r.URL.Path[:strings.LastIndex(r.URL.Path, "/")]),
+			))
+
 		WriteError(w, r, http.StatusBadRequest, ErrIDRequired.Error())
 		return
 	}
@@ -100,6 +108,11 @@ func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		span.SetStatus(codes.Error, ErrInvalidID.Error())
 		span.RecordError(ErrInvalidID)
+		handlerCalls.Add(ctx, 1,
+			metric.WithAttributes(attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)),
+				attribute.String("method", r.Method),
+				attribute.String("path", r.URL.Path[:strings.LastIndex(r.URL.Path, "/")]),
+			))
 		WriteError(w, r, http.StatusBadRequest, ErrInvalidID.Error())
 		return
 	}
@@ -108,16 +121,32 @@ func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		span.SetStatus(codes.Error, ErrInternalServerError.Error())
 		span.RecordError(err)
+		handlerCalls.Add(ctx, 1,
+			metric.WithAttributes(attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)),
+				attribute.String("method", r.Method),
+				attribute.String("path", r.URL.Path[:strings.LastIndex(r.URL.Path, "/")]),
+			))
 		WriteError(w, r, http.StatusInternalServerError, ErrInternalServerError.Error())
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
+	handlerCalls.Add(ctx, 1,
+		metric.WithAttributes(attribute.String("code", fmt.Sprintf("%d", http.StatusInternalServerError)),
+			attribute.String("method", r.Method),
+			attribute.String("path", r.URL.Path[:strings.LastIndex(r.URL.Path, "/")]),
+		))
+
 	// encode and write the response
 	if err := json.NewEncoder(w).Encode(user); err != nil {
 		span.SetStatus(codes.Error, ErrInternalServerError.Error())
 		span.RecordError(err)
+		handlerCalls.Add(ctx, 1,
+			metric.WithAttributes(attribute.String("code", fmt.Sprintf("%d", http.StatusInternalServerError)),
+				attribute.String("method", r.Method),
+				attribute.String("path", r.URL.Path[:strings.LastIndex(r.URL.Path, "/")]),
+			))
 		WriteError(w, r, http.StatusInternalServerError, ErrInternalServerError.Error())
 		return
 	}
@@ -148,6 +177,11 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
 		span.SetStatus(codes.Error, err.Error())
 		span.RecordError(err)
+		handlerCalls.Add(ctx, 1,
+			metric.WithAttributes(attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)),
+				attribute.String("method", r.Method),
+				attribute.String("path", r.URL.Path[:strings.LastIndex(r.URL.Path, "/")]),
+			))
 		WriteError(w, r, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -155,6 +189,11 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	if user.FirstName == "" {
 		span.SetStatus(codes.Error, "First name is required")
 		span.RecordError(errors.New("first name is required"))
+		handlerCalls.Add(ctx, 1,
+			metric.WithAttributes(attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)),
+				attribute.String("method", r.Method),
+				attribute.String("path", r.URL.Path[:strings.LastIndex(r.URL.Path, "/")]),
+			))
 		WriteError(w, r, http.StatusBadRequest, "First name is required")
 		return
 	}
@@ -162,6 +201,11 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	if user.LastName == "" {
 		span.SetStatus(codes.Error, "Last name is required")
 		span.RecordError(errors.New("last name is required"))
+		handlerCalls.Add(ctx, 1,
+			metric.WithAttributes(attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)),
+				attribute.String("method", r.Method),
+				attribute.String("path", r.URL.Path[:strings.LastIndex(r.URL.Path, "/")]),
+			))
 		WriteError(w, r, http.StatusBadRequest, "Last name is required")
 		return
 	}
@@ -169,6 +213,11 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	if user.Email == "" {
 		span.SetStatus(codes.Error, "Email is required")
 		span.RecordError(errors.New("email is required"))
+		handlerCalls.Add(ctx, 1,
+			metric.WithAttributes(attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)),
+				attribute.String("method", r.Method),
+				attribute.String("path", r.URL.Path[:strings.LastIndex(r.URL.Path, "/")]),
+			))
 		WriteError(w, r, http.StatusBadRequest, "Email is required")
 		return
 	}
@@ -177,18 +226,33 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 		if errors.Is(err, service.ErrIdAlreadyExists) {
 			span.SetStatus(codes.Error, err.Error())
 			span.RecordError(err)
+			handlerCalls.Add(ctx, 1,
+				metric.WithAttributes(attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)),
+					attribute.String("method", r.Method),
+					attribute.String("path", r.URL.Path[:strings.LastIndex(r.URL.Path, "/")]),
+				))
 			WriteError(w, r, http.StatusConflict, err.Error())
 			return
 		}
 
 		span.SetStatus(codes.Error, err.Error())
 		span.RecordError(err)
+		handlerCalls.Add(ctx, 1,
+			metric.WithAttributes(attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)),
+				attribute.String("method", r.Method),
+				attribute.String("path", r.URL.Path[:strings.LastIndex(r.URL.Path, "/")]),
+			))
 		WriteError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusCreated)
+	handlerCalls.Add(ctx, 1,
+		metric.WithAttributes(attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)),
+			attribute.String("method", r.Method),
+			attribute.String("path", r.URL.Path[:strings.LastIndex(r.URL.Path, "/")]),
+		))
 }
 
 // UpdateUser Update a user
@@ -216,6 +280,11 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	if idParam == "" {
 		span.SetStatus(codes.Error, ErrIDRequired.Error())
 		span.RecordError(ErrIDRequired)
+		handlerCalls.Add(ctx, 1,
+			metric.WithAttributes(attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)),
+				attribute.String("method", r.Method),
+				attribute.String("path", r.URL.Path[:strings.LastIndex(r.URL.Path, "/")]),
+			))
 		WriteError(w, r, http.StatusBadRequest, ErrIDRequired.Error())
 		return
 	}
@@ -225,6 +294,11 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		span.SetStatus(codes.Error, err.Error())
 		span.RecordError(err)
+		handlerCalls.Add(ctx, 1,
+			metric.WithAttributes(attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)),
+				attribute.String("method", r.Method),
+				attribute.String("path", r.URL.Path[:strings.LastIndex(r.URL.Path, "/")]),
+			))
 		WriteError(w, r, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -233,6 +307,11 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
 		span.SetStatus(codes.Error, err.Error())
 		span.RecordError(err)
+		handlerCalls.Add(ctx, 1,
+			metric.WithAttributes(attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)),
+				attribute.String("method", r.Method),
+				attribute.String("path", r.URL.Path[:strings.LastIndex(r.URL.Path, "/")]),
+			))
 		WriteError(w, r, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -245,6 +324,11 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	if user.FirstName == "" && user.LastName == "" && user.Email == "" {
 		span.SetStatus(codes.Error, "At least one field must be updated")
 		span.RecordError(errors.New("at least one field must be updated"))
+		handlerCalls.Add(ctx, 1,
+			metric.WithAttributes(attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)),
+				attribute.String("method", r.Method),
+				attribute.String("path", r.URL.Path[:strings.LastIndex(r.URL.Path, "/")]),
+			))
 		WriteError(w, r, http.StatusBadRequest, "At least one field must be updated")
 		return
 	}
@@ -254,6 +338,11 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	if err := h.service.UpdateUser(ctx, &user); err != nil {
 		span.SetStatus(codes.Error, err.Error())
 		span.RecordError(err)
+		handlerCalls.Add(ctx, 1,
+			metric.WithAttributes(attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)),
+				attribute.String("method", r.Method),
+				attribute.String("path", r.URL.Path[:strings.LastIndex(r.URL.Path, "/")]),
+			))
 		WriteError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -281,6 +370,11 @@ func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	if idParam == "" {
 		span.SetStatus(codes.Error, ErrIDRequired.Error())
 		span.RecordError(ErrIDRequired)
+		handlerCalls.Add(ctx, 1,
+			metric.WithAttributes(attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)),
+				attribute.String("method", r.Method),
+				attribute.String("path", r.URL.Path[:strings.LastIndex(r.URL.Path, "/")]),
+			))
 		WriteError(w, r, http.StatusBadRequest, ErrIDRequired.Error())
 		return
 	}
@@ -290,6 +384,11 @@ func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		span.SetStatus(codes.Error, err.Error())
 		span.RecordError(err)
+		handlerCalls.Add(ctx, 1,
+			metric.WithAttributes(attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)),
+				attribute.String("method", r.Method),
+				attribute.String("path", r.URL.Path[:strings.LastIndex(r.URL.Path, "/")]),
+			))
 		WriteError(w, r, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -299,6 +398,11 @@ func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	if err := h.service.DeleteUser(ctx, id); err != nil {
 		span.SetStatus(codes.Error, err.Error())
 		span.RecordError(err)
+		handlerCalls.Add(ctx, 1,
+			metric.WithAttributes(attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)),
+				attribute.String("method", r.Method),
+				attribute.String("path", r.URL.Path[:strings.LastIndex(r.URL.Path, "/")]),
+			))
 		WriteError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -334,6 +438,11 @@ func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 		if err != io.EOF {
 			span.SetStatus(codes.Error, err.Error())
 			span.RecordError(err)
+			handlerCalls.Add(ctx, 1,
+				metric.WithAttributes(attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)),
+					attribute.String("method", r.Method),
+					attribute.String("path", r.URL.Path[:strings.LastIndex(r.URL.Path, "/")]),
+				))
 			WriteError(w, r, http.StatusBadRequest, err.Error())
 			return
 		}
@@ -367,6 +476,11 @@ func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			span.SetStatus(codes.Error, "Invalid limit")
 			span.RecordError(err)
+			handlerCalls.Add(ctx, 1,
+				metric.WithAttributes(attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)),
+					attribute.String("method", r.Method),
+					attribute.String("path", r.URL.Path[:strings.LastIndex(r.URL.Path, "/")]),
+				))
 			WriteError(w, r, http.StatusBadRequest, "Invalid limit")
 			return
 		}
@@ -374,6 +488,11 @@ func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 		if limit < 0 {
 			span.SetStatus(codes.Error, "Limit must be greater than or equal to 0")
 			span.RecordError(err)
+			handlerCalls.Add(ctx, 1,
+				metric.WithAttributes(attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)),
+					attribute.String("method", r.Method),
+					attribute.String("path", r.URL.Path[:strings.LastIndex(r.URL.Path, "/")]),
+				))
 			WriteError(w, r, http.StatusBadRequest, "Limit must be greater than or equal to 0")
 			return
 		}
@@ -397,6 +516,11 @@ func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		span.SetStatus(codes.Error, err.Error())
 		span.RecordError(err)
+		handlerCalls.Add(ctx, 1,
+			metric.WithAttributes(attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)),
+				attribute.String("method", r.Method),
+				attribute.String("path", r.URL.Path[:strings.LastIndex(r.URL.Path, "/")]),
+			))
 		WriteError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -421,6 +545,11 @@ func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewEncoder(w).Encode(usersResponse); err != nil {
 		span.SetStatus(codes.Error, err.Error())
 		span.RecordError(err)
+		handlerCalls.Add(ctx, 1,
+			metric.WithAttributes(attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)),
+				attribute.String("method", r.Method),
+				attribute.String("path", r.URL.Path[:strings.LastIndex(r.URL.Path, "/")]),
+			))
 		WriteError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}

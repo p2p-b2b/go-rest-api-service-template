@@ -48,6 +48,16 @@ spec:
         - containerPort: 3000
           hostPort: 3000
           protocol: TCP
+      volumeMounts:
+        - mountPath: /etc/grafana/provisioning/datasources/grafana-ds.yaml:Z
+          name: grafana-datasources
+          readOnly: false
+        - mountPath: /etc/grafana/provisioning/dashboards/default.yaml:Z
+          name: grafana-dashboard-config
+          readOnly: false
+        - mountPath: /var/lib/grafana/dashboards
+          name: grafana-dashboard
+          readOnly: false
     - name: tempo
       args:
         - --config.file=/mnt/config/tempo-local-config.yaml
@@ -94,11 +104,22 @@ spec:
           name: prometheus
         - mountPath: /etc/prometheus/prometheus.yml:Z
           name: prometheus-config
-
   volumes:
     - name: go-rest-api-service-template-db-volume-host
       hostPath:
         path: /tmp/go-rest-api-service-template-db-volume-host
+        type: Directory
+    - name: grafana-datasources
+      hostPath:
+        path: /tmp/go-rest-api-service-template-grafana-ds/grafana-ds.yaml
+        type: File
+    - name: grafana-dashboard-config
+      hostPath:
+        path: /tmp/go-rest-api-service-template-grafana-dashboard-config/default.yaml
+        type: File
+    - name: grafana-dashboard
+      hostPath:
+        path: /tmp/go-rest-api-service-template-grafana-dashboard/
         type: Directory
     - name: tempo
       hostPath:
