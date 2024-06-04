@@ -233,7 +233,7 @@ docs-swagger: ## Generate swagger documentation
 .PHONY: install-air
 install-air: ## Install air for hot reload (https://github.com/cosmtrek/air)
 	@printf "👉 Installing air...\n"
-	$(call exec_cmd, go install github.com/cosmtrek/air@latest )
+	$(call exec_cmd, go install github.com/air-verse/air@latest )
 
 .PHONY: install-swag
 install-swag: ## Install swag for swagger documentation (https://github.com/swaggo/http-swagger)
