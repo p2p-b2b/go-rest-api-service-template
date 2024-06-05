@@ -94,7 +94,7 @@ jobs:
       - name: Make tests
         run: |
           echo "## Make tests" >> $GITHUB_STEP_SUMMARY
-          MAKE_STOP_ON_ERRORS=true make test 2>&1 | tee -a $GITHUB_STEP_SUMMARY
+          MAKE_STOP_ON_ERRORS=true make test | tee -a $GITHUB_STEP_SUMMARY
 
       - name: Make build-all
         run: |
