@@ -64,7 +64,7 @@ func (s *PGSQLUserRepository) RegisterMetrics() error {
 }
 
 // DriverName returns the name of the driver.
-func (_ PGSQLUserRepository) DriverName() string {
+func (r *PGSQLUserRepository) DriverName() string {
 	return sql.Drivers()[0]
 }
 
