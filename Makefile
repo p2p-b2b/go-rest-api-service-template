@@ -233,7 +233,7 @@ docs-swagger: ## Generate swagger documentation
 .PHONY: install-air
 install-air: ## Install air for hot reload (https://github.com/cosmtrek/air)
 	@printf "👉 Installing air...\n"
-	$(call exec_cmd, go install github.com/cosmtrek/air@latest )
+	$(call exec_cmd, go install github.com/air-verse/air@latest )
 
 .PHONY: install-swag
 install-swag: ## Install swag for swagger documentation (https://github.com/swaggo/http-swagger)
@@ -250,13 +250,30 @@ install-goose: ## Install goose for database migrations (
 .PHONY: stop-dev-env
 stop-dev-env: ## Run the application in development mode
 	@printf "👉 Stopping application in development mode...\n"
-		$(call exec_cmd, podman play kube --force --down dev-service-pod.yaml )
+		$(call exec_cmd, podman play kube --down ./dev-env/provisioning/dev-service-pod.yaml )
+
 
 .PHONY: start-dev-env
 start-dev-env: stop-dev-env install-air install-swag install-goose ## Run the application in development mode.  WARNING: This will stop the current running application deleting the data
 	@printf "👉 Running application in development mode...\n"
 		$(call exec_cmd, mkdir -p /tmp/$(PROJECT_NAME)-db-volume-host )
-		$(call exec_cmd, podman play kube dev-service-pod.yaml )
+		$(call exec_cmd, mkdir -p /tmp/$(PROJECT_NAME)-tempo-volume-host )
+		$(call exec_cmd, mkdir -p /tmp/$(PROJECT_NAME)-prometheus-volume-host )
+		$(call exec_cmd, mkdir -p /tmp/$(PROJECT_NAME)-grafana-ds )
+		$(call exec_cmd, mkdir -p /tmp/$(PROJECT_NAME)-grafana-dashboard-config )
+		$(call exec_cmd, mkdir -p /tmp/$(PROJECT_NAME)-grafana-dashboard )
+		$(call exec_cmd, mkdir -p /tmp/$(PROJECT_NAME)-dev-env)
+		$(call exec_cmd, chmod 777 /tmp/$(PROJECT_NAME)-tempo-volume-host )
+		$(call exec_cmd, chmod 777 /tmp/$(PROJECT_NAME)-prometheus-volume-host )
+
+		$(call exec_cmd, cp ./dev-env/configuration/grafana/datasource/grafana-ds.yaml /tmp/$(PROJECT_NAME)-grafana-ds/grafana-ds.yaml)
+		$(call exec_cmd, cp ./dev-env/configuration/grafana/dashboard/default.yaml /tmp/$(PROJECT_NAME)-grafana-dashboard-config/default.yaml)
+		$(call exec_cmd, cp ./dev-env/configuration/grafana/dashboard/go-rest-api-service-template.json /tmp/$(PROJECT_NAME)-grafana-dashboard/go-rest-api-service-template.json)
+		$(call exec_cmd, cp ./dev-env/configuration/prometheus/prometheus.yaml /tmp/$(PROJECT_NAME)-dev-env/prometheus.yaml )
+		$(call exec_cmd, cp ./dev-env/configuration/tempo/tempo-local-config.yaml /tmp/$(PROJECT_NAME)-dev-env/tempo-local-config.yaml )
+
+		$(call exec_cmd, podman play kube ./dev-env/provisioning/dev-service-pod.yaml )
+
 
 .PHONY: rename-project
 rename-project: clean ## Rename the project.  This must be the first command to run after cloning the repository created from the template

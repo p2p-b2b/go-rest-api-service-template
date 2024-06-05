@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
 
 env:
-  MAKE_STOP_ON_ERRORS: "true" # Stop on errors when running make
+  MAKE_STOP_ON_ERRORS: true # Stop on errors when running make
 
 permissions:
   id-token: write
@@ -30,7 +30,7 @@ jobs:
         run: |
           echo "## Tools and versions" >> $GITHUB_STEP_SUMMARY
 
-          ubuntu_version=$(lsb_release -a 2>&1 | grep "Description" | awk '{print $2, $3, $4}')
+          ubuntu_version=$(lsb_release -a  grep "Description" | awk '{print $2, $3, $4}')
           echo "Ubuntu version: $ubuntu_version"
           echo "**Ubuntu Version:** $ubuntu_version" >> $GITHUB_STEP_SUMMARY
 
@@ -59,16 +59,16 @@ jobs:
       - name: Make container-build
         run: |
           echo "## Make container-build" >> $GITHUB_STEP_SUMMARY
-          make container-build 2>&1 | tee -a $GITHUB_STEP_SUMMARY
+          make container-build tee -a $GITHUB_STEP_SUMMARY
 
       - name: Make container-login
         run: |
           echo "## Make container-login" >> $GITHUB_STEP_SUMMARY
-          make container-login 2>&1 | tee -a $GITHUB_STEP_SUMMARY
+          make container-login tee -a $GITHUB_STEP_SUMMARY
         env:
           REPOSITORY_REGISTRY_TOKEN: ${{ secrets.CONTAINER_REGISTRY }}
 
       - name: Make container-publish
         run: |
           echo "## Make container-publish" >> $GITHUB_STEP_SUMMARY
-          make container-publish 2>&1 | tee -a $GITHUB_STEP_SUMMARY
+          make container-publish tee -a $GITHUB_STEP_SUMMARY

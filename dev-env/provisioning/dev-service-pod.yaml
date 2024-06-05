@@ -1,0 +1,139 @@
+# Save the output of this file and use kubectl create -f to import
+# it into Kubernetes.
+#
+# Created with podman-5.0.1
+
+# NOTE: If you generated this yaml from an unprivileged and rootless podman container on an SELinux
+# enabled system, check the podman generate kube man page for steps to follow to ensure that your pod/container
+# has the right permissions to access the volumes added.
+# References:
+# https://developers.redhat.com/blog/2019/01/15/podman-managing-containers-pods#
+# https://www.redhat.com/sysadmin/podman-play-kube-updates
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  creationTimestamp: "2024-05-04T14:57:16Z"
+  labels:
+    app: dev-service-pod
+  name: dev-service-pod
+spec:
+  containers:
+    - name: postgres
+      args:
+        - postgres
+      env:
+        - name: TZ
+          value: UTC
+        - name: PGTZ
+          value: UTC
+        - name: POSTGRES_PASSWORD
+          value: password
+        - name: POSTGRES_USER
+          value: username
+        - name: POSTGRES_DB
+          value: go-rest-api-service-template
+      image: docker.io/library/postgres:16
+      ports:
+        - containerPort: 5432
+          hostPort: 5432
+      volumeMounts:
+        - name: go-rest-api-service-template-db-volume-host
+          mountPath: /var/lib/postgresq/data
+    - name: grafana
+      args:
+        - grafana
+      image: docker.io/grafana/grafana:latest
+      ports:
+        - containerPort: 3000
+          hostPort: 3000
+          protocol: TCP
+      volumeMounts:
+        - mountPath: /etc/grafana/provisioning/datasources/grafana-ds.yaml:Z
+          name: grafana-datasources
+          readOnly: false
+        - mountPath: /etc/grafana/provisioning/dashboards/default.yaml:Z
+          name: grafana-dashboard-config
+          readOnly: false
+        - mountPath: /var/lib/grafana/dashboards
+          name: grafana-dashboard
+          readOnly: false
+    - name: tempo
+      args:
+        - --config.file=/mnt/config/tempo-local-config.yaml
+      image: docker.io/grafana/tempo:latest
+      ports:
+        - containerPort: 3200
+          hostPort: 3200
+          protocol: TCP
+        - containerPort: 4317
+          hostPort: 4317
+          protocol: TCP
+        - containerPort: 4318
+          hostPort: 4318
+          protocol: TCP
+        - containerPort: 9097
+          hostPort: 9097
+          protocol: TCP
+        - containerPort: 9411
+          hostPort: 9411
+          protocol: TCP
+        - containerPort: 14268
+          hostPort: 14268
+          protocol: TCP
+      volumeMounts:
+        - mountPath: /tmp/tempo:Z
+          name: tempo
+        - mountPath: /mnt/config/tempo-local-config.yaml:Z
+          name: tempo-config
+    - name: prometheus
+      args:
+        - "--config.file=/etc/prometheus/prometheus.yml"
+        - "--storage.tsdb.path=/prometheus"
+        - "--web.console.libraries=/etc/prometheus/console_libraries"
+        - "--web.console.templates=/etc/prometheus/consoles"
+        - "--web.enable-lifecycle"
+        - "--enable-feature=otlp-write-receiver"
+      image: docker.io/prom/prometheus:latest
+      ports:
+        - containerPort: 9090
+          hostPort: 9090
+          protocol: TCP
+      volumeMounts:
+        - mountPath: /prometheus:Z
+          name: prometheus
+        - mountPath: /etc/prometheus/prometheus.yml:Z
+          name: prometheus-config
+  volumes:
+    - name: go-rest-api-service-template-db-volume-host
+      hostPath:
+        path: /tmp/go-rest-api-service-template-db-volume-host
+        type: Directory
+    - name: grafana-datasources
+      hostPath:
+        path: /tmp/go-rest-api-service-template-grafana-ds/grafana-ds.yaml
+        type: File
+    - name: grafana-dashboard-config
+      hostPath:
+        path: /tmp/go-rest-api-service-template-grafana-dashboard-config/default.yaml
+        type: File
+    - name: grafana-dashboard
+      hostPath:
+        path: /tmp/go-rest-api-service-template-grafana-dashboard/
+        type: Directory
+    - name: tempo
+      hostPath:
+        path: /tmp/go-rest-api-service-template-tempo-volume-host
+        type: Directory
+    - name: tempo-config
+      hostPath:
+        path: /tmp/go-rest-api-service-template-dev-env/tempo-local-config.yaml
+        type: File
+    - name: prometheus
+      hostPath:
+        path: /tmp/go-rest-api-service-template-prometheus-volume-host
+        type: Directory
+    - name: prometheus-config
+      hostPath:
+        path: /tmp/go-rest-api-service-template-dev-env/prometheus.yaml
+        type: File

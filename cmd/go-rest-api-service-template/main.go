@@ -11,12 +11,14 @@ import (
 	"strings"
 
 	_ "github.com/lib/pq" // load the PostgreSQL driver for database/sql
+
 	// _ "github.com/go-sql-driver/mysql" // load the MySQL driver for database/sql
 
 	"github.com/p2p-b2b/go-rest-api-service-template/database"
 	"github.com/p2p-b2b/go-rest-api-service-template/docs"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/config"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/handler"
+	"github.com/p2p-b2b/go-rest-api-service-template/internal/o11y"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/repository"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/server"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/service"
@@ -24,11 +26,12 @@ import (
 )
 
 var (
+	appName = "go-rest-api-service-template"
+
 	LogConfig = config.NewLogConfig()
 	SrvConfig = config.NewServerConfig()
 	DBConfig  = config.NewDatabaseConfig()
-
-	appName = "go-rest-api-service-template"
+	OTConfig  = config.NewOpenTelemetryConfig(appName, version.Version)
 
 	logHandler        slog.Handler
 	logHandlerOptions *slog.HandlerOptions
@@ -71,6 +74,18 @@ func init() {
 	flag.IntVar(&DBConfig.MaxOpenConns.Value, DBConfig.MaxOpenConns.FlagName, config.DefaultDatabaseMaxOpenConns, DBConfig.MaxOpenConns.FlagDescription)
 	flag.BoolVar(&DBConfig.MigrationEnable.Value, DBConfig.MigrationEnable.FlagName, config.DefaultDatabaseMigrationEnable, DBConfig.MigrationEnable.FlagDescription)
 
+	// OpenTelemetry configuration values
+	flag.StringVar(&OTConfig.TraceEndpoint.Value, OTConfig.TraceEndpoint.FlagName, config.DefaultTraceEndpoint, OTConfig.TraceEndpoint.FlagDescription)
+	flag.IntVar(&OTConfig.TracePort.Value, OTConfig.TracePort.FlagName, config.DefaultTracePort, OTConfig.TracePort.FlagDescription)
+	flag.StringVar(&OTConfig.TraceExporter.Value, OTConfig.TraceExporter.FlagName, config.DefaultTraceExporter, OTConfig.TraceExporter.FlagDescription)
+	flag.DurationVar(&OTConfig.TraceExporterBatchTimeout.Value, OTConfig.TraceExporterBatchTimeout.FlagName, config.DefaultTraceExporterBatchTimeout, OTConfig.TraceExporterBatchTimeout.FlagDescription)
+	flag.IntVar(&OTConfig.TraceSampling.Value, OTConfig.TraceSampling.FlagName, config.DefaultTraceSampling, OTConfig.TraceSampling.FlagDescription)
+
+	flag.StringVar(&OTConfig.MetricEndpoint.Value, OTConfig.MetricEndpoint.FlagName, config.DefaultMetricEndpoint, OTConfig.TraceEndpoint.FlagDescription)
+	flag.IntVar(&OTConfig.MetricPort.Value, OTConfig.MetricPort.FlagName, config.DefaultMetricPort, OTConfig.MetricPort.FlagDescription)
+	flag.StringVar(&OTConfig.MetricExporter.Value, OTConfig.MetricExporter.FlagName, config.DefaultMetricExporter, OTConfig.MetricExporter.FlagDescription)
+	flag.DurationVar(&OTConfig.MetricInterval.Value, OTConfig.MetricInterval.FlagName, config.DefaultMetricInterval, OTConfig.MetricInterval.FlagDescription)
+
 	// Parse the command line arguments
 	flag.Bool("help", false, "Show this help message")
 	flag.Parse()
@@ -109,8 +124,10 @@ func init() {
 
 	// Get Configuration from Environment Variables
 	// and override the values when they are set
-	DBConfig.PaseEnvVars()
 	LogConfig.ParseEnvVars()
+	SrvConfig.ParseEnvVars()
+	DBConfig.PaseEnvVars()
+	OTConfig.PaseEnvVars()
 
 	// Set the log level
 	if flag.Lookup("debug").Value.(flag.Getter).Get().(bool) {
@@ -157,6 +174,18 @@ func main() {
 
 	// Default context
 	ctx := context.Background()
+
+	// create OpenTelemetry
+	telemetry, err := o11y.New(ctx, OTConfig)
+	if err != nil {
+		slog.Error("error creating OpenTelemetry", "error", err)
+		os.Exit(1)
+	}
+
+	if err := telemetry.Start(); err != nil {
+		slog.Error("error starting telemetry", "error", err)
+		os.Exit(1)
+	}
 
 	// Configure server URL information
 	serverProtocol := "http"
@@ -220,18 +249,19 @@ func main() {
 		"conn_max_idle_time", DBConfig.ConnMaxIdleTime.Value,
 	)
 
+	// Test database connection
+	ctx, cancel := context.WithTimeout(ctx, DBConfig.MaxPingTimeout.Value)
+	defer cancel()
+
 	// Create a new userRepository
 	userRepository := repository.NewPGSQLUserRepository(
 		repository.PGSQLUserRepositoryConfig{
 			DB:              db,
 			MaxPingTimeout:  DBConfig.MaxPingTimeout.Value,
 			MaxQueryTimeout: DBConfig.MaxQueryTimeout.Value,
+			OT:              telemetry,
 		},
 	)
-
-	// Test database connection
-	ctx, cancel := context.WithTimeout(ctx, DBConfig.MaxPingTimeout.Value)
-	defer cancel()
 
 	slog.Info("testing database connection...", "dsn", dbDSN)
 	if err := userRepository.PingContext(ctx); err != nil {
@@ -248,15 +278,32 @@ func main() {
 		}
 	}
 
-	// Create Services
-	userService := service.NewUserService(userRepository)
+	// Create user Service config
+	userServiceConf := service.UserConf{
+		Repository: userRepository,
+		OT:         telemetry,
+	}
+
+	// Create user Services
+	userService := service.NewUserService(userServiceConf)
+
+	// Create handler config
+	userHandlerConf := handler.UserHandlerConf{
+		Service: userService,
+		OT:      telemetry,
+	}
 
 	// Create handlers
 	versionHandler := handler.NewVersionHandler()
 	healthHandler := handler.NewHealthHandler(userService)
-	userHandler := handler.NewUserHandler(userService)
+	userHandler := handler.NewUserHandler(userHandlerConf)
 	swaggerHandler := handler.NewSwaggerHandler(swaggerURLDocs)
 	pprofHandler := handler.NewPprofHandler()
+
+	// register metrics
+	userHandler.RegisterMetrics()
+	userService.RegisterMetrics()
+	userRepository.RegisterMetrics()
 
 	// Create a new ServeMux and register the handlers
 	mux := http.NewServeMux()
@@ -281,5 +328,10 @@ func main() {
 
 	// Wait for stopChan to close
 	<-httpServer.Wait()
+
+	// Shutdown OpenTelemetry
+	slog.Info("shutting down OpenTelemetry")
+	telemetry.Shutdown()
+
 	slog.Info("server stopped gracefully")
 }

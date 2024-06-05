@@ -5,7 +5,7 @@ on:
       - v[0-9].[0-9]+.[0-9]*
 
 env:
-  MAKE_STOP_ON_ERRORS: "true" # Stop on errors when running make
+  MAKE_STOP_ON_ERRORS: true # Stop on errors when running make
 
 permissions:
   contents: write
@@ -32,7 +32,7 @@ jobs:
         run: |
           echo "## Tools and versions" >> $GITHUB_STEP_SUMMARY
 
-          ubuntu_version=$(lsb_release -a 2>&1 | grep "Description" | awk '{print $2, $3, $4}')
+          ubuntu_version=$(lsb_release -a | grep "Description" | awk '{print $2, $3, $4}')
           echo "Ubuntu version: $ubuntu_version"
           echo "**Ubuntu Version:** $ubuntu_version" >> $GITHUB_STEP_SUMMARY
 
@@ -55,22 +55,22 @@ jobs:
       - name: make install-swag
         run: |
           echo "## Make install-swag" >> $GITHUB_STEP_SUMMARY
-          make install-swag 2>&1 | tee -a $GITHUB_STEP_SUMMARY
+          make install-swag | tee -a $GITHUB_STEP_SUMMARY
 
       - name: Make tests
         run: |
           echo "## Make tests" >> $GITHUB_STEP_SUMMARY
-          make test 2>&1 | tee -a $GITHUB_STEP_SUMMARY
+          make test | tee -a $GITHUB_STEP_SUMMARY
 
       - name: Make build-dist
         run: |
           echo "## Make build-dist" >> $GITHUB_STEP_SUMMARY
-          make build-dist 2>&1 | tee -a $GITHUB_STEP_SUMMARY
+          make build-dist | tee -a $GITHUB_STEP_SUMMARY
 
       - name: Make build-dist-zip
         run: |
           echo "## Make build-dist-zip" >> $GITHUB_STEP_SUMMARY
-          make build-dist-zip 2>&1 | tee -a $GITHUB_STEP_SUMMARY
+          make build-dist-zip | tee -a $GITHUB_STEP_SUMMARY
 
       - name: Create Release
         id: create-github-release
