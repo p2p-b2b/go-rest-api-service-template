@@ -21,7 +21,7 @@ import (
 var serviceCalls metric.Int64Counter
 
 // this is a mockgen command to generate a mock for UserService
-//go:generate go run github.com/golang/mock/mockgen@v1.6.0 -package=mocks -destination=../../mocks/service/user.go -source=user.go UserService
+//go:generate go run github.com/golang/mock/mockgen@v1.6.0 -package=mocks -destination=../../mocks/service/users.go -source=users.go UserService
 
 // UserService represents a service for managing users.
 type UserService interface {
