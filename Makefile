@@ -14,6 +14,8 @@ PROJECT_MODULES_PATH := $(shell ls -d cmd/*)
 PROJECT_MODULES_NAME := $(foreach dir_name, $(PROJECT_MODULES_PATH), $(shell basename $(dir_name)) )
 PROJECT_DEPENDENCIES := $(shell go list -m -f '{{if not (or .Indirect .Main)}}{{.Path}}{{end}}' all)
 
+TEMPLATE_NAME		= api-business
+
 BUILD_DIR       := ./build
 DIST_DIR        := ./dist
 DIST_ASSEST_DIR := $(DIST_DIR)/assets
@@ -278,12 +280,12 @@ start-dev-env: stop-dev-env install-air install-swag install-goose ## Run the ap
 .PHONY: rename-project
 rename-project: clean ## Rename the project.  This must be the first command to run after cloning the repository created from the template
 	@printf "👉 Renaming project...\n"
-	$(if $(filter $(PROJECT_NAME), $(GIT_REPOSITORY_NAME)), \
+	$(if $(filter $(TEMPLATE_NAME), $(GIT_REPOSITORY_NAME)), \
 		$(call exec_cmd, echo project has the right name ) \
 	, \
-		$(call exec_cmd, grep -rl '$(PROJECT_NAME)' | xargs $(SED_CMD) 's|$(PROJECT_NAME)|$(GIT_REPOSITORY_NAME)|g' ) \
+		$(call exec_cmd, grep -rl '$(TEMPLATE_NAME)' | xargs $(SED_CMD) 's|$(TEMPLATE_NAME)|$(GIT_REPOSITORY_NAME)|g' ) \
 		$(call exec_cmd, find . -name '*.removeit' -exec rm -f {} + ) \
-		$(call exec_cmd, mv cmd/$(PROJECT_NAME) cmd/$(GIT_REPOSITORY_NAME) ) \
+		$(call exec_cmd, mv cmd/$(TEMPLATE_NAME) cmd/$(GIT_REPOSITORY_NAME) ) \
 	)
 
 ###############################################################################
