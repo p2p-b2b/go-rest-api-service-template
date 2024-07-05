@@ -270,7 +270,7 @@ start-dev-env: stop-dev-env install-air install-swag install-goose ## Run the ap
 
 		$(call exec_cmd, cp ./dev-env/configuration/grafana/datasource/grafana-ds.yaml /tmp/$(PROJECT_NAME)-grafana-ds/grafana-ds.yaml)
 		$(call exec_cmd, cp ./dev-env/configuration/grafana/dashboard/default.yaml /tmp/$(PROJECT_NAME)-grafana-dashboard-config/default.yaml)
-		$(call exec_cmd, cp ./dev-env/configuration/grafana/dashboard/go-rest-api-service-template.json /tmp/$(PROJECT_NAME)-grafana-dashboard/go-rest-api-service-template.json)
+		$(call exec_cmd, cp ./dev-env/configuration/grafana/dashboard/microservice.json /tmp/$(PROJECT_NAME)-grafana-dashboard/microservice.json)
 		$(call exec_cmd, cp ./dev-env/configuration/prometheus/prometheus.yaml /tmp/$(PROJECT_NAME)-dev-env/prometheus.yaml )
 		$(call exec_cmd, cp ./dev-env/configuration/tempo/tempo-local-config.yaml /tmp/$(PROJECT_NAME)-dev-env/tempo-local-config.yaml )
 
