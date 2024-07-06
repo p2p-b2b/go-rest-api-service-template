@@ -24,7 +24,7 @@ type PGSQLUserRepositoryConfig struct {
 	OT              *o11y.OpenTelemetry
 }
 
-type PGSQLUserRepositoryMetrics struct {
+type pgsqlUserRepositoryMetrics struct {
 	repositoryCalls metric.Int64Counter
 }
 
@@ -44,7 +44,7 @@ type PGSQLUserRepository struct {
 	ot *o11y.OpenTelemetry
 
 	// metrics
-	metrics PGSQLUserRepositoryMetrics
+	metrics pgsqlUserRepositoryMetrics
 }
 
 // NewPGSQLUserRepository creates a new PGSQLUserRepository.
