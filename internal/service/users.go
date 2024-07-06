@@ -18,8 +18,6 @@ import (
 	"go.opentelemetry.io/otel/metric"
 )
 
-var serviceCalls metric.Int64Counter
-
 // this is a mockgen command to generate a mock for UserService
 //go:generate go run github.com/golang/mock/mockgen@v1.6.0 -package=mocks -destination=../../mocks/service/users.go -source=users.go UserService
 
@@ -61,28 +59,44 @@ type UserConf struct {
 	Repository repository.UserRepository
 	OT         *o11y.OpenTelemetry
 }
+
+type userServiceMetrics struct {
+	serviceCalls metric.Int64Counter
+}
+
 type User struct {
 	repository repository.UserRepository
 	ot         *o11y.OpenTelemetry
+	metrics    userServiceMetrics
 }
 
 // NewUserService creates a new UserService.
 func NewUserService(conf UserConf) *User {
-	return &User{
+	u := &User{
 		repository: conf.Repository,
 		ot:         conf.OT,
 	}
+	if err := u.registerMetrics(); err != nil {
+		slog.Error("Service NewUserService", "error", err)
+		panic(err)
+	}
+
+	return u
 }
 
-// RegisterMetrics registers the metrics for the user handler.
-func (s *User) RegisterMetrics() error {
-	var err error
-	serviceCalls, err = s.ot.Metrics.Meter.Int64Counter(
+// registerMetrics registers the metrics for the user handler.
+func (s *User) registerMetrics() error {
+	serviceCalls, err := s.ot.Metrics.Meter.Int64Counter(
 		"service_calls",
 		metric.WithDescription("The number of calls to the user service"),
 	)
+	if err != nil {
+		slog.Error("Service registerMetrics", "error", err)
+		return err
+	}
+	s.metrics.serviceCalls = serviceCalls
 
-	return err
+	return nil
 }
 
 // UserHealthCheck verifies a connection to the repository is still alive.
@@ -131,7 +145,7 @@ func (s *User) UserHealthCheck(ctx context.Context) (model.Health, error) {
 			rt,
 		},
 	}
-	serviceCalls.Add(ctx, 1,
+	s.metrics.serviceCalls.Add(ctx, 1,
 		metric.WithAttributes(attribute.String("method", "UserHealthCheck")))
 	return health, err
 }
@@ -148,15 +162,21 @@ func (s *User) GetUserByID(ctx context.Context, id uuid.UUID) (*model.User, erro
 		span.SetStatus(codes.Error, "Error getting user by ID")
 		span.RecordError(err)
 		slog.Error("Service GetUserByID", "error", err)
-		serviceCalls.Add(ctx, 1,
-			metric.WithAttributes(attribute.String("method", "GetUserByID")),
-			metric.WithAttributes(attribute.String("successful", fmt.Sprintf("%t", false))),
+		s.metrics.serviceCalls.Add(ctx, 1,
+			metric.WithAttributes(
+				attribute.String("component", "service"),
+				attribute.String("method", "GetUserByID"),
+				attribute.String("successful", fmt.Sprintf("%t", false)),
+			),
 		)
 		return nil, ErrGettingUserByID
 	}
-	serviceCalls.Add(ctx, 1,
-		metric.WithAttributes(attribute.String("method", "GetUserByID")),
-		metric.WithAttributes(attribute.String("successful", fmt.Sprintf("%t", true))),
+	s.metrics.serviceCalls.Add(ctx, 1,
+		metric.WithAttributes(
+			attribute.String("component", "service"),
+			attribute.String("method", "GetUserByID"),
+			attribute.String("successful", fmt.Sprintf("%t", true)),
+		),
 	)
 	return user, nil
 }
@@ -173,16 +193,22 @@ func (s *User) GetUserByEmail(ctx context.Context, email string) (*model.User, e
 		span.SetStatus(codes.Error, "Error getting user by email")
 		span.RecordError(err)
 		slog.Error("Service GetUserByEmail", "error", err)
-		serviceCalls.Add(ctx, 1,
-			metric.WithAttributes(attribute.String("method", "GetUserByEmail")),
-			metric.WithAttributes(attribute.String("successful", fmt.Sprintf("%t", false))),
+		s.metrics.serviceCalls.Add(ctx, 1,
+			metric.WithAttributes(
+				attribute.String("component", "service"),
+				attribute.String("method", "GetUserByEmail"),
+				attribute.String("successful", fmt.Sprintf("%t", false)),
+			),
 		)
 		return nil, ErrGettingUserByEmail
 	}
 
-	serviceCalls.Add(ctx, 1,
-		metric.WithAttributes(attribute.String("method", "GetUserByEmail")),
-		metric.WithAttributes(attribute.String("successful", fmt.Sprintf("%t", true))),
+	s.metrics.serviceCalls.Add(ctx, 1,
+		metric.WithAttributes(
+			attribute.String("component", "service"),
+			attribute.String("method", "GetUserByEmail"),
+			attribute.String("successful", fmt.Sprintf("%t", true)),
+		),
 	)
 	return user, nil
 }
@@ -201,9 +227,12 @@ func (s *User) CreateUser(ctx context.Context, user *model.CreateUserRequest) er
 	if user == nil {
 		span.SetStatus(codes.Error, "User is nil")
 		span.RecordError(errors.New("user is nil"))
-		serviceCalls.Add(ctx, 1,
-			metric.WithAttributes(attribute.String("method", "CreateUser")),
-			metric.WithAttributes(attribute.String("successful", fmt.Sprintf("%t", false))),
+		s.metrics.serviceCalls.Add(ctx, 1,
+			metric.WithAttributes(
+				attribute.String("component", "service"),
+				attribute.String("method", "CreateUser"),
+				attribute.String("successful", fmt.Sprintf("%t", false)),
+			),
 		)
 		return errors.New("user is nil")
 	}
@@ -228,9 +257,12 @@ func (s *User) CreateUser(ctx context.Context, user *model.CreateUserRequest) er
 			if pqErr.Code == "23505" {
 				span.SetStatus(codes.Error, "ID already exists")
 				span.RecordError(ErrIdAlreadyExists)
-				serviceCalls.Add(ctx, 1,
-					metric.WithAttributes(attribute.String("method", "CreateUser")),
-					metric.WithAttributes(attribute.String("successful", fmt.Sprintf("%t", false))),
+				s.metrics.serviceCalls.Add(ctx, 1,
+					metric.WithAttributes(
+						attribute.String("component", "service"),
+						attribute.String("method", "CreateUser"),
+						attribute.String("successful", fmt.Sprintf("%t", false)),
+					),
 				)
 				return ErrIdAlreadyExists
 			}
@@ -239,9 +271,12 @@ func (s *User) CreateUser(ctx context.Context, user *model.CreateUserRequest) er
 		return ErrInsertingUser
 	}
 
-	serviceCalls.Add(ctx, 1,
-		metric.WithAttributes(attribute.String("method", "CreateUser")),
-		metric.WithAttributes(attribute.String("successful", fmt.Sprintf("%t", true))),
+	s.metrics.serviceCalls.Add(ctx, 1,
+		metric.WithAttributes(
+			attribute.String("component", "service"),
+			attribute.String("method", "CreateUser"),
+			attribute.String("successful", fmt.Sprintf("%t", true)),
+		),
 	)
 	return nil
 }
@@ -262,17 +297,23 @@ func (s *User) UpdateUser(ctx context.Context, user *model.User) error {
 		span.SetStatus(codes.Error, "Error updating user")
 		span.RecordError(err)
 		slog.Error("Service UpdateUser", "error", err)
-		serviceCalls.Add(ctx, 1,
-			metric.WithAttributes(attribute.String("method", "UpdateUser")),
-			metric.WithAttributes(attribute.String("successful", fmt.Sprintf("%t", false))),
+		s.metrics.serviceCalls.Add(ctx, 1,
+			metric.WithAttributes(
+				attribute.String("component", "service"),
+				attribute.String("method", "UpdateUser"),
+				attribute.String("successful", fmt.Sprintf("%t", false)),
+			),
 		)
 
 		return ErrUpdatingUser
 	}
 
-	serviceCalls.Add(ctx, 1,
-		metric.WithAttributes(attribute.String("method", "UpdateUser")),
-		metric.WithAttributes(attribute.String("successful", fmt.Sprintf("%t", true))),
+	s.metrics.serviceCalls.Add(ctx, 1,
+		metric.WithAttributes(
+			attribute.String("component", "service"),
+			attribute.String("method", "UpdateUser"),
+			attribute.String("successful", fmt.Sprintf("%t", true)),
+		),
 	)
 	return nil
 }
@@ -288,16 +329,22 @@ func (s *User) DeleteUser(ctx context.Context, id uuid.UUID) error {
 		span.SetStatus(codes.Error, "Error deleting user")
 		span.RecordError(err)
 		slog.Error("Service DeleteUser", "error", err)
-		serviceCalls.Add(ctx, 1,
-			metric.WithAttributes(attribute.String("method", "DeleteUser")),
-			metric.WithAttributes(attribute.String("successful", fmt.Sprintf("%t", false))),
+		s.metrics.serviceCalls.Add(ctx, 1,
+			metric.WithAttributes(
+				attribute.String("component", "service"),
+				attribute.String("method", "DeleteUser"),
+				attribute.String("successful", fmt.Sprintf("%t", false)),
+			),
 		)
 		return ErrDeletingUser
 	}
 
-	serviceCalls.Add(ctx, 1,
-		metric.WithAttributes(attribute.String("method", "DeleteUser")),
-		metric.WithAttributes(attribute.String("successful", fmt.Sprintf("%t", true))),
+	s.metrics.serviceCalls.Add(ctx, 1,
+		metric.WithAttributes(
+			attribute.String("component", "service"),
+			attribute.String("method", "DeleteUser"),
+			attribute.String("successful", fmt.Sprintf("%t", true)),
+		),
 	)
 	return nil
 }
@@ -326,9 +373,12 @@ func (s *User) ListUsers(ctx context.Context, lur *model.ListUserRequest) (*mode
 		span.SetStatus(codes.Error, "Error listing users")
 		span.RecordError(err)
 		slog.Error("Service ListUsers", "error", err)
-		serviceCalls.Add(ctx, 1,
-			metric.WithAttributes(attribute.String("method", "ListUsers")),
-			metric.WithAttributes(attribute.String("successful", fmt.Sprintf("%t", false))),
+		s.metrics.serviceCalls.Add(ctx, 1,
+			metric.WithAttributes(
+				attribute.String("component", "service"),
+				attribute.String("method", "ListUsers"),
+				attribute.String("successful", fmt.Sprintf("%t", false)),
+			),
 		)
 		return nil, ErrListingUsers
 	}
@@ -339,9 +389,12 @@ func (s *User) ListUsers(ctx context.Context, lur *model.ListUserRequest) (*mode
 	users := qryOut.Items
 	if len(users) == 0 {
 		slog.Debug("Service List", "message", "no users found")
-		serviceCalls.Add(ctx, 1,
-			metric.WithAttributes(attribute.String("method", "ListUsers")),
-			metric.WithAttributes(attribute.String("successful", fmt.Sprintf("%t", true))),
+		s.metrics.serviceCalls.Add(ctx, 1,
+			metric.WithAttributes(
+				attribute.String("component", "service"),
+				attribute.String("method", "ListUsers"),
+				attribute.String("successful", fmt.Sprintf("%t", true)),
+			),
 		)
 		return &model.ListUserResponse{
 			Items:     users,
@@ -349,9 +402,12 @@ func (s *User) ListUsers(ctx context.Context, lur *model.ListUserRequest) (*mode
 		}, nil
 	}
 
-	serviceCalls.Add(ctx, 1,
-		metric.WithAttributes(attribute.String("method", "ListUsers")),
-		metric.WithAttributes(attribute.String("successful", fmt.Sprintf("%t", true))),
+	s.metrics.serviceCalls.Add(ctx, 1,
+		metric.WithAttributes(
+			attribute.String("component", "service"),
+			attribute.String("method", "ListUsers"),
+			attribute.String("successful", fmt.Sprintf("%t", true)),
+		),
 	)
 	return &model.ListUserResponse{
 		Items:     users,
