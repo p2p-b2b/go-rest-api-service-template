@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"errors"
-	"fmt"
 	"log/slog"
 	"runtime"
 
@@ -166,7 +165,7 @@ func (s *User) GetUserByID(ctx context.Context, id uuid.UUID) (*model.User, erro
 			metric.WithAttributes(
 				attribute.String("component", "service"),
 				attribute.String("method", "GetUserByID"),
-				attribute.String("successful", fmt.Sprintf("%t", false)),
+				attribute.String("successful", "false"),
 			),
 		)
 		return nil, ErrGettingUserByID
@@ -175,7 +174,7 @@ func (s *User) GetUserByID(ctx context.Context, id uuid.UUID) (*model.User, erro
 		metric.WithAttributes(
 			attribute.String("component", "service"),
 			attribute.String("method", "GetUserByID"),
-			attribute.String("successful", fmt.Sprintf("%t", true)),
+			attribute.String("successful", "true"),
 		),
 	)
 	return user, nil
@@ -197,7 +196,7 @@ func (s *User) GetUserByEmail(ctx context.Context, email string) (*model.User, e
 			metric.WithAttributes(
 				attribute.String("component", "service"),
 				attribute.String("method", "GetUserByEmail"),
-				attribute.String("successful", fmt.Sprintf("%t", false)),
+				attribute.String("successful", "false"),
 			),
 		)
 		return nil, ErrGettingUserByEmail
@@ -207,7 +206,7 @@ func (s *User) GetUserByEmail(ctx context.Context, email string) (*model.User, e
 		metric.WithAttributes(
 			attribute.String("component", "service"),
 			attribute.String("method", "GetUserByEmail"),
-			attribute.String("successful", fmt.Sprintf("%t", true)),
+			attribute.String("successful", "true"),
 		),
 	)
 	return user, nil
@@ -231,7 +230,7 @@ func (s *User) CreateUser(ctx context.Context, user *model.CreateUserRequest) er
 			metric.WithAttributes(
 				attribute.String("component", "service"),
 				attribute.String("method", "CreateUser"),
-				attribute.String("successful", fmt.Sprintf("%t", false)),
+				attribute.String("successful", "false"),
 			),
 		)
 		return errors.New("user is nil")
@@ -261,7 +260,7 @@ func (s *User) CreateUser(ctx context.Context, user *model.CreateUserRequest) er
 					metric.WithAttributes(
 						attribute.String("component", "service"),
 						attribute.String("method", "CreateUser"),
-						attribute.String("successful", fmt.Sprintf("%t", false)),
+						attribute.String("successful", "false"),
 					),
 				)
 				return ErrIdAlreadyExists
@@ -275,7 +274,7 @@ func (s *User) CreateUser(ctx context.Context, user *model.CreateUserRequest) er
 		metric.WithAttributes(
 			attribute.String("component", "service"),
 			attribute.String("method", "CreateUser"),
-			attribute.String("successful", fmt.Sprintf("%t", true)),
+			attribute.String("successful", "true"),
 		),
 	)
 	return nil
@@ -301,7 +300,7 @@ func (s *User) UpdateUser(ctx context.Context, user *model.User) error {
 			metric.WithAttributes(
 				attribute.String("component", "service"),
 				attribute.String("method", "UpdateUser"),
-				attribute.String("successful", fmt.Sprintf("%t", false)),
+				attribute.String("successful", "false"),
 			),
 		)
 
@@ -312,7 +311,7 @@ func (s *User) UpdateUser(ctx context.Context, user *model.User) error {
 		metric.WithAttributes(
 			attribute.String("component", "service"),
 			attribute.String("method", "UpdateUser"),
-			attribute.String("successful", fmt.Sprintf("%t", true)),
+			attribute.String("successful", "true"),
 		),
 	)
 	return nil
@@ -333,7 +332,7 @@ func (s *User) DeleteUser(ctx context.Context, id uuid.UUID) error {
 			metric.WithAttributes(
 				attribute.String("component", "service"),
 				attribute.String("method", "DeleteUser"),
-				attribute.String("successful", fmt.Sprintf("%t", false)),
+				attribute.String("successful", "false"),
 			),
 		)
 		return ErrDeletingUser
@@ -343,7 +342,7 @@ func (s *User) DeleteUser(ctx context.Context, id uuid.UUID) error {
 		metric.WithAttributes(
 			attribute.String("component", "service"),
 			attribute.String("method", "DeleteUser"),
-			attribute.String("successful", fmt.Sprintf("%t", true)),
+			attribute.String("successful", "true"),
 		),
 	)
 	return nil
@@ -377,7 +376,7 @@ func (s *User) ListUsers(ctx context.Context, lur *model.ListUserRequest) (*mode
 			metric.WithAttributes(
 				attribute.String("component", "service"),
 				attribute.String("method", "ListUsers"),
-				attribute.String("successful", fmt.Sprintf("%t", false)),
+				attribute.String("successful", "false"),
 			),
 		)
 		return nil, ErrListingUsers
@@ -393,7 +392,7 @@ func (s *User) ListUsers(ctx context.Context, lur *model.ListUserRequest) (*mode
 			metric.WithAttributes(
 				attribute.String("component", "service"),
 				attribute.String("method", "ListUsers"),
-				attribute.String("successful", fmt.Sprintf("%t", true)),
+				attribute.String("successful", "true"),
 			),
 		)
 		return &model.ListUserResponse{
@@ -406,7 +405,7 @@ func (s *User) ListUsers(ctx context.Context, lur *model.ListUserRequest) (*mode
 		metric.WithAttributes(
 			attribute.String("component", "service"),
 			attribute.String("method", "ListUsers"),
-			attribute.String("successful", fmt.Sprintf("%t", true)),
+			attribute.String("successful", "true"),
 		),
 	)
 	return &model.ListUserResponse{
