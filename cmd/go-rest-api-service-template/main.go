@@ -279,7 +279,7 @@ func main() {
 	}
 
 	// Create user Service config
-	userServiceConf := service.UserConf{
+	userServiceConf := service.UserServiceConf{
 		Repository: userRepository,
 		OT:         telemetry,
 	}

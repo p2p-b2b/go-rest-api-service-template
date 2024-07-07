@@ -56,7 +56,7 @@ func NewPGSQLUserRepository(conf PGSQLUserRepositoryConfig) *PGSQLUserRepository
 		ot:              conf.OT,
 	}
 	if err := r.registerMetrics(); err != nil {
-		slog.Error("NewPGSQLUserRepository", "error", err)
+		slog.Error("failed to register metrics", "error", err)
 		panic(err)
 	}
 
@@ -66,7 +66,7 @@ func NewPGSQLUserRepository(conf PGSQLUserRepositoryConfig) *PGSQLUserRepository
 // registerMetrics registers the metrics for the user handler.
 func (r *PGSQLUserRepository) registerMetrics() error {
 	repositoryCalls, err := r.ot.Metrics.Meter.Int64Counter(
-		"repository_calls",
+		"repository.user.calls",
 		metric.WithDescription("The number of calls to the user repository"),
 	)
 	if err != nil {
@@ -112,6 +112,12 @@ func (r *PGSQLUserRepository) Insert(ctx context.Context, user *model.User) erro
 	ctx, span := r.ot.Traces.Tracer.Start(ctx, "User Repository: Insert")
 	defer span.End()
 
+	span.SetAttributes(
+		attribute.String("component", "repository.user"),
+		attribute.String("method", "Insert"),
+		attribute.String("user.id", user.ID.String()),
+	)
+
 	query := fmt.Sprintf(`
         INSERT INTO users (id, first_name, last_name, email)
         VALUES ('%s', '%s', '%s', '%s')`,
@@ -130,7 +136,7 @@ func (r *PGSQLUserRepository) Insert(ctx context.Context, user *model.User) erro
 		slog.Error("Insert", "error", err)
 		r.metrics.repositoryCalls.Add(ctx, 1,
 			metric.WithAttributes(
-				attribute.String("component", "repository"),
+				attribute.String("component", "repository.user"),
 				attribute.String("method", "Insert"),
 				attribute.String("successful", fmt.Sprintf("%t", false)),
 			),
@@ -138,9 +144,10 @@ func (r *PGSQLUserRepository) Insert(ctx context.Context, user *model.User) erro
 		return err
 	}
 
+	span.SetStatus(codes.Ok, "user inserted successfully")
 	r.metrics.repositoryCalls.Add(ctx, 1,
 		metric.WithAttributes(
-			attribute.String("component", "repository"),
+			attribute.String("component", "repository.user"),
 			attribute.String("method", "Insert"),
 			attribute.String("successful", fmt.Sprintf("%t", true)),
 		),
@@ -156,7 +163,11 @@ func (r *PGSQLUserRepository) Update(ctx context.Context, user *model.User) erro
 	ctx, span := r.ot.Traces.Tracer.Start(ctx, "user Repository: Update")
 	defer span.End()
 
-	span.SetAttributes(attribute.String("user.id", user.ID.String()))
+	span.SetAttributes(
+		attribute.String("component", "repository.user"),
+		attribute.String("method", "Update"),
+		attribute.String("user.id", user.ID.String()),
+	)
 
 	var queryFields []string
 
@@ -195,7 +206,7 @@ func (r *PGSQLUserRepository) Update(ctx context.Context, user *model.User) erro
 		slog.Error("Update", "error", err)
 		r.metrics.repositoryCalls.Add(ctx, 1,
 			metric.WithAttributes(
-				attribute.String("component", "repository"),
+				attribute.String("component", "repository.user"),
 				attribute.String("method", "Update"),
 				attribute.String("successful", fmt.Sprintf("%t", false)),
 			),
@@ -203,13 +214,15 @@ func (r *PGSQLUserRepository) Update(ctx context.Context, user *model.User) erro
 		return err
 	}
 
+	span.SetStatus(codes.Ok, "user updated successfully")
 	r.metrics.repositoryCalls.Add(ctx, 1,
 		metric.WithAttributes(
-			attribute.String("component", "repository"),
+			attribute.String("component", "repository.user"),
 			attribute.String("method", "Update"),
 			attribute.String("successful", fmt.Sprintf("%t", true)),
 		),
 	)
+
 	return nil
 }
 
@@ -221,7 +234,11 @@ func (r *PGSQLUserRepository) Delete(ctx context.Context, id uuid.UUID) error {
 	ctx, span := r.ot.Traces.Tracer.Start(ctx, "User Repository: Delete")
 	defer span.End()
 
-	span.SetAttributes(attribute.String("user.id", id.String()))
+	span.SetAttributes(
+		attribute.String("component", "repository.user"),
+		attribute.String("method", "Delete"),
+		attribute.String("user.id", id.String()),
+	)
 
 	query := fmt.Sprintf(`
         DELETE FROM users
@@ -238,7 +255,7 @@ func (r *PGSQLUserRepository) Delete(ctx context.Context, id uuid.UUID) error {
 		slog.Error("Delete", "error", err)
 		r.metrics.repositoryCalls.Add(ctx, 1,
 			metric.WithAttributes(
-				attribute.String("component", "repository"),
+				attribute.String("component", "repository.user"),
 				attribute.String("method", "Delete"),
 				attribute.String("successful", fmt.Sprintf("%t", false)),
 			),
@@ -246,13 +263,15 @@ func (r *PGSQLUserRepository) Delete(ctx context.Context, id uuid.UUID) error {
 		return err
 	}
 
+	span.SetStatus(codes.Ok, "user deleted successfully")
 	r.metrics.repositoryCalls.Add(ctx, 1,
 		metric.WithAttributes(
-			attribute.String("component", "repository"),
+			attribute.String("component", "repository.user"),
 			attribute.String("method", "Delete"),
 			attribute.String("successful", fmt.Sprintf("%t", true)),
 		),
 	)
+
 	return nil
 }
 
@@ -264,7 +283,11 @@ func (r *PGSQLUserRepository) SelectByID(ctx context.Context, id uuid.UUID) (*mo
 	ctx, span := r.ot.Traces.Tracer.Start(ctx, "User Repository: SelectByID")
 	defer span.End()
 
-	span.SetAttributes(attribute.String("user.id", id.String()))
+	span.SetAttributes(
+		attribute.String("component", "repository.user"),
+		attribute.String("method", "SelectByID"),
+		attribute.String("user.id", id.String()),
+	)
 
 	query := fmt.Sprintf(`
         SELECT id, first_name, last_name, email
@@ -284,7 +307,7 @@ func (r *PGSQLUserRepository) SelectByID(ctx context.Context, id uuid.UUID) (*mo
 		slog.Error("SelectByID", "error", err)
 		r.metrics.repositoryCalls.Add(ctx, 1,
 			metric.WithAttributes(
-				attribute.String("component", "repository"),
+				attribute.String("component", "repository.user"),
 				attribute.String("method", "SelectByID"),
 				attribute.String("successful", fmt.Sprintf("%t", false)),
 			),
@@ -292,9 +315,10 @@ func (r *PGSQLUserRepository) SelectByID(ctx context.Context, id uuid.UUID) (*mo
 		return nil, err
 	}
 
+	span.SetStatus(codes.Ok, "user selected successfully")
 	r.metrics.repositoryCalls.Add(ctx, 1,
 		metric.WithAttributes(
-			attribute.String("component", "repository"),
+			attribute.String("component", "repository.user"),
 			attribute.String("method", "SelectByID"),
 			attribute.String("successful", fmt.Sprintf("%t", true)),
 		),
@@ -310,7 +334,11 @@ func (r *PGSQLUserRepository) SelectByEmail(ctx context.Context, email string) (
 	ctx, span := r.ot.Traces.Tracer.Start(ctx, "User Repository: SelectByEmail")
 	defer span.End()
 
-	span.SetAttributes(attribute.String("user.email", email))
+	span.SetAttributes(
+		attribute.String("component", "repository.user"),
+		attribute.String("method", "SelectByEmail"),
+		attribute.String("user.email", email),
+	)
 
 	query := fmt.Sprintf(`
         SELECT id, first_name, last_name, email
@@ -330,7 +358,7 @@ func (r *PGSQLUserRepository) SelectByEmail(ctx context.Context, email string) (
 		slog.Error("SelectByEmail", "error", err)
 		r.metrics.repositoryCalls.Add(ctx, 1,
 			metric.WithAttributes(
-				attribute.String("component", "repository"),
+				attribute.String("component", "repository.user"),
 				attribute.String("method", "SelectByEmail"),
 				attribute.String("successful", fmt.Sprintf("%t", true)),
 			),
@@ -338,13 +366,15 @@ func (r *PGSQLUserRepository) SelectByEmail(ctx context.Context, email string) (
 		return nil, err
 	}
 
+	span.SetStatus(codes.Ok, "user selected successfully")
 	r.metrics.repositoryCalls.Add(ctx, 1,
 		metric.WithAttributes(
-			attribute.String("component", "repository"),
+			attribute.String("component", "repository.user"),
 			attribute.String("method", "SelectByEmail"),
 			attribute.String("successful", fmt.Sprintf("%t", true)),
 		),
 	)
+
 	return &u, nil
 }
 
@@ -357,12 +387,12 @@ func (r *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.Selec
 	defer span.End()
 
 	span.SetAttributes(
-		attribute.String("user.fields", strings.Join(params.Fields, ",")),
+		attribute.String("component", "repository.user"),
+		attribute.String("method", "SelectByEmail"),
 		attribute.String("user.sort", params.Sort),
-		attribute.String("user.filter", strings.Join(params.Filter, ",")),
 		attribute.Int("user.limit", params.Paginator.Limit),
-		attribute.String("user.next_token", params.Paginator.NextToken),
-		attribute.String("user.prev_token", params.Paginator.PrevToken),
+		attribute.String("user.fields", strings.Join(params.Fields, ",")),
+		attribute.String("user.filter", strings.Join(params.Filter, ",")),
 	)
 
 	if params == nil {
@@ -429,7 +459,7 @@ func (r *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.Selec
 			slog.Error("SelectAll", "error", err)
 			r.metrics.repositoryCalls.Add(ctx, 1,
 				metric.WithAttributes(
-					attribute.String("component", "repository"),
+					attribute.String("component", "repository.user"),
 					attribute.String("method", "SelectByEmail"),
 					attribute.String("successful", fmt.Sprintf("%t", false)),
 				),
@@ -491,7 +521,7 @@ func (r *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.Selec
 			slog.Error("SelectAll", "error", err)
 			r.metrics.repositoryCalls.Add(ctx, 1,
 				metric.WithAttributes(
-					attribute.String("component", "repository"),
+					attribute.String("component", "repository.user"),
 					attribute.String("method", "SelectAll"),
 					attribute.String("successful", fmt.Sprintf("%t", false)),
 				),
@@ -507,7 +537,7 @@ func (r *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.Selec
 		slog.Error("SelectAll", "error", err)
 		r.metrics.repositoryCalls.Add(ctx, 1,
 			metric.WithAttributes(
-				attribute.String("component", "repository"),
+				attribute.String("component", "repository.user"),
 				attribute.String("method", "SelectAll"),
 				attribute.String("successful", fmt.Sprintf("%t", false)),
 			),
@@ -540,9 +570,10 @@ func (r *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.Selec
 		},
 	}
 
+	span.SetStatus(codes.Ok, "users selected successfully")
 	r.metrics.repositoryCalls.Add(ctx, 1,
 		metric.WithAttributes(
-			attribute.String("component", "repository"),
+			attribute.String("component", "repository.user"),
 			attribute.String("method", "SelectAll"),
 			attribute.String("successful", fmt.Sprintf("%t", true)),
 		),

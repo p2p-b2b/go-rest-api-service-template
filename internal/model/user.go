@@ -14,6 +14,9 @@ var (
 
 	// ErrInvalidID is an error that is returned when the ID is not a valid UUID.
 	ErrInvalidID = errors.New("invalid ID")
+
+	// ErrInvalidField is an error that is returned when the field is not valid.
+	ErrInvalidField = errors.New("invalid field")
 )
 
 // User represents a user entity.
@@ -91,7 +94,7 @@ func (l *ListUserRequest) Validate() error {
 	if len(l.Fields) > 0 && len(l.Fields) < 15 {
 		for _, field := range l.Fields {
 			if field != "id" && field != "first_name" && field != "last_name" && field != "email" && field != "created_at" && field != "updated_at" {
-				return errors.New("invalid field")
+				return ErrInvalidField
 			}
 		}
 	}
@@ -128,7 +131,7 @@ type SelectAllUserQueryInput struct {
 // @Description Select all users query output.
 type SelectAllUserQueryOutput struct {
 	// Items is a list of users.
-	Items []*User `json:"data"`
+	Items []*User `json:"items"`
 
 	// Paginator is the paginator for the list of users.
 	Paginator paginator.Paginator `json:"paginator,omitempty"`
