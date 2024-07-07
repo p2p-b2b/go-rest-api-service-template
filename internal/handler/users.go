@@ -53,7 +53,7 @@ func NewUserHandler(conf UserHandlerConf) *UserHandler {
 // registerMetrics registers the metrics for the user handler.
 func (h *UserHandler) registerMetrics() error {
 	handlerCalls, err := h.ot.Metrics.Meter.Int64Counter(
-		"user_handler.calls",
+		"handler_users_calls",
 		metric.WithDescription("The number of calls to the user handler"),
 	)
 	if err != nil {

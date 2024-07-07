@@ -86,7 +86,7 @@ func NewUserService(conf UserServiceConf) *User {
 // registerMetrics registers the metrics for the user handler.
 func (s *User) registerMetrics() error {
 	serviceCalls, err := s.ot.Metrics.Meter.Int64Counter(
-		"service.users.calls",
+		"service_users_calls",
 		metric.WithDescription("The number of calls to the user service"),
 	)
 	if err != nil {

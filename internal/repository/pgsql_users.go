@@ -66,7 +66,7 @@ func NewPGSQLUserRepository(conf PGSQLUserRepositoryConfig) *PGSQLUserRepository
 // registerMetrics registers the metrics for the user handler.
 func (r *PGSQLUserRepository) registerMetrics() error {
 	repositoryCalls, err := r.ot.Metrics.Meter.Int64Counter(
-		"repository.user.calls",
+		"repository_user_calls",
 		metric.WithDescription("The number of calls to the user repository"),
 	)
 	if err != nil {
