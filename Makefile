@@ -6,7 +6,8 @@ K := $(foreach exec,$(EXECUTABLES),\
 
 # this is used to rename the repository when is created from the template
 # we will use the git remote url to get the repository name
-GIT_REPOSITORY_NAME ?= $(shell git remote get-url origin | cut -d '/' -f 2 | cut -d '.' -f 1)
+GIT_REPOSITORY_NAME            ?= $(shell git remote get-url origin | cut -d '/' -f 2 | cut -d '.' -f 1)
+GIT_REPOSITORY_NAME_UNDERSCORE := $(subst -,_,$(GIT_REPOSITORY_NAME))
 
 PROJECT_NAME      ?= $(shell grep module go.mod | cut -d '/' -f 3)
 PROJECT_NAMESPACE ?= $(shell grep module go.mod | cut -d '/' -f 2 )
@@ -14,7 +15,8 @@ PROJECT_MODULES_PATH := $(shell ls -d cmd/*)
 PROJECT_MODULES_NAME := $(foreach dir_name, $(PROJECT_MODULES_PATH), $(shell basename $(dir_name)) )
 PROJECT_DEPENDENCIES := $(shell go list -m -f '{{if not (or .Indirect .Main)}}{{.Path}}{{end}}' all)
 
-TEMPLATE_NAME		= api-business
+TEMPLATE_NAME	           := api-business
+TEMPLATE_NAME_UNDERSCORE := $(subst -,_,$(TEMPLATE_NAME))
 
 BUILD_DIR       := ./build
 DIST_DIR        := ./dist
@@ -284,6 +286,7 @@ rename-project: clean ## Rename the project.  This must be the first command to 
 		$(call exec_cmd, echo project has the right name ) \
 	, \
 		$(call exec_cmd, grep -rl '$(TEMPLATE_NAME)' | xargs $(SED_CMD) 's|$(TEMPLATE_NAME)|$(GIT_REPOSITORY_NAME)|g' ) \
+		$(call exec_cmd, grep -rl '$(TEMPLATE_NAME_UNDERSCORE)' | xargs $(SED_CMD) 's|$(TEMPLATE_NAME_UNDERSCORE)|$(GIT_REPOSITORY_NAME_UNDERSCORE)|g' ) \
 		$(call exec_cmd, find . -name '*.removeit' -exec rm -f {} + ) \
 		$(call exec_cmd, mv cmd/$(TEMPLATE_NAME) cmd/$(GIT_REPOSITORY_NAME) ) \
 	)

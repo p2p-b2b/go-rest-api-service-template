@@ -22,8 +22,9 @@ import (
 
 // UserHandler represents the handler for the user.
 type UserHandlerConf struct {
-	Service service.UserService
-	OT      *o11y.OpenTelemetry
+	Service       service.UserService
+	OT            *o11y.OpenTelemetry
+	MetricsPrefix string
 }
 
 type userHandlerMetrics struct {
@@ -32,9 +33,10 @@ type userHandlerMetrics struct {
 
 // UserHandler represents the handler for the user.
 type UserHandler struct {
-	service service.UserService
-	ot      *o11y.OpenTelemetry
-	metrics userHandlerMetrics
+	service       service.UserService
+	ot            *o11y.OpenTelemetry
+	metricsPrefix string
+	metrics       userHandlerMetrics
 }
 
 // NewUserHandler creates a new UserHandler.
@@ -43,6 +45,10 @@ func NewUserHandler(conf UserHandlerConf) *UserHandler {
 		service: conf.Service,
 		ot:      conf.OT,
 	}
+	if conf.MetricsPrefix != "" {
+		uh.metricsPrefix = strings.ReplaceAll(conf.MetricsPrefix, "-", "_")
+	}
+
 	if err := uh.registerMetrics(); err != nil {
 		slog.Error("failed to register metrics", "error", err)
 		panic(err)
@@ -53,7 +59,7 @@ func NewUserHandler(conf UserHandlerConf) *UserHandler {
 // registerMetrics registers the metrics for the user handler.
 func (h *UserHandler) registerMetrics() error {
 	handlerCalls, err := h.ot.Metrics.Meter.Int64Counter(
-		"handlers_calls_total",
+		fmt.Sprintf("%s_%s", h.metricsPrefix, "handlers_calls_total"),
 		metric.WithDescription("The number of calls to the user handler"),
 	)
 	if err != nil {

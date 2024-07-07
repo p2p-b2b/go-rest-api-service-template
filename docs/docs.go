@@ -124,12 +124,6 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "Query string",
-                        "name": "query",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
                         "description": "Next cursor",
                         "name": "next_token",
                         "in": "query"

@@ -3,8 +3,10 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"runtime"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/lib/pq"
@@ -55,8 +57,9 @@ var (
 )
 
 type UserServiceConf struct {
-	Repository repository.UserRepository
-	OT         *o11y.OpenTelemetry
+	Repository    repository.UserRepository
+	OT            *o11y.OpenTelemetry
+	MetricsPrefix string
 }
 
 type userServiceMetrics struct {
@@ -64,9 +67,10 @@ type userServiceMetrics struct {
 }
 
 type User struct {
-	repository repository.UserRepository
-	ot         *o11y.OpenTelemetry
-	metrics    userServiceMetrics
+	repository    repository.UserRepository
+	ot            *o11y.OpenTelemetry
+	metricsPrefix string
+	metrics       userServiceMetrics
 }
 
 // NewUserService creates a new UserService.
@@ -75,6 +79,10 @@ func NewUserService(conf UserServiceConf) *User {
 		repository: conf.Repository,
 		ot:         conf.OT,
 	}
+	if conf.MetricsPrefix != "" {
+		u.metricsPrefix = strings.ReplaceAll(conf.MetricsPrefix, "-", "_")
+	}
+
 	if err := u.registerMetrics(); err != nil {
 		slog.Error("service.users.NewUserService", "error", err)
 		panic(err)
@@ -86,7 +94,7 @@ func NewUserService(conf UserServiceConf) *User {
 // registerMetrics registers the metrics for the user handler.
 func (s *User) registerMetrics() error {
 	serviceCalls, err := s.ot.Metrics.Meter.Int64Counter(
-		"services_calls_total",
+		fmt.Sprintf("%s_%s", s.metricsPrefix, "services_calls_total"),
 		metric.WithDescription("The number of calls to the user service"),
 	)
 	if err != nil {

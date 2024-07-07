@@ -216,10 +216,6 @@ paths:
         in: query
         name: fields
         type: string
-      - description: Query string
-        in: query
-        name: query
-        type: string
       - description: Next cursor
         in: query
         name: next_token

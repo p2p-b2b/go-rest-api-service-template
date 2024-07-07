@@ -22,6 +22,7 @@ type PGSQLUserRepositoryConfig struct {
 	MaxPingTimeout  time.Duration
 	MaxQueryTimeout time.Duration
 	OT              *o11y.OpenTelemetry
+	MetricsPrefix   string
 }
 
 type pgsqlUserRepositoryMetrics struct {
@@ -31,20 +32,12 @@ type pgsqlUserRepositoryMetrics struct {
 // this implement repository.UserRepository
 // PGSQLUserRepository is a PostgreSQL store.
 type PGSQLUserRepository struct {
-	// DB is the PostgreSQL database.
-	db *sql.DB
-
-	// MaxQueryTimeout is the maximum time a query can take.
-	maxPingTimeout time.Duration
-
-	// MaxQueryTimeout is the maximum time a query can take.
+	db              *sql.DB
+	maxPingTimeout  time.Duration
 	maxQueryTimeout time.Duration
-
-	// Tracer for openTelemetry
-	ot *o11y.OpenTelemetry
-
-	// metrics
-	metrics pgsqlUserRepositoryMetrics
+	ot              *o11y.OpenTelemetry
+	metricsPrefix   string
+	metrics         pgsqlUserRepositoryMetrics
 }
 
 // NewPGSQLUserRepository creates a new PGSQLUserRepository.
@@ -55,6 +48,10 @@ func NewPGSQLUserRepository(conf PGSQLUserRepositoryConfig) *PGSQLUserRepository
 		maxQueryTimeout: conf.MaxQueryTimeout,
 		ot:              conf.OT,
 	}
+	if conf.MetricsPrefix != "" {
+		r.metricsPrefix = strings.ReplaceAll(conf.MetricsPrefix, "-", "_")
+	}
+
 	if err := r.registerMetrics(); err != nil {
 		slog.Error("failed to register metrics", "error", err)
 		panic(err)
@@ -66,7 +63,7 @@ func NewPGSQLUserRepository(conf PGSQLUserRepositoryConfig) *PGSQLUserRepository
 // registerMetrics registers the metrics for the user handler.
 func (r *PGSQLUserRepository) registerMetrics() error {
 	repositoryCalls, err := r.ot.Metrics.Meter.Int64Counter(
-		"repositories_calls_total",
+		fmt.Sprintf("%s_%s", r.metricsPrefix, "repositories_calls_total"),
 		metric.WithDescription("The number of calls to the user repository"),
 	)
 	if err != nil {
