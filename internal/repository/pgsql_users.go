@@ -114,7 +114,7 @@ func (r *PGSQLUserRepository) Insert(ctx context.Context, user *model.User) erro
 
 	span.SetAttributes(
 		attribute.String("component", "repository.user"),
-		attribute.String("method", "Insert"),
+		attribute.String("function", "Insert"),
 		attribute.String("user.id", user.ID.String()),
 	)
 
@@ -137,8 +137,8 @@ func (r *PGSQLUserRepository) Insert(ctx context.Context, user *model.User) erro
 		r.metrics.repositoryCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				attribute.String("component", "repository.user"),
-				attribute.String("method", "Insert"),
-				attribute.String("successful", fmt.Sprintf("%t", false)),
+				attribute.String("function", "Insert"),
+				attribute.String("successful", "false"),
 			),
 		)
 		return err
@@ -148,8 +148,8 @@ func (r *PGSQLUserRepository) Insert(ctx context.Context, user *model.User) erro
 	r.metrics.repositoryCalls.Add(ctx, 1,
 		metric.WithAttributes(
 			attribute.String("component", "repository.user"),
-			attribute.String("method", "Insert"),
-			attribute.String("successful", fmt.Sprintf("%t", true)),
+			attribute.String("function", "Insert"),
+			attribute.String("successful", "true"),
 		),
 	)
 	return nil
@@ -165,7 +165,7 @@ func (r *PGSQLUserRepository) Update(ctx context.Context, user *model.User) erro
 
 	span.SetAttributes(
 		attribute.String("component", "repository.user"),
-		attribute.String("method", "Update"),
+		attribute.String("function", "Update"),
 		attribute.String("user.id", user.ID.String()),
 	)
 
@@ -207,8 +207,8 @@ func (r *PGSQLUserRepository) Update(ctx context.Context, user *model.User) erro
 		r.metrics.repositoryCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				attribute.String("component", "repository.user"),
-				attribute.String("method", "Update"),
-				attribute.String("successful", fmt.Sprintf("%t", false)),
+				attribute.String("function", "Update"),
+				attribute.String("successful", "false"),
 			),
 		)
 		return err
@@ -218,8 +218,8 @@ func (r *PGSQLUserRepository) Update(ctx context.Context, user *model.User) erro
 	r.metrics.repositoryCalls.Add(ctx, 1,
 		metric.WithAttributes(
 			attribute.String("component", "repository.user"),
-			attribute.String("method", "Update"),
-			attribute.String("successful", fmt.Sprintf("%t", true)),
+			attribute.String("function", "Update"),
+			attribute.String("successful", "true"),
 		),
 	)
 
@@ -236,7 +236,7 @@ func (r *PGSQLUserRepository) Delete(ctx context.Context, id uuid.UUID) error {
 
 	span.SetAttributes(
 		attribute.String("component", "repository.user"),
-		attribute.String("method", "Delete"),
+		attribute.String("function", "Delete"),
 		attribute.String("user.id", id.String()),
 	)
 
@@ -256,8 +256,8 @@ func (r *PGSQLUserRepository) Delete(ctx context.Context, id uuid.UUID) error {
 		r.metrics.repositoryCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				attribute.String("component", "repository.user"),
-				attribute.String("method", "Delete"),
-				attribute.String("successful", fmt.Sprintf("%t", false)),
+				attribute.String("function", "Delete"),
+				attribute.String("successful", "false"),
 			),
 		)
 		return err
@@ -267,8 +267,8 @@ func (r *PGSQLUserRepository) Delete(ctx context.Context, id uuid.UUID) error {
 	r.metrics.repositoryCalls.Add(ctx, 1,
 		metric.WithAttributes(
 			attribute.String("component", "repository.user"),
-			attribute.String("method", "Delete"),
-			attribute.String("successful", fmt.Sprintf("%t", true)),
+			attribute.String("function", "Delete"),
+			attribute.String("successful", "true"),
 		),
 	)
 
@@ -285,7 +285,7 @@ func (r *PGSQLUserRepository) SelectByID(ctx context.Context, id uuid.UUID) (*mo
 
 	span.SetAttributes(
 		attribute.String("component", "repository.user"),
-		attribute.String("method", "SelectByID"),
+		attribute.String("function", "SelectByID"),
 		attribute.String("user.id", id.String()),
 	)
 
@@ -308,8 +308,8 @@ func (r *PGSQLUserRepository) SelectByID(ctx context.Context, id uuid.UUID) (*mo
 		r.metrics.repositoryCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				attribute.String("component", "repository.user"),
-				attribute.String("method", "SelectByID"),
-				attribute.String("successful", fmt.Sprintf("%t", false)),
+				attribute.String("function", "SelectByID"),
+				attribute.String("successful", "false"),
 			),
 		)
 		return nil, err
@@ -319,8 +319,8 @@ func (r *PGSQLUserRepository) SelectByID(ctx context.Context, id uuid.UUID) (*mo
 	r.metrics.repositoryCalls.Add(ctx, 1,
 		metric.WithAttributes(
 			attribute.String("component", "repository.user"),
-			attribute.String("method", "SelectByID"),
-			attribute.String("successful", fmt.Sprintf("%t", true)),
+			attribute.String("function", "SelectByID"),
+			attribute.String("successful", "true"),
 		),
 	)
 	return &u, nil
@@ -336,7 +336,7 @@ func (r *PGSQLUserRepository) SelectByEmail(ctx context.Context, email string) (
 
 	span.SetAttributes(
 		attribute.String("component", "repository.user"),
-		attribute.String("method", "SelectByEmail"),
+		attribute.String("function", "SelectByEmail"),
 		attribute.String("user.email", email),
 	)
 
@@ -359,8 +359,8 @@ func (r *PGSQLUserRepository) SelectByEmail(ctx context.Context, email string) (
 		r.metrics.repositoryCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				attribute.String("component", "repository.user"),
-				attribute.String("method", "SelectByEmail"),
-				attribute.String("successful", fmt.Sprintf("%t", true)),
+				attribute.String("function", "SelectByEmail"),
+				attribute.String("successful", "true"),
 			),
 		)
 		return nil, err
@@ -370,8 +370,8 @@ func (r *PGSQLUserRepository) SelectByEmail(ctx context.Context, email string) (
 	r.metrics.repositoryCalls.Add(ctx, 1,
 		metric.WithAttributes(
 			attribute.String("component", "repository.user"),
-			attribute.String("method", "SelectByEmail"),
-			attribute.String("successful", fmt.Sprintf("%t", true)),
+			attribute.String("function", "SelectByEmail"),
+			attribute.String("successful", "true"),
 		),
 	)
 
@@ -388,7 +388,7 @@ func (r *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.Selec
 
 	span.SetAttributes(
 		attribute.String("component", "repository.user"),
-		attribute.String("method", "SelectByEmail"),
+		attribute.String("function", "SelectByEmail"),
 		attribute.String("user.sort", params.Sort),
 		attribute.Int("user.limit", params.Paginator.Limit),
 		attribute.String("user.fields", strings.Join(params.Fields, ",")),
@@ -460,8 +460,8 @@ func (r *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.Selec
 			r.metrics.repositoryCalls.Add(ctx, 1,
 				metric.WithAttributes(
 					attribute.String("component", "repository.user"),
-					attribute.String("method", "SelectByEmail"),
-					attribute.String("successful", fmt.Sprintf("%t", false)),
+					attribute.String("function", "SelectByEmail"),
+					attribute.String("successful", "false"),
 				),
 			)
 			return nil, err
@@ -522,8 +522,8 @@ func (r *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.Selec
 			r.metrics.repositoryCalls.Add(ctx, 1,
 				metric.WithAttributes(
 					attribute.String("component", "repository.user"),
-					attribute.String("method", "SelectAll"),
-					attribute.String("successful", fmt.Sprintf("%t", false)),
+					attribute.String("function", "SelectAll"),
+					attribute.String("successful", "false"),
 				),
 			)
 			return nil, err
@@ -538,8 +538,8 @@ func (r *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.Selec
 		r.metrics.repositoryCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				attribute.String("component", "repository.user"),
-				attribute.String("method", "SelectAll"),
-				attribute.String("successful", fmt.Sprintf("%t", false)),
+				attribute.String("function", "SelectAll"),
+				attribute.String("successful", "false"),
 			),
 		)
 		return nil, err
@@ -574,8 +574,8 @@ func (r *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.Selec
 	r.metrics.repositoryCalls.Add(ctx, 1,
 		metric.WithAttributes(
 			attribute.String("component", "repository.user"),
-			attribute.String("method", "SelectAll"),
-			attribute.String("successful", fmt.Sprintf("%t", true)),
+			attribute.String("function", "SelectAll"),
+			attribute.String("successful", "true"),
 		),
 	)
 

@@ -152,7 +152,7 @@ func (s *User) GetUserByID(ctx context.Context, id uuid.UUID) (*model.User, erro
 
 	span.SetAttributes(
 		attribute.String("component", "service.users"),
-		attribute.String("method", "GetUserByID"),
+		attribute.String("function", "GetUserByID"),
 		attribute.String("user.id", id.String()),
 	)
 
@@ -164,7 +164,7 @@ func (s *User) GetUserByID(ctx context.Context, id uuid.UUID) (*model.User, erro
 		s.metrics.serviceCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				attribute.String("component", "service.users"),
-				attribute.String("method", "GetUserByEmail"),
+				attribute.String("function", "GetUserByEmail"),
 				attribute.String("successful", "true"),
 			),
 		)
@@ -175,7 +175,7 @@ func (s *User) GetUserByID(ctx context.Context, id uuid.UUID) (*model.User, erro
 	s.metrics.serviceCalls.Add(ctx, 1,
 		metric.WithAttributes(
 			attribute.String("component", "service.users"),
-			attribute.String("method", "GetUserByID"),
+			attribute.String("function", "GetUserByID"),
 			attribute.String("successful", "true"),
 		),
 	)
@@ -190,7 +190,7 @@ func (s *User) GetUserByEmail(ctx context.Context, email string) (*model.User, e
 
 	span.SetAttributes(
 		attribute.String("component", "service.users"),
-		attribute.String("method", "GetUserByEmail"),
+		attribute.String("function", "GetUserByEmail"),
 		attribute.String("user.email", email),
 	)
 
@@ -202,7 +202,7 @@ func (s *User) GetUserByEmail(ctx context.Context, email string) (*model.User, e
 		s.metrics.serviceCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				attribute.String("component", "service.users"),
-				attribute.String("method", "GetUserByEmail"),
+				attribute.String("function", "GetUserByEmail"),
 				attribute.String("successful", "false"),
 			),
 		)
@@ -213,7 +213,7 @@ func (s *User) GetUserByEmail(ctx context.Context, email string) (*model.User, e
 	s.metrics.serviceCalls.Add(ctx, 1,
 		metric.WithAttributes(
 			attribute.String("component", "service.users"),
-			attribute.String("method", "GetUserByEmail"),
+			attribute.String("function", "GetUserByEmail"),
 			attribute.String("successful", "true"),
 		),
 	)
@@ -228,7 +228,7 @@ func (s *User) CreateUser(ctx context.Context, user *model.CreateUserRequest) er
 
 	span.SetAttributes(
 		attribute.String("component", "service.users"),
-		attribute.String("method", "CreateUser"),
+		attribute.String("function", "CreateUser"),
 		attribute.String("user.email", user.Email),
 	)
 
@@ -238,7 +238,7 @@ func (s *User) CreateUser(ctx context.Context, user *model.CreateUserRequest) er
 		s.metrics.serviceCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				attribute.String("component", "service.users"),
-				attribute.String("method", "CreateUser"),
+				attribute.String("function", "CreateUser"),
 				attribute.String("successful", "false"),
 			),
 		)
@@ -266,7 +266,7 @@ func (s *User) CreateUser(ctx context.Context, user *model.CreateUserRequest) er
 				s.metrics.serviceCalls.Add(ctx, 1,
 					metric.WithAttributes(
 						attribute.String("component", "service.users"),
-						attribute.String("method", "CreateUser"),
+						attribute.String("function", "CreateUser"),
 						attribute.String("successful", "false"),
 					),
 				)
@@ -281,7 +281,7 @@ func (s *User) CreateUser(ctx context.Context, user *model.CreateUserRequest) er
 	s.metrics.serviceCalls.Add(ctx, 1,
 		metric.WithAttributes(
 			attribute.String("component", "service.users"),
-			attribute.String("method", "CreateUser"),
+			attribute.String("function", "CreateUser"),
 			attribute.String("successful", "true"),
 		),
 	)
@@ -295,7 +295,7 @@ func (s *User) UpdateUser(ctx context.Context, user *model.User) error {
 
 	span.SetAttributes(
 		attribute.String("component", "service.users"),
-		attribute.String("method", "UpdateUser"),
+		attribute.String("function", "UpdateUser"),
 		attribute.String("user.id", user.ID.String()),
 	)
 
@@ -305,7 +305,7 @@ func (s *User) UpdateUser(ctx context.Context, user *model.User) error {
 		s.metrics.serviceCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				attribute.String("component", "service.users"),
-				attribute.String("method", "UpdateUser"),
+				attribute.String("function", "UpdateUser"),
 				attribute.String("successful", "false"),
 			),
 		)
@@ -319,7 +319,7 @@ func (s *User) UpdateUser(ctx context.Context, user *model.User) error {
 		s.metrics.serviceCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				attribute.String("component", "service.users"),
-				attribute.String("method", "UpdateUser"),
+				attribute.String("function", "UpdateUser"),
 				attribute.String("successful", "false"),
 			),
 		)
@@ -331,7 +331,7 @@ func (s *User) UpdateUser(ctx context.Context, user *model.User) error {
 	s.metrics.serviceCalls.Add(ctx, 1,
 		metric.WithAttributes(
 			attribute.String("component", "service.users"),
-			attribute.String("method", "UpdateUser"),
+			attribute.String("function", "UpdateUser"),
 			attribute.String("successful", "true"),
 		),
 	)
@@ -346,7 +346,7 @@ func (s *User) DeleteUser(ctx context.Context, id uuid.UUID) error {
 
 	span.SetAttributes(
 		attribute.String("component", "service.users"),
-		attribute.String("method", "DeleteUser"),
+		attribute.String("function", "DeleteUser"),
 		attribute.String("user.id", id.String()),
 	)
 
@@ -356,7 +356,7 @@ func (s *User) DeleteUser(ctx context.Context, id uuid.UUID) error {
 		s.metrics.serviceCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				attribute.String("component", "service.users"),
-				attribute.String("method", "DeleteUser"),
+				attribute.String("function", "DeleteUser"),
 				attribute.String("successful", "false"),
 			),
 		)
@@ -370,7 +370,7 @@ func (s *User) DeleteUser(ctx context.Context, id uuid.UUID) error {
 		s.metrics.serviceCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				attribute.String("component", "service.users"),
-				attribute.String("method", "DeleteUser"),
+				attribute.String("function", "DeleteUser"),
 				attribute.String("successful", "false"),
 			),
 		)
@@ -381,7 +381,7 @@ func (s *User) DeleteUser(ctx context.Context, id uuid.UUID) error {
 	s.metrics.serviceCalls.Add(ctx, 1,
 		metric.WithAttributes(
 			attribute.String("component", "service.users"),
-			attribute.String("method", "DeleteUser"),
+			attribute.String("function", "DeleteUser"),
 			attribute.String("successful", "true"),
 		),
 	)
@@ -396,7 +396,7 @@ func (s *User) ListUsers(ctx context.Context, lur *model.ListUserRequest) (*mode
 
 	span.SetAttributes(
 		attribute.String("component", "service.users"),
-		attribute.String("method", "ListUsers"),
+		attribute.String("function", "ListUsers"),
 		attribute.String("sort", lur.Sort),
 		attribute.StringSlice("filter", lur.Filter),
 		attribute.StringSlice("fields", lur.Fields),
@@ -418,7 +418,7 @@ func (s *User) ListUsers(ctx context.Context, lur *model.ListUserRequest) (*mode
 		s.metrics.serviceCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				attribute.String("component", "service.users"),
-				attribute.String("method", "ListUsers"),
+				attribute.String("function", "ListUsers"),
 				attribute.String("successful", "false"),
 			),
 		)
@@ -430,7 +430,7 @@ func (s *User) ListUsers(ctx context.Context, lur *model.ListUserRequest) (*mode
 		s.metrics.serviceCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				attribute.String("component", "service.users"),
-				attribute.String("method", "ListUsers"),
+				attribute.String("function", "ListUsers"),
 				attribute.String("successful", "false"),
 			),
 		)
@@ -444,7 +444,7 @@ func (s *User) ListUsers(ctx context.Context, lur *model.ListUserRequest) (*mode
 		s.metrics.serviceCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				attribute.String("component", "service.users"),
-				attribute.String("method", "ListUsers"),
+				attribute.String("function", "ListUsers"),
 				attribute.String("successful", "true"),
 			),
 		)
@@ -458,7 +458,7 @@ func (s *User) ListUsers(ctx context.Context, lur *model.ListUserRequest) (*mode
 	s.metrics.serviceCalls.Add(ctx, 1,
 		metric.WithAttributes(
 			attribute.String("component", "service.users"),
-			attribute.String("method", "ListUsers"),
+			attribute.String("function", "ListUsers"),
 			attribute.String("successful", "true"),
 		),
 	)
