@@ -47,6 +47,7 @@ func NewUserHandler(conf UserHandlerConf) *UserHandler {
 	}
 	if conf.MetricsPrefix != "" {
 		uh.metricsPrefix = strings.ReplaceAll(conf.MetricsPrefix, "-", "_")
+		uh.metricsPrefix += "_"
 	}
 
 	if err := uh.registerMetrics(); err != nil {
@@ -59,7 +60,7 @@ func NewUserHandler(conf UserHandlerConf) *UserHandler {
 // registerMetrics registers the metrics for the user handler.
 func (h *UserHandler) registerMetrics() error {
 	handlerCalls, err := h.ot.Metrics.Meter.Int64Counter(
-		fmt.Sprintf("%s_%s", h.metricsPrefix, "handlers_calls_total"),
+		fmt.Sprintf("%s%s", h.metricsPrefix, "handlers_calls_total"),
 		metric.WithDescription("The number of calls to the user handler"),
 	)
 	if err != nil {

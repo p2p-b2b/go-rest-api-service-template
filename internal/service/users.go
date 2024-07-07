@@ -81,6 +81,7 @@ func NewUserService(conf UserServiceConf) *User {
 	}
 	if conf.MetricsPrefix != "" {
 		u.metricsPrefix = strings.ReplaceAll(conf.MetricsPrefix, "-", "_")
+		u.metricsPrefix += "_"
 	}
 
 	if err := u.registerMetrics(); err != nil {
@@ -94,7 +95,7 @@ func NewUserService(conf UserServiceConf) *User {
 // registerMetrics registers the metrics for the user handler.
 func (s *User) registerMetrics() error {
 	serviceCalls, err := s.ot.Metrics.Meter.Int64Counter(
-		fmt.Sprintf("%s_%s", s.metricsPrefix, "services_calls_total"),
+		fmt.Sprintf("%s%s", s.metricsPrefix, "services_calls_total"),
 		metric.WithDescription("The number of calls to the user service"),
 	)
 	if err != nil {

@@ -260,7 +260,6 @@ func main() {
 			MaxPingTimeout:  DBConfig.MaxPingTimeout.Value,
 			MaxQueryTimeout: DBConfig.MaxQueryTimeout.Value,
 			OT:              telemetry,
-			MetricsPrefix:   appName,
 		},
 	)
 
@@ -281,9 +280,8 @@ func main() {
 
 	// Create user Service config
 	userServiceConf := service.UserServiceConf{
-		Repository:    userRepository,
-		OT:            telemetry,
-		MetricsPrefix: appName,
+		Repository: userRepository,
+		OT:         telemetry,
 	}
 
 	// Create user Services
@@ -291,9 +289,8 @@ func main() {
 
 	// Create handler config
 	userHandlerConf := handler.UserHandlerConf{
-		Service:       userService,
-		OT:            telemetry,
-		MetricsPrefix: appName,
+		Service: userService,
+		OT:      telemetry,
 	}
 
 	// Create handlers

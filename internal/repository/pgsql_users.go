@@ -50,6 +50,7 @@ func NewPGSQLUserRepository(conf PGSQLUserRepositoryConfig) *PGSQLUserRepository
 	}
 	if conf.MetricsPrefix != "" {
 		r.metricsPrefix = strings.ReplaceAll(conf.MetricsPrefix, "-", "_")
+		r.metricsPrefix += "_"
 	}
 
 	if err := r.registerMetrics(); err != nil {
@@ -63,7 +64,7 @@ func NewPGSQLUserRepository(conf PGSQLUserRepositoryConfig) *PGSQLUserRepository
 // registerMetrics registers the metrics for the user handler.
 func (r *PGSQLUserRepository) registerMetrics() error {
 	repositoryCalls, err := r.ot.Metrics.Meter.Int64Counter(
-		fmt.Sprintf("%s_%s", r.metricsPrefix, "repositories_calls_total"),
+		fmt.Sprintf("%s%s", r.metricsPrefix, "repositories_calls_total"),
 		metric.WithDescription("The number of calls to the user repository"),
 	)
 	if err != nil {
