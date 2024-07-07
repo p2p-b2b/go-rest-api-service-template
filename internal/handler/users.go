@@ -561,7 +561,6 @@ func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 // @Param sort query string false "Sort field"
 // @Param filter query string false "Filter field"
 // @Param fields query string false "Fields to return"
-// @Param query query string false "Query string"
 // @Param next_token query string false "Next cursor"
 // @Param prev_token query string false "Previous cursor"
 // @Param limit query int false "Limit"
