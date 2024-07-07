@@ -90,7 +90,7 @@ func (s *User) registerMetrics() error {
 		metric.WithDescription("The number of calls to the user service"),
 	)
 	if err != nil {
-		slog.Error("Service RegisterMetrics", "error", err)
+		slog.Error("service.users.registerMetrics", "error", err)
 		return err
 	}
 	s.metrics.serviceCalls = serviceCalls

@@ -70,7 +70,7 @@ func (r *PGSQLUserRepository) registerMetrics() error {
 		metric.WithDescription("The number of calls to the user repository"),
 	)
 	if err != nil {
-		slog.Error("registerMetrics", "error", err)
+		slog.Error("repository.users.registerMetrics", "error", err)
 		return err
 	}
 	r.metrics.repositoryCalls = repositoryCalls
