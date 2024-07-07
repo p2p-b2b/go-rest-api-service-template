@@ -618,14 +618,14 @@ func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 
 		WriteError(w, r, http.StatusInternalServerError, err.Error())
 		return
+	} else {
+		slog.Debug("handler.users.ListUsers: called", "users", len(usersResponse.Items))
+		span.SetStatus(codes.Ok, "list users")
+		span.SetAttributes(attribute.Int("users.count", len(usersResponse.Items)))
+		h.metrics.handlerCalls.Add(ctx, 1,
+			metric.WithAttributes(
+				attribute.String("code", fmt.Sprintf("%d", http.StatusOK)),
+			),
+		)
 	}
-
-	slog.Debug("handler.users.ListUsers: usersResponse", "usersResponse", usersResponse)
-	span.SetStatus(codes.Ok, "list users")
-	span.SetAttributes(attribute.Int("users.count", len(usersResponse.Items)))
-	h.metrics.handlerCalls.Add(ctx, 1,
-		metric.WithAttributes(
-			attribute.String("code", fmt.Sprintf("%d", http.StatusOK)),
-		),
-	)
 }

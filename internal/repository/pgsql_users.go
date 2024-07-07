@@ -98,7 +98,7 @@ func (r *PGSQLUserRepository) PingContext(ctx context.Context) error {
 	ctx, cancel := context.WithTimeout(ctx, r.maxPingTimeout)
 	defer cancel()
 
-	ctx, span := r.ot.Traces.Tracer.Start(ctx, "User Repository: PingContext")
+	ctx, span := r.ot.Traces.Tracer.Start(ctx, "repository.user.PingContext")
 	defer span.End()
 
 	return r.db.PingContext(ctx)
@@ -109,7 +109,7 @@ func (r *PGSQLUserRepository) Insert(ctx context.Context, user *model.User) erro
 	ctx, cancel := context.WithTimeout(ctx, r.maxQueryTimeout)
 	defer cancel()
 
-	ctx, span := r.ot.Traces.Tracer.Start(ctx, "User Repository: Insert")
+	ctx, span := r.ot.Traces.Tracer.Start(ctx, "repository.user.Insert")
 	defer span.End()
 
 	span.SetAttributes(
@@ -160,7 +160,7 @@ func (r *PGSQLUserRepository) Update(ctx context.Context, user *model.User) erro
 	ctx, cancel := context.WithTimeout(ctx, r.maxQueryTimeout)
 	defer cancel()
 
-	ctx, span := r.ot.Traces.Tracer.Start(ctx, "user Repository: Update")
+	ctx, span := r.ot.Traces.Tracer.Start(ctx, "repository.user.Update")
 	defer span.End()
 
 	span.SetAttributes(
@@ -231,7 +231,7 @@ func (r *PGSQLUserRepository) Delete(ctx context.Context, id uuid.UUID) error {
 	ctx, cancel := context.WithTimeout(ctx, r.maxQueryTimeout)
 	defer cancel()
 
-	ctx, span := r.ot.Traces.Tracer.Start(ctx, "User Repository: Delete")
+	ctx, span := r.ot.Traces.Tracer.Start(ctx, "repository.user.Delete")
 	defer span.End()
 
 	span.SetAttributes(
@@ -280,7 +280,7 @@ func (r *PGSQLUserRepository) SelectByID(ctx context.Context, id uuid.UUID) (*mo
 	ctx, cancel := context.WithTimeout(ctx, r.maxQueryTimeout)
 	defer cancel()
 
-	ctx, span := r.ot.Traces.Tracer.Start(ctx, "User Repository: SelectByID")
+	ctx, span := r.ot.Traces.Tracer.Start(ctx, "repository.user.SelectByID")
 	defer span.End()
 
 	span.SetAttributes(
@@ -331,7 +331,7 @@ func (r *PGSQLUserRepository) SelectByEmail(ctx context.Context, email string) (
 	ctx, cancel := context.WithTimeout(ctx, r.maxQueryTimeout)
 	defer cancel()
 
-	ctx, span := r.ot.Traces.Tracer.Start(ctx, "User Repository: SelectByEmail")
+	ctx, span := r.ot.Traces.Tracer.Start(ctx, "repository.user.SelectByEmail")
 	defer span.End()
 
 	span.SetAttributes(
@@ -383,7 +383,7 @@ func (r *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.Selec
 	ctx, cancel := context.WithTimeout(ctx, r.maxQueryTimeout)
 	defer cancel()
 
-	ctx, span := r.ot.Traces.Tracer.Start(ctx, "User Repository: SelectAll")
+	ctx, span := r.ot.Traces.Tracer.Start(ctx, "repository.user.SelectAll")
 	defer span.End()
 
 	span.SetAttributes(
