@@ -1,7 +1,7 @@
 -- +goose Up
 -- +goose StatementBegin
-SELECT 'up SQL query';
---
+
+-- insert users
 INSERT INTO public.users (id, first_name, last_name, email, created_at, updated_at) VALUES ('483688e9-b8af-42c7-bba4-fb4a29cb7887', 'user', '1',  'user.1@mail.com',  '2024-01-01 01:00:00.000000+00', '2024-05-11 09:14:56.030582+00');
 INSERT INTO public.users (id, first_name, last_name, email, created_at, updated_at) VALUES ('ea1c33d1-76de-4cb2-96b9-844ebbf39cdd', 'user', '2',  'user.2@mail.com',  '2024-01-02 02:00:00.000000+00', '2024-05-11 09:14:56.030582+00');
 INSERT INTO public.users (id, first_name, last_name, email, created_at, updated_at) VALUES ('9dae34f7-0b1a-4ff3-a07f-50aabe80b899', 'user', '3',  'user.3@mail.com',  '2024-01-03 03:00:00.000000+00', '2024-05-11 09:14:56.030582+00');
@@ -38,7 +38,8 @@ INSERT INTO public.users (id, first_name, last_name, email, created_at, updated_
 
 -- +goose Down
 -- +goose StatementBegin
-SELECT 'down SQL query';
---
+
+-- delete users
 DELETE FROM users;
+
 -- +goose StatementEnd

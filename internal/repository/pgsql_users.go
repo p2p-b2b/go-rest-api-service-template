@@ -132,7 +132,7 @@ func (r *PGSQLUserRepository) Insert(ctx context.Context, user *model.User) erro
 	if err != nil {
 		span.SetStatus(codes.Error, "query failed")
 		span.RecordError(err)
-		slog.Error("Insert", "error", err)
+		slog.Error("repository.users.Insert", "error", err)
 		r.metrics.repositoryCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				attribute.String("driver", r.DriverName()),
@@ -205,7 +205,7 @@ func (r *PGSQLUserRepository) Update(ctx context.Context, user *model.User) erro
 	if err != nil {
 		span.SetStatus(codes.Error, "query failed")
 		span.RecordError(err)
-		slog.Error("Update", "error", err)
+		slog.Error("repository.users.Update", "error", err)
 		r.metrics.repositoryCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				attribute.String("driver", r.DriverName()),
@@ -256,7 +256,7 @@ func (r *PGSQLUserRepository) Delete(ctx context.Context, id uuid.UUID) error {
 	if err != nil {
 		span.SetStatus(codes.Error, "query failed")
 		span.RecordError(err)
-		slog.Error("Delete", "error", err)
+		slog.Error("repository.users.Delete", "error", err)
 		r.metrics.repositoryCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				attribute.String("driver", r.DriverName()),
@@ -311,7 +311,7 @@ func (r *PGSQLUserRepository) SelectByID(ctx context.Context, id uuid.UUID) (*mo
 	if err := row.Scan(&u.ID, &u.FirstName, &u.LastName, &u.Email); err != nil {
 		span.SetStatus(codes.Error, "scan failed")
 		span.RecordError(err)
-		slog.Error("SelectByID", "error", err)
+		slog.Error("repository.users.SelectByID", "error", err)
 		r.metrics.repositoryCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				attribute.String("driver", r.DriverName()),
@@ -365,7 +365,7 @@ func (r *PGSQLUserRepository) SelectByEmail(ctx context.Context, email string) (
 	if err := row.Scan(&u.ID, &u.FirstName, &u.LastName, &u.Email); err != nil {
 		span.SetStatus(codes.Error, "scan failed")
 		span.RecordError(err)
-		slog.Error("SelectByEmail", "error", err)
+		slog.Error("repository.users.SelectByEmail", "error", err)
 		r.metrics.repositoryCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				attribute.String("driver", r.DriverName()),
@@ -398,16 +398,6 @@ func (r *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.Selec
 	ctx, span := r.ot.Traces.Tracer.Start(ctx, "repository.user.SelectAll")
 	defer span.End()
 
-	span.SetAttributes(
-		attribute.String("driver", r.DriverName()),
-		attribute.String("component", "repository.user"),
-		attribute.String("function", "SelectByEmail"),
-		attribute.String("user.sort", params.Sort),
-		attribute.Int("user.limit", params.Paginator.Limit),
-		attribute.String("user.fields", strings.Join(params.Fields, ",")),
-		attribute.String("user.filter", strings.Join(params.Filter, ",")),
-	)
-
 	if params == nil {
 		params = &model.SelectAllUserQueryInput{
 			Fields: []string{"*"},
@@ -418,6 +408,16 @@ func (r *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.Selec
 			},
 		}
 	}
+
+	span.SetAttributes(
+		attribute.String("driver", r.DriverName()),
+		attribute.String("component", "repository.user"),
+		attribute.String("function", "SelectByEmail"),
+		attribute.String("user.sort", params.Sort),
+		attribute.Int("user.limit", params.Paginator.Limit),
+		attribute.String("user.fields", strings.Join(params.Fields, ",")),
+		attribute.String("user.filter", strings.Join(params.Filter, ",")),
+	)
 
 	fieldsStr := strings.Join(params.Fields, ", ")
 	if fieldsStr == "" {
@@ -445,7 +445,7 @@ func (r *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.Selec
 		if err != nil {
 			span.SetStatus(codes.Error, "invalid token")
 			span.RecordError(err)
-			slog.Error("SelectAll", "error", err)
+			slog.Error("repository.users.SelectAll", "error", err)
 			return nil, err
 		}
 
@@ -469,7 +469,7 @@ func (r *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.Selec
 		if err != nil {
 			span.SetStatus(codes.Error, "invalid token")
 			span.RecordError(err)
-			slog.Error("SelectAll", "error", err)
+			slog.Error("repository.users.SelectAll", "error", err)
 			r.metrics.repositoryCalls.Add(ctx, 1,
 				metric.WithAttributes(
 					attribute.String("driver", r.DriverName()),
@@ -514,14 +514,14 @@ func (r *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.Selec
 	)
 
 	// helper function to pretty print the query
-	slog.Debug("SelectAll", "query", prettyPrint(query))
+	slog.Debug("repository.users.SelectAll", "query", prettyPrint(query))
 
 	// execute the query
 	rows, err := r.db.QueryContext(ctx, query)
 	if err != nil {
 		span.SetStatus(codes.Error, "query failed")
 		span.RecordError(err)
-		slog.Error("SelectAll", "error", err)
+		slog.Error("repository.users.SelectAll", "error", err)
 		return nil, err
 	}
 	defer rows.Close()
@@ -532,7 +532,7 @@ func (r *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.Selec
 		if err := rows.Scan(&u.ID, &u.FirstName, &u.LastName, &u.Email, &u.CreatedAt, &u.UpdatedAt); err != nil {
 			span.SetStatus(codes.Error, "scan failed")
 			span.RecordError(err)
-			slog.Error("SelectAll", "error", err)
+			slog.Error("repository.users.SelectAll", "error", err)
 			r.metrics.repositoryCalls.Add(ctx, 1,
 				metric.WithAttributes(
 					attribute.String("driver", r.DriverName()),
@@ -549,7 +549,7 @@ func (r *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.Selec
 	if err := rows.Err(); err != nil {
 		span.SetStatus(codes.Error, "rows failed")
 		span.RecordError(err)
-		slog.Error("SelectAll", "error", err)
+		slog.Error("repository.users.SelectAll", "error", err)
 		r.metrics.repositoryCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				attribute.String("driver", r.DriverName()),
@@ -570,8 +570,8 @@ func (r *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.Selec
 		}, nil
 	}
 
-	slog.Debug("SelectAll", "next_id", users[outLen-1].ID, "next_created_at", users[outLen-1].CreatedAt)
-	slog.Debug("SelectAll", "prev_id", users[0].ID, "prev_created_at", users[0].CreatedAt)
+	slog.Debug("repository.users.SelectAll", "next_id", users[outLen-1].ID, "next_created_at", users[outLen-1].CreatedAt)
+	slog.Debug("repository.users.SelectAll", "prev_id", users[0].ID, "prev_created_at", users[0].CreatedAt)
 
 	nextToken := params.Paginator.GenerateToken(users[outLen-1].ID, users[outLen-1].CreatedAt)
 	prevToken := params.Paginator.GenerateToken(users[0].ID, users[0].CreatedAt)

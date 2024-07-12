@@ -105,6 +105,7 @@ func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	if idString == "" {
 		span.SetStatus(codes.Error, ErrIDRequired.Error())
 		span.RecordError(ErrIDRequired)
+		slog.Error("repository.handler.GetByID", "error", ErrIDRequired.Error())
 		h.metrics.handlerCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)),
@@ -124,6 +125,7 @@ func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		span.SetStatus(codes.Error, ErrInvalidID.Error())
 		span.RecordError(ErrInvalidID)
+		slog.Error("repository.handler.GetByID", "error", ErrInvalidID.Error())
 		h.metrics.handlerCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)),
@@ -141,6 +143,7 @@ func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		span.SetStatus(codes.Error, ErrInternalServerError.Error())
 		span.RecordError(err)
+		slog.Error("repository.handler.GetByID", "error", ErrInternalServerError.Error())
 		h.metrics.handlerCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)),
@@ -170,6 +173,7 @@ func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewEncoder(w).Encode(user); err != nil {
 		span.SetStatus(codes.Error, ErrInternalServerError.Error())
 		span.RecordError(err)
+		slog.Error("repository.handler.GetByID", "error", ErrInternalServerError.Error())
 		h.metrics.handlerCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				attribute.String("code", fmt.Sprintf("%d", http.StatusInternalServerError)),
@@ -223,6 +227,7 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
 		span.SetStatus(codes.Error, err.Error())
 		span.RecordError(err)
+		slog.Error("repository.handler.CreateUser", "error", err.Error())
 		h.metrics.handlerCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)),
@@ -240,6 +245,7 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	if user.FirstName == "" {
 		span.SetStatus(codes.Error, "First name is required")
 		span.RecordError(errors.New("first name is required"))
+		slog.Error("repository.handler.CreateUser", "error", "First name is required")
 		h.metrics.handlerCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)),
@@ -257,6 +263,7 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	if user.LastName == "" {
 		span.SetStatus(codes.Error, "Last name is required")
 		span.RecordError(errors.New("last name is required"))
+		slog.Error("repository.handler.CreateUser", "error", "Last name is required")
 		h.metrics.handlerCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)),
@@ -274,6 +281,7 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	if user.Email == "" {
 		span.SetStatus(codes.Error, "Email is required")
 		span.RecordError(errors.New("email is required"))
+		slog.Error("repository.handler.CreateUser", "error", "Email is required")
 		h.metrics.handlerCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)),
@@ -292,6 +300,7 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 		if errors.Is(err, service.ErrIdAlreadyExists) {
 			span.SetStatus(codes.Error, err.Error())
 			span.RecordError(err)
+			slog.Error("repository.handler.CreateUser", "error", err.Error())
 			h.metrics.handlerCalls.Add(ctx, 1,
 				metric.WithAttributes(
 					attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)),
@@ -308,6 +317,7 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 
 		span.SetStatus(codes.Error, err.Error())
 		span.RecordError(err)
+		slog.Error("repository.handler.CreateUser", "error", err.Error())
 		h.metrics.handlerCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)),
@@ -365,6 +375,7 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	if idParam == "" {
 		span.SetStatus(codes.Error, ErrIDRequired.Error())
 		span.RecordError(ErrIDRequired)
+		slog.Error("repository.handler.UpdateUser", "error", ErrIDRequired.Error())
 		h.metrics.handlerCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)),
@@ -384,6 +395,7 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		span.SetStatus(codes.Error, err.Error())
 		span.RecordError(err)
+		slog.Error("repository.handler.UpdateUser", "error", err.Error())
 		h.metrics.handlerCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)),
@@ -402,6 +414,7 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
 		span.SetStatus(codes.Error, err.Error())
 		span.RecordError(err)
+		slog.Error("repository.handler.UpdateUser", "error", err.Error())
 		h.metrics.handlerCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)),
@@ -424,6 +437,7 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	if user.FirstName == "" && user.LastName == "" && user.Email == "" {
 		span.SetStatus(codes.Error, "At least one field must be updated")
 		span.RecordError(errors.New("at least one field must be updated"))
+		slog.Error("repository.handler.UpdateUser", "error", "At least one field must be updated")
 		h.metrics.handlerCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)),
@@ -443,6 +457,7 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	if err := h.service.UpdateUser(ctx, &user); err != nil {
 		span.SetStatus(codes.Error, err.Error())
 		span.RecordError(err)
+		slog.Error("repository.handler.UpdateUser", "error", err.Error())
 		h.metrics.handlerCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)),
@@ -460,6 +475,7 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	slog.Debug("UserHandler: UpdateUser", "user", user)
 	span.SetStatus(codes.Ok, "User updated")
 	span.SetAttributes(attribute.String("user.id", user.ID.String()))
+	slog.Error("repository.handler.UpdateUser", "error", "User updated")
 	h.metrics.handlerCalls.Add(ctx, 1,
 		metric.WithAttributes(
 			attribute.String("code", fmt.Sprintf("%d", http.StatusOK)),
@@ -494,6 +510,7 @@ func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	if idParam == "" {
 		span.SetStatus(codes.Error, ErrIDRequired.Error())
 		span.RecordError(ErrIDRequired)
+		slog.Error("repository.handler.DeleteUser", "error", ErrIDRequired.Error())
 		h.metrics.handlerCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)),
@@ -513,6 +530,7 @@ func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		span.SetStatus(codes.Error, err.Error())
 		span.RecordError(err)
+		slog.Error("repository.handler.DeleteUser", "error", err.Error())
 		h.metrics.handlerCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)),
@@ -532,6 +550,7 @@ func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	if err := h.service.DeleteUser(ctx, id); err != nil {
 		span.SetStatus(codes.Error, err.Error())
 		span.RecordError(err)
+		slog.Error("repository.handler.DeleteUser", "error", err.Error())
 		h.metrics.handlerCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)),
@@ -590,6 +609,7 @@ func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 		if err != io.EOF {
 			span.SetStatus(codes.Error, err.Error())
 			span.RecordError(err)
+			slog.Error("repository.handler.ListUsers", "error", err.Error())
 			h.metrics.handlerCalls.Add(ctx, 1,
 				metric.WithAttributes(
 					attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)),
@@ -633,6 +653,7 @@ func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			span.SetStatus(codes.Error, "Invalid limit")
 			span.RecordError(err)
+			slog.Error("repository.handler.ListUsers", "error", "Invalid limit")
 			h.metrics.handlerCalls.Add(ctx, 1,
 				metric.WithAttributes(
 					attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)),
@@ -650,6 +671,7 @@ func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 		if limit < 0 {
 			span.SetStatus(codes.Error, "Limit must be greater than or equal to 0")
 			span.RecordError(err)
+			slog.Error("repository.handler.ListUsers", "error", "Limit must be greater than or equal to 0")
 			h.metrics.handlerCalls.Add(ctx, 1,
 				metric.WithAttributes(
 					attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)),
@@ -683,6 +705,7 @@ func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		span.SetStatus(codes.Error, err.Error())
 		span.RecordError(err)
+		slog.Error("repository.handler.ListUsers", "error", err.Error())
 		h.metrics.handlerCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)),
@@ -717,6 +740,7 @@ func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewEncoder(w).Encode(usersResponse); err != nil {
 		span.SetStatus(codes.Error, err.Error())
 		span.RecordError(err)
+		slog.Error("repository.handler.ListUsers", "error", err.Error())
 		h.metrics.handlerCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)),

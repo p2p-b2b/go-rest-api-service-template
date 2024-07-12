@@ -399,24 +399,24 @@ func (s *User) DeleteUser(ctx context.Context, id uuid.UUID) error {
 }
 
 // ListUsers returns a list of users.
-func (s *User) ListUsers(ctx context.Context, lur *model.ListUserRequest) (*model.ListUserResponse, error) {
+func (s *User) ListUsers(ctx context.Context, params *model.ListUserRequest) (*model.ListUserResponse, error) {
 	ctx, span := s.ot.Traces.Tracer.Start(ctx, "service.users.ListUsers")
 	defer span.End()
 
 	span.SetAttributes(
 		attribute.String("component", "service.users"),
 		attribute.String("function", "ListUsers"),
-		attribute.String("sort", lur.Sort),
-		attribute.StringSlice("filter", lur.Filter),
-		attribute.StringSlice("fields", lur.Fields),
-		attribute.Int("limit", lur.Paginator.Limit),
+		attribute.String("sort", params.Sort),
+		attribute.StringSlice("filter", params.Filter),
+		attribute.StringSlice("fields", params.Fields),
+		attribute.Int("limit", params.Paginator.Limit),
 	)
 
 	qParams := &model.SelectAllUserQueryInput{
-		Sort:      lur.Sort,
-		Filter:    lur.Filter,
-		Fields:    lur.Fields,
-		Paginator: lur.Paginator,
+		Sort:      params.Sort,
+		Filter:    params.Filter,
+		Fields:    params.Fields,
+		Paginator: params.Paginator,
 	}
 
 	qryOut, err := s.repository.SelectAll(ctx, qParams)
