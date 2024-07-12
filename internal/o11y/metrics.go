@@ -102,11 +102,22 @@ func (o *OpenTelemetryMeter) newMetricExporter(ctx context.Context) (metric.Expo
 	case "otlp-http":
 		insecureOpt := otlpmetrichttp.WithInsecure()
 
-		endpointOpt := otlpmetrichttp.WithEndpointURL(fmt.Sprintf("http://%s:%d/api/v1/otlp/v1/metrics", o.metricEndpoint, o.metricPort))
+		endpointOpt := otlpmetrichttp.WithEndpointURL(
+			fmt.Sprintf("http://%s:%d/api/v1/otlp/v1/metrics",
+				o.metricEndpoint,
+				o.metricPort,
+			),
+		)
 		exporter, err = otlpmetrichttp.New(ctx, insecureOpt, endpointOpt)
 		if err != nil {
 			return nil, err
 		}
+	// 	// https://github.com/open-telemetry/opentelemetry-go/issues/4779
+	// case "prometheus":
+	// 	promExporter, err = prometheus.New()
+	// 	if err != nil {
+	// 		return nil, err
+	// 	}
 
 	default:
 		return nil, fmt.Errorf("unknown metric exporter: %s", o.metricExporter)
