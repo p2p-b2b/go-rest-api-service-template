@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
-	"github.com/lib/pq"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/model"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/o11y"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/paginator"
@@ -260,11 +260,11 @@ func (s *User) CreateUser(ctx context.Context, user *model.User) error {
 	}
 
 	if err := s.repository.Insert(ctx, user); err != nil {
-		pqErr, ok := err.(*pq.Error)
+		pgxErr, ok := err.(*pgconn.PgError)
 
-		slog.Error("service.users.CreateUser", "error", err, "error_code", pqErr.Code)
+		slog.Error("service.users.CreateUser", "error", err, "error_code", pgxErr.Code)
 		if ok {
-			if pqErr.Code == "23505" {
+			if pgxErr.Code == "23505" {
 				span.SetStatus(codes.Error, "ID already exists")
 				span.RecordError(ErrIdAlreadyExists)
 				s.metrics.serviceCalls.Add(ctx, 1,

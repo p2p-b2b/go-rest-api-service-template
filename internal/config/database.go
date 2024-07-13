@@ -5,7 +5,7 @@ import (
 )
 
 const (
-	DefaultDatabaseKind     = "postgres"
+	DefaultDatabaseKind     = "pgx"
 	DefaultDatabaseAddress  = "localhost"
 	DefaultDatabasePort     = 5432
 	DefaultDatabaseUsername = "username"

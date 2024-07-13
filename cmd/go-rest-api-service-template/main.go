@@ -10,7 +10,7 @@ import (
 	"os"
 	"strings"
 
-	_ "github.com/lib/pq" // load the PostgreSQL driver for database/sql
+	_ "github.com/jackc/pgx/v5/stdlib" // load the PostgreSQL driver for pgx
 
 	// _ "github.com/go-sql-driver/mysql" // load the MySQL driver for database/sql
 
@@ -117,7 +117,7 @@ func init() {
 	}
 
 	// validate the database kind
-	if DBConfig.Kind.Value != "postgres" && DBConfig.Kind.Value != "mysql" {
+	if DBConfig.Kind.Value != "pgx" && DBConfig.Kind.Value != "postgres" && DBConfig.Kind.Value != "mysql" {
 		slog.Error("Invalid database kind. Use --help to get more info", "kind", DBConfig.Kind.Value)
 		os.Exit(1)
 	}
