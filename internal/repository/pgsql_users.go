@@ -110,6 +110,22 @@ func (r *PGSQLUserRepository) Insert(ctx context.Context, user *model.User) erro
 	ctx, span := r.ot.Traces.Tracer.Start(ctx, "repository.user.Insert")
 	defer span.End()
 
+	if user == nil {
+		span.SetStatus(codes.Error, "user is nil")
+		span.RecordError(fmt.Errorf("user is nil"))
+		slog.Error("repository.users.Insert", "error", "user is nil")
+		r.metrics.repositoryCalls.Add(ctx, 1,
+			metric.WithAttributes(
+				attribute.String("driver", r.DriverName()),
+				attribute.String("component", "repository.user"),
+				attribute.String("function", "Insert"),
+				attribute.String("successful", "false"),
+			),
+		)
+
+		return fmt.Errorf("user is nil")
+	}
+
 	span.SetAttributes(
 		attribute.String("driver", r.DriverName()),
 		attribute.String("component", "repository.user"),
@@ -163,6 +179,38 @@ func (r *PGSQLUserRepository) Update(ctx context.Context, user *model.User) erro
 
 	ctx, span := r.ot.Traces.Tracer.Start(ctx, "repository.user.Update")
 	defer span.End()
+
+	if user == nil {
+		span.SetStatus(codes.Error, "user is nil")
+		span.RecordError(fmt.Errorf("user is nil"))
+		slog.Error("repository.users.Update", "error", "user is nil")
+		r.metrics.repositoryCalls.Add(ctx, 1,
+			metric.WithAttributes(
+				attribute.String("driver", r.DriverName()),
+				attribute.String("component", "repository.user"),
+				attribute.String("function", "Update"),
+				attribute.String("successful", "false"),
+			),
+		)
+
+		return fmt.Errorf("user is nil")
+	}
+
+	if user.ID == uuid.Nil {
+		span.SetStatus(codes.Error, "user id is nil")
+		span.RecordError(fmt.Errorf("user id is nil"))
+		slog.Error("repository.users.Update", "error", "user id is nil")
+		r.metrics.repositoryCalls.Add(ctx, 1,
+			metric.WithAttributes(
+				attribute.String("driver", r.DriverName()),
+				attribute.String("component", "repository.user"),
+				attribute.String("function", "Update"),
+				attribute.String("successful", "false"),
+			),
+		)
+
+		return fmt.Errorf("user id is nil")
+	}
 
 	span.SetAttributes(
 		attribute.String("driver", r.DriverName()),
@@ -237,6 +285,38 @@ func (r *PGSQLUserRepository) Delete(ctx context.Context, user *model.User) erro
 	ctx, span := r.ot.Traces.Tracer.Start(ctx, "repository.user.Delete")
 	defer span.End()
 
+	if user == nil {
+		span.SetStatus(codes.Error, "user is nil")
+		span.RecordError(fmt.Errorf("user is nil"))
+		slog.Error("repository.users.Delete", "error", "user is nil")
+		r.metrics.repositoryCalls.Add(ctx, 1,
+			metric.WithAttributes(
+				attribute.String("driver", r.DriverName()),
+				attribute.String("component", "repository.user"),
+				attribute.String("function", "Delete"),
+				attribute.String("successful", "false"),
+			),
+		)
+
+		return fmt.Errorf("user is nil")
+	}
+
+	if user.ID == uuid.Nil {
+		span.SetStatus(codes.Error, "user id is nil")
+		span.RecordError(fmt.Errorf("user id is nil"))
+		slog.Error("repository.users.Delete", "error", "user id is nil")
+		r.metrics.repositoryCalls.Add(ctx, 1,
+			metric.WithAttributes(
+				attribute.String("driver", r.DriverName()),
+				attribute.String("component", "repository.user"),
+				attribute.String("function", "Delete"),
+				attribute.String("successful", "false"),
+			),
+		)
+
+		return fmt.Errorf("user id is nil")
+	}
+
 	span.SetAttributes(
 		attribute.String("driver", r.DriverName()),
 		attribute.String("component", "repository.user"),
@@ -288,6 +368,22 @@ func (r *PGSQLUserRepository) SelectByID(ctx context.Context, id uuid.UUID) (*mo
 
 	ctx, span := r.ot.Traces.Tracer.Start(ctx, "repository.user.SelectByID")
 	defer span.End()
+
+	if id == uuid.Nil {
+		span.SetStatus(codes.Error, "id is nil")
+		span.RecordError(fmt.Errorf("id is nil"))
+		slog.Error("repository.users.SelectByID", "error", "id is nil")
+		r.metrics.repositoryCalls.Add(ctx, 1,
+			metric.WithAttributes(
+				attribute.String("driver", r.DriverName()),
+				attribute.String("component", "repository.user"),
+				attribute.String("function", "SelectByID"),
+				attribute.String("successful", "false"),
+			),
+		)
+
+		return nil, fmt.Errorf("id is nil")
+	}
 
 	span.SetAttributes(
 		attribute.String("driver", r.DriverName()),
@@ -342,6 +438,8 @@ func (r *PGSQLUserRepository) SelectByEmail(ctx context.Context, email string) (
 
 	ctx, span := r.ot.Traces.Tracer.Start(ctx, "repository.user.SelectByEmail")
 	defer span.End()
+
+	// TODO: validate email
 
 	span.SetAttributes(
 		attribute.String("driver", r.DriverName()),
