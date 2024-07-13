@@ -28,11 +28,11 @@ type UserRepository interface {
 	// Insert a new user into the database.
 	Insert(ctx context.Context, user *model.User) error
 
-	// Update updates the user with the specified ID.
+	// Update updates the user.
 	Update(ctx context.Context, user *model.User) error
 
-	// Delete deletes the user with the specified ID.
-	Delete(ctx context.Context, id uuid.UUID) error
+	// Delete deletes the user.
+	Delete(ctx context.Context, user *model.User) error
 
 	// SelectByID returns the user with the specified ID.
 	SelectByID(ctx context.Context, id uuid.UUID) (*model.User, error)

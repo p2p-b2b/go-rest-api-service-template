@@ -126,7 +126,7 @@ func (r *PGSQLUserRepository) Insert(ctx context.Context, user *model.User) erro
 		user.Email,
 	)
 
-	slog.Debug("Insert", "query", prettyPrint(query))
+	slog.Debug("repository.users.Insert", "query", prettyPrint(query))
 
 	_, err := r.db.ExecContext(ctx, query)
 	if err != nil {
@@ -199,7 +199,7 @@ func (r *PGSQLUserRepository) Update(ctx context.Context, user *model.User) erro
 		user.ID,
 	)
 
-	slog.Debug("Update", "query", prettyPrint(query))
+	slog.Debug("repository.users.Update", "query", prettyPrint(query))
 
 	_, err := r.db.ExecContext(ctx, query)
 	if err != nil {
@@ -230,7 +230,7 @@ func (r *PGSQLUserRepository) Update(ctx context.Context, user *model.User) erro
 }
 
 // Delete deletes the user with the specified ID.
-func (r *PGSQLUserRepository) Delete(ctx context.Context, id uuid.UUID) error {
+func (r *PGSQLUserRepository) Delete(ctx context.Context, user *model.User) error {
 	ctx, cancel := context.WithTimeout(ctx, r.maxQueryTimeout)
 	defer cancel()
 
@@ -241,16 +241,16 @@ func (r *PGSQLUserRepository) Delete(ctx context.Context, id uuid.UUID) error {
 		attribute.String("driver", r.DriverName()),
 		attribute.String("component", "repository.user"),
 		attribute.String("function", "Delete"),
-		attribute.String("user.id", id.String()),
+		attribute.String("user.id", user.ID.String()),
 	)
 
 	query := fmt.Sprintf(`
         DELETE FROM users
         WHERE id = '%s'`,
-		id,
+		user.ID,
 	)
 
-	slog.Debug("Delete", "query", query)
+	slog.Debug("repository.users.Delete", "query", prettyPrint(query))
 
 	_, err := r.db.ExecContext(ctx, query)
 	if err != nil {
@@ -297,18 +297,18 @@ func (r *PGSQLUserRepository) SelectByID(ctx context.Context, id uuid.UUID) (*mo
 	)
 
 	query := fmt.Sprintf(`
-        SELECT id, first_name, last_name, email
+        SELECT id, first_name, last_name, email, created_at, updated_at
         FROM users
         WHERE id = '%s'`,
 		id,
 	)
 
-	slog.Debug("SelectByID", "query", prettyPrint(query))
+	slog.Debug("repository.users.SelectByID", "query", prettyPrint(query))
 
 	row := r.db.QueryRowContext(ctx, query)
 
 	var u model.User
-	if err := row.Scan(&u.ID, &u.FirstName, &u.LastName, &u.Email); err != nil {
+	if err := row.Scan(&u.ID, &u.FirstName, &u.LastName, &u.Email, &u.CreatedAt, &u.UpdatedAt); err != nil {
 		span.SetStatus(codes.Error, "scan failed")
 		span.RecordError(err)
 		slog.Error("repository.users.SelectByID", "error", err)
@@ -357,7 +357,7 @@ func (r *PGSQLUserRepository) SelectByEmail(ctx context.Context, email string) (
 		email,
 	)
 
-	slog.Debug("SelectByEmail", "query", prettyPrint(query))
+	slog.Debug("repository.users.SelectByEmail", "query", prettyPrint(query))
 
 	row := r.db.QueryRowContext(ctx, query)
 
@@ -390,7 +390,7 @@ func (r *PGSQLUserRepository) SelectByEmail(ctx context.Context, email string) (
 	return &u, nil
 }
 
-// SelectAll returns a list of users.
+// SelectAll selects all users from the repository.
 func (r *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.SelectAllUserQueryInput) (*model.SelectAllUserQueryOutput, error) {
 	ctx, cancel := context.WithTimeout(ctx, r.maxQueryTimeout)
 	defer cancel()
@@ -399,24 +399,28 @@ func (r *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.Selec
 	defer span.End()
 
 	if params == nil {
-		params = &model.SelectAllUserQueryInput{
-			Fields: []string{"*"},
-			Sort:   "created_at",
-			Filter: []string{},
-			Paginator: paginator.Paginator{
-				Limit: paginator.DefaultLimit,
-			},
-		}
+		span.SetStatus(codes.Error, "params is nil")
+		span.RecordError(fmt.Errorf("params is nil"))
+		slog.Error("repository.users.SelectAll", "error", "params is nil")
+		r.metrics.repositoryCalls.Add(ctx, 1,
+			metric.WithAttributes(
+				attribute.String("driver", r.DriverName()),
+				attribute.String("component", "repository.user"),
+				attribute.String("function", "SelectAll"),
+				attribute.String("successful", "false"),
+			),
+		)
+		return nil, fmt.Errorf("params is nil")
 	}
 
 	span.SetAttributes(
 		attribute.String("driver", r.DriverName()),
 		attribute.String("component", "repository.user"),
-		attribute.String("function", "SelectByEmail"),
+		attribute.String("method", "SelectByEmail"),
 		attribute.String("user.sort", params.Sort),
+		attribute.String("user.filter", params.Filter),
 		attribute.Int("user.limit", params.Paginator.Limit),
 		attribute.String("user.fields", strings.Join(params.Fields, ",")),
-		attribute.String("user.filter", strings.Join(params.Filter, ",")),
 	)
 
 	fieldsStr := strings.Join(params.Fields, ", ")
@@ -424,13 +428,10 @@ func (r *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.Selec
 		fieldsStr = "*"
 	}
 
-	slog.Debug("SelectAll", "params", params)
-
 	var paginationQuery string
-
 	// if both next and prev tokens are provided, use next token
 	if params.Paginator.NextToken != "" && params.Paginator.PrevToken != "" {
-		slog.Warn("SelectAll",
+		slog.Warn("repository.user.SelectAll",
 			"message",
 			"both next and prev tokens are provided, going to use next token")
 
@@ -443,21 +444,23 @@ func (r *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.Selec
 		// decode the token
 		id, createdAt, err := paginator.DecodeToken(params.Paginator.NextToken)
 		if err != nil {
+			slog.Error("repository.user.SelectAll", "error", err)
 			span.SetStatus(codes.Error, "invalid token")
 			span.RecordError(err)
-			slog.Error("repository.users.SelectAll", "error", err)
 			return nil, err
 		}
 
 		// from newest to oldest
 		paginationQuery = fmt.Sprintf(`
-                WHERE usrs.created_at < '%s' AND (usrs.id < '%s' OR usrs.created_at < '%s')
-                ORDER BY usrs.created_at DESC, usrs.id DESC
-                LIMIT %d
-            `,
+            WHERE usrs.created_at < '%s' AND (usrs.id < '%s' OR usrs.created_at < '%s')
+                AND %s
+            ORDER BY usrs.created_at DESC, usrs.id DESC
+            LIMIT %d
+        `,
 			createdAt.UTC().Format(paginator.DateFormat),
 			id.String(),
 			createdAt.UTC().Format(paginator.DateFormat),
+			params.Filter,
 			params.Paginator.Limit,
 		)
 	}
@@ -467,14 +470,14 @@ func (r *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.Selec
 		// decode the token
 		id, createdAt, err := paginator.DecodeToken(params.Paginator.PrevToken)
 		if err != nil {
+			slog.Error("repository.user.SelectAll", "error", err)
 			span.SetStatus(codes.Error, "invalid token")
 			span.RecordError(err)
-			slog.Error("repository.users.SelectAll", "error", err)
 			r.metrics.repositoryCalls.Add(ctx, 1,
 				metric.WithAttributes(
 					attribute.String("driver", r.DriverName()),
 					attribute.String("component", "repository.user"),
-					attribute.String("function", "SelectByEmail"),
+					attribute.String("method", "SelectByEmail"),
 					attribute.String("successful", "false"),
 				),
 			)
@@ -484,12 +487,13 @@ func (r *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.Selec
 		// from newest to oldest
 		paginationQuery = fmt.Sprintf(`
                 WHERE usrs.created_at > '%s' AND (usrs.id > '%s' OR usrs.created_at > '%s')
+                    AND %s
                 ORDER BY usrs.created_at ASC, usrs.id ASC
-                LIMIT %d
-                `,
+                LIMIT %d`,
 			createdAt.UTC().Format(paginator.DateFormat),
 			id.String(),
 			createdAt.UTC().Format(paginator.DateFormat),
+			params.Filter,
 			params.Paginator.Limit,
 		)
 	}
@@ -503,25 +507,40 @@ func (r *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.Selec
             `, params.Paginator.Limit)
 	}
 
+	var filterQuery string
+	if params.Filter != "" {
+		filterQuery = fmt.Sprintf("WHERE %s", params.Filter)
+	}
+
+	slog.Debug("repository.user.SelectAll", "filter_query", filterQuery)
+
 	query := fmt.Sprintf(`
         WITH usrs AS (
-            SELECT %s FROM users usrs %s
+            SELECT %s FROM users usrs %s %s
         )
         SELECT * FROM usrs ORDER BY created_at DESC, id DESC
-    `,
+        `,
 		fieldsStr,
+		filterQuery,
 		paginationQuery,
 	)
-
-	// helper function to pretty print the query
-	slog.Debug("repository.users.SelectAll", "query", prettyPrint(query))
+	slog.Debug("repository.user.SelectAll", "query", prettyPrint(query))
 
 	// execute the query
 	rows, err := r.db.QueryContext(ctx, query)
 	if err != nil {
-		span.SetStatus(codes.Error, "query failed")
+		slog.Error("repository.user.SelectAll", "error", err)
+		span.SetStatus(codes.Error, "failed to select all users")
 		span.RecordError(err)
-		slog.Error("repository.users.SelectAll", "error", err)
+		r.metrics.repositoryCalls.Add(ctx, 1,
+			metric.WithAttributes(
+				attribute.String("driver", r.DriverName()),
+				attribute.String("component", "repository.user"),
+				attribute.String("method", "SelectAll"),
+				attribute.String("successful", "false"),
+			),
+		)
+
 		return nil, err
 	}
 	defer rows.Close()
@@ -530,14 +549,14 @@ func (r *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.Selec
 	for rows.Next() {
 		var u model.User
 		if err := rows.Scan(&u.ID, &u.FirstName, &u.LastName, &u.Email, &u.CreatedAt, &u.UpdatedAt); err != nil {
-			span.SetStatus(codes.Error, "scan failed")
+			slog.Error("repository.user.SelectAll", "error", err)
+			span.SetStatus(codes.Error, "failed to scan user")
 			span.RecordError(err)
-			slog.Error("repository.users.SelectAll", "error", err)
 			r.metrics.repositoryCalls.Add(ctx, 1,
 				metric.WithAttributes(
 					attribute.String("driver", r.DriverName()),
 					attribute.String("component", "repository.user"),
-					attribute.String("function", "SelectAll"),
+					attribute.String("method", "SelectAll"),
 					attribute.String("successful", "false"),
 				),
 			)
@@ -546,24 +565,9 @@ func (r *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.Selec
 		users = append(users, &u)
 	}
 
-	if err := rows.Err(); err != nil {
-		span.SetStatus(codes.Error, "rows failed")
-		span.RecordError(err)
-		slog.Error("repository.users.SelectAll", "error", err)
-		r.metrics.repositoryCalls.Add(ctx, 1,
-			metric.WithAttributes(
-				attribute.String("driver", r.DriverName()),
-				attribute.String("component", "repository.user"),
-				attribute.String("function", "SelectAll"),
-				attribute.String("successful", "false"),
-			),
-		)
-		return nil, err
-	}
-
 	outLen := len(users)
-
 	if outLen == 0 {
+		slog.Warn("repository.user.SelectAll", "message", "no users found")
 		return &model.SelectAllUserQueryOutput{
 			Items:     make([]*model.User, 0),
 			Paginator: paginator.Paginator{},
@@ -579,10 +583,10 @@ func (r *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.Selec
 	ret := &model.SelectAllUserQueryOutput{
 		Items: users,
 		Paginator: paginator.Paginator{
-			NextToken: nextToken,
-			PrevToken: prevToken,
 			Size:      outLen,
 			Limit:     params.Paginator.Limit,
+			NextToken: nextToken,
+			PrevToken: prevToken,
 		},
 	}
 
@@ -591,7 +595,7 @@ func (r *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.Selec
 		metric.WithAttributes(
 			attribute.String("driver", r.DriverName()),
 			attribute.String("component", "repository.user"),
-			attribute.String("function", "SelectAll"),
+			attribute.String("method", "SelectAll"),
 			attribute.String("successful", "true"),
 		),
 	)

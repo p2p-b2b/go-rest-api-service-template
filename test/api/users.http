@@ -1,0 +1,55 @@
+# To use it you should have installed the vsconde extension "REST Client"
+# https://marketplace.visualstudio.com/items?itemName=humao.rest-client
+#  https://www.youtube.com/watch?v=Kxp5h8tXdFE&t=401s
+
+# Variables
+@host = localhost:8080
+
+@user_id = 0dc9a3fb-4cd8-40a6-b20a-8c865d96b936
+@user_email = franz.stigler@cine.tv
+@user_first_name = Franz
+@user_last_name = Stigler
+
+
+### Create a new user with ID (uuid)
+
+POST http://{{host}}/users HTTP/1.1
+Content-Type: application/json
+
+{
+  "id": "{{user_id}}",
+  "email": "{{user_email}}",
+  "first_name": "{{user_first_name}}",
+  "last_name": "{{user_last_name}}"
+}
+
+### Get user the recently created user by email
+# @name RecentlyCreatedUser
+
+GET http://{{host}}/users?filter=email%3D%27{{user_email}}%27 HTTP/1.1
+
+### Get user by ID using the variable RecentlyCreatedUser
+
+@new_user_id = {{RecentlyCreatedUser.response.body.$.data[0].id}}
+
+GET http://{{host}}/users/{{new_user_id}} HTTP/1.1
+
+### Update the user by ID
+
+@new_user_email = new_user@mail.com
+@new_user_first_name = New
+@new_user_last_name = User
+
+PUT http://{{host}}/users/{{new_user_id}} HTTP/1.1
+Content-Type: application/json
+
+{
+  "email": "{{new_user_email}}",
+  "first_name": "{{new_user_first_name}}",
+  "last_name": "{{new_user_last_name}}"
+}
+
+### Delete the user by ID
+
+DELETE http://{{host}}/users/{{new_user_id}} HTTP/1.1
+

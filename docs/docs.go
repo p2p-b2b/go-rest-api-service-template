@@ -163,7 +163,7 @@ const docTemplate = `{
                 }
             },
             "post": {
-                "description": "Create a new user from scratch, you should provide the id, first name, last name and email.\nIf the id is not provided, it will be generated automatically.",
+                "description": "Create a new user from scratch.\nIf the id is not provided, it will be generated automatically.",
                 "consumes": [
                     "application/json"
                 ],
@@ -173,7 +173,7 @@ const docTemplate = `{
                 "tags": [
                     "users"
                 ],
-                "summary": "Create a new user, if the id is not provided, it will be generated",
+                "summary": "Create a new user.",
                 "parameters": [
                     {
                         "description": "CreateUserRequest",
@@ -207,7 +207,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/users/{id}": {
+        "/users/{uid}": {
             "get": {
                 "description": "Get a user by ID",
                 "produces": [
@@ -220,8 +220,8 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "User ID",
-                        "name": "id",
+                        "description": "The user ID in UUID format",
+                        "name": "uid",
                         "in": "path",
                         "required": true
                     }
@@ -262,8 +262,8 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "User ID",
-                        "name": "id",
+                        "description": "The user ID in UUID format",
+                        "name": "uid",
                         "in": "path",
                         "required": true
                     },
@@ -307,8 +307,8 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "User ID",
-                        "name": "id",
+                        "description": "The user ID in UUID format",
+                        "name": "uid",
                         "in": "path",
                         "required": true
                     }

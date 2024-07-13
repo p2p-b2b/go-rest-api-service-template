@@ -74,9 +74,9 @@ func (h *UserHandler) registerMetrics() error {
 
 // RegisterRoutes registers the routes for the user.
 func (h *UserHandler) RegisterRoutes(mux *http.ServeMux) {
-	mux.HandleFunc("GET /users/{id}", h.GetByID)
-	mux.HandleFunc("PUT /users/{id}", h.UpdateUser)
-	mux.HandleFunc("DELETE /users/{id}", h.DeleteUser)
+	mux.HandleFunc("GET /users/{uid}", h.GetByID)
+	mux.HandleFunc("PUT /users/{uid}", h.UpdateUser)
+	mux.HandleFunc("DELETE /users/{uid}", h.DeleteUser)
 	mux.HandleFunc("POST /users", h.CreateUser)
 	mux.HandleFunc("GET /users", h.ListUsers)
 }
@@ -86,11 +86,11 @@ func (h *UserHandler) RegisterRoutes(mux *http.ServeMux) {
 // @Description Get a user by ID
 // @Tags users
 // @Produce json
-// @Param id path string true "User ID"
+// @Param uid path string true "The user ID in UUID format"
 // @Success 200 {object} model.User
 // @Failure 400 {object} APIError
 // @Failure 500 {object} APIError
-// @Router /users/{id} [get]
+// @Router /users/{uid} [get]
 func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	ctx, span := h.ot.Traces.Tracer.Start(r.Context(), "handler.users.GetByID")
 	defer span.End()
@@ -101,11 +101,11 @@ func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 		attribute.String("http.path", r.URL.Path),
 	)
 
-	idString := r.PathValue("id")
-	if idString == "" {
+	uidString := r.PathValue("uid")
+	if uidString == "" {
 		span.SetStatus(codes.Error, ErrIDRequired.Error())
 		span.RecordError(ErrIDRequired)
-		slog.Error("repository.handler.GetByID", "error", ErrIDRequired.Error())
+		slog.Error("handler.GetByID", "error", ErrIDRequired.Error())
 		h.metrics.handlerCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)),
@@ -121,11 +121,11 @@ func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// convert the id to uuid.UUID
-	id, err := uuid.Parse(idString)
+	id, err := uuid.Parse(uidString)
 	if err != nil {
 		span.SetStatus(codes.Error, ErrInvalidID.Error())
 		span.RecordError(ErrInvalidID)
-		slog.Error("repository.handler.GetByID", "error", ErrInvalidID.Error())
+		slog.Error("handler.GetByID", "error", ErrInvalidID.Error())
 		h.metrics.handlerCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)),
@@ -139,11 +139,29 @@ func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if id == uuid.Nil {
+		span.SetStatus(codes.Error, ErrInvalidID.Error())
+		span.RecordError(ErrInvalidID)
+		slog.Error("handler.GetByID", "error", ErrInvalidID.Error())
+		h.metrics.handlerCalls.Add(ctx, 1,
+			metric.WithAttributes(
+				attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)),
+				attribute.String("component", "handler.users"),
+				attribute.String("function", "GetByID"),
+				attribute.String("http.method", r.Method),
+				attribute.String("http.path", r.URL.Path),
+			),
+		)
+
+		WriteError(w, r, http.StatusBadRequest, ErrInvalidID.Error())
+		return
+	}
+
 	user, err := h.service.GetUserByID(ctx, id)
 	if err != nil {
 		span.SetStatus(codes.Error, ErrInternalServerError.Error())
 		span.RecordError(err)
-		slog.Error("repository.handler.GetByID", "error", ErrInternalServerError.Error())
+		slog.Error("handler.GetByID", "error", ErrInternalServerError.Error())
 		h.metrics.handlerCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)),
@@ -173,7 +191,7 @@ func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewEncoder(w).Encode(user); err != nil {
 		span.SetStatus(codes.Error, ErrInternalServerError.Error())
 		span.RecordError(err)
-		slog.Error("repository.handler.GetByID", "error", ErrInternalServerError.Error())
+		slog.Error("handler.GetByID", "error", ErrInternalServerError.Error())
 		h.metrics.handlerCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				attribute.String("code", fmt.Sprintf("%d", http.StatusInternalServerError)),
@@ -187,7 +205,7 @@ func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	slog.Debug("UserHandler: GetByID", "user", user)
+	slog.Debug("handler.GetByID", "user", user)
 	span.SetStatus(codes.Ok, "User found")
 	span.SetAttributes(attribute.String("user.id", user.ID.String()))
 	h.metrics.handlerCalls.Add(ctx, 1,
@@ -202,8 +220,8 @@ func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 }
 
 // CreateUser Create a new user
-// @Summary Create a new user, if the id is not provided, it will be generated
-// @Description Create a new user from scratch, you should provide the id, first name, last name and email.
+// @Summary Create a new user.
+// @Description Create a new user from scratch.
 // @Description If the id is not provided, it will be generated automatically.
 // @Tags users
 // @Accept json
@@ -223,11 +241,11 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 		attribute.String("http.path", r.URL.Path),
 	)
 
-	var user model.CreateUserRequest
-	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
+	var req model.CreateUserRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		span.SetStatus(codes.Error, err.Error())
 		span.RecordError(err)
-		slog.Error("repository.handler.CreateUser", "error", err.Error())
+		slog.Error("handler.CreateUser", "error", err.Error())
 		h.metrics.handlerCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)),
@@ -242,10 +260,14 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if user.FirstName == "" {
+	if req.ID == uuid.Nil {
+		req.ID = uuid.New()
+	}
+
+	if req.FirstName == "" {
 		span.SetStatus(codes.Error, "First name is required")
 		span.RecordError(errors.New("first name is required"))
-		slog.Error("repository.handler.CreateUser", "error", "First name is required")
+		slog.Error("handler.CreateUser", "error", "First name is required")
 		h.metrics.handlerCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)),
@@ -260,10 +282,10 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if user.LastName == "" {
+	if req.LastName == "" {
 		span.SetStatus(codes.Error, "Last name is required")
 		span.RecordError(errors.New("last name is required"))
-		slog.Error("repository.handler.CreateUser", "error", "Last name is required")
+		slog.Error("handler.CreateUser", "error", "Last name is required")
 		h.metrics.handlerCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)),
@@ -278,10 +300,10 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if user.Email == "" {
+	if req.Email == "" {
 		span.SetStatus(codes.Error, "Email is required")
 		span.RecordError(errors.New("email is required"))
-		slog.Error("repository.handler.CreateUser", "error", "Email is required")
+		slog.Error("handler.CreateUser", "error", "Email is required")
 		h.metrics.handlerCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)),
@@ -296,11 +318,20 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	user := model.User{
+		ID:        req.ID,
+		FirstName: req.FirstName,
+		LastName:  req.LastName,
+		Email:     req.Email,
+	}
+
+	slog.Debug("handler.CreateUser", "user", user)
+
 	if err := h.service.CreateUser(ctx, &user); err != nil {
 		if errors.Is(err, service.ErrIdAlreadyExists) {
 			span.SetStatus(codes.Error, err.Error())
 			span.RecordError(err)
-			slog.Error("repository.handler.CreateUser", "error", err.Error())
+			slog.Error("handler.CreateUser", "error", err.Error())
 			h.metrics.handlerCalls.Add(ctx, 1,
 				metric.WithAttributes(
 					attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)),
@@ -317,7 +348,7 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 
 		span.SetStatus(codes.Error, err.Error())
 		span.RecordError(err)
-		slog.Error("repository.handler.CreateUser", "error", err.Error())
+		slog.Error("handler.CreateUser", "error", err.Error())
 		h.metrics.handlerCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)),
@@ -335,7 +366,6 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusCreated)
 
-	slog.Debug("UserHandler: CreateUser", "user", user)
 	span.SetStatus(codes.Ok, "User created")
 	span.SetAttributes(attribute.String("user.id", user.ID.String()))
 	h.metrics.handlerCalls.Add(ctx, 1,
@@ -355,12 +385,12 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 // @Tags users
 // @Accept json
 // @Produce json
-// @Param id path string true "User ID"
+// @Param uid path string true "The user ID in UUID format"
 // @Param user body model.UpdateUserRequest true "User"
 // @Success 200 {object} string
 // @Failure 400 {object} APIError
 // @Failure 500 {object} APIError
-// @Router /users/{id} [put]
+// @Router /users/{uid} [put]
 func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	ctx, span := h.ot.Traces.Tracer.Start(r.Context(), "handler.users.UpdateUser")
 	defer span.End()
@@ -371,11 +401,11 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 		attribute.String("http.path", r.URL.Path),
 	)
 
-	idParam := r.PathValue("id")
-	if idParam == "" {
+	uidParam := r.PathValue("uid")
+	if uidParam == "" {
 		span.SetStatus(codes.Error, ErrIDRequired.Error())
 		span.RecordError(ErrIDRequired)
-		slog.Error("repository.handler.UpdateUser", "error", ErrIDRequired.Error())
+		slog.Error("handler.UpdateUser", "error", ErrIDRequired.Error())
 		h.metrics.handlerCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)),
@@ -391,11 +421,11 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// convert the id to uuid.UUID
-	id, err := uuid.Parse(idParam)
+	id, err := uuid.Parse(uidParam)
 	if err != nil {
 		span.SetStatus(codes.Error, err.Error())
 		span.RecordError(err)
-		slog.Error("repository.handler.UpdateUser", "error", err.Error())
+		slog.Error("handler.UpdateUser", "error", err.Error())
 		h.metrics.handlerCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)),
@@ -410,11 +440,29 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var user model.User
-	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
+	if id == uuid.Nil {
+		span.SetStatus(codes.Error, ErrInvalidID.Error())
+		span.RecordError(ErrInvalidID)
+		slog.Error("handler.UpdateUser", "error", ErrInvalidID.Error())
+		h.metrics.handlerCalls.Add(ctx, 1,
+			metric.WithAttributes(
+				attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)),
+				attribute.String("component", "handler.users"),
+				attribute.String("function", "UpdateUser"),
+				attribute.String("http.method", r.Method),
+				attribute.String("http.path", r.URL.Path),
+			),
+		)
+
+		WriteError(w, r, http.StatusBadRequest, ErrInvalidID.Error())
+		return
+	}
+
+	var req model.UpdateUserRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		span.SetStatus(codes.Error, err.Error())
 		span.RecordError(err)
-		slog.Error("repository.handler.UpdateUser", "error", err.Error())
+		slog.Error("handler.UpdateUser", "error", err.Error())
 		h.metrics.handlerCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)),
@@ -429,15 +477,11 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// set the user ID
-	user.ID = id
-	span.SetAttributes(attribute.String("user.id", user.ID.String()))
-
 	// at least one field must be updated
-	if user.FirstName == "" && user.LastName == "" && user.Email == "" {
+	if req.FirstName == "" && req.LastName == "" && req.Email == "" {
 		span.SetStatus(codes.Error, "At least one field must be updated")
 		span.RecordError(errors.New("at least one field must be updated"))
-		slog.Error("repository.handler.UpdateUser", "error", "At least one field must be updated")
+		slog.Error("handler.UpdateUser", "error", "At least one field must be updated")
 		h.metrics.handlerCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)),
@@ -452,12 +496,19 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	user := model.User{
+		ID:        id,
+		FirstName: req.FirstName,
+		LastName:  req.LastName,
+		Email:     req.Email,
+	}
+
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusOK)
 	if err := h.service.UpdateUser(ctx, &user); err != nil {
 		span.SetStatus(codes.Error, err.Error())
 		span.RecordError(err)
-		slog.Error("repository.handler.UpdateUser", "error", err.Error())
+		slog.Error("handler.UpdateUser", "error", err.Error())
 		h.metrics.handlerCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)),
@@ -472,10 +523,9 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	slog.Debug("UserHandler: UpdateUser", "user", user)
+	slog.Debug("handler.UpdateUser", "user", user)
 	span.SetStatus(codes.Ok, "User updated")
 	span.SetAttributes(attribute.String("user.id", user.ID.String()))
-	slog.Error("repository.handler.UpdateUser", "error", "User updated")
 	h.metrics.handlerCalls.Add(ctx, 1,
 		metric.WithAttributes(
 			attribute.String("code", fmt.Sprintf("%d", http.StatusOK)),
@@ -491,11 +541,11 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 // @Summary Delete a user
 // @Description Delete a user
 // @Tags users
-// @Param id path string true "User ID"
+// @Param uid path string true "The user ID in UUID format"
 // @Success 200 {object} string
 // @Failure 400 {object} APIError
 // @Failure 500 {object} APIError
-// @Router /users/{id} [delete]
+// @Router /users/{uid} [delete]
 func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	ctx, span := h.ot.Traces.Tracer.Start(r.Context(), "handler.users.DeleteUser")
 	defer span.End()
@@ -506,11 +556,11 @@ func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 		attribute.String("http.path", r.URL.Path),
 	)
 
-	idParam := r.PathValue("id")
-	if idParam == "" {
+	uidParam := r.PathValue("uid")
+	if uidParam == "" {
 		span.SetStatus(codes.Error, ErrIDRequired.Error())
 		span.RecordError(ErrIDRequired)
-		slog.Error("repository.handler.DeleteUser", "error", ErrIDRequired.Error())
+		slog.Error("handler.DeleteUser", "error", ErrIDRequired.Error())
 		h.metrics.handlerCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)),
@@ -526,11 +576,11 @@ func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// convert the id to uuid.UUID
-	id, err := uuid.Parse(idParam)
+	id, err := uuid.Parse(uidParam)
 	if err != nil {
 		span.SetStatus(codes.Error, err.Error())
 		span.RecordError(err)
-		slog.Error("repository.handler.DeleteUser", "error", err.Error())
+		slog.Error("handler.DeleteUser", "error", err.Error())
 		h.metrics.handlerCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)),
@@ -545,12 +595,34 @@ func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if id == uuid.Nil {
+		span.SetStatus(codes.Error, ErrInvalidID.Error())
+		span.RecordError(ErrInvalidID)
+		slog.Error("handler.DeleteUser", "error", ErrInvalidID.Error())
+		h.metrics.handlerCalls.Add(ctx, 1,
+			metric.WithAttributes(
+				attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)),
+				attribute.String("component", "handler.users"),
+				attribute.String("function", "DeleteUser"),
+				attribute.String("http.method", r.Method),
+				attribute.String("http.path", r.URL.Path),
+			),
+		)
+
+		WriteError(w, r, http.StatusBadRequest, ErrInvalidID.Error())
+		return
+	}
+
+	user := model.User{
+		ID: id,
+	}
+
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusOK)
-	if err := h.service.DeleteUser(ctx, id); err != nil {
+	if err := h.service.DeleteUser(ctx, &user); err != nil {
 		span.SetStatus(codes.Error, err.Error())
 		span.RecordError(err)
-		slog.Error("repository.handler.DeleteUser", "error", err.Error())
+		slog.Error("handler.DeleteUser", "error", err.Error())
 		h.metrics.handlerCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)),
@@ -565,7 +637,7 @@ func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	slog.Debug("UserHandler: DeleteUser", "user_id", id)
+	slog.Debug("handler.DeleteUser", "user", user)
 	span.SetStatus(codes.Ok, "User deleted")
 	span.SetAttributes(attribute.String("user.id", id.String()))
 	h.metrics.handlerCalls.Add(ctx, 1,
@@ -609,7 +681,7 @@ func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 		if err != io.EOF {
 			span.SetStatus(codes.Error, err.Error())
 			span.RecordError(err)
-			slog.Error("repository.handler.ListUsers", "error", err.Error())
+			slog.Error("handler.ListUsers", "error", err.Error())
 			h.metrics.handlerCalls.Add(ctx, 1,
 				metric.WithAttributes(
 					attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)),
@@ -631,13 +703,9 @@ func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 	prevToken := r.URL.Query().Get("prev_token")
 	limitString := r.URL.Query().Get("limit")
 
+	// sort, filter, and fields
 	sort := r.URL.Query().Get("sort")
-
-	filterFields := r.URL.Query().Get("filter")
-	var filter []string
-	if len(filterFields) != 0 {
-		filter = strings.Split(filterFields, ",")
-	}
+	filter := r.URL.Query().Get("filter")
 
 	fieldsFields := r.URL.Query().Get("fields")
 	var fields []string
@@ -653,7 +721,7 @@ func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			span.SetStatus(codes.Error, "Invalid limit")
 			span.RecordError(err)
-			slog.Error("repository.handler.ListUsers", "error", "Invalid limit")
+			slog.Error("handler.ListUsers", "error", "Invalid limit")
 			h.metrics.handlerCalls.Add(ctx, 1,
 				metric.WithAttributes(
 					attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)),
@@ -671,7 +739,7 @@ func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 		if limit < 0 {
 			span.SetStatus(codes.Error, "Limit must be greater than or equal to 0")
 			span.RecordError(err)
-			slog.Error("repository.handler.ListUsers", "error", "Limit must be greater than or equal to 0")
+			slog.Error("handler.ListUsers", "error", "Limit must be greater than or equal to 0")
 			h.metrics.handlerCalls.Add(ctx, 1,
 				metric.WithAttributes(
 					attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)),
@@ -705,7 +773,7 @@ func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		span.SetStatus(codes.Error, err.Error())
 		span.RecordError(err)
-		slog.Error("repository.handler.ListUsers", "error", err.Error())
+		slog.Error("handler.ListUsers", "error", err.Error())
 		h.metrics.handlerCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)),
@@ -740,7 +808,7 @@ func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewEncoder(w).Encode(usersResponse); err != nil {
 		span.SetStatus(codes.Error, err.Error())
 		span.RecordError(err)
-		slog.Error("repository.handler.ListUsers", "error", err.Error())
+		slog.Error("handler.ListUsers", "error", err.Error())
 		h.metrics.handlerCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)),

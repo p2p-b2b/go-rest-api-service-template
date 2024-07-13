@@ -34,13 +34,13 @@ type UserService interface {
 	GetUserByEmail(ctx context.Context, email string) (*model.User, error)
 
 	// CreateUser inserts a new user into the database.
-	CreateUser(ctx context.Context, user *model.CreateUserRequest) error
+	CreateUser(ctx context.Context, user *model.User) error
 
-	// UpdateUser updates the user with the specified ID.
+	// UpdateUser updates the user.
 	UpdateUser(ctx context.Context, user *model.User) error
 
-	// DeleteUser deletes the user with the specified ID.
-	DeleteUser(ctx context.Context, id uuid.UUID) error
+	// DeleteUser deletes the user.
+	DeleteUser(ctx context.Context, user *model.User) error
 
 	// ListUsers returns a list of users.
 	ListUsers(ctx context.Context, params *model.ListUserRequest) (*model.ListUserResponse, error)
@@ -231,7 +231,7 @@ func (s *User) GetUserByEmail(ctx context.Context, email string) (*model.User, e
 }
 
 // CreateUser inserts a new user into the database.
-func (s *User) CreateUser(ctx context.Context, user *model.CreateUserRequest) error {
+func (s *User) CreateUser(ctx context.Context, user *model.User) error {
 	ctx, span := s.ot.Traces.Tracer.Start(ctx, "service.users.CreateUser")
 	defer span.End()
 
@@ -259,12 +259,7 @@ func (s *User) CreateUser(ctx context.Context, user *model.CreateUserRequest) er
 		user.ID = uuid.New()
 	}
 
-	newUser := &model.User{
-		ID:    user.ID,
-		Email: user.Email,
-	}
-
-	if err := s.repository.Insert(ctx, newUser); err != nil {
+	if err := s.repository.Insert(ctx, user); err != nil {
 		pqErr, ok := err.(*pq.Error)
 
 		slog.Error("service.users.CreateUser", "error", err, "error_code", pqErr.Code)
@@ -349,17 +344,17 @@ func (s *User) UpdateUser(ctx context.Context, user *model.User) error {
 }
 
 // DeleteUser deletes the user with the specified ID.
-func (s *User) DeleteUser(ctx context.Context, id uuid.UUID) error {
+func (s *User) DeleteUser(ctx context.Context, user *model.User) error {
 	ctx, span := s.ot.Traces.Tracer.Start(ctx, "service.users.DeleteUser")
 	defer span.End()
 
 	span.SetAttributes(
 		attribute.String("component", "service.users"),
 		attribute.String("function", "DeleteUser"),
-		attribute.String("user.id", id.String()),
+		attribute.String("user.id", user.ID.String()),
 	)
 
-	if id == uuid.Nil {
+	if user.ID == uuid.Nil {
 		span.SetStatus(codes.Error, ErrDeletingUser.Error())
 		span.RecordError(ErrDeletingUser)
 		s.metrics.serviceCalls.Add(ctx, 1,
@@ -372,7 +367,7 @@ func (s *User) DeleteUser(ctx context.Context, id uuid.UUID) error {
 		return ErrDeletingUser
 	}
 
-	if err := s.repository.Delete(ctx, id); err != nil {
+	if err := s.repository.Delete(ctx, user); err != nil {
 		span.SetStatus(codes.Error, err.Error())
 		span.RecordError(err)
 		slog.Error("service.users.DeleteUser", "error", err)
@@ -407,8 +402,8 @@ func (s *User) ListUsers(ctx context.Context, params *model.ListUserRequest) (*m
 		attribute.String("component", "service.users"),
 		attribute.String("function", "ListUsers"),
 		attribute.String("sort", params.Sort),
-		attribute.StringSlice("filter", params.Filter),
 		attribute.StringSlice("fields", params.Fields),
+		attribute.String("filter", params.Filter),
 		attribute.Int("limit", params.Paginator.Limit),
 	)
 
@@ -418,6 +413,8 @@ func (s *User) ListUsers(ctx context.Context, params *model.ListUserRequest) (*m
 		Fields:    params.Fields,
 		Paginator: params.Paginator,
 	}
+
+	slog.Debug("service.users.ListUsers", "qParams", qParams)
 
 	qryOut, err := s.repository.SelectAll(ctx, qParams)
 	if err != nil {
@@ -434,8 +431,9 @@ func (s *User) ListUsers(ctx context.Context, params *model.ListUserRequest) (*m
 		return nil, ErrListingUsers
 	}
 	if qryOut == nil {
-		span.SetStatus(codes.Error, "qryOut is nil")
-		span.RecordError(errors.New("qryOut is nil"))
+		span.SetStatus(codes.Error, ErrListingUsers.Error())
+		span.RecordError(ErrListingUsers)
+		slog.Error("service.users.ListUsers", "error", ErrListingUsers)
 		s.metrics.serviceCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				attribute.String("component", "service.users"),
@@ -463,7 +461,7 @@ func (s *User) ListUsers(ctx context.Context, params *model.ListUserRequest) (*m
 		}, nil
 	}
 
-	span.SetStatus(codes.Ok, "users found")
+	span.SetStatus(codes.Ok, "Users found")
 	s.metrics.serviceCalls.Add(ctx, 1,
 		metric.WithAttributes(
 			attribute.String("component", "service.users"),

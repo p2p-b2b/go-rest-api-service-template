@@ -77,7 +77,7 @@ type ListUserRequest struct {
 	Sort string `json:"sort,omitempty"`
 
 	// Filter is the field to filter by.
-	Filter []string `json:"filter,omitempty"`
+	Filter string `json:"filter,omitempty"`
 
 	// Fields is the fields to return.
 	Fields []string `json:"fields,omitempty"`
@@ -118,7 +118,7 @@ type SelectAllUserQueryInput struct {
 	Sort string `json:"sort,omitempty"`
 
 	// Filter is the field to filter by.
-	Filter []string `json:"filter,omitempty"`
+	Filter string `json:"filter,omitempty"`
 
 	// Fields is the fields to return.
 	Fields []string `json:"fields,omitempty"`

@@ -250,7 +250,7 @@ paths:
       consumes:
       - application/json
       description: |-
-        Create a new user from scratch, you should provide the id, first name, last name and email.
+        Create a new user from scratch.
         If the id is not provided, it will be generated automatically.
       parameters:
       - description: CreateUserRequest
@@ -274,16 +274,16 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/handler.APIError'
-      summary: Create a new user, if the id is not provided, it will be generated
+      summary: Create a new user.
       tags:
       - users
-  /users/{id}:
+  /users/{uid}:
     delete:
       description: Delete a user
       parameters:
-      - description: User ID
+      - description: The user ID in UUID format
         in: path
-        name: id
+        name: uid
         required: true
         type: string
       responses:
@@ -305,9 +305,9 @@ paths:
     get:
       description: Get a user by ID
       parameters:
-      - description: User ID
+      - description: The user ID in UUID format
         in: path
-        name: id
+        name: uid
         required: true
         type: string
       produces:
@@ -333,9 +333,9 @@ paths:
       - application/json
       description: Update a user
       parameters:
-      - description: User ID
+      - description: The user ID in UUID format
         in: path
-        name: id
+        name: uid
         required: true
         type: string
       - description: User
