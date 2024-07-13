@@ -61,13 +61,13 @@ GET http://{{host}}/users HTTP/1.1
 
 ### Paginate users using next_token in the query string and default limit of 10
 # @name PaginateUsersLimit10
-@next_token = {{AllUsers.response.body.$.paginator.next_token}}
+@next_token_page2 = {{AllUsers.response.body.$.paginator.next_token}}
 
-GET http://{{host}}/users?next_token={{next_token}} HTTP/1.1
+GET http://{{host}}/users?next_token={{next_token_page2}} HTTP/1.1
 
 ### Paginate users using next_token in the query string and default limit of 10
-@next_token_page2 = {{PaginateUsersLimit10.response.body.$.paginator.next_token}}
+@next_token_page3 = {{PaginateUsersLimit10.response.body.$.paginator.next_token}}
 @limit = 5
 
-GET http://{{host}}/users?next_token={{next_token_page2}}&limit={{limit}} HTTP/1.1
+GET http://{{host}}/users?next_token={{next_token_page3}}&limit={{limit}} HTTP/1.1
 
