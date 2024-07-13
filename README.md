@@ -183,40 +183,62 @@ podman run --name go-rest-api-service-template --rm ghcr.io/p2p-b2b/go-rest-api-
 
 ## Pagination
 
+This is implemented using Cursor-based pagination.
+
 ```sql
--- all users
+-- Without pagination
+-- regular query
 SELECT *
 FROM users
 ORDER BY created_at DESC, id DESC;
 
--- first query
+-- --------------------------------------------------
+
+-- With pagination (cursor-based)
+-- first query, no cursor (next or previous)
+-- [filter here] is the filter you want to apply to the query
+-- [filter here] is optional
+-- [filter here] could be something like:
+-- - WHERE usrs.first_name LIKE 'A%' AND usrs.email LIKE '%@gmail.com'
+-- - WHERE usrs.first_name LIKE 'A%' AND usrs.email LIKE '%@gmail.com' AND usrs.created_at > '2024-03-07T07:00:00Z'
 WITH usrs AS (
  SELECT *
  FROM users usrs
+  -- [filter here]
  ORDER BY usrs.created_at DESC, id DESC
  LIMIT 3
 )
 SELECT * FROM usrs ORDER BY created_at DESC, id DESC;
 
--- moving forward
+-- moving forward, cursor (next)
+-- [filter here] is the filter you want to apply to the query
+-- [filter here] is optional
+-- [filter here] could be something like:
+-- - AND (usrs.first_name LIKE 'A%' AND usrs.email LIKE '%@gmail.com')
+-- - AND (usrs.first_name LIKE 'A%' AND usrs.email LIKE '%@gmail.com' AND usrs.created_at > '2024-03-07T07:00:00Z')
 WITH usrs AS (
  SELECT *
  FROM users usrs
  WHERE usrs.created_at < '2024-03-08T08:00:00Z'
-  AND (usrs.id < 'c3b11505-9606-4046-b1f2-7a2a5cf6df58'
-  OR usrs.created_at < '2024-03-08T08:00:00Z')
+  AND (usrs.id < 'c3b11505-9606-4046-b1f2-7a2a5cf6df58' OR usrs.created_at < '2024-03-08T08:00:00Z')
+  -- [filter here]
  ORDER BY usrs.created_at DESC, usrs.id DESC
  LIMIT 3
 )
 SELECT * FROM usrs ORDER BY created_at DESC, id DESC;
 
--- moving backward
+-- moving backward, cursor (previous)
+-- [filter here] is the filter you want to apply to the query
+-- [filter here] is optional
+-- [filter here] could be something like:
+-- - AND (usrs.first_name LIKE 'A%' AND usrs.email LIKE '%@gmail.com')
+-- - AND (usrs.first_name LIKE 'A%' AND usrs.email LIKE '%@gmail.com' AND usrs.created_at > '2024-03-07T07:00:00Z')
 WITH usrs AS (
  SELECT *
  FROM users usrs
  WHERE usrs.created_at > '2024-03-07T07:00:00Z'
-  AND (usrs.id > '085d16e2-0200-47f9-8bdc-732dd12677be'
-  OR usrs.created_at > '2024-03-07T07:00:00Z')
+  AND (usrs.id > '085d16e2-0200-47f9-8bdc-732dd12677be' OR usrs.created_at > '2024-03-07T07:00:00Z')
+  -- [filter here]
  ORDER BY usrs.created_at ASC, usrs.id ASC
  LIMIT 3
 )

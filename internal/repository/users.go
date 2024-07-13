@@ -537,6 +537,11 @@ func (r *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.Selec
 		fieldsStr = "*"
 	}
 
+	var filterQuery string
+	if params.Filter != "" {
+		filterQuery = fmt.Sprintf("AND (%s)", params.Filter)
+	}
+
 	var paginationQuery string
 	// if both next and prev tokens are provided, use next token
 	if params.Paginator.NextToken != "" && params.Paginator.PrevToken != "" {
@@ -558,16 +563,18 @@ func (r *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.Selec
 			span.RecordError(err)
 			return nil, err
 		}
-
 		// from newest to oldest
 		paginationQuery = fmt.Sprintf(`
-            WHERE usrs.created_at < '%s' AND (usrs.id < '%s' OR usrs.created_at < '%s')
+            WHERE usrs.created_at < '%s'
+                AND (usrs.id < '%s' OR usrs.created_at < '%s')
+                %s
             ORDER BY usrs.created_at DESC, usrs.id DESC
             LIMIT %d
         `,
 			createdAt.UTC().Format(paginator.DateFormat),
 			id.String(),
 			createdAt.UTC().Format(paginator.DateFormat),
+			filterQuery,
 			params.Paginator.Limit,
 		)
 	}
@@ -593,12 +600,15 @@ func (r *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.Selec
 
 		// from newest to oldest
 		paginationQuery = fmt.Sprintf(`
-                WHERE usrs.created_at > '%s' AND (usrs.id > '%s' OR usrs.created_at > '%s')
+                WHERE usrs.created_at > '%s'
+                    AND (usrs.id > '%s' OR usrs.created_at > '%s')
+                    %s
                 ORDER BY usrs.created_at ASC, usrs.id ASC
                 LIMIT %d`,
 			createdAt.UTC().Format(paginator.DateFormat),
 			id.String(),
 			createdAt.UTC().Format(paginator.DateFormat),
+			filterQuery,
 			params.Paginator.Limit,
 		)
 	}
@@ -606,28 +616,40 @@ func (r *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.Selec
 	// if no token is provided, first page
 	// newest to oldest
 	if params.Paginator.NextToken == "" && params.Paginator.PrevToken == "" {
+		if params.Filter != "" {
+			filterQuery = fmt.Sprintf("WHERE %s", params.Filter)
+		}
+
 		paginationQuery = fmt.Sprintf(`
             ORDER BY usrs.created_at DESC, id DESC
             LIMIT %d
-            `, params.Paginator.Limit)
-	}
-
-	var filterQuery string
-	if params.Filter != "" {
-		filterQuery = fmt.Sprintf("WHERE %s", params.Filter)
+            `,
+			params.Paginator.Limit,
+		)
 	}
 
 	slog.Debug("repository.user.SelectAll", "filter_query", filterQuery)
 
+	var whereQuery string
+	if filterQuery != "" && paginationQuery != "" {
+		whereQuery = paginationQuery
+	} else if filterQuery != "" && paginationQuery == "" {
+		whereQuery = filterQuery
+	} else if filterQuery == "" && paginationQuery != "" {
+		whereQuery = paginationQuery
+	} else {
+		whereQuery = ""
+	}
+
+	// assemble the query
 	query := fmt.Sprintf(`
         WITH usrs AS (
-            SELECT %s FROM users usrs %s %s
+            SELECT %s FROM users usrs %s
         )
         SELECT * FROM usrs ORDER BY created_at DESC, id DESC
         `,
 		fieldsStr,
-		filterQuery,
-		paginationQuery,
+		whereQuery,
 	)
 	slog.Debug("repository.user.SelectAll", "query", prettyPrint(query))
 
