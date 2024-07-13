@@ -30,22 +30,22 @@ var (
 // Paginator represents a paginator.
 type Paginator struct {
 	// NextToken is the cursor token to the next page.
-	NextToken string `json:"next_token"`
+	NextToken string `json:"next_token,omitempty"`
 
 	// NextPage the URL to the next page.
-	NextPage string `json:"next_page"`
+	NextPage string `json:"next_page,omitempty"`
 
 	// PrevToken is the cursor token to the previous page.
-	PrevToken string `json:"prev_token"`
+	PrevToken string `json:"prev_token,omitempty"`
 
 	// PrevPage is the cursor token to the previous page.
-	PrevPage string `json:"prev_page"`
+	PrevPage string `json:"prev_page,omitempty"`
 
 	// Size is the number of elements in the current page.
-	Size int `json:"size"`
+	Size int `json:"size,omitempty"`
 
 	// Limit is the maximum number of elements to return.
-	Limit int `json:"limit"`
+	Limit int `json:"limit,omitempty"`
 }
 
 // String returns the string representation of the paginator.
