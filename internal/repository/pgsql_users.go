@@ -17,6 +17,17 @@ import (
 	"go.opentelemetry.io/otel/metric"
 )
 
+var (
+	// ErrUserIsNil is an error that is returned when the user is nil.
+	ErrUserIsNil = fmt.Errorf("user is nil")
+
+	// ErrUserIDIsNil is an error that is returned when the user ID is nil.
+	ErrUserIDIsNil = fmt.Errorf("user ID is nil")
+
+	// ErrFunctionParameterIsNil is an error that is returned when a function parameter is nil.
+	ErrFunctionParameterIsNil = fmt.Errorf("function parameter is nil")
+)
+
 type PGSQLUserRepositoryConfig struct {
 	DB              *sql.DB
 	MaxPingTimeout  time.Duration
@@ -111,8 +122,8 @@ func (r *PGSQLUserRepository) Insert(ctx context.Context, user *model.User) erro
 	defer span.End()
 
 	if user == nil {
-		span.SetStatus(codes.Error, "user is nil")
-		span.RecordError(fmt.Errorf("user is nil"))
+		span.SetStatus(codes.Error, ErrUserIsNil.Error())
+		span.RecordError(ErrUserIsNil)
 		slog.Error("repository.users.Insert", "error", "user is nil")
 		r.metrics.repositoryCalls.Add(ctx, 1,
 			metric.WithAttributes(
@@ -123,7 +134,7 @@ func (r *PGSQLUserRepository) Insert(ctx context.Context, user *model.User) erro
 			),
 		)
 
-		return fmt.Errorf("user is nil")
+		return ErrUserIsNil
 	}
 
 	span.SetAttributes(
@@ -181,8 +192,8 @@ func (r *PGSQLUserRepository) Update(ctx context.Context, user *model.User) erro
 	defer span.End()
 
 	if user == nil {
-		span.SetStatus(codes.Error, "user is nil")
-		span.RecordError(fmt.Errorf("user is nil"))
+		span.SetStatus(codes.Error, ErrUserIsNil.Error())
+		span.RecordError(ErrUserIsNil)
 		slog.Error("repository.users.Update", "error", "user is nil")
 		r.metrics.repositoryCalls.Add(ctx, 1,
 			metric.WithAttributes(
@@ -193,12 +204,12 @@ func (r *PGSQLUserRepository) Update(ctx context.Context, user *model.User) erro
 			),
 		)
 
-		return fmt.Errorf("user is nil")
+		return ErrUserIsNil
 	}
 
 	if user.ID == uuid.Nil {
-		span.SetStatus(codes.Error, "user id is nil")
-		span.RecordError(fmt.Errorf("user id is nil"))
+		span.SetStatus(codes.Error, ErrUserIDIsNil.Error())
+		span.RecordError(ErrUserIDIsNil)
 		slog.Error("repository.users.Update", "error", "user id is nil")
 		r.metrics.repositoryCalls.Add(ctx, 1,
 			metric.WithAttributes(
@@ -209,7 +220,7 @@ func (r *PGSQLUserRepository) Update(ctx context.Context, user *model.User) erro
 			),
 		)
 
-		return fmt.Errorf("user id is nil")
+		return ErrUserIDIsNil
 	}
 
 	span.SetAttributes(
@@ -286,8 +297,8 @@ func (r *PGSQLUserRepository) Delete(ctx context.Context, user *model.User) erro
 	defer span.End()
 
 	if user == nil {
-		span.SetStatus(codes.Error, "user is nil")
-		span.RecordError(fmt.Errorf("user is nil"))
+		span.SetStatus(codes.Error, ErrUserIsNil.Error())
+		span.RecordError(ErrUserIsNil)
 		slog.Error("repository.users.Delete", "error", "user is nil")
 		r.metrics.repositoryCalls.Add(ctx, 1,
 			metric.WithAttributes(
@@ -298,12 +309,12 @@ func (r *PGSQLUserRepository) Delete(ctx context.Context, user *model.User) erro
 			),
 		)
 
-		return fmt.Errorf("user is nil")
+		return ErrUserIsNil
 	}
 
 	if user.ID == uuid.Nil {
-		span.SetStatus(codes.Error, "user id is nil")
-		span.RecordError(fmt.Errorf("user id is nil"))
+		span.SetStatus(codes.Error, ErrUserIDIsNil.Error())
+		span.RecordError(ErrUserIDIsNil)
 		slog.Error("repository.users.Delete", "error", "user id is nil")
 		r.metrics.repositoryCalls.Add(ctx, 1,
 			metric.WithAttributes(
@@ -314,7 +325,7 @@ func (r *PGSQLUserRepository) Delete(ctx context.Context, user *model.User) erro
 			),
 		)
 
-		return fmt.Errorf("user id is nil")
+		return ErrUserIDIsNil
 	}
 
 	span.SetAttributes(
@@ -370,8 +381,8 @@ func (r *PGSQLUserRepository) SelectByID(ctx context.Context, id uuid.UUID) (*mo
 	defer span.End()
 
 	if id == uuid.Nil {
-		span.SetStatus(codes.Error, "id is nil")
-		span.RecordError(fmt.Errorf("id is nil"))
+		span.SetStatus(codes.Error, ErrUserIDIsNil.Error())
+		span.RecordError(ErrUserIDIsNil)
 		slog.Error("repository.users.SelectByID", "error", "id is nil")
 		r.metrics.repositoryCalls.Add(ctx, 1,
 			metric.WithAttributes(
@@ -382,7 +393,7 @@ func (r *PGSQLUserRepository) SelectByID(ctx context.Context, id uuid.UUID) (*mo
 			),
 		)
 
-		return nil, fmt.Errorf("id is nil")
+		return nil, ErrUserIDIsNil
 	}
 
 	span.SetAttributes(
@@ -497,8 +508,8 @@ func (r *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.Selec
 	defer span.End()
 
 	if params == nil {
-		span.SetStatus(codes.Error, "params is nil")
-		span.RecordError(fmt.Errorf("params is nil"))
+		span.SetStatus(codes.Error, ErrFunctionParameterIsNil.Error())
+		span.RecordError(ErrFunctionParameterIsNil)
 		slog.Error("repository.users.SelectAll", "error", "params is nil")
 		r.metrics.repositoryCalls.Add(ctx, 1,
 			metric.WithAttributes(
@@ -508,7 +519,7 @@ func (r *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.Selec
 				attribute.String("successful", "false"),
 			),
 		)
-		return nil, fmt.Errorf("params is nil")
+		return nil, ErrFunctionParameterIsNil
 	}
 
 	span.SetAttributes(
