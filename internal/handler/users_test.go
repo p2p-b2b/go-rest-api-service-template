@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	mocksService "github.com/p2p-b2b/go-rest-api-service-template/mocks/service"
+	mocksService "github.com/p2p-b2b/go-rest-api-service-template/mocks/handler"
 )
 
 func TestUser_GetUserByID(t *testing.T) {

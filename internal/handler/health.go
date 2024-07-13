@@ -3,17 +3,15 @@ package handler
 import (
 	"encoding/json"
 	"net/http"
-
-	"github.com/p2p-b2b/go-rest-api-service-template/internal/service"
 )
 
 // HealthHandler represents the handler for the health of the service.
 type HealthHandler struct {
-	userService service.UserService
+	userService UserService
 }
 
 // NewHealthHandler returns a new instance of HealthHandler.
-func NewHealthHandler(us service.UserService) *HealthHandler {
+func NewHealthHandler(us UserService) *HealthHandler {
 	return &HealthHandler{
 		userService: us,
 	}

@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -20,9 +21,35 @@ import (
 	"go.opentelemetry.io/otel/metric"
 )
 
+//go:generate go run github.com/golang/mock/mockgen@v1.6.0 -package=mocks -destination=../../mocks/handler/users.go -source=users.go UserService
+
+// UserService represents a service for managing users.
+type UserService interface {
+	// UserHealthCheck verifies a connection to the repository is still alive.
+	UserHealthCheck(ctx context.Context) (model.Health, error)
+
+	// GetUserByID returns the user with the specified ID.
+	GetUserByID(ctx context.Context, id uuid.UUID) (*model.User, error)
+
+	// GetUserByEmail returns the user with the specified email.
+	GetUserByEmail(ctx context.Context, email string) (*model.User, error)
+
+	// CreateUser inserts a new user into the database.
+	CreateUser(ctx context.Context, user *model.User) error
+
+	// UpdateUser updates the user.
+	UpdateUser(ctx context.Context, user *model.User) error
+
+	// DeleteUser deletes the user.
+	DeleteUser(ctx context.Context, user *model.User) error
+
+	// ListUsers returns a list of users.
+	ListUsers(ctx context.Context, params *model.ListUserRequest) (*model.ListUserResponse, error)
+}
+
 // UserHandler represents the handler for the user.
 type UserHandlerConf struct {
-	Service       service.UserService
+	Service       UserService
 	OT            *o11y.OpenTelemetry
 	MetricsPrefix string
 }
@@ -33,7 +60,7 @@ type userHandlerMetrics struct {
 
 // UserHandler represents the handler for the user.
 type UserHandler struct {
-	service       service.UserService
+	service       UserService
 	ot            *o11y.OpenTelemetry
 	metricsPrefix string
 	metrics       userHandlerMetrics

@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -13,37 +14,44 @@ import (
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/model"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/o11y"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/paginator"
-	"github.com/p2p-b2b/go-rest-api-service-template/internal/repository"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/metric"
 )
 
-// this is a mockgen command to generate a mock for UserService
-//go:generate go run github.com/golang/mock/mockgen@v1.6.0 -package=mocks -destination=../../mocks/service/users.go -source=users.go UserService
+//go:generate go run github.com/golang/mock/mockgen@v1.6.0 -package=mocks -destination=../../mocks/service/users.go -source=users.go UserRepository
 
-// UserService represents a service for managing users.
-type UserService interface {
-	// UserHealthCheck verifies a connection to the repository is still alive.
-	UserHealthCheck(ctx context.Context) (model.Health, error)
+// UserRepository represents a repository for managing users.
+type UserRepository interface {
+	// DriverName returns the name of the driver.
+	DriverName() string
 
-	// GetUserByID returns the user with the specified ID.
-	GetUserByID(ctx context.Context, id uuid.UUID) (*model.User, error)
+	// Close closes the repository, releasing any open resources.
+	Close() error
 
-	// GetUserByEmail returns the user with the specified email.
-	GetUserByEmail(ctx context.Context, email string) (*model.User, error)
+	// PingContext verifies a connection to the repository is still alive, establishing a connection if necessary.
+	PingContext(ctx context.Context) error
 
-	// CreateUser inserts a new user into the database.
-	CreateUser(ctx context.Context, user *model.User) error
+	// Conn returns the connection to the repository.
+	Conn(ctx context.Context) (*sql.Conn, error)
 
-	// UpdateUser updates the user.
-	UpdateUser(ctx context.Context, user *model.User) error
+	// Insert a new user into the database.
+	Insert(ctx context.Context, user *model.User) error
 
-	// DeleteUser deletes the user.
-	DeleteUser(ctx context.Context, user *model.User) error
+	// Update updates the user.
+	Update(ctx context.Context, user *model.User) error
 
-	// ListUsers returns a list of users.
-	ListUsers(ctx context.Context, params *model.ListUserRequest) (*model.ListUserResponse, error)
+	// Delete deletes the user.
+	Delete(ctx context.Context, user *model.User) error
+
+	// SelectByID returns the user with the specified ID.
+	SelectByID(ctx context.Context, id uuid.UUID) (*model.User, error)
+
+	// SelectByEmail returns the user with the specified email.
+	SelectByEmail(ctx context.Context, email string) (*model.User, error)
+
+	// SelectAll returns a list of users.
+	SelectAll(ctx context.Context, params *model.SelectAllUserQueryInput) (*model.SelectAllUserQueryOutput, error)
 }
 
 var (
@@ -57,7 +65,7 @@ var (
 )
 
 type UserServiceConf struct {
-	Repository    repository.UserRepository
+	Repository    UserRepository
 	OT            *o11y.OpenTelemetry
 	MetricsPrefix string
 }
@@ -67,7 +75,7 @@ type userServiceMetrics struct {
 }
 
 type User struct {
-	repository    repository.UserRepository
+	repository    UserRepository
 	ot            *o11y.OpenTelemetry
 	metricsPrefix string
 	metrics       userServiceMetrics
