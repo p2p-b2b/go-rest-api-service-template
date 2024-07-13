@@ -50,7 +50,7 @@ type DatabaseConfig struct {
 
 func NewDatabaseConfig() *DatabaseConfig {
 	return &DatabaseConfig{
-		Kind:     NewField("database.kind", "DATABASE_KIND", "Database Kind. Possible values [postgres|mysql]", DefaultDatabaseKind),
+		Kind:     NewField("database.kind", "DATABASE_KIND", "Database Kind. Possible values [pgx|postgres|mysql]", DefaultDatabaseKind),
 		Address:  NewField("database.address", "DATABASE_ADDRESS", "Database IP Address or Hostname", DefaultDatabaseAddress),
 		Port:     NewField("database.port", "DATABASE_PORT", "Database Port", DefaultDatabasePort),
 		Username: NewField("database.username", "DATABASE_USERNAME", "Database Username", DefaultDatabaseUsername),
