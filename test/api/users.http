@@ -53,3 +53,21 @@ Content-Type: application/json
 
 DELETE http://{{host}}/users/{{new_user_id}} HTTP/1.1
 
+
+### Get all users
+# @name AllUsers
+
+GET http://{{host}}/users HTTP/1.1
+
+### Paginate users using next_token in the query string and default limit of 10
+# @name PaginateUsersLimit10
+@next_token = {{AllUsers.response.body.$.paginator.next_token}}
+
+GET http://{{host}}/users?next_token={{next_token}} HTTP/1.1
+
+### Paginate users using next_token in the query string and default limit of 10
+@next_token_page2 = {{PaginateUsersLimit10.response.body.$.paginator.next_token}}
+@limit = 5
+
+GET http://{{host}}/users?next_token={{next_token_page2}}&limit={{limit}} HTTP/1.1
+

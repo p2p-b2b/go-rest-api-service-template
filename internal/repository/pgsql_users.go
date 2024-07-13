@@ -453,14 +453,12 @@ func (r *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.Selec
 		// from newest to oldest
 		paginationQuery = fmt.Sprintf(`
             WHERE usrs.created_at < '%s' AND (usrs.id < '%s' OR usrs.created_at < '%s')
-                AND %s
             ORDER BY usrs.created_at DESC, usrs.id DESC
             LIMIT %d
         `,
 			createdAt.UTC().Format(paginator.DateFormat),
 			id.String(),
 			createdAt.UTC().Format(paginator.DateFormat),
-			params.Filter,
 			params.Paginator.Limit,
 		)
 	}
@@ -487,13 +485,11 @@ func (r *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.Selec
 		// from newest to oldest
 		paginationQuery = fmt.Sprintf(`
                 WHERE usrs.created_at > '%s' AND (usrs.id > '%s' OR usrs.created_at > '%s')
-                    AND %s
                 ORDER BY usrs.created_at ASC, usrs.id ASC
                 LIMIT %d`,
 			createdAt.UTC().Format(paginator.DateFormat),
 			id.String(),
 			createdAt.UTC().Format(paginator.DateFormat),
-			params.Filter,
 			params.Paginator.Limit,
 		)
 	}
