@@ -173,6 +173,11 @@ func (s *User) GetUserByID(ctx context.Context, id uuid.UUID) (*model.User, erro
 		attribute.String("user.id", id.String()),
 	)
 
+	metricCommonAttributes := []attribute.KeyValue{
+		attribute.String("component", "service.users"),
+		attribute.String("function", "GetUserByID"),
+	}
+
 	user, err := s.repository.SelectByID(ctx, id)
 	if err != nil {
 		span.SetStatus(codes.Error, err.Error())
@@ -180,9 +185,7 @@ func (s *User) GetUserByID(ctx context.Context, id uuid.UUID) (*model.User, erro
 		slog.Error("service.users.GetUserByID", "error", err)
 		s.metrics.serviceCalls.Add(ctx, 1,
 			metric.WithAttributes(
-				attribute.String("component", "service.users"),
-				attribute.String("function", "GetUserByEmail"),
-				attribute.String("successful", "true"),
+				append(metricCommonAttributes, attribute.String("successful", "false"))...,
 			),
 		)
 		return nil, ErrGettingUserByID
@@ -191,9 +194,7 @@ func (s *User) GetUserByID(ctx context.Context, id uuid.UUID) (*model.User, erro
 	span.SetStatus(codes.Ok, "user found")
 	s.metrics.serviceCalls.Add(ctx, 1,
 		metric.WithAttributes(
-			attribute.String("component", "service.users"),
-			attribute.String("function", "GetUserByID"),
-			attribute.String("successful", "true"),
+			append(metricCommonAttributes, attribute.String("successful", "true"))...,
 		),
 	)
 
@@ -211,6 +212,11 @@ func (s *User) GetUserByEmail(ctx context.Context, email string) (*model.User, e
 		attribute.String("user.email", email),
 	)
 
+	metricCommonAttributes := []attribute.KeyValue{
+		attribute.String("component", "service.users"),
+		attribute.String("function", "GetUserByEmail"),
+	}
+
 	user, err := s.repository.SelectByEmail(ctx, email)
 	if err != nil {
 		span.SetStatus(codes.Error, err.Error())
@@ -218,9 +224,7 @@ func (s *User) GetUserByEmail(ctx context.Context, email string) (*model.User, e
 		slog.Error("service.users.GetUserByEmail", "error", err)
 		s.metrics.serviceCalls.Add(ctx, 1,
 			metric.WithAttributes(
-				attribute.String("component", "service.users"),
-				attribute.String("function", "GetUserByEmail"),
-				attribute.String("successful", "false"),
+				append(metricCommonAttributes, attribute.String("successful", "false"))...,
 			),
 		)
 		return nil, ErrGettingUserByEmail
@@ -229,9 +233,7 @@ func (s *User) GetUserByEmail(ctx context.Context, email string) (*model.User, e
 	span.SetStatus(codes.Ok, "User found")
 	s.metrics.serviceCalls.Add(ctx, 1,
 		metric.WithAttributes(
-			attribute.String("component", "service.users"),
-			attribute.String("function", "GetUserByEmail"),
-			attribute.String("successful", "true"),
+			append(metricCommonAttributes, attribute.String("successful", "true"))...,
 		),
 	)
 
@@ -249,14 +251,17 @@ func (s *User) CreateUser(ctx context.Context, user *model.User) error {
 		attribute.String("user.email", user.Email),
 	)
 
+	metricCommonAttributes := []attribute.KeyValue{
+		attribute.String("component", "service.users"),
+		attribute.String("function", "CreateUser"),
+	}
+
 	if user == nil {
 		span.SetStatus(codes.Error, ErrCreatingUser.Error())
 		span.RecordError(ErrCreatingUser)
 		s.metrics.serviceCalls.Add(ctx, 1,
 			metric.WithAttributes(
-				attribute.String("component", "service.users"),
-				attribute.String("function", "CreateUser"),
-				attribute.String("successful", "false"),
+				append(metricCommonAttributes, attribute.String("successful", "false"))...,
 			),
 		)
 		return ErrCreatingUser
@@ -277,9 +282,7 @@ func (s *User) CreateUser(ctx context.Context, user *model.User) error {
 				span.RecordError(ErrIdAlreadyExists)
 				s.metrics.serviceCalls.Add(ctx, 1,
 					metric.WithAttributes(
-						attribute.String("component", "service.users"),
-						attribute.String("function", "CreateUser"),
-						attribute.String("successful", "false"),
+						append(metricCommonAttributes, attribute.String("successful", "false"))...,
 					),
 				)
 				return ErrIdAlreadyExists
@@ -292,9 +295,7 @@ func (s *User) CreateUser(ctx context.Context, user *model.User) error {
 	span.SetStatus(codes.Ok, "User created")
 	s.metrics.serviceCalls.Add(ctx, 1,
 		metric.WithAttributes(
-			attribute.String("component", "service.users"),
-			attribute.String("function", "CreateUser"),
-			attribute.String("successful", "true"),
+			append(metricCommonAttributes, attribute.String("successful", "true"))...,
 		),
 	)
 	return nil
@@ -311,14 +312,17 @@ func (s *User) UpdateUser(ctx context.Context, user *model.User) error {
 		attribute.String("user.id", user.ID.String()),
 	)
 
+	metricCommonAttributes := []attribute.KeyValue{
+		attribute.String("component", "service.users"),
+		attribute.String("function", "UpdateUser"),
+	}
+
 	if user == nil {
 		span.SetStatus(codes.Error, ErrUpdatingUser.Error())
 		span.RecordError(ErrUpdatingUser)
 		s.metrics.serviceCalls.Add(ctx, 1,
 			metric.WithAttributes(
-				attribute.String("component", "service.users"),
-				attribute.String("function", "UpdateUser"),
-				attribute.String("successful", "false"),
+				append(metricCommonAttributes, attribute.String("successful", "false"))...,
 			),
 		)
 		return ErrUpdatingUser
@@ -330,9 +334,7 @@ func (s *User) UpdateUser(ctx context.Context, user *model.User) error {
 		slog.Error("service.users.UpdateUser", "error", err)
 		s.metrics.serviceCalls.Add(ctx, 1,
 			metric.WithAttributes(
-				attribute.String("component", "service.users"),
-				attribute.String("function", "UpdateUser"),
-				attribute.String("successful", "false"),
+				append(metricCommonAttributes, attribute.String("successful", "false"))...,
 			),
 		)
 
@@ -342,9 +344,7 @@ func (s *User) UpdateUser(ctx context.Context, user *model.User) error {
 	span.SetStatus(codes.Ok, "User updated")
 	s.metrics.serviceCalls.Add(ctx, 1,
 		metric.WithAttributes(
-			attribute.String("component", "service.users"),
-			attribute.String("function", "UpdateUser"),
-			attribute.String("successful", "true"),
+			append(metricCommonAttributes, attribute.String("successful", "true"))...,
 		),
 	)
 
@@ -362,14 +362,17 @@ func (s *User) DeleteUser(ctx context.Context, user *model.User) error {
 		attribute.String("user.id", user.ID.String()),
 	)
 
+	metricCommonAttributes := []attribute.KeyValue{
+		attribute.String("component", "service.users"),
+		attribute.String("function", "DeleteUser"),
+	}
+
 	if user.ID == uuid.Nil {
 		span.SetStatus(codes.Error, ErrDeletingUser.Error())
 		span.RecordError(ErrDeletingUser)
 		s.metrics.serviceCalls.Add(ctx, 1,
 			metric.WithAttributes(
-				attribute.String("component", "service.users"),
-				attribute.String("function", "DeleteUser"),
-				attribute.String("successful", "false"),
+				append(metricCommonAttributes, attribute.String("successful", "false"))...,
 			),
 		)
 		return ErrDeletingUser
@@ -381,9 +384,7 @@ func (s *User) DeleteUser(ctx context.Context, user *model.User) error {
 		slog.Error("service.users.DeleteUser", "error", err)
 		s.metrics.serviceCalls.Add(ctx, 1,
 			metric.WithAttributes(
-				attribute.String("component", "service.users"),
-				attribute.String("function", "DeleteUser"),
-				attribute.String("successful", "false"),
+				append(metricCommonAttributes, attribute.String("successful", "false"))...,
 			),
 		)
 		return ErrDeletingUser
@@ -392,9 +393,7 @@ func (s *User) DeleteUser(ctx context.Context, user *model.User) error {
 	span.SetStatus(codes.Ok, "User deleted")
 	s.metrics.serviceCalls.Add(ctx, 1,
 		metric.WithAttributes(
-			attribute.String("component", "service.users"),
-			attribute.String("function", "DeleteUser"),
-			attribute.String("successful", "true"),
+			append(metricCommonAttributes, attribute.String("successful", "true"))...,
 		),
 	)
 
@@ -415,6 +414,11 @@ func (s *User) ListUsers(ctx context.Context, params *model.ListUserRequest) (*m
 		attribute.Int("limit", params.Paginator.Limit),
 	)
 
+	metricCommonAttributes := []attribute.KeyValue{
+		attribute.String("component", "service.users"),
+		attribute.String("function", "ListUsers"),
+	}
+
 	qParams := &model.SelectAllUserQueryInput{
 		Sort:      params.Sort,
 		Filter:    params.Filter,
@@ -431,9 +435,7 @@ func (s *User) ListUsers(ctx context.Context, params *model.ListUserRequest) (*m
 		slog.Error("service.users.ListUsers", "error", err)
 		s.metrics.serviceCalls.Add(ctx, 1,
 			metric.WithAttributes(
-				attribute.String("component", "service.users"),
-				attribute.String("function", "ListUsers"),
-				attribute.String("successful", "false"),
+				append(metricCommonAttributes, attribute.String("successful", "false"))...,
 			),
 		)
 		return nil, ErrListingUsers
@@ -444,9 +446,7 @@ func (s *User) ListUsers(ctx context.Context, params *model.ListUserRequest) (*m
 		slog.Error("service.users.ListUsers", "error", ErrListingUsers)
 		s.metrics.serviceCalls.Add(ctx, 1,
 			metric.WithAttributes(
-				attribute.String("component", "service.users"),
-				attribute.String("function", "ListUsers"),
-				attribute.String("successful", "false"),
+				append(metricCommonAttributes, attribute.String("successful", "false"))...,
 			),
 		)
 		return nil, nil
@@ -458,9 +458,7 @@ func (s *User) ListUsers(ctx context.Context, params *model.ListUserRequest) (*m
 		span.SetStatus(codes.Error, "no users found")
 		s.metrics.serviceCalls.Add(ctx, 1,
 			metric.WithAttributes(
-				attribute.String("component", "service.users"),
-				attribute.String("function", "ListUsers"),
-				attribute.String("successful", "true"),
+				append(metricCommonAttributes, attribute.String("successful", "true"))...,
 			),
 		)
 		return &model.ListUserResponse{
@@ -472,9 +470,7 @@ func (s *User) ListUsers(ctx context.Context, params *model.ListUserRequest) (*m
 	span.SetStatus(codes.Ok, "Users found")
 	s.metrics.serviceCalls.Add(ctx, 1,
 		metric.WithAttributes(
-			attribute.String("component", "service.users"),
-			attribute.String("function", "ListUsers"),
-			attribute.String("successful", "true"),
+			append(metricCommonAttributes, attribute.String("successful", "true"))...,
 		),
 	)
 

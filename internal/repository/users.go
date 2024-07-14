@@ -121,28 +121,31 @@ func (r *PGSQLUserRepository) Insert(ctx context.Context, user *model.User) erro
 	ctx, span := r.ot.Traces.Tracer.Start(ctx, "repository.user.Insert")
 	defer span.End()
 
-	if user == nil {
-		span.SetStatus(codes.Error, ErrUserIsNil.Error())
-		span.RecordError(ErrUserIsNil)
-		slog.Error("repository.users.Insert", "error", "user is nil")
-		r.metrics.repositoryCalls.Add(ctx, 1,
-			metric.WithAttributes(
-				attribute.String("driver", r.DriverName()),
-				attribute.String("component", "repository.user"),
-				attribute.String("function", "Insert"),
-				attribute.String("successful", "false"),
-			),
-		)
-
-		return ErrUserIsNil
-	}
-
 	span.SetAttributes(
 		attribute.String("driver", r.DriverName()),
 		attribute.String("component", "repository.user"),
 		attribute.String("function", "Insert"),
 		attribute.String("user.id", user.ID.String()),
 	)
+
+	metricCommonAttributes := []attribute.KeyValue{
+		attribute.String("driver", r.DriverName()),
+		attribute.String("component", "repository.user"),
+		attribute.String("function", "Insert"),
+	}
+
+	if user == nil {
+		span.SetStatus(codes.Error, ErrUserIsNil.Error())
+		span.RecordError(ErrUserIsNil)
+		slog.Error("repository.users.Insert", "error", "user is nil")
+		r.metrics.repositoryCalls.Add(ctx, 1,
+			metric.WithAttributes(
+				append(metricCommonAttributes, attribute.String("successful", "false"))...,
+			),
+		)
+
+		return ErrUserIsNil
+	}
 
 	query := fmt.Sprintf(`
         INSERT INTO users (id, first_name, last_name, email)
@@ -162,10 +165,7 @@ func (r *PGSQLUserRepository) Insert(ctx context.Context, user *model.User) erro
 		slog.Error("repository.users.Insert", "error", err)
 		r.metrics.repositoryCalls.Add(ctx, 1,
 			metric.WithAttributes(
-				attribute.String("driver", r.DriverName()),
-				attribute.String("component", "repository.user"),
-				attribute.String("function", "Insert"),
-				attribute.String("successful", "false"),
+				append(metricCommonAttributes, attribute.String("successful", "false"))...,
 			),
 		)
 		return err
@@ -174,10 +174,7 @@ func (r *PGSQLUserRepository) Insert(ctx context.Context, user *model.User) erro
 	span.SetStatus(codes.Ok, "user inserted successfully")
 	r.metrics.repositoryCalls.Add(ctx, 1,
 		metric.WithAttributes(
-			attribute.String("driver", r.DriverName()),
-			attribute.String("component", "repository.user"),
-			attribute.String("function", "Insert"),
-			attribute.String("successful", "true"),
+			append(metricCommonAttributes, attribute.String("successful", "true"))...,
 		),
 	)
 	return nil
@@ -191,16 +188,26 @@ func (r *PGSQLUserRepository) Update(ctx context.Context, user *model.User) erro
 	ctx, span := r.ot.Traces.Tracer.Start(ctx, "repository.user.Update")
 	defer span.End()
 
+	span.SetAttributes(
+		attribute.String("driver", r.DriverName()),
+		attribute.String("component", "repository.user"),
+		attribute.String("function", "Update"),
+		attribute.String("user.id", user.ID.String()),
+	)
+
+	metricCommonAttributes := []attribute.KeyValue{
+		attribute.String("driver", r.DriverName()),
+		attribute.String("component", "repository.user"),
+		attribute.String("function", "Update"),
+	}
+
 	if user == nil {
 		span.SetStatus(codes.Error, ErrUserIsNil.Error())
 		span.RecordError(ErrUserIsNil)
 		slog.Error("repository.users.Update", "error", "user is nil")
 		r.metrics.repositoryCalls.Add(ctx, 1,
 			metric.WithAttributes(
-				attribute.String("driver", r.DriverName()),
-				attribute.String("component", "repository.user"),
-				attribute.String("function", "Update"),
-				attribute.String("successful", "false"),
+				append(metricCommonAttributes, attribute.String("successful", "false"))...,
 			),
 		)
 
@@ -213,22 +220,12 @@ func (r *PGSQLUserRepository) Update(ctx context.Context, user *model.User) erro
 		slog.Error("repository.users.Update", "error", "user id is nil")
 		r.metrics.repositoryCalls.Add(ctx, 1,
 			metric.WithAttributes(
-				attribute.String("driver", r.DriverName()),
-				attribute.String("component", "repository.user"),
-				attribute.String("function", "Update"),
-				attribute.String("successful", "false"),
+				append(metricCommonAttributes, attribute.String("successful", "false"))...,
 			),
 		)
 
 		return ErrUserIDIsNil
 	}
-
-	span.SetAttributes(
-		attribute.String("driver", r.DriverName()),
-		attribute.String("component", "repository.user"),
-		attribute.String("function", "Update"),
-		attribute.String("user.id", user.ID.String()),
-	)
 
 	var queryFields []string
 
@@ -267,10 +264,7 @@ func (r *PGSQLUserRepository) Update(ctx context.Context, user *model.User) erro
 		slog.Error("repository.users.Update", "error", err)
 		r.metrics.repositoryCalls.Add(ctx, 1,
 			metric.WithAttributes(
-				attribute.String("driver", r.DriverName()),
-				attribute.String("component", "repository.user"),
-				attribute.String("function", "Update"),
-				attribute.String("successful", "false"),
+				append(metricCommonAttributes, attribute.String("successful", "false"))...,
 			),
 		)
 		return err
@@ -279,9 +273,7 @@ func (r *PGSQLUserRepository) Update(ctx context.Context, user *model.User) erro
 	span.SetStatus(codes.Ok, "user updated successfully")
 	r.metrics.repositoryCalls.Add(ctx, 1,
 		metric.WithAttributes(
-			attribute.String("component", "repository.user"),
-			attribute.String("function", "Update"),
-			attribute.String("successful", "true"),
+			append(metricCommonAttributes, attribute.String("successful", "true"))...,
 		),
 	)
 
@@ -296,16 +288,26 @@ func (r *PGSQLUserRepository) Delete(ctx context.Context, user *model.User) erro
 	ctx, span := r.ot.Traces.Tracer.Start(ctx, "repository.user.Delete")
 	defer span.End()
 
+	span.SetAttributes(
+		attribute.String("driver", r.DriverName()),
+		attribute.String("component", "repository.user"),
+		attribute.String("function", "Delete"),
+		attribute.String("user.id", user.ID.String()),
+	)
+
+	metricCommonAttributes := []attribute.KeyValue{
+		attribute.String("driver", r.DriverName()),
+		attribute.String("component", "repository.user"),
+		attribute.String("function", "Delete"),
+	}
+
 	if user == nil {
 		span.SetStatus(codes.Error, ErrUserIsNil.Error())
 		span.RecordError(ErrUserIsNil)
 		slog.Error("repository.users.Delete", "error", "user is nil")
 		r.metrics.repositoryCalls.Add(ctx, 1,
 			metric.WithAttributes(
-				attribute.String("driver", r.DriverName()),
-				attribute.String("component", "repository.user"),
-				attribute.String("function", "Delete"),
-				attribute.String("successful", "false"),
+				append(metricCommonAttributes, attribute.String("successful", "false"))...,
 			),
 		)
 
@@ -318,22 +320,12 @@ func (r *PGSQLUserRepository) Delete(ctx context.Context, user *model.User) erro
 		slog.Error("repository.users.Delete", "error", "user id is nil")
 		r.metrics.repositoryCalls.Add(ctx, 1,
 			metric.WithAttributes(
-				attribute.String("driver", r.DriverName()),
-				attribute.String("component", "repository.user"),
-				attribute.String("function", "Delete"),
-				attribute.String("successful", "false"),
+				append(metricCommonAttributes, attribute.String("successful", "false"))...,
 			),
 		)
 
 		return ErrUserIDIsNil
 	}
-
-	span.SetAttributes(
-		attribute.String("driver", r.DriverName()),
-		attribute.String("component", "repository.user"),
-		attribute.String("function", "Delete"),
-		attribute.String("user.id", user.ID.String()),
-	)
 
 	query := fmt.Sprintf(`
         DELETE FROM users
@@ -350,10 +342,7 @@ func (r *PGSQLUserRepository) Delete(ctx context.Context, user *model.User) erro
 		slog.Error("repository.users.Delete", "error", err)
 		r.metrics.repositoryCalls.Add(ctx, 1,
 			metric.WithAttributes(
-				attribute.String("driver", r.DriverName()),
-				attribute.String("component", "repository.user"),
-				attribute.String("function", "Delete"),
-				attribute.String("successful", "false"),
+				append(metricCommonAttributes, attribute.String("successful", "false"))...,
 			),
 		)
 		return err
@@ -362,10 +351,7 @@ func (r *PGSQLUserRepository) Delete(ctx context.Context, user *model.User) erro
 	span.SetStatus(codes.Ok, "user deleted successfully")
 	r.metrics.repositoryCalls.Add(ctx, 1,
 		metric.WithAttributes(
-			attribute.String("driver", r.DriverName()),
-			attribute.String("component", "repository.user"),
-			attribute.String("function", "Delete"),
-			attribute.String("successful", "true"),
+			append(metricCommonAttributes, attribute.String("successful", "true"))...,
 		),
 	)
 
@@ -380,28 +366,31 @@ func (r *PGSQLUserRepository) SelectByID(ctx context.Context, id uuid.UUID) (*mo
 	ctx, span := r.ot.Traces.Tracer.Start(ctx, "repository.user.SelectByID")
 	defer span.End()
 
-	if id == uuid.Nil {
-		span.SetStatus(codes.Error, ErrUserIDIsNil.Error())
-		span.RecordError(ErrUserIDIsNil)
-		slog.Error("repository.users.SelectByID", "error", "id is nil")
-		r.metrics.repositoryCalls.Add(ctx, 1,
-			metric.WithAttributes(
-				attribute.String("driver", r.DriverName()),
-				attribute.String("component", "repository.user"),
-				attribute.String("function", "SelectByID"),
-				attribute.String("successful", "false"),
-			),
-		)
-
-		return nil, ErrUserIDIsNil
-	}
-
 	span.SetAttributes(
 		attribute.String("driver", r.DriverName()),
 		attribute.String("component", "repository.user"),
 		attribute.String("function", "SelectByID"),
 		attribute.String("user.id", id.String()),
 	)
+
+	metricCommonAttributes := []attribute.KeyValue{
+		attribute.String("driver", r.DriverName()),
+		attribute.String("component", "repository.user"),
+		attribute.String("function", "SelectByID"),
+	}
+
+	if id == uuid.Nil {
+		span.SetStatus(codes.Error, ErrUserIDIsNil.Error())
+		span.RecordError(ErrUserIDIsNil)
+		slog.Error("repository.users.SelectByID", "error", "id is nil")
+		r.metrics.repositoryCalls.Add(ctx, 1,
+			metric.WithAttributes(
+				append(metricCommonAttributes, attribute.String("successful", "false"))...,
+			),
+		)
+
+		return nil, ErrUserIDIsNil
+	}
 
 	query := fmt.Sprintf(`
         SELECT id, first_name, last_name, email, created_at, updated_at
@@ -421,10 +410,7 @@ func (r *PGSQLUserRepository) SelectByID(ctx context.Context, id uuid.UUID) (*mo
 		slog.Error("repository.users.SelectByID", "error", err)
 		r.metrics.repositoryCalls.Add(ctx, 1,
 			metric.WithAttributes(
-				attribute.String("driver", r.DriverName()),
-				attribute.String("component", "repository.user"),
-				attribute.String("function", "SelectByID"),
-				attribute.String("successful", "false"),
+				append(metricCommonAttributes, attribute.String("successful", "false"))...,
 			),
 		)
 		return nil, err
@@ -433,10 +419,7 @@ func (r *PGSQLUserRepository) SelectByID(ctx context.Context, id uuid.UUID) (*mo
 	span.SetStatus(codes.Ok, "user selected successfully")
 	r.metrics.repositoryCalls.Add(ctx, 1,
 		metric.WithAttributes(
-			attribute.String("driver", r.DriverName()),
-			attribute.String("component", "repository.user"),
-			attribute.String("function", "SelectByID"),
-			attribute.String("successful", "true"),
+			append(metricCommonAttributes, attribute.String("successful", "true"))...,
 		),
 	)
 	return &u, nil
@@ -450,14 +433,20 @@ func (r *PGSQLUserRepository) SelectByEmail(ctx context.Context, email string) (
 	ctx, span := r.ot.Traces.Tracer.Start(ctx, "repository.user.SelectByEmail")
 	defer span.End()
 
-	// TODO: validate email
-
 	span.SetAttributes(
 		attribute.String("driver", r.DriverName()),
 		attribute.String("component", "repository.user"),
 		attribute.String("function", "SelectByEmail"),
 		attribute.String("user.email", email),
 	)
+
+	metricCommonAttributes := []attribute.KeyValue{
+		attribute.String("driver", r.DriverName()),
+		attribute.String("component", "repository.user"),
+		attribute.String("function", "SelectByEmail"),
+	}
+
+	// TODO: validate email
 
 	query := fmt.Sprintf(`
         SELECT id, first_name, last_name, email
@@ -477,10 +466,7 @@ func (r *PGSQLUserRepository) SelectByEmail(ctx context.Context, email string) (
 		slog.Error("repository.users.SelectByEmail", "error", err)
 		r.metrics.repositoryCalls.Add(ctx, 1,
 			metric.WithAttributes(
-				attribute.String("driver", r.DriverName()),
-				attribute.String("component", "repository.user"),
-				attribute.String("function", "SelectByEmail"),
-				attribute.String("successful", "true"),
+				append(metricCommonAttributes, attribute.String("successful", "false"))...,
 			),
 		)
 		return nil, err
@@ -489,10 +475,7 @@ func (r *PGSQLUserRepository) SelectByEmail(ctx context.Context, email string) (
 	span.SetStatus(codes.Ok, "user selected successfully")
 	r.metrics.repositoryCalls.Add(ctx, 1,
 		metric.WithAttributes(
-			attribute.String("driver", r.DriverName()),
-			attribute.String("component", "repository.user"),
-			attribute.String("function", "SelectByEmail"),
-			attribute.String("successful", "true"),
+			append(metricCommonAttributes, attribute.String("successful", "true"))...,
 		),
 	)
 
@@ -507,21 +490,6 @@ func (r *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.Selec
 	ctx, span := r.ot.Traces.Tracer.Start(ctx, "repository.user.SelectAll")
 	defer span.End()
 
-	if params == nil {
-		span.SetStatus(codes.Error, ErrFunctionParameterIsNil.Error())
-		span.RecordError(ErrFunctionParameterIsNil)
-		slog.Error("repository.users.SelectAll", "error", "params is nil")
-		r.metrics.repositoryCalls.Add(ctx, 1,
-			metric.WithAttributes(
-				attribute.String("driver", r.DriverName()),
-				attribute.String("component", "repository.user"),
-				attribute.String("function", "SelectAll"),
-				attribute.String("successful", "false"),
-			),
-		)
-		return nil, ErrFunctionParameterIsNil
-	}
-
 	span.SetAttributes(
 		attribute.String("driver", r.DriverName()),
 		attribute.String("component", "repository.user"),
@@ -531,6 +499,24 @@ func (r *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.Selec
 		attribute.Int("user.limit", params.Paginator.Limit),
 		attribute.String("user.fields", strings.Join(params.Fields, ",")),
 	)
+
+	metricCommonAttributes := []attribute.KeyValue{
+		attribute.String("driver", r.DriverName()),
+		attribute.String("component", "repository.user"),
+		attribute.String("function", "SelectAll"),
+	}
+
+	if params == nil {
+		span.SetStatus(codes.Error, ErrFunctionParameterIsNil.Error())
+		span.RecordError(ErrFunctionParameterIsNil)
+		slog.Error("repository.users.SelectAll", "error", "params is nil")
+		r.metrics.repositoryCalls.Add(ctx, 1,
+			metric.WithAttributes(
+				append(metricCommonAttributes, attribute.String("successful", "false"))...,
+			),
+		)
+		return nil, ErrFunctionParameterIsNil
+	}
 
 	fieldsStr := strings.Join(params.Fields, ", ")
 	if fieldsStr == "" {
@@ -561,6 +547,11 @@ func (r *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.Selec
 			slog.Error("repository.user.SelectAll", "error", err)
 			span.SetStatus(codes.Error, "invalid token")
 			span.RecordError(err)
+			r.metrics.repositoryCalls.Add(ctx, 1,
+				metric.WithAttributes(
+					append(metricCommonAttributes, attribute.String("successful", "false"))...,
+				),
+			)
 			return nil, err
 		}
 		// from newest to oldest
@@ -589,10 +580,7 @@ func (r *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.Selec
 			span.RecordError(err)
 			r.metrics.repositoryCalls.Add(ctx, 1,
 				metric.WithAttributes(
-					attribute.String("driver", r.DriverName()),
-					attribute.String("component", "repository.user"),
-					attribute.String("method", "SelectByEmail"),
-					attribute.String("successful", "false"),
+					append(metricCommonAttributes, attribute.String("successful", "false"))...,
 				),
 			)
 			return nil, err
@@ -661,10 +649,7 @@ func (r *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.Selec
 		span.RecordError(err)
 		r.metrics.repositoryCalls.Add(ctx, 1,
 			metric.WithAttributes(
-				attribute.String("driver", r.DriverName()),
-				attribute.String("component", "repository.user"),
-				attribute.String("method", "SelectAll"),
-				attribute.String("successful", "false"),
+				append(metricCommonAttributes, attribute.String("successful", "false"))...,
 			),
 		)
 
@@ -681,10 +666,7 @@ func (r *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.Selec
 			span.RecordError(err)
 			r.metrics.repositoryCalls.Add(ctx, 1,
 				metric.WithAttributes(
-					attribute.String("driver", r.DriverName()),
-					attribute.String("component", "repository.user"),
-					attribute.String("method", "SelectAll"),
-					attribute.String("successful", "false"),
+					append(metricCommonAttributes, attribute.String("successful", "false"))...,
 				),
 			)
 			return nil, err
@@ -720,10 +702,7 @@ func (r *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.Selec
 	span.SetStatus(codes.Ok, "users selected successfully")
 	r.metrics.repositoryCalls.Add(ctx, 1,
 		metric.WithAttributes(
-			attribute.String("driver", r.DriverName()),
-			attribute.String("component", "repository.user"),
-			attribute.String("method", "SelectAll"),
-			attribute.String("successful", "true"),
+			append(metricCommonAttributes, attribute.String("successful", "true"))...,
 		),
 	)
 

@@ -70,4 +70,3 @@ GET http://{{host}}/users?next_token={{next_token_page2}} HTTP/1.1
 @limit = 5
 
 GET http://{{host}}/users?next_token={{next_token_page3}}&limit={{limit}} HTTP/1.1
-
