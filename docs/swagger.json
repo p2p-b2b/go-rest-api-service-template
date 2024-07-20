@@ -96,19 +96,19 @@
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Sort field",
+                        "description": "Sort field. Example: first_name",
                         "name": "sort",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "Filter field",
+                        "description": "Filter field. Example: id=1 AND first_name='John'",
                         "name": "filter",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "Fields to return",
+                        "description": "Fields to return. Example: id,first_name,last_name",
                         "name": "fields",
                         "in": "query"
                     },

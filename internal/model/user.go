@@ -19,6 +19,9 @@ var (
 	ErrInvalidField = errors.New("invalid field")
 )
 
+// UserFilterFields is a list of valid fields for filtering users.
+var UserFilterFields = []string{"id", "first_name", "last_name", "email", "created_at", "updated_at"}
+
 // User represents a user entity.
 // @Description User information.
 type User struct {

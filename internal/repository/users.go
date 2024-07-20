@@ -609,9 +609,11 @@ func (r *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.Selec
 		}
 
 		paginationQuery = fmt.Sprintf(`
+            %s
             ORDER BY usrs.created_at DESC, id DESC
             LIMIT %d
             `,
+			filterQuery,
 			params.Paginator.Limit,
 		)
 	}

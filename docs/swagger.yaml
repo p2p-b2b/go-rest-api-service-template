@@ -204,15 +204,15 @@ paths:
     get:
       description: List all users
       parameters:
-      - description: Sort field
+      - description: 'Sort field. Example: first_name'
         in: query
         name: sort
         type: string
-      - description: Filter field
+      - description: 'Filter field. Example: id=1 AND first_name=''John'''
         in: query
         name: filter
         type: string
-      - description: Fields to return
+      - description: 'Fields to return. Example: id,first_name,last_name'
         in: query
         name: fields
         type: string

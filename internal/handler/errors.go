@@ -8,14 +8,35 @@ import (
 )
 
 var (
-	// ErrInvalidID is returned when an invalid ID is provided.
-	ErrInvalidID = errors.New("invalid ID")
+	// ErrInvalidUserID is returned when the user ID is not a valid UUID.
+	ErrInvalidUserID = errors.New("invalid user ID")
 
-	// ErrIDRequired is returned when an ID is required.
-	ErrIDRequired = errors.New("id is required for this operation")
+	// ErrUserIDRequired is returned when an ID is required.
+	ErrUserIDRequired = errors.New("user ID is required")
 
 	// ErrInternalServerError is returned when an internal server error occurs.
 	ErrInternalServerError = errors.New("internal server error")
+
+	// ErrEncodingPayload is returned when an error occurs while encoding the payload.
+	ErrEncodingPayload = errors.New("error encoding payload")
+
+	// ErrDecodingPayload is returned when an error occurs while decoding the payload.
+	ErrDecodingPayload = errors.New("error decoding payload")
+
+	// ErrFirstNameRequired is returned when the first name is required.
+	ErrFirstNameRequired = errors.New("first name is required")
+
+	// ErrLastNameRequired is returned when the last name is required.
+	ErrLastNameRequired = errors.New("last name is required")
+
+	// ErrEmailRequired is returned when the email is required.
+	ErrEmailRequired = errors.New("email is required")
+
+	// ErrAtLeastOneFieldRequired is returned when at least one field is required.
+	ErrAtLeastOneFieldRequired = errors.New("at least one field is required")
+
+	// ErrInvalidFilter is returned when the filter is invalid.
+	ErrInvalidFilter = errors.New("invalid filter")
 )
 
 type APIError struct {
