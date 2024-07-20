@@ -728,23 +728,16 @@ func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// inject the parameters and server url to paginator for the next and previous links
-	srvScheme := "http"
-	if r.TLS != nil {
-		srvScheme = "https"
-	}
-	serverURL := srvScheme + "://" + r.Host
-
+	// set the next and previous page
 	if usersResponse.Paginator.NextToken != "" {
-		usersResponse.Paginator.NextPage = serverURL + r.URL.Path + "?next_token=" + usersResponse.Paginator.NextToken + "&limit=" + strconv.Itoa(limit)
+		usersResponse.Paginator.NextPage = r.URL.Path + "?next_token=" + usersResponse.Paginator.NextToken + "&limit=" + strconv.Itoa(limit)
 	}
 	if usersResponse.Paginator.PrevToken != "" {
-		usersResponse.Paginator.PrevPage = serverURL + r.URL.Path + "?prev_token=" + usersResponse.Paginator.PrevToken + "&limit=" + strconv.Itoa(limit)
+		usersResponse.Paginator.PrevPage = r.URL.Path + "?prev_token=" + usersResponse.Paginator.PrevToken + "&limit=" + strconv.Itoa(limit)
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	// write the response
 	if err := json.NewEncoder(w).Encode(usersResponse); err != nil {
 		span.SetStatus(codes.Error, err.Error())
 		span.RecordError(err)
