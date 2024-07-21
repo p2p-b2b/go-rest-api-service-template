@@ -55,13 +55,13 @@ type UserRepository interface {
 }
 
 var (
-	ErrGettingUserByID    = errors.New("error getting user by ID")
-	ErrGettingUserByEmail = errors.New("error getting user by email")
-	ErrCreatingUser       = errors.New("error creating user")
-	ErrIdAlreadyExists    = errors.New("id already exists")
-	ErrUpdatingUser       = errors.New("error updating user")
-	ErrDeletingUser       = errors.New("error deleting user")
-	ErrListingUsers       = errors.New("error listing users")
+	ErrGettingUserByID     = errors.New("error getting user by ID")
+	ErrGettingUserByEmail  = errors.New("error getting user by email")
+	ErrCreatingUser        = errors.New("error creating user")
+	ErrUserIDAlreadyExists = errors.New("id already exists")
+	ErrUpdatingUser        = errors.New("error updating user")
+	ErrDeletingUser        = errors.New("error deleting user")
+	ErrListingUsers        = errors.New("error listing users")
 )
 
 type UserServiceConf struct {
@@ -279,13 +279,13 @@ func (s *User) CreateUser(ctx context.Context, user *model.User) error {
 		if ok {
 			if pgxErr.Code == "23505" {
 				span.SetStatus(codes.Error, "ID already exists")
-				span.RecordError(ErrIdAlreadyExists)
+				span.RecordError(ErrUserIDAlreadyExists)
 				s.metrics.serviceCalls.Add(ctx, 1,
 					metric.WithAttributes(
 						append(metricCommonAttributes, attribute.String("successful", "false"))...,
 					),
 				)
-				return ErrIdAlreadyExists
+				return ErrUserIDAlreadyExists
 			}
 		}
 
@@ -438,8 +438,9 @@ func (s *User) ListUsers(ctx context.Context, params *model.ListUserRequest) (*m
 				append(metricCommonAttributes, attribute.String("successful", "false"))...,
 			),
 		)
-		return nil, ErrListingUsers
+		return nil, err
 	}
+
 	if qryOut == nil {
 		span.SetStatus(codes.Error, ErrListingUsers.Error())
 		span.RecordError(ErrListingUsers)

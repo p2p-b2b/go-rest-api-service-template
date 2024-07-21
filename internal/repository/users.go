@@ -518,6 +518,7 @@ func (r *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.Selec
 		return nil, ErrFunctionParameterIsNil
 	}
 
+	// the fields to select
 	fieldsStr := strings.Join(params.Fields, ", ")
 	if fieldsStr == "" {
 		fieldsStr = "*"
@@ -609,9 +610,11 @@ func (r *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.Selec
 		}
 
 		paginationQuery = fmt.Sprintf(`
+            %s
             ORDER BY usrs.created_at DESC, id DESC
             LIMIT %d
             `,
+			filterQuery,
 			params.Paginator.Limit,
 		)
 	}
@@ -629,15 +632,21 @@ func (r *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.Selec
 		whereQuery = ""
 	}
 
+	var sortQuery string
+	if params.Sort != "" {
+		sortQuery = fmt.Sprintf("ORDER BY %s", params.Sort)
+	}
+
 	// assemble the query
 	query := fmt.Sprintf(`
         WITH usrs AS (
             SELECT %s FROM users usrs %s
         )
-        SELECT * FROM usrs ORDER BY created_at DESC, id DESC
+        SELECT * FROM usrs %s
         `,
 		fieldsStr,
 		whereQuery,
+		sortQuery,
 	)
 	slog.Debug("repository.user.SelectAll", "query", prettyPrint(query))
 
@@ -660,7 +669,33 @@ func (r *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.Selec
 	var users []*model.User
 	for rows.Next() {
 		var u model.User
-		if err := rows.Scan(&u.ID, &u.FirstName, &u.LastName, &u.Email, &u.CreatedAt, &u.UpdatedAt); err != nil {
+
+		scanFields := make([]interface{}, 0)
+
+		if fieldsStr == "*" {
+			scanFields = []interface{}{&u.ID, &u.FirstName, &u.LastName, &u.Email, &u.CreatedAt, &u.UpdatedAt}
+		} else {
+			for _, field := range params.Fields {
+				switch field {
+				case "id":
+					scanFields = append(scanFields, &u.ID)
+				case "first_name":
+					scanFields = append(scanFields, &u.FirstName)
+				case "last_name":
+					scanFields = append(scanFields, &u.LastName)
+				case "email":
+					scanFields = append(scanFields, &u.Email)
+				case "created_at":
+					scanFields = append(scanFields, &u.CreatedAt)
+				case "updated_at":
+					scanFields = append(scanFields, &u.UpdatedAt)
+				default:
+					slog.Warn("repository.user.SelectAll", "message", "field not found", "field", field)
+				}
+			}
+		}
+
+		if err := rows.Scan(scanFields...); err != nil {
 			slog.Error("repository.user.SelectAll", "error", err)
 			span.SetStatus(codes.Error, "failed to scan user")
 			span.RecordError(err)
@@ -671,6 +706,7 @@ func (r *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.Selec
 			)
 			return nil, err
 		}
+
 		users = append(users, &u)
 	}
 
