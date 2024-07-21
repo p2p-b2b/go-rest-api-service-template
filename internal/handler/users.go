@@ -607,7 +607,7 @@ func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 // @Description List all users
 // @Tags users
 // @Produce json
-// @Param sort query string false "Sort field. Example: first_name"
+// @Param sort query string false "Comma-separated list of fields to sort by. Example: first_name ASC, created_at DESC"
 // @Param filter query string false "Filter field. Example: id=1 AND first_name='John'"
 // @Param fields query string false "Fields to return. Example: id,first_name,last_name"
 // @Param next_token query string false "Next cursor"
@@ -641,6 +641,21 @@ func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 
 	// sort, filter, and fields
 	sort := r.URL.Query().Get("sort")
+	slog.Debug("handler.ListUsers", "sort", sort)
+
+	if !query.IsValidSort(model.UserSortFields, sort) {
+		span.SetStatus(codes.Error, ErrInvalidSort.Error())
+		span.RecordError(ErrInvalidSort)
+		slog.Error("handler.ListUsers", "error", ErrInvalidSort.Error())
+		h.metrics.handlerCalls.Add(ctx, 1,
+			metric.WithAttributes(
+				append(metricCommonAttributes, attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)))...,
+			),
+		)
+
+		WriteError(w, r, http.StatusBadRequest, ErrInvalidSort.Error())
+		return
+	}
 
 	filter := r.URL.Query().Get("filter")
 	slog.Debug("handler.ListUsers", "filter", filter)

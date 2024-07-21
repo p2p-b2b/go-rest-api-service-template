@@ -1,6 +1,8 @@
 package query
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestIsValidFilter(t *testing.T) {
 	type args struct {
@@ -122,6 +124,91 @@ func TestIsValidFilter(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := IsValidFilter(tt.args.columns, tt.args.filter); got != tt.want {
 				t.Errorf("IsValidFilter() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestIsValidSort(t *testing.T) {
+	type args struct {
+		columns []string
+		sort    string
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		{
+			name: "valid sort when sort is empty",
+			args: args{
+				columns: []string{"id", "first_name", "last_name", "email", "created_at", "updated_at"},
+				sort:    "",
+			},
+			want: true,
+		},
+		{
+			name: "valid sort with one column",
+			args: args{
+				columns: []string{"id", "first_name", "last_name", "email", "created_at", "updated_at"},
+				sort:    "id DESC",
+			},
+			want: true,
+		},
+		{
+			name: "valid sort with two columns",
+			args: args{
+				columns: []string{"id", "first_name", "last_name", "email", "created_at", "updated_at"},
+				sort:    "id ASC, first_name DESC",
+			},
+			want: true,
+		},
+		{
+			name: "invalid sort when columns is empty",
+			args: args{
+				columns: []string{"id", "first_name", "last_name", "email", "created_at", "updated_at"},
+				sort:    "id",
+			},
+			want: false,
+		},
+		{
+			name: "invalid sort with two columns no operator",
+			args: args{
+				columns: []string{"id", "first_name", "last_name", "email", "created_at", "updated_at"},
+				sort:    "id,first_name",
+			},
+			want: false,
+		},
+		{
+			name: "invalid sort with two columns bad separator",
+			args: args{
+				columns: []string{"id", "first_name", "last_name", "email", "created_at", "updated_at"},
+				sort:    "id ASC first_name DESC",
+			},
+			want: false,
+		},
+		{
+			name: "invalid sort with two columns one missing operator",
+			args: args{
+				columns: []string{"id", "first_name", "last_name", "email", "created_at", "updated_at"},
+				sort:    "id ASC, first_name",
+			},
+			want: false,
+		},
+		{
+			name: "invalid sort with two columns one bad operator name",
+			args: args{
+				columns: []string{"id", "first_name", "last_name", "email", "created_at", "updated_at"},
+				sort:    "id ASC, first_name DES",
+			},
+			want: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := IsValidSort(tt.args.columns, tt.args.sort); got != tt.want {
+				t.Errorf("IsValidSort() = %v, want %v", got, tt.want)
 			}
 		})
 	}

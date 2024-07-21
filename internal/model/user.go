@@ -19,8 +19,13 @@ var (
 	ErrInvalidField = errors.New("invalid field")
 )
 
-// UserFilterFields is a list of valid fields for filtering users.
-var UserFilterFields = []string{"id", "first_name", "last_name", "email", "created_at", "updated_at"}
+var (
+	// UserFilterFields is a list of valid fields for filtering users.
+	UserFilterFields = []string{"id", "first_name", "last_name", "email", "created_at", "updated_at"}
+
+	// UserSortFields is a list of valid fields for sorting users.
+	UserSortFields = []string{"id", "first_name", "last_name", "email", "created_at", "updated_at"}
+)
 
 // User represents a user entity.
 // @Description User information.
@@ -87,22 +92,6 @@ type ListUserRequest struct {
 
 	// Paginator is the paginator for the list of users.
 	Paginator paginator.Paginator `json:"paginator,omitempty"`
-}
-
-func (l *ListUserRequest) Validate() error {
-	if len(l.Sort) > 32 {
-		return ErrSortFieldTooLong
-	}
-
-	if len(l.Fields) > 0 && len(l.Fields) < 15 {
-		for _, field := range l.Fields {
-			if field != "id" && field != "first_name" && field != "last_name" && field != "email" && field != "created_at" && field != "updated_at" {
-				return ErrInvalidField
-			}
-		}
-	}
-
-	return nil
 }
 
 // ListUserResponse represents a list of users.

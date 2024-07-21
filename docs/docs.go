@@ -106,7 +106,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Sort field. Example: first_name",
+                        "description": "Comma-separated list of fields to sort by. Example: first_name ASC, created_at DESC",
                         "name": "sort",
                         "in": "query"
                     },

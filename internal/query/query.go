@@ -11,7 +11,68 @@ var (
 
 	filterComparators = []string{"=", ">", "<"}
 	filterOperators   = []string{"AND", "OR"}
+
+	sortOperators = []string{"ASC", "DESC"}
 )
+
+// IsValidSort checks if a sort string is valid SQL syntax.
+// The columns parameter is a list of valid column names.
+// The sort parameter is a string with the sort to validate.
+// The function returns true if the sort is valid, false otherwise.
+//
+// Example:
+// IsValidSort(
+//
+//	[]string{"id", "first_name", "last_name", "email", "created_at", "updated_at"},
+//	"id ASC, first_name DESC"
+//
+// )
+func IsValidSort(columns []string, sort string) bool {
+	// if columns are empty, then sort is invalid
+	if len(columns) == 0 {
+		return false
+	}
+
+	// if sort is empty, then it is valid
+	if sort == "" {
+		return true
+	}
+
+	// Tokenize the sort string
+	tokens := tokenizeSort(sort)
+
+	// get the columns in the sort
+	cols := getColumnsSort(tokens)
+
+	// columns cannot be zero
+	if len(cols) == 0 {
+		return false
+	}
+
+	// check if cols are valid
+	for _, col := range cols {
+		if !isValidColumn(col, columns) {
+			return false
+		}
+	}
+
+	// get the operators in the sort
+	operators := getOperatorsSort(tokens)
+
+	// each column should have an operator
+	if len(cols) != len(operators) {
+		return false
+	}
+
+	// check if operators are valid
+	for _, operator := range operators {
+		if !isValidOperatorSort(operator) {
+			return false
+		}
+	}
+
+	return true
+}
 
 // IsValidFilter checks if a filter string is valid SQL syntax.
 // The columns parameter is a list of valid column names.
@@ -37,13 +98,13 @@ func IsValidFilter(columns []string, filter string) bool {
 	}
 
 	// Tokenize the filter string
-	tokens := tokenize(filter)
+	tokens := tokenizeFilter(filter)
 
 	// get the operators in the filter
-	operators := getOperators(tokens)
+	operators := getOperatorsFilter(tokens)
 
 	// get the pairs in the filter
-	pairs := getPairs(tokens)
+	pairs := getPairsFilter(tokens)
 
 	// pairs cannot be zero
 	if len(pairs) == 0 {
@@ -56,7 +117,7 @@ func IsValidFilter(columns []string, filter string) bool {
 	}
 
 	// get the columns in the filter
-	cols := getColumns(pairs)
+	cols := getColumnsFilter(pairs)
 
 	// columns cannot be zero
 	if len(cols) == 0 {
@@ -106,8 +167,15 @@ func IsValidFilter(columns []string, filter string) bool {
 	return true
 }
 
-// tokenize splits a filter string into tokens.
-func tokenize(filter string) []string {
+// tokenizeSort splits a sort string into tokens
+// separated by commas.
+func tokenizeSort(sort string) []string {
+	return strings.Split(sort, ",")
+}
+
+// tokenize splits a filter string into tokens
+// separated by spaces.
+func tokenizeFilter(filter string) []string {
 	// Implement tokenization logic here, e.g., using regexp
 	// Split by spaces, handle quotes for values, etc.
 	return strings.Split(filter, " ")
@@ -134,8 +202,18 @@ func isValidComparator(token string) bool {
 	return false
 }
 
-// isValidOperator checks if a token is a valid operator.
-func isValidOperator(value string) bool {
+// isValidOperatorSort checks if a token is a valid operator.
+func isValidOperatorSort(value string) bool {
+	for _, operator := range sortOperators {
+		if value == operator || strings.ToUpper(value) == operator {
+			return true
+		}
+	}
+	return false
+}
+
+// isValidOperatorFilter checks if a token is a valid operator.
+func isValidOperatorFilter(value string) bool {
 	for _, operator := range filterOperators {
 		if value == operator || strings.ToUpper(value) == operator {
 			return true
@@ -164,34 +242,64 @@ func isQuotedString(value string) bool {
 	return value[0] == '\'' && value[len(value)-1] == '\''
 }
 
-// getOperators returns the list of valid operators in the tokenized filter.
-func getOperators(tokens []string) []string {
+// getOperatorsSort returns the list of valid operators in the tokenized sort.
+func getOperatorsSort(tokens []string) []string {
 	operators := make([]string, 0)
 	for _, token := range tokens {
-		if isValidOperator(token) {
-			operators = append(operators, token)
+		t := strings.TrimSpace(token)
+
+		column := strings.Split(t, " ")
+		if len(column) == 2 {
+			operators = append(operators, column[1])
+		}
+	}
+
+	return operators
+}
+
+// getOperatorsFilter returns the list of valid operators in the tokenized filter.
+func getOperatorsFilter(tokens []string) []string {
+	operators := make([]string, 0)
+	for _, token := range tokens {
+		t := strings.TrimSpace(token)
+
+		if isValidOperatorFilter(t) {
+			operators = append(operators, t)
 		}
 	}
 	return operators
 }
 
 // getPairs returns the list of column-value pairs in the tokenized filter.
-func getPairs(tokens []string) []string {
+func getPairsFilter(tokens []string) []string {
 	pairs := make([]string, 0)
 	for _, token := range tokens {
-		if !isValidOperator(token) {
+		if !isValidOperatorFilter(token) {
 			pairs = append(pairs, token)
 		}
 	}
 	return pairs
 }
 
-// getColumns returns the list of valid columns in the pairs values.
-func getColumns(pairs []string) []string {
+// getColumnsSort returns the list of valid columns in the sort string.
+func getColumnsSort(pairs []string) []string {
 	columns := make([]string, 0)
 	for _, pair := range pairs {
+		p := strings.TrimSpace(pair)
+		column := strings.Split(p, " ")
+		columns = append(columns, column[0])
+	}
+
+	return columns
+}
+
+// getColumnsFilter returns the list of valid columns in the pairs values.
+func getColumnsFilter(pairs []string) []string {
+	columns := make([]string, 0)
+	for _, pair := range pairs {
+		p := strings.TrimSpace(pair)
 		for _, comparator := range filterComparators {
-			column := strings.Split(pair, comparator)
+			column := strings.Split(p, comparator)
 			if len(column) == 2 {
 				columns = append(columns, column[0])
 			}

@@ -631,15 +631,21 @@ func (r *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.Selec
 		whereQuery = ""
 	}
 
+	var sortQuery string
+	if params.Sort != "" {
+		sortQuery = fmt.Sprintf("ORDER BY %s", params.Sort)
+	}
+
 	// assemble the query
 	query := fmt.Sprintf(`
         WITH usrs AS (
             SELECT %s FROM users usrs %s
         )
-        SELECT * FROM usrs ORDER BY created_at DESC, id DESC
+        SELECT * FROM usrs %s
         `,
 		fieldsStr,
 		whereQuery,
+		sortQuery,
 	)
 	slog.Debug("repository.user.SelectAll", "query", prettyPrint(query))
 

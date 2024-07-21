@@ -37,6 +37,9 @@ var (
 
 	// ErrInvalidFilter is returned when the filter is invalid.
 	ErrInvalidFilter = errors.New("invalid filter")
+
+	// ErrInvalidSort is returned when the sort is invalid.
+	ErrInvalidSort = errors.New("invalid sort")
 )
 
 type APIError struct {
