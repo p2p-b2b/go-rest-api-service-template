@@ -675,10 +675,24 @@ func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fieldsFields := r.URL.Query().Get("fields")
-	var fields []string
-	if len(fieldsFields) != 0 {
-		fields = strings.Split(fieldsFields, ",")
+	slog.Debug("handler.ListUsers", "fields", fieldsFields)
+
+	if !query.IsValidFields(model.UserFields, fieldsFields) {
+		span.SetStatus(codes.Error, ErrInvalidField.Error())
+		span.RecordError(ErrInvalidField)
+		slog.Error("handler.ListUsers", "error", ErrInvalidField.Error())
+		h.metrics.handlerCalls.Add(ctx, 1,
+			metric.WithAttributes(
+				append(metricCommonAttributes, attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)))...,
+			),
+		)
+
+		WriteError(w, r, http.StatusBadRequest, ErrInvalidField.Error())
+		return
 	}
+
+	// list of fields after sanitize the fields (basically trim the spaces)
+	fields := query.GetFields(fieldsFields)
 
 	// convert the limit to int
 	limit := paginator.DefaultLimit

@@ -40,6 +40,9 @@ var (
 
 	// ErrInvalidSort is returned when the sort is invalid.
 	ErrInvalidSort = errors.New("invalid sort")
+
+	// ErrInvalidField is returned when the field is invalid.
+	ErrInvalidField = errors.New("invalid field")
 )
 
 type APIError struct {

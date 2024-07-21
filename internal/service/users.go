@@ -438,8 +438,9 @@ func (s *User) ListUsers(ctx context.Context, params *model.ListUserRequest) (*m
 				append(metricCommonAttributes, attribute.String("successful", "false"))...,
 			),
 		)
-		return nil, ErrListingUsers
+		return nil, err
 	}
+
 	if qryOut == nil {
 		span.SetStatus(codes.Error, ErrListingUsers.Error())
 		span.RecordError(ErrListingUsers)

@@ -15,6 +15,57 @@ var (
 	sortOperators = []string{"ASC", "DESC"}
 )
 
+// GetFields returns a list of fields for partial response after trimming spaces.
+func GetFields(fields string) []string {
+	return tokenizeFields(fields)
+}
+
+// IsValidFields checks if a list of fields for partial response is valid.
+// The fields parameter is a list of valid fields.
+// The partial parameter is a string with the fields to validate.
+// The function returns true if the fields are valid, false otherwise.
+//
+// Example:
+// IsValidFields(
+//
+//	[]string{"id", "first_name", "last_name", "email", "created_at", "updated_at"},
+//	"id, first_name, last_name"
+//
+// )
+func IsValidFields(fields []string, partial string) bool {
+	// if fields are empty, then partial is invalid
+	if len(fields) == 0 {
+		return false
+	}
+
+	// if partial is empty, then it is valid
+	if partial == "" {
+		return true
+	}
+
+	// Tokenize the partial string
+	tokens := tokenizeFields(partial)
+
+	// check if fields are valid
+	for _, token := range tokens {
+		if !isValidColumn(token, fields) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// tokenizeFields splits a fields string into tokens trimmed by spaces.
+func tokenizeFields(fields string) []string {
+	var tokens []string
+	for _, token := range strings.Split(fields, ",") {
+		tokens = append(tokens, strings.TrimSpace(token))
+	}
+
+	return tokens
+}
+
 // IsValidSort checks if a sort string is valid SQL syntax.
 // The columns parameter is a list of valid column names.
 // The sort parameter is a string with the sort to validate.

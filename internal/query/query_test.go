@@ -213,3 +213,63 @@ func TestIsValidSort(t *testing.T) {
 		})
 	}
 }
+
+func TestIsValidFields(t *testing.T) {
+	type args struct {
+		fields  []string
+		partial string
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		{
+			name: "valid fields when partial is empty",
+			args: args{
+				fields:  []string{"id", "first_name", "last_name", "email", "created_at", "updated_at"},
+				partial: "",
+			},
+			want: true,
+		},
+		{
+			name: "valid fields with spaces",
+			args: args{
+				fields:  []string{"id", "first_name", "last_name", "email", "created_at", "updated_at"},
+				partial: "id,   first_name, last_name,email",
+			},
+			want: true,
+		},
+		{
+			name: "valid fields with no spaces",
+			args: args{
+				fields:  []string{"id", "first_name", "last_name", "email", "created_at", "updated_at"},
+				partial: "id,first_name,last_name",
+			},
+			want: true,
+		},
+		{
+			name: "invalid fields when fields is empty",
+			args: args{
+				fields:  []string{},
+				partial: "id, first_name, last_name",
+			},
+			want: false,
+		},
+		{
+			name: "invalid fields when name is missing",
+			args: args{
+				fields:  []string{"id", "first_name", "last_name", "email", "created_at", "updated_at"},
+				partial: "id,first_name,last_name,no_valid",
+			},
+			want: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := IsValidFields(tt.args.fields, tt.args.partial); got != tt.want {
+				t.Errorf("IsValidFields() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

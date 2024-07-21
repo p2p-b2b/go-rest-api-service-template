@@ -1,6 +1,7 @@
 package model
 
 import (
+	"encoding/json"
 	"errors"
 	"time"
 
@@ -25,28 +26,125 @@ var (
 
 	// UserSortFields is a list of valid fields for sorting users.
 	UserSortFields = []string{"id", "first_name", "last_name", "email", "created_at", "updated_at"}
+
+	// UserFields is a list of valid fields for partial responses.
+	UserFields = []string{"id", "first_name", "last_name", "email", "created_at", "updated_at"}
 )
 
 // User represents a user entity.
 // @Description User information.
 type User struct {
 	// ID is the unique identifier of the user.
-	ID uuid.UUID `json:"id"`
+	ID uuid.UUID `json:"id,omitempty"`
 
 	// FirstName is the first name of the user.
-	FirstName string `json:"first_name"`
+	FirstName string `json:"first_name,omitempty"`
 
 	// LastName is the last name of the user.
-	LastName string `json:"last_name"`
+	LastName string `json:"last_name,omitempty"`
 
 	// Email is the email address of the user.
-	Email string `json:"email"`
+	Email string `json:"email,omitempty"`
 
 	// Email is the email address of the user.
-	CreatedAt time.Time `json:"created_at"`
+	CreatedAt time.Time `json:"created_at,omitempty"`
 
 	// UpdatedAt is the time the user was last updated.
-	UpdatedAt time.Time `json:"updated_at"`
+	UpdatedAt time.Time `json:"updated_at,omitempty"`
+}
+
+// MarshalJSON marshals the user into JSON.
+func (u User) MarshalJSON() ([]byte, error) {
+	type Alias User
+
+	// if the ID, CreatedAt, and UpdatedAt are zero, marshal them as empty strings
+	if u.ID == uuid.Nil && u.CreatedAt.IsZero() && u.UpdatedAt.IsZero() {
+		return json.Marshal(&struct {
+			Alias
+			ID        string `json:"id,omitempty"`
+			CreatedAt string `json:"created_at,omitempty"`
+			UpdatedAt string `json:"updated_at,omitempty"`
+		}{
+			Alias:     (Alias)(u),
+			ID:        "",
+			CreatedAt: "",
+			UpdatedAt: "",
+		})
+	}
+
+	if u.ID == uuid.Nil && u.CreatedAt.IsZero() {
+		return json.Marshal(&struct {
+			Alias
+			ID        string `json:"id,omitempty"`
+			CreatedAt string `json:"created_at,omitempty"`
+		}{
+			Alias:     (Alias)(u),
+			ID:        "",
+			CreatedAt: "",
+		})
+	}
+
+	if u.ID == uuid.Nil && u.UpdatedAt.IsZero() {
+		return json.Marshal(&struct {
+			Alias
+			ID        string `json:"id,omitempty"`
+			UpdatedAt string `json:"updated_at,omitempty"`
+		}{
+			Alias:     (Alias)(u),
+			ID:        "",
+			UpdatedAt: "",
+		})
+	}
+
+	if u.CreatedAt.IsZero() && u.UpdatedAt.IsZero() {
+		return json.Marshal(&struct {
+			Alias
+			CreatedAt string `json:"created_at,omitempty"`
+			UpdatedAt string `json:"updated_at,omitempty"`
+		}{
+			Alias:     (Alias)(u),
+			CreatedAt: "",
+			UpdatedAt: "",
+		})
+	}
+
+	if u.ID == uuid.Nil {
+		return json.Marshal(&struct {
+			Alias
+			ID string `json:"id,omitempty"`
+		}{
+			Alias: (Alias)(u),
+			ID:    "",
+		})
+	}
+
+	// if the CreatedAt is zero, marshal the CreatedAt as an empty string
+	if u.CreatedAt.IsZero() {
+		return json.Marshal(&struct {
+			Alias
+			CreatedAt string `json:"created_at,omitempty"`
+		}{
+			Alias:     (Alias)(u),
+			CreatedAt: "",
+		})
+	}
+
+	// if the UpdatedAt is zero, marshal the UpdatedAt as an empty string
+	if u.UpdatedAt.IsZero() {
+		return json.Marshal(&struct {
+			Alias
+			UpdatedAt string `json:"updated_at,omitempty"`
+		}{
+			Alias:     (Alias)(u),
+			UpdatedAt: "",
+		})
+	}
+
+	return json.Marshal(&struct {
+		Alias
+	}{
+		Alias: (Alias)(u),
+	})
 }
 
 // CreateUserRequest represents the input for the CreateUser method.
