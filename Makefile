@@ -255,6 +255,7 @@ install-goose: ## Install goose for database migrations (
 stop-dev-env: ## Run the application in development mode
 	@printf "👉 Stopping application in development mode...\n"
 		$(call exec_cmd, podman play kube --down ./dev-env/provisioning/dev-service-pod.yaml )
+		$(call exec_cmd, rm -rf /tmp/$(PROJECT_NAME)-* 2>/dev/null )
 
 
 .PHONY: start-dev-env
