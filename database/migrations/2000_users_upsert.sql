@@ -2,6 +2,7 @@
 -- +goose StatementBegin
 
 -- insert users
+-- users with created_at and updated_at
 INSERT INTO public.users (id, first_name, last_name, email, created_at, updated_at) VALUES ('483688e9-b8af-42c7-bba4-fb4a29cb7887', 'user', '1',  'user.1@mail.com',  '2024-01-01 01:00:00.000000+00', '2024-05-11 09:14:56.030582+00');
 INSERT INTO public.users (id, first_name, last_name, email, created_at, updated_at) VALUES ('ea1c33d1-76de-4cb2-96b9-844ebbf39cdd', 'user', '2',  'user.2@mail.com',  '2024-01-02 02:00:00.000000+00', '2024-05-11 09:14:56.030582+00');
 INSERT INTO public.users (id, first_name, last_name, email, created_at, updated_at) VALUES ('9dae34f7-0b1a-4ff3-a07f-50aabe80b899', 'user', '3',  'user.3@mail.com',  '2024-01-03 03:00:00.000000+00', '2024-05-11 09:14:56.030582+00');
@@ -34,6 +35,31 @@ INSERT INTO public.users (id, first_name, last_name, email, created_at, updated_
 INSERT INTO public.users (id, first_name, last_name, email, created_at, updated_at) VALUES ('c3b11505-9606-4046-b1f2-7a2a5cf6df58', 'user', '28', 'user.28@mail.com', '2024-03-08 08:00:00.000000+00', '2024-05-11 09:14:56.030582+00');
 INSERT INTO public.users (id, first_name, last_name, email, created_at, updated_at) VALUES ('bfdfc84d-33a1-4c5a-b61d-7bd35a5819cd', 'user', '29', 'user.29@mail.com', '2024-03-09 09:00:00.000000+00', '2024-05-11 09:14:56.030582+00');
 INSERT INTO public.users (id, first_name, last_name, email, created_at, updated_at) VALUES ('6f7c13c8-9c6a-432f-a5f6-80a0a1bd29eb', 'user', '30', 'user.30@mail.com', '2024-03-10 10:00:00.000000+00', '2024-05-11 09:14:56.030582+00');
+
+-- users without created_at and updated_at
+INSERT INTO public.users (id, first_name, last_name, email) VALUES
+('ec728934-bc76-40e6-80c8-20a6f9535468', 'user', '31', 'user.31@mail.com'),
+('3afb6be1-4125-401f-a482-2fd58f0bfc08', 'user', '32', 'user.32@mail.com'),
+('7cb3f482-af6f-45d8-b956-ee7f3edbabf4', 'user', '33', 'user.33@mail.com'),
+('fb8812e6-45fd-42a1-b623-484ae0cae2fb', 'user', '34', 'user.34@mail.com'),
+('7b404583-062f-409d-ba4c-6cc8f40e67ec', 'user', '35', 'user.35@mail.com'),
+('a2273def-aa32-4ceb-b7a5-62355197e313', 'user', '36', 'user.36@mail.com'),
+('a0256b99-82f3-42a2-a49b-12ea51869101', 'user', '37', 'user.37@mail.com'),
+('b6593db8-e488-4dcb-965b-555d7cb2e203', 'user', '38', 'user.38@mail.com'),
+('1c8768ae-beb6-412a-9dd9-a6b8f93ac721', 'user', '39', 'user.39@mail.com'),
+('bf2bf061-599f-424a-a646-0185e70275d0', 'user', '40', 'user.40@mail.com'),
+('3081c8a5-59f2-4249-afb9-ca393ce10f94', 'user', '41', 'user.41@mail.com'),
+('1e480e0e-7216-4a71-bcb5-8d2986d7d94a', 'user', '42', 'user.42@mail.com'),
+('cbff082f-5824-434e-8309-e592ee6462e2', 'user', '43', 'user.43@mail.com'),
+('bc4eac22-c3ae-4616-ae90-536e877b1ae3', 'user', '44', 'user.44@mail.com'),
+('5b7dfe58-40d8-4a04-90df-4050712d001b', 'user', '45', 'user.45@mail.com'),
+('af676299-94e4-4845-ba8d-6ac445d0faa8', 'user', '46', 'user.46@mail.com'),
+('47864f2f-a8d9-4840-8cae-2034c9b64fa4', 'user', '47', 'user.47@mail.com'),
+('d4d227ca-0ef6-4984-abae-f2bf1a6fc4c3', 'user', '48', 'user.48@mail.com'),
+('cb85b9f9-d22f-4f63-9a47-6b1cae5ff4b7', 'user', '49', 'user.49@mail.com'),
+('8de5743a-f2e6-4acd-9921-ef5416841bac', 'user', '50', 'user.50@mail.com'),
+('0f683a93-00d9-42eb-b515-e0535e85e33d', 'user', '51', 'user.51@mail.com');
+
 -- +goose StatementEnd
 
 -- +goose Down

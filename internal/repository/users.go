@@ -522,6 +522,9 @@ func (r *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.Selec
 	fieldsStr := strings.Join(params.Fields, ", ")
 	if fieldsStr == "" {
 		fieldsStr = "*"
+	} else {
+		// always select the serial id for pagination at the end
+		fieldsStr += ", serial_id"
 	}
 
 	var filterQuery string
@@ -543,7 +546,7 @@ func (r *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.Selec
 	// if next token is provided
 	if params.Paginator.NextToken != "" {
 		// decode the token
-		id, createdAt, err := paginator.DecodeToken(params.Paginator.NextToken)
+		id, serial, err := paginator.DecodeToken(params.Paginator.NextToken)
 		if err != nil {
 			slog.Error("repository.user.SelectAll", "error", err)
 			span.SetStatus(codes.Error, "invalid token")
@@ -557,15 +560,15 @@ func (r *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.Selec
 		}
 		// from newest to oldest
 		paginationQuery = fmt.Sprintf(`
-            WHERE usrs.created_at < '%s'
-                AND (usrs.id < '%s' OR usrs.created_at < '%s')
+            WHERE usrs.serial_id < '%d'
+                AND (usrs.id < '%s' OR usrs.serial_id < '%d')
                 %s
-            ORDER BY usrs.created_at DESC, usrs.id DESC
+            ORDER BY usrs.serial_id DESC, usrs.id DESC
             LIMIT %d
         `,
-			createdAt.UTC().Format(paginator.DateFormat),
+			serial,
 			id.String(),
-			createdAt.UTC().Format(paginator.DateFormat),
+			serial,
 			filterQuery,
 			params.Paginator.Limit,
 		)
@@ -574,7 +577,7 @@ func (r *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.Selec
 	// if prev token is provided
 	if params.Paginator.PrevToken != "" {
 		// decode the token
-		id, createdAt, err := paginator.DecodeToken(params.Paginator.PrevToken)
+		id, serial, err := paginator.DecodeToken(params.Paginator.PrevToken)
 		if err != nil {
 			slog.Error("repository.user.SelectAll", "error", err)
 			span.SetStatus(codes.Error, "invalid token")
@@ -589,14 +592,14 @@ func (r *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.Selec
 
 		// from newest to oldest
 		paginationQuery = fmt.Sprintf(`
-                WHERE usrs.created_at > '%s'
-                    AND (usrs.id > '%s' OR usrs.created_at > '%s')
+                WHERE usrs.serial_id > '%d'
+                    AND (usrs.id > '%s' OR usrs.serial_id > '%d')
                     %s
-                ORDER BY usrs.created_at ASC, usrs.id ASC
+                ORDER BY usrs.serial_id ASC, usrs.id ASC
                 LIMIT %d`,
-			createdAt.UTC().Format(paginator.DateFormat),
+			serial,
 			id.String(),
-			createdAt.UTC().Format(paginator.DateFormat),
+			serial,
 			filterQuery,
 			params.Paginator.Limit,
 		)
@@ -611,7 +614,7 @@ func (r *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.Selec
 
 		paginationQuery = fmt.Sprintf(`
             %s
-            ORDER BY usrs.created_at DESC, id DESC
+            ORDER BY usrs.serial_id DESC, usrs.id DESC
             LIMIT %d
             `,
 			filterQuery,
@@ -673,7 +676,7 @@ func (r *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.Selec
 		scanFields := make([]interface{}, 0)
 
 		if fieldsStr == "*" {
-			scanFields = []interface{}{&u.ID, &u.FirstName, &u.LastName, &u.Email, &u.CreatedAt, &u.UpdatedAt}
+			scanFields = []interface{}{&u.ID, &u.FirstName, &u.LastName, &u.Email, &u.CreatedAt, &u.UpdatedAt, &u.SerialID}
 		} else {
 			for _, field := range params.Fields {
 				switch field {
@@ -689,10 +692,14 @@ func (r *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.Selec
 					scanFields = append(scanFields, &u.CreatedAt)
 				case "updated_at":
 					scanFields = append(scanFields, &u.UpdatedAt)
+
 				default:
 					slog.Warn("repository.user.SelectAll", "message", "field not found", "field", field)
 				}
 			}
+
+			// always scan the serial id because it is used for pagination
+			scanFields = append(scanFields, &u.SerialID)
 		}
 
 		if err := rows.Scan(scanFields...); err != nil {
@@ -719,16 +726,16 @@ func (r *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.Selec
 		}, nil
 	}
 
-	slog.Debug("repository.users.SelectAll", "next_id", users[outLen-1].ID, "next_created_at", users[outLen-1].CreatedAt)
-	slog.Debug("repository.users.SelectAll", "prev_id", users[0].ID, "prev_created_at", users[0].CreatedAt)
+	slog.Debug("repository.users.SelectAll", "next_id", users[outLen-1].ID, "next_serial_id", users[outLen-1].SerialID)
+	slog.Debug("repository.users.SelectAll", "prev_id", users[0].ID, "prev_serial_id", users[0].SerialID)
 
 	nextToken, prevToken := paginator.GetTokens(
 		outLen,
 		params.Paginator.Limit,
 		users[0].ID,
-		users[0].CreatedAt,
+		users[0].SerialID,
 		users[outLen-1].ID,
-		users[outLen-1].CreatedAt,
+		users[outLen-1].SerialID,
 	)
 
 	ret := &model.SelectAllUserQueryOutput{
