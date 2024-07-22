@@ -722,8 +722,14 @@ func (r *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.Selec
 	slog.Debug("repository.users.SelectAll", "next_id", users[outLen-1].ID, "next_created_at", users[outLen-1].CreatedAt)
 	slog.Debug("repository.users.SelectAll", "prev_id", users[0].ID, "prev_created_at", users[0].CreatedAt)
 
-	nextToken := params.Paginator.GenerateToken(users[outLen-1].ID, users[outLen-1].CreatedAt)
-	prevToken := params.Paginator.GenerateToken(users[0].ID, users[0].CreatedAt)
+	nextToken, prevToken := paginator.GetTokens(
+		outLen,
+		params.Paginator.Limit,
+		users[0].ID,
+		users[0].CreatedAt,
+		users[outLen-1].ID,
+		users[outLen-1].CreatedAt,
+	)
 
 	ret := &model.SelectAllUserQueryOutput{
 		Items: users,

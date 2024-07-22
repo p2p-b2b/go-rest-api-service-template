@@ -30,22 +30,22 @@ var (
 // Paginator represents a paginator.
 type Paginator struct {
 	// NextToken is the cursor token to the next page.
-	NextToken string `json:"next_token,omitempty"`
+	NextToken string `json:"next_token"`
 
 	// NextPage the URL to the next page.
-	NextPage string `json:"next_page,omitempty"`
+	NextPage string `json:"next_page"`
 
 	// PrevToken is the cursor token to the previous page.
-	PrevToken string `json:"prev_token,omitempty"`
+	PrevToken string `json:"prev_token"`
 
 	// PrevPage is the cursor token to the previous page.
-	PrevPage string `json:"prev_page,omitempty"`
+	PrevPage string `json:"prev_page"`
 
 	// Size is the number of elements in the current page.
-	Size int `json:"size,omitempty"`
+	Size int `json:"size"`
 
 	// Limit is the maximum number of elements to return.
-	Limit int `json:"limit,omitempty"`
+	Limit int `json:"limit"`
 }
 
 // String returns the string representation of the paginator.
@@ -124,4 +124,25 @@ func DecodeToken(s string) (id uuid.UUID, date time.Time, err error) {
 	}
 
 	return id, date, nil
+}
+
+// GetTokens returns the next and previous tokens based on the length and limit conditions.
+// size is the number of elements in the current page.
+// limit is the maximum number of elements to return.
+// firstID is the ID of the first element in the current page.
+// firstDate is the time of the first element in the current page.
+// lastID is the ID of the last element in the current page.
+// lastDate is the time of the last element in the current page.
+func GetTokens(size int, limit int, firstID uuid.UUID, firstDate time.Time, lastID uuid.UUID, lastDate time.Time) (next string, prev string) {
+	if size == 0 || size < limit {
+		next = ""
+		prev = ""
+	}
+
+	if size >= limit {
+		next = EncodeToken(lastID, lastDate)
+		prev = EncodeToken(firstID, firstDate)
+	}
+
+	return
 }
