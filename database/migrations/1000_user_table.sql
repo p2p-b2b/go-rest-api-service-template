@@ -8,13 +8,16 @@ CREATE TABLE IF NOT EXISTS users (
     last_name VARCHAR(255) NOT NULL,
     email VARCHAR(255) NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+
+    -- serial_id is used for pagination
+    serial_id BIGSERIAL NOT NULL UNIQUE
 );
 
 CREATE INDEX "idx_users_email" ON users (email);
 CREATE INDEX "idx_users_created_at" ON users (created_at);
 CREATE INDEX "idx_users_updated_at" ON users (updated_at);
-CREATE INDEX "idx_users_pagination" ON users (created_at, id);
+CREATE INDEX "idx_users_pagination" ON users (serial_id, id);
 
 -- +goose StatementEnd
 --

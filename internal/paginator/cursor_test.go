@@ -4,15 +4,14 @@ import (
 	"encoding/base64"
 	"reflect"
 	"testing"
-	"time"
 
 	"github.com/google/uuid"
 )
 
 func TestEncodeToken(t *testing.T) {
 	type args struct {
-		id   uuid.UUID
-		date time.Time
+		id     uuid.UUID
+		serial int64
 	}
 	tests := []struct {
 		name string
@@ -24,14 +23,14 @@ func TestEncodeToken(t *testing.T) {
 			args: args{
 				id: uuid.Max,
 				// fixed date
-				date: time.Date(2021, 9, 1, 0, 0, 0, 0, time.UTC),
+				serial: 0,
 			},
-			want: base64.StdEncoding.EncodeToString([]byte("ffffffff-ffff-ffff-ffff-ffffffffffff;2021-09-01T00:00:00Z")),
+			want: base64.StdEncoding.EncodeToString([]byte("ffffffff-ffff-ffff-ffff-ffffffffffff;0")),
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := EncodeToken(tt.args.id, tt.args.date); got != tt.want {
+			if got := EncodeToken(tt.args.id, tt.args.serial); got != tt.want {
 				t.Errorf("EncodeToken() = %v, want %v", got, tt.want)
 			}
 
@@ -41,8 +40,8 @@ func TestEncodeToken(t *testing.T) {
 				t.Errorf("DecodeToken() error = %v", err)
 			}
 
-			if date != tt.args.date {
-				t.Errorf("DecodeToken() date = %v, want %v", date, tt.args.date)
+			if date != tt.args.serial {
+				t.Errorf("DecodeToken() date = %v, want %v", date, tt.args.serial)
 			}
 
 			if id != tt.args.id {
@@ -57,29 +56,29 @@ func TestDecodeToken(t *testing.T) {
 		s string
 	}
 	tests := []struct {
-		name     string
-		args     args
-		wantDate time.Time
-		wantId   uuid.UUID
-		wantErr  bool
+		name       string
+		args       args
+		wantSerial int64
+		wantId     uuid.UUID
+		wantErr    bool
 	}{
 		{
 			name: "success",
 			args: args{
-				s: base64.StdEncoding.EncodeToString([]byte("ffffffff-ffff-ffff-ffff-ffffffffffff;2021-09-01T00:00:00Z")),
+				s: base64.StdEncoding.EncodeToString([]byte("ffffffff-ffff-ffff-ffff-ffffffffffff;0")),
 			},
-			wantDate: time.Date(2021, 9, 1, 0, 0, 0, 0, time.UTC),
-			wantId:   uuid.Max,
-			wantErr:  false,
+			wantSerial: 0,
+			wantId:     uuid.Max,
+			wantErr:    false,
 		},
 		{
 			name: "invalid token",
 			args: args{
 				s: "invalid",
 			},
-			wantDate: time.Time{},
-			wantId:   uuid.Nil,
-			wantErr:  true,
+			wantSerial: 0,
+			wantId:     uuid.Nil,
+			wantErr:    true,
 		},
 	}
 	for _, tt := range tests {
@@ -89,8 +88,8 @@ func TestDecodeToken(t *testing.T) {
 				t.Errorf("DecodeToken() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(gotDate, tt.wantDate) {
-				t.Errorf("DecodeToken() gotDate = %v, want %v", gotDate, tt.wantDate)
+			if !reflect.DeepEqual(gotDate, tt.wantSerial) {
+				t.Errorf("DecodeToken() gotDate = %v, want %v", gotDate, tt.wantSerial)
 			}
 			if !reflect.DeepEqual(gotId, tt.wantId) {
 				t.Errorf("DecodeToken() gotId = %v, want %v", gotId, tt.wantId)

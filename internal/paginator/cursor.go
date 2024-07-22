@@ -4,17 +4,14 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
-	"time"
 
 	"github.com/google/uuid"
 )
 
 // DataSeparator is the separator used to separate the data in the cursor token.
 var DataSeparator string = ";"
-
-// DateFormat is the date format used in the cursor token.
-var DateFormat string = time.RFC3339
 
 // DefaultLimit is the maximum number of elements to return.
 const DefaultLimit int = 10
@@ -63,8 +60,8 @@ func (p *Paginator) String() string {
 }
 
 // GenerateToken generates a token for the given id and date.
-func (p *Paginator) GenerateToken(id uuid.UUID, date time.Time) string {
-	return EncodeToken(id, date)
+func (p *Paginator) GenerateToken(id uuid.UUID, serial int64) string {
+	return EncodeToken(id, serial)
 }
 
 // Validate validates the paginator.
@@ -96,52 +93,52 @@ func (p *Paginator) Validate() error {
 // into a base64 string after joining them with a separator.
 // use the package variables DataSeparator and DateFormat
 // to set the separator and the date format.
-func EncodeToken(id uuid.UUID, date time.Time) string {
-	payload := id.String() + DataSeparator + date.Format(DateFormat)
+func EncodeToken(id uuid.UUID, serial int64) string {
+	payload := id.String() + DataSeparator + fmt.Sprintf("%d", serial)
 	return base64.StdEncoding.EncodeToString([]byte(payload))
 }
 
 // DecodeToken decodes the string into a date and id.
-func DecodeToken(s string) (id uuid.UUID, date time.Time, err error) {
+func DecodeToken(s string) (id uuid.UUID, serial int64, err error) {
 	data, err := base64.StdEncoding.DecodeString(s)
 	if err != nil {
-		return uuid.Nil, time.Time{}, err
+		return uuid.Nil, 0, err
 	}
 
 	parts := strings.Split(string(data), DataSeparator)
 	if len(parts) != 2 {
-		return uuid.Nil, time.Time{}, ErrInvalidCursor
+		return uuid.Nil, 0, ErrInvalidCursor
 	}
 
-	date, err = time.Parse(DateFormat, parts[1])
+	serial, err = strconv.ParseInt(parts[1], 10, 64)
 	if err != nil {
-		return uuid.Nil, time.Time{}, err
+		return uuid.Nil, 0, err
 	}
 
 	id, err = uuid.Parse(parts[0])
 	if err != nil {
-		return uuid.Nil, time.Time{}, err
+		return uuid.Nil, 0, err
 	}
 
-	return id, date, nil
+	return id, serial, nil
 }
 
 // GetTokens returns the next and previous tokens based on the length and limit conditions.
 // size is the number of elements in the current page.
 // limit is the maximum number of elements to return.
 // firstID is the ID of the first element in the current page.
-// firstDate is the time of the first element in the current page.
+// firstSerial is the serial number of the first element in the current page.
 // lastID is the ID of the last element in the current page.
-// lastDate is the time of the last element in the current page.
-func GetTokens(size int, limit int, firstID uuid.UUID, firstDate time.Time, lastID uuid.UUID, lastDate time.Time) (next string, prev string) {
+// lastSerial  is the serial number of the last element in the current page.
+func GetTokens(size int, limit int, firstID uuid.UUID, firstSerial int64, lastID uuid.UUID, lastSerial int64) (next string, prev string) {
 	if size == 0 || size < limit {
 		next = ""
 		prev = ""
 	}
 
 	if size >= limit {
-		next = EncodeToken(lastID, lastDate)
-		prev = EncodeToken(firstID, firstDate)
+		next = EncodeToken(lastID, lastSerial)
+		prev = EncodeToken(firstID, firstSerial)
 	}
 
 	return

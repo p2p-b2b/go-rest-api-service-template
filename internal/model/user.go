@@ -51,6 +51,9 @@ type User struct {
 
 	// UpdatedAt is the time the user was last updated.
 	UpdatedAt time.Time `json:"updated_at,omitempty"`
+
+	// SerialID is the serial number of the user.
+	SerialID int64 `json:"-"`
 }
 
 // MarshalJSON marshals the user into JSON.
