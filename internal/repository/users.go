@@ -697,10 +697,10 @@ func (r *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.Selec
 					slog.Warn("repository.user.SelectAll", "message", "field not found", "field", field)
 				}
 			}
-
-			// always scan the serial id because it is used for pagination
-			scanFields = append(scanFields, &u.SerialID)
 		}
+
+		// always scan the serial id because it is used for pagination
+		scanFields = append(scanFields, &u.SerialID)
 
 		if err := rows.Scan(scanFields...); err != nil {
 			slog.Error("repository.user.SelectAll", "error", err)
