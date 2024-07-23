@@ -57,97 +57,40 @@ type User struct {
 }
 
 // MarshalJSON marshals the user into JSON.
+// this is needed to omit zero values from the JSON output.
 func (u User) MarshalJSON() ([]byte, error) {
 	type Alias User
 
-	// if the ID, CreatedAt, and UpdatedAt are zero, marshal them as empty strings
-	if u.ID == uuid.Nil && u.CreatedAt.IsZero() && u.UpdatedAt.IsZero() {
-		return json.Marshal(&struct {
-			Alias
-			ID        string `json:"id,omitempty"`
-			CreatedAt string `json:"created_at,omitempty"`
-			UpdatedAt string `json:"updated_at,omitempty"`
-		}{
-			Alias:     (Alias)(u),
-			ID:        "",
-			CreatedAt: "",
-			UpdatedAt: "",
-		})
-	}
-
-	if u.ID == uuid.Nil && u.CreatedAt.IsZero() {
-		return json.Marshal(&struct {
-			Alias
-			ID        string `json:"id,omitempty"`
-			CreatedAt string `json:"created_at,omitempty"`
-		}{
-			Alias:     (Alias)(u),
-			ID:        "",
-			CreatedAt: "",
-		})
-	}
-
-	if u.ID == uuid.Nil && u.UpdatedAt.IsZero() {
-		return json.Marshal(&struct {
-			Alias
-			ID        string `json:"id,omitempty"`
-			UpdatedAt string `json:"updated_at,omitempty"`
-		}{
-			Alias:     (Alias)(u),
-			ID:        "",
-			UpdatedAt: "",
-		})
-	}
-
-	if u.CreatedAt.IsZero() && u.UpdatedAt.IsZero() {
-		return json.Marshal(&struct {
-			Alias
-			CreatedAt string `json:"created_at,omitempty"`
-			UpdatedAt string `json:"updated_at,omitempty"`
-		}{
-			Alias:     (Alias)(u),
-			CreatedAt: "",
-			UpdatedAt: "",
-		})
-	}
-
-	if u.ID == uuid.Nil {
-		return json.Marshal(&struct {
-			Alias
-			ID string `json:"id,omitempty"`
-		}{
-			Alias: (Alias)(u),
-			ID:    "",
-		})
-	}
-
-	// if the CreatedAt is zero, marshal the CreatedAt as an empty string
-	if u.CreatedAt.IsZero() {
-		return json.Marshal(&struct {
-			Alias
-			CreatedAt string `json:"created_at,omitempty"`
-		}{
-			Alias:     (Alias)(u),
-			CreatedAt: "",
-		})
-	}
-
-	// if the UpdatedAt is zero, marshal the UpdatedAt as an empty string
-	if u.UpdatedAt.IsZero() {
-		return json.Marshal(&struct {
-			Alias
-			UpdatedAt string `json:"updated_at,omitempty"`
-		}{
-			Alias:     (Alias)(u),
-			UpdatedAt: "",
-		})
-	}
-
-	return json.Marshal(&struct {
+	// Define an empty struct to hold omitted fields
+	var omitted struct {
 		Alias
-	}{
-		Alias: (Alias)(u),
-	})
+		ID        string `json:"id,omitempty"`
+		CreatedAt string `json:"created_at,omitempty"`
+		UpdatedAt string `json:"updated_at,omitempty"`
+	}
+
+	// Check for zero values and set them in the omitted struct
+	if u.ID == uuid.Nil {
+		omitted.ID = ""
+	} else {
+		omitted.ID = u.ID.String()
+	}
+
+	if u.CreatedAt.IsZero() {
+		omitted.CreatedAt = ""
+	} else {
+		omitted.CreatedAt = u.CreatedAt.Format(time.RFC3339)
+	}
+
+	if u.UpdatedAt.IsZero() {
+		omitted.UpdatedAt = ""
+	} else {
+		omitted.UpdatedAt = u.UpdatedAt.Format(time.RFC3339)
+	}
+
+	omitted.Alias = (Alias)(u)
+
+	return json.Marshal(omitted)
 }
 
 // CreateUserRequest represents the input for the CreateUser method.
