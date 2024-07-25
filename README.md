@@ -103,7 +103,7 @@ To add more directories you need to create a new machine with the following comm
 ```bash
 podman machine stop
 podman machine rm
-podman machine init -v /tmp:/tmp
+podman machine init -v $HOME:$HOME -v /tmp:/tmp
 podman machine start
 ```
 

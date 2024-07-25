@@ -38,7 +38,7 @@ spec:
         - containerPort: 5432
           hostPort: 5432
       volumeMounts:
-        - name: go-rest-api-service-template-db-volume-host
+        - name: db-volume-host
           mountPath: /var/lib/postgresq/data
     - name: grafana
       args:
@@ -105,35 +105,35 @@ spec:
         - mountPath: /etc/prometheus/prometheus.yml:Z
           name: prometheus-config
   volumes:
-    - name: go-rest-api-service-template-db-volume-host
+    - name: db-volume-host
       hostPath:
-        path: /tmp/go-rest-api-service-template-db-volume-host
+        path: /tmp/go-rest-api-service-template/db-volume-host
         type: Directory
     - name: grafana-datasources
       hostPath:
-        path: /tmp/go-rest-api-service-template-grafana-ds/grafana-ds.yaml
+        path: /tmp/go-rest-api-service-template/grafana-ds/grafana-ds.yaml
         type: File
     - name: grafana-dashboard-config
       hostPath:
-        path: /tmp/go-rest-api-service-template-grafana-dashboard-config/default.yaml
+        path: /tmp/go-rest-api-service-template/grafana-dashboard-config/default.yaml
         type: File
     - name: grafana-dashboard
       hostPath:
-        path: /tmp/go-rest-api-service-template-grafana-dashboard/
+        path: /tmp/go-rest-api-service-template/grafana-dashboard
         type: Directory
     - name: tempo
       hostPath:
-        path: /tmp/go-rest-api-service-template-tempo-volume-host
+        path: /tmp/go-rest-api-service-template/tempo-volume-host
         type: Directory
     - name: tempo-config
       hostPath:
-        path: /tmp/go-rest-api-service-template-dev-env/tempo-local-config.yaml
+        path: /tmp/go-rest-api-service-template/dev-env/tempo-local-config.yaml
         type: File
     - name: prometheus
       hostPath:
-        path: /tmp/go-rest-api-service-template-prometheus-volume-host
+        path: /tmp/go-rest-api-service-template/prometheus-volume-host
         type: Directory
     - name: prometheus-config
       hostPath:
-        path: /tmp/go-rest-api-service-template-dev-env/prometheus.yaml
+        path: /tmp/go-rest-api-service-template/dev-env/prometheus.yaml
         type: File
