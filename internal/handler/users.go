@@ -35,13 +35,13 @@ type UserService interface {
 	GetUserByEmail(ctx context.Context, email string) (*model.User, error)
 
 	// CreateUser inserts a new user into the database.
-	CreateUser(ctx context.Context, user *model.User) error
+	CreateUser(ctx context.Context, user *model.UserParamsInput) error
 
 	// UpdateUser updates the user.
-	UpdateUser(ctx context.Context, user *model.User) error
+	UpdateUser(ctx context.Context, user *model.UserParamsInput) error
 
 	// DeleteUser deletes the user.
-	DeleteUser(ctx context.Context, user *model.User) error
+	DeleteUser(ctx context.Context, user *model.UserParamsInput) error
 
 	// ListUsers returns a list of users.
 	ListUsers(ctx context.Context, params *model.ListUserRequest) (*model.ListUserResponse, error)
@@ -315,7 +315,7 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user := model.User{
+	user := model.UserParamsInput{
 		ID:        req.ID,
 		FirstName: req.FirstName,
 		LastName:  req.LastName,
@@ -468,7 +468,7 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user := model.User{
+	user := model.UserParamsInput{
 		ID:        id,
 		FirstName: req.FirstName,
 		LastName:  req.LastName,
@@ -572,7 +572,7 @@ func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user := model.User{
+	user := model.UserParamsInput{
 		ID: id,
 	}
 

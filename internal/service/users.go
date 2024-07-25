@@ -10,7 +10,6 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/model"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/o11y"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/paginator"
@@ -36,13 +35,13 @@ type UserRepository interface {
 	Conn(ctx context.Context) (*sql.Conn, error)
 
 	// Insert a new user into the database.
-	Insert(ctx context.Context, user *model.User) error
+	Insert(ctx context.Context, user *model.UserParamsInput) error
 
 	// Update updates the user.
-	Update(ctx context.Context, user *model.User) error
+	Update(ctx context.Context, user *model.UserParamsInput) error
 
 	// Delete deletes the user.
-	Delete(ctx context.Context, user *model.User) error
+	Delete(ctx context.Context, user *model.UserParamsInput) error
 
 	// SelectByID returns the user with the specified ID.
 	SelectByID(ctx context.Context, id uuid.UUID) (*model.User, error)
@@ -241,7 +240,7 @@ func (s *User) GetUserByEmail(ctx context.Context, email string) (*model.User, e
 }
 
 // CreateUser inserts a new user into the database.
-func (s *User) CreateUser(ctx context.Context, user *model.User) error {
+func (s *User) CreateUser(ctx context.Context, user *model.UserParamsInput) error {
 	ctx, span := s.ot.Traces.Tracer.Start(ctx, "service.users.CreateUser")
 	defer span.End()
 
@@ -273,22 +272,14 @@ func (s *User) CreateUser(ctx context.Context, user *model.User) error {
 	}
 
 	if err := s.repository.Insert(ctx, user); err != nil {
-		pgxErr, ok := err.(*pgconn.PgError)
-
-		slog.Error("service.users.CreateUser", "error", err, "error_code", pgxErr.Code)
-		if ok {
-			if pgxErr.Code == "23505" {
-				span.SetStatus(codes.Error, "ID already exists")
-				span.RecordError(ErrUserIDAlreadyExists)
-				s.metrics.serviceCalls.Add(ctx, 1,
-					metric.WithAttributes(
-						append(metricCommonAttributes, attribute.String("successful", "false"))...,
-					),
-				)
-				return ErrUserIDAlreadyExists
-			}
-		}
-
+		span.SetStatus(codes.Error, err.Error())
+		span.RecordError(err)
+		slog.Error("service.users.CreateUser", "error", err)
+		s.metrics.serviceCalls.Add(ctx, 1,
+			metric.WithAttributes(
+				append(metricCommonAttributes, attribute.String("successful", "false"))...,
+			),
+		)
 		return ErrCreatingUser
 	}
 
@@ -302,7 +293,7 @@ func (s *User) CreateUser(ctx context.Context, user *model.User) error {
 }
 
 // UpdateUser updates the user with the specified ID.
-func (s *User) UpdateUser(ctx context.Context, user *model.User) error {
+func (s *User) UpdateUser(ctx context.Context, user *model.UserParamsInput) error {
 	ctx, span := s.ot.Traces.Tracer.Start(ctx, "service.users.UpdateUser")
 	defer span.End()
 
@@ -352,7 +343,7 @@ func (s *User) UpdateUser(ctx context.Context, user *model.User) error {
 }
 
 // DeleteUser deletes the user with the specified ID.
-func (s *User) DeleteUser(ctx context.Context, user *model.User) error {
+func (s *User) DeleteUser(ctx context.Context, user *model.UserParamsInput) error {
 	ctx, span := s.ot.Traces.Tracer.Start(ctx, "service.users.DeleteUser")
 	defer span.End()
 

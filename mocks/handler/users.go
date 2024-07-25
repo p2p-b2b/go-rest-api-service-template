@@ -37,7 +37,7 @@ func (m *MockUserService) EXPECT() *MockUserServiceMockRecorder {
 }
 
 // CreateUser mocks base method.
-func (m *MockUserService) CreateUser(ctx context.Context, user *model.User) error {
+func (m *MockUserService) CreateUser(ctx context.Context, user *model.UserParamsInput) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateUser", ctx, user)
 	ret0, _ := ret[0].(error)
@@ -51,7 +51,7 @@ func (mr *MockUserServiceMockRecorder) CreateUser(ctx, user interface{}) *gomock
 }
 
 // DeleteUser mocks base method.
-func (m *MockUserService) DeleteUser(ctx context.Context, user *model.User) error {
+func (m *MockUserService) DeleteUser(ctx context.Context, user *model.UserParamsInput) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DeleteUser", ctx, user)
 	ret0, _ := ret[0].(error)
@@ -110,7 +110,7 @@ func (mr *MockUserServiceMockRecorder) ListUsers(ctx, params interface{}) *gomoc
 }
 
 // UpdateUser mocks base method.
-func (m *MockUserService) UpdateUser(ctx context.Context, user *model.User) error {
+func (m *MockUserService) UpdateUser(ctx context.Context, user *model.UserParamsInput) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateUser", ctx, user)
 	ret0, _ := ret[0].(error)

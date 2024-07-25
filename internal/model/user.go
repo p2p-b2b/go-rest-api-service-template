@@ -56,6 +56,22 @@ type User struct {
 	SerialID int64 `json:"-"`
 }
 
+// UserParamsInput represents the input for the UserParams method.
+// this is used to pass the params between the service and the model or store.
+type UserParamsInput struct {
+	// ID is the unique identifier of the user.
+	ID uuid.UUID `json:"id"`
+
+	// FirstName is the first name of the user.
+	FirstName string `json:"first_name"`
+
+	// LastName is the last name of the user.
+	LastName string `json:"last_name"`
+
+	// Email is the email address of the user.
+	Email string `json:"email"`
+}
+
 // MarshalJSON marshals the user into JSON.
 // this is needed to omit zero values from the JSON output.
 func (u User) MarshalJSON() ([]byte, error) {

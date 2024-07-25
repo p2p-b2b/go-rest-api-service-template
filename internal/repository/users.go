@@ -3,12 +3,14 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"log/slog"
 	"strings"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/model"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/o11y"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/paginator"
@@ -114,7 +116,7 @@ func (r *PGSQLUserRepository) PingContext(ctx context.Context) error {
 }
 
 // Insert a new user into the database.
-func (r *PGSQLUserRepository) Insert(ctx context.Context, user *model.User) error {
+func (r *PGSQLUserRepository) Insert(ctx context.Context, user *model.UserParamsInput) error {
 	ctx, cancel := context.WithTimeout(ctx, r.maxQueryTimeout)
 	defer cancel()
 
@@ -160,6 +162,24 @@ func (r *PGSQLUserRepository) Insert(ctx context.Context, user *model.User) erro
 
 	_, err := r.db.ExecContext(ctx, query)
 	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) {
+			span.SetStatus(codes.Error, pgErr.Error())
+			span.RecordError(pgErr)
+			slog.Error("repository.users.Insert", "error", pgErr.Error())
+			r.metrics.repositoryCalls.Add(ctx, 1,
+				metric.WithAttributes(
+					append(metricCommonAttributes, attribute.String("successful", "false"))...,
+				),
+			)
+
+			// return the pgErr as an error without the (SQLSTATE XXXXX) suffix
+			// remove the SQLSTATE XXXXX suffix
+			// https://github.com/jackc/pgconn/blob/1860f4e57204614f40d05a5c76a43e8d80fde9da/errors.go#L52
+			errMessage := strings.Split(pgErr.Message, "(SQLSTATE")[0]
+			return fmt.Errorf("%s", errMessage)
+		}
+
 		span.SetStatus(codes.Error, "query failed")
 		span.RecordError(err)
 		slog.Error("repository.users.Insert", "error", err)
@@ -181,7 +201,7 @@ func (r *PGSQLUserRepository) Insert(ctx context.Context, user *model.User) erro
 }
 
 // Update updates the user with the specified ID.
-func (r *PGSQLUserRepository) Update(ctx context.Context, user *model.User) error {
+func (r *PGSQLUserRepository) Update(ctx context.Context, user *model.UserParamsInput) error {
 	ctx, cancel := context.WithTimeout(ctx, r.maxQueryTimeout)
 	defer cancel()
 
@@ -259,6 +279,24 @@ func (r *PGSQLUserRepository) Update(ctx context.Context, user *model.User) erro
 
 	_, err := r.db.ExecContext(ctx, query)
 	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) {
+			span.SetStatus(codes.Error, pgErr.Error())
+			span.RecordError(pgErr)
+			slog.Error("repository.users.Update", "error", pgErr.Error())
+			r.metrics.repositoryCalls.Add(ctx, 1,
+				metric.WithAttributes(
+					append(metricCommonAttributes, attribute.String("successful", "false"))...,
+				),
+			)
+
+			// return the pgErr as an error without the (SQLSTATE XXXXX) suffix
+			// remove the SQLSTATE XXXXX suffix
+			// https://github.com/jackc/pgconn/blob/1860f4e57204614f40d05a5c76a43e8d80fde9da/errors.go#L52
+			errMessage := strings.Split(pgErr.Message, "(SQLSTATE")[0]
+			return fmt.Errorf("%s", errMessage)
+		}
+
 		span.SetStatus(codes.Error, "query failed")
 		span.RecordError(err)
 		slog.Error("repository.users.Update", "error", err)
@@ -281,7 +319,7 @@ func (r *PGSQLUserRepository) Update(ctx context.Context, user *model.User) erro
 }
 
 // Delete deletes the user with the specified ID.
-func (r *PGSQLUserRepository) Delete(ctx context.Context, user *model.User) error {
+func (r *PGSQLUserRepository) Delete(ctx context.Context, user *model.UserParamsInput) error {
 	ctx, cancel := context.WithTimeout(ctx, r.maxQueryTimeout)
 	defer cancel()
 
@@ -337,6 +375,24 @@ func (r *PGSQLUserRepository) Delete(ctx context.Context, user *model.User) erro
 
 	_, err := r.db.ExecContext(ctx, query)
 	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) {
+			span.SetStatus(codes.Error, pgErr.Error())
+			span.RecordError(pgErr)
+			slog.Error("repository.users.Delete", "error", pgErr.Error())
+			r.metrics.repositoryCalls.Add(ctx, 1,
+				metric.WithAttributes(
+					append(metricCommonAttributes, attribute.String("successful", "false"))...,
+				),
+			)
+
+			// return the pgErr as an error without the (SQLSTATE XXXXX) suffix
+			// remove the SQLSTATE XXXXX suffix
+			// https://github.com/jackc/pgconn/blob/1860f4e57204614f40d05a5c76a43e8d80fde9da/errors.go#L52
+			errMessage := strings.Split(pgErr.Message, "(SQLSTATE")[0]
+			return fmt.Errorf("%s", errMessage)
+		}
+
 		span.SetStatus(codes.Error, "query failed")
 		span.RecordError(err)
 		slog.Error("repository.users.Delete", "error", err)
@@ -405,6 +461,24 @@ func (r *PGSQLUserRepository) SelectByID(ctx context.Context, id uuid.UUID) (*mo
 
 	var u model.User
 	if err := row.Scan(&u.ID, &u.FirstName, &u.LastName, &u.Email, &u.CreatedAt, &u.UpdatedAt); err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) {
+			span.SetStatus(codes.Error, pgErr.Error())
+			span.RecordError(pgErr)
+			slog.Error("repository.users.SelectByID", "error", pgErr.Error())
+			r.metrics.repositoryCalls.Add(ctx, 1,
+				metric.WithAttributes(
+					append(metricCommonAttributes, attribute.String("successful", "false"))...,
+				),
+			)
+
+			// return the pgErr as an error without the (SQLSTATE XXXXX) suffix
+			// remove the SQLSTATE XXXXX suffix
+			// https://github.com/jackc/pgconn/blob/1860f4e57204614f40d05a5c76a43e8d80fde9da/errors.go#L52
+			errMessage := strings.Split(pgErr.Message, "(SQLSTATE")[0]
+			return nil, fmt.Errorf("%s", errMessage)
+		}
+
 		span.SetStatus(codes.Error, "scan failed")
 		span.RecordError(err)
 		slog.Error("repository.users.SelectByID", "error", err)
@@ -461,6 +535,24 @@ func (r *PGSQLUserRepository) SelectByEmail(ctx context.Context, email string) (
 
 	var u model.User
 	if err := row.Scan(&u.ID, &u.FirstName, &u.LastName, &u.Email); err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) {
+			span.SetStatus(codes.Error, pgErr.Error())
+			span.RecordError(pgErr)
+			slog.Error("repository.users.SelectByEmail", "error", pgErr.Error())
+			r.metrics.repositoryCalls.Add(ctx, 1,
+				metric.WithAttributes(
+					append(metricCommonAttributes, attribute.String("successful", "false"))...,
+				),
+			)
+
+			// return the pgErr as an error without the (SQLSTATE XXXXX) suffix
+			// remove the SQLSTATE XXXXX suffix
+			// https://github.com/jackc/pgconn/blob/1860f4e57204614f40d05a5c76a43e8d80fde9da/errors.go#L52
+			errMessage := strings.Split(pgErr.Message, "(SQLSTATE")[0]
+			return nil, fmt.Errorf("%s", errMessage)
+		}
+
 		span.SetStatus(codes.Error, "scan failed")
 		span.RecordError(err)
 		slog.Error("repository.users.SelectByEmail", "error", err)
@@ -518,13 +610,16 @@ func (r *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.Selec
 		return nil, ErrFunctionParameterIsNil
 	}
 
-	// the fields to select
-	fieldsStr := strings.Join(params.Fields, ", ")
-	if fieldsStr == "" {
-		fieldsStr = "*"
-	} else {
-		// always select the serial id for pagination at the end
-		fieldsStr += ", serial_id"
+	// if no fields are provided, select all fields
+	fieldsStr := "usrs.*"
+	if params.Fields[0] != "" {
+		fields := make([]string, 0)
+		for _, field := range params.Fields {
+			fields = append(fields, "usrs."+field)
+		}
+
+		fields = append(fields, "usrs.serial_id")
+		fieldsStr = strings.Join(fields, ", ")
 	}
 
 	var filterQuery string
@@ -675,7 +770,7 @@ func (r *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.Selec
 
 		scanFields := make([]interface{}, 0)
 
-		if fieldsStr == "*" {
+		if params.Fields[0] == "" {
 			scanFields = []interface{}{&u.ID, &u.FirstName, &u.LastName, &u.Email, &u.CreatedAt, &u.UpdatedAt, &u.SerialID}
 		} else {
 			for _, field := range params.Fields {
@@ -697,12 +792,31 @@ func (r *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.Selec
 					slog.Warn("repository.user.SelectAll", "message", "field not found", "field", field)
 				}
 			}
+
+			// always scan the serial id because it is used for pagination
+			scanFields = append(scanFields, &u.SerialID)
 		}
 
-		// always scan the serial id because it is used for pagination
-		scanFields = append(scanFields, &u.SerialID)
-
 		if err := rows.Scan(scanFields...); err != nil {
+
+			var pgErr *pgconn.PgError
+			if errors.As(err, &pgErr) {
+				span.SetStatus(codes.Error, pgErr.Error())
+				span.RecordError(pgErr)
+				slog.Error("repository.users.SelectAll", "error", pgErr.Error())
+				r.metrics.repositoryCalls.Add(ctx, 1,
+					metric.WithAttributes(
+						append(metricCommonAttributes, attribute.String("successful", "false"))...,
+					),
+				)
+
+				// return the pgErr as an error without the (SQLSTATE XXXXX) suffix
+				// remove the SQLSTATE XXXXX suffix
+				// https://github.com/jackc/pgconn/blob/1860f4e57204614f40d05a5c76a43e8d80fde9da/errors.go#L52
+				errMessage := strings.Split(pgErr.Message, "(SQLSTATE")[0]
+				return nil, fmt.Errorf("%s", errMessage)
+			}
+
 			slog.Error("repository.user.SelectAll", "error", err)
 			span.SetStatus(codes.Error, "failed to scan user")
 			span.RecordError(err)
