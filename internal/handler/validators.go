@@ -7,9 +7,9 @@ import (
 	"strconv"
 
 	"github.com/google/uuid"
-	"github.com/p2p-b2b/go-rest-api-service-template/internal/model"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/paginator"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/query"
+	"github.com/p2p-b2b/go-rest-api-service-template/internal/repository"
 )
 
 var (
@@ -66,7 +66,7 @@ var (
 
 // parseSortQueryParams parses a string into a sort field.
 func parseSortQueryParams(sort string) (string, error) {
-	if !query.IsValidSort(model.UserSortFields, sort) {
+	if !query.IsValidSort(repository.UserSortFields, sort) {
 		return "", ErrInvalidSort
 	}
 
@@ -75,7 +75,7 @@ func parseSortQueryParams(sort string) (string, error) {
 
 // parseFilterQueryParams parses a string into a filter field.
 func parseFilterQueryParams(filter string) (string, error) {
-	if !query.IsValidFilter(model.UserFilterFields, filter) {
+	if !query.IsValidFilter(repository.UserFilterFields, filter) {
 		return "", ErrInvalidFilter
 	}
 
@@ -84,7 +84,7 @@ func parseFilterQueryParams(filter string) (string, error) {
 
 // parseFieldsQueryParams parses a string into a list of fields.
 func parseFieldsQueryParams(fields string) ([]string, error) {
-	if !query.IsValidFields(model.UserFields, fields) {
+	if !query.IsValidFields(repository.UserFields, fields) {
 		return nil, ErrInvalidFields
 	}
 

@@ -7,11 +7,9 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"strconv"
 	"strings"
 
 	"github.com/google/uuid"
-	"github.com/p2p-b2b/go-rest-api-service-template/internal/model"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/o11y"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/paginator"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/service"
@@ -22,25 +20,14 @@ import (
 
 //go:generate go run github.com/golang/mock/mockgen@v1.6.0 -package=mocks -destination=../../mocks/handler/users.go -source=users.go UserService
 
-// UserService represents a consumer interface for the user service.
+// UserService represents the service for the user.
 type UserService interface {
-	// UserHealthCheck verifies a connection to the repository is still alive.
-	UserHealthCheck(ctx context.Context) (model.Health, error)
-
-	// GetUserByID returns the user with the specified ID.
-	GetUserByID(ctx context.Context, id uuid.UUID) (*model.User, error)
-
-	// CreateUser inserts a new user into the database.
-	CreateUser(ctx context.Context, user *model.CreateUserInput) error
-
-	// UpdateUser updates the user.
-	UpdateUser(ctx context.Context, user *model.UpdateUserInput) error
-
-	// DeleteUser deletes the user.
-	DeleteUser(ctx context.Context, user *model.DeleteUserInput) error
-
-	// ListUsers returns a list of users.
-	ListUsers(ctx context.Context, params *model.ListUserInput) (*model.ListUserResponse, error)
+	UserHealthCheck(ctx context.Context) (service.Health, error)
+	GetUserByID(ctx context.Context, id uuid.UUID) (*service.User, error)
+	CreateUser(ctx context.Context, user *service.CreateUserInput) error
+	UpdateUser(ctx context.Context, user *service.UpdateUserInput) error
+	DeleteUser(ctx context.Context, user *service.DeleteUserInput) error
+	ListUsers(ctx context.Context, params *service.ListUserInput) (*service.ListUserOutput, error)
 }
 
 // UserHandler represents the handler for the user.
@@ -111,7 +98,7 @@ func (h *UserHandler) RegisterRoutes(mux *http.ServeMux) {
 // @Produce json
 // @Param uid path string true "The user ID in UUID format"
 // @Param fields query string false "Fields to return. Example: id,first_name,last_name"
-// @Success 200 {object} model.User
+// @Success 200 {object} User
 // @Failure 400 {object} APIError
 // @Failure 500 {object} APIError
 // @Router /users/{uid} [get]
@@ -147,7 +134,7 @@ func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := h.service.GetUserByID(ctx, id)
+	sUser, err := h.service.GetUserByID(ctx, id)
 	if err != nil {
 		span.SetStatus(codes.Error, ErrInternalServerError.Error())
 		span.RecordError(err)
@@ -168,6 +155,15 @@ func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 			attribute.String("code", fmt.Sprintf("%d", http.StatusOK)),
 		),
 	)
+
+	// create user from service.User
+
+	user := &User{
+		ID:        sUser.ID,
+		FirstName: sUser.FirstName,
+		LastName:  sUser.LastName,
+		Email:     sUser.Email,
+	}
 
 	// encode and write the response
 	if err := json.NewEncoder(w).Encode(user); err != nil {
@@ -200,7 +196,7 @@ func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 // @Tags users
 // @Accept json
 // @Produce json
-// @Param user body model.CreateUserRequest true "CreateUserRequest"
+// @Param user body CreateUserRequest true "CreateUserRequest"
 // @Success 201 {object} string
 // @Failure 400 {object} APIError
 // @Failure 500 {object} APIError
@@ -222,7 +218,7 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 		attribute.String("http.path", r.URL.Path[:strings.LastIndex(r.URL.Path, "/")]),
 	}
 
-	var req model.CreateUserRequest
+	var req CreateUserRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		span.SetStatus(codes.Error, err.Error())
 		span.RecordError(err)
@@ -255,7 +251,7 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user := &model.CreateUserInput{
+	user := &service.CreateUserInput{
 		ID:        req.ID,
 		FirstName: req.FirstName,
 		LastName:  req.LastName,
@@ -311,7 +307,7 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 // @Accept json
 // @Produce json
 // @Param uid path string true "The user ID in UUID format"
-// @Param user body model.UpdateUserRequest true "User"
+// @Param user body UpdateUserRequest true "User"
 // @Success 200 {object} string
 // @Failure 400 {object} APIError
 // @Failure 500 {object} APIError
@@ -348,7 +344,7 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var req model.UpdateUserRequest
+	var req UpdateUserRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		span.SetStatus(codes.Error, ErrDecodingPayload.Error())
 		span.RecordError(ErrDecodingPayload)
@@ -377,7 +373,7 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user := model.UpdateUserInput{
+	user := service.UpdateUserInput{
 		ID:        id,
 		FirstName: req.FirstName,
 		LastName:  req.LastName,
@@ -451,7 +447,7 @@ func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user := model.DeleteUserInput{
+	user := service.DeleteUserInput{
 		ID: id,
 	}
 
@@ -492,7 +488,7 @@ func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 // @Param next_token query string false "Next cursor"
 // @Param prev_token query string false "Previous cursor"
 // @Param limit query int false "Limit"
-// @Success 200 {object} model.ListUserResponse
+// @Success 200 {object} ListUserResponse
 // @Failure 400 {object} APIError
 // @Failure 500 {object} APIError
 // @Router /users [get]
@@ -538,7 +534,7 @@ func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	req := &model.ListUserInput{
+	req := &service.ListUserInput{
 		Sort:   sort,
 		Filter: filter,
 		Fields: fields,
@@ -549,7 +545,7 @@ func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 
-	usersResponse, err := h.service.ListUsers(ctx, req)
+	SUsersResponse, err := h.service.ListUsers(ctx, req)
 	if err != nil {
 		span.SetStatus(codes.Error, err.Error())
 		span.RecordError(err)
@@ -564,13 +560,25 @@ func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	usersResponse := &ListUserResponse{
+		Items:     make([]*User, 0, len(SUsersResponse.Items)),
+		Paginator: SUsersResponse.Paginator,
+	}
+
+	for _, sUser := range SUsersResponse.Items {
+		user := &User{
+			ID:        sUser.ID,
+			FirstName: sUser.FirstName,
+			LastName:  sUser.LastName,
+			Email:     sUser.Email,
+			CreatedAt: sUser.CreatedAt,
+			UpdatedAt: sUser.UpdatedAt,
+		}
+		usersResponse.Items = append(usersResponse.Items, user)
+	}
+
 	// set the next and previous page
-	if usersResponse.Paginator.NextToken != "" {
-		usersResponse.Paginator.NextPage = r.URL.Path + "?next_token=" + usersResponse.Paginator.NextToken + "&limit=" + strconv.Itoa(limit)
-	}
-	if usersResponse.Paginator.PrevToken != "" {
-		usersResponse.Paginator.PrevPage = r.URL.Path + "?prev_token=" + usersResponse.Paginator.PrevToken + "&limit=" + strconv.Itoa(limit)
-	}
+	usersResponse.Paginator.GeneratePages(r.URL.Path)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)

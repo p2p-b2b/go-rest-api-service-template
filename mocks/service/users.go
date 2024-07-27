@@ -11,7 +11,7 @@ import (
 
 	gomock "github.com/golang/mock/gomock"
 	uuid "github.com/google/uuid"
-	model "github.com/p2p-b2b/go-rest-api-service-template/internal/model"
+	repository "github.com/p2p-b2b/go-rest-api-service-template/internal/repository"
 )
 
 // MockUserRepository is a mock of UserRepository interface.
@@ -67,7 +67,7 @@ func (mr *MockUserRepositoryMockRecorder) Conn(ctx interface{}) *gomock.Call {
 }
 
 // Delete mocks base method.
-func (m *MockUserRepository) Delete(ctx context.Context, user *model.DeleteUserInput) error {
+func (m *MockUserRepository) Delete(ctx context.Context, user *repository.DeleteUserInput) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Delete", ctx, user)
 	ret0, _ := ret[0].(error)
@@ -95,7 +95,7 @@ func (mr *MockUserRepositoryMockRecorder) DriverName() *gomock.Call {
 }
 
 // Insert mocks base method.
-func (m *MockUserRepository) Insert(ctx context.Context, user *model.InsertUserInput) error {
+func (m *MockUserRepository) Insert(ctx context.Context, user *repository.InsertUserInput) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Insert", ctx, user)
 	ret0, _ := ret[0].(error)
@@ -122,26 +122,26 @@ func (mr *MockUserRepositoryMockRecorder) PingContext(ctx interface{}) *gomock.C
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PingContext", reflect.TypeOf((*MockUserRepository)(nil).PingContext), ctx)
 }
 
-// SelectAll mocks base method.
-func (m *MockUserRepository) SelectAll(ctx context.Context, params *model.SelectAllUserQueryInput) (*model.SelectAllUserQueryOutput, error) {
+// Select mocks base method.
+func (m *MockUserRepository) Select(ctx context.Context, params *repository.SelectUserInput) (*repository.SelectUserOutput, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SelectAll", ctx, params)
-	ret0, _ := ret[0].(*model.SelectAllUserQueryOutput)
+	ret := m.ctrl.Call(m, "Select", ctx, params)
+	ret0, _ := ret[0].(*repository.SelectUserOutput)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// SelectAll indicates an expected call of SelectAll.
-func (mr *MockUserRepositoryMockRecorder) SelectAll(ctx, params interface{}) *gomock.Call {
+// Select indicates an expected call of Select.
+func (mr *MockUserRepositoryMockRecorder) Select(ctx, params interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SelectAll", reflect.TypeOf((*MockUserRepository)(nil).SelectAll), ctx, params)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Select", reflect.TypeOf((*MockUserRepository)(nil).Select), ctx, params)
 }
 
 // SelectByID mocks base method.
-func (m *MockUserRepository) SelectByID(ctx context.Context, id uuid.UUID) (*model.User, error) {
+func (m *MockUserRepository) SelectByID(ctx context.Context, id uuid.UUID) (*repository.User, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SelectByID", ctx, id)
-	ret0, _ := ret[0].(*model.User)
+	ret0, _ := ret[0].(*repository.User)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -153,7 +153,7 @@ func (mr *MockUserRepositoryMockRecorder) SelectByID(ctx, id interface{}) *gomoc
 }
 
 // Update mocks base method.
-func (m *MockUserRepository) Update(ctx context.Context, user *model.UpdateUserInput) error {
+func (m *MockUserRepository) Update(ctx context.Context, user *repository.UpdateUserInput) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Update", ctx, user)
 	ret0, _ := ret[0].(error)

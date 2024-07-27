@@ -6,94 +6,48 @@ definitions:
       status_code:
         type: integer
     type: object
-  model.Check:
-    description: Check information.
-    properties:
-      data:
-        additionalProperties: true
-        description: Data is an optional field that can be used to provide additional
-          information about the check.
-        type: object
-      kind:
-        description: Kind is the kind of check.
-        type: string
-      name:
-        description: Name is the name of the check.
-        type: string
-      status:
-        description: Status is the status of the check.
-        type: boolean
-    type: object
-  model.CreateUserRequest:
+  handler.CreateUserRequest:
     properties:
       email:
-        description: Email is the email address of the user.
         type: string
       first_name:
-        description: FirstName is the first name of the user.
         type: string
       id:
-        description: ID is the unique identifier of the user.
         type: string
       last_name:
-        description: LastName is the last name of the user.
         type: string
     type: object
-  model.Health:
-    description: Health information.
+  handler.ListUserResponse:
     properties:
-      checks:
-        description: Checks is a list of health checks.
+      items:
         items:
-          $ref: '#/definitions/model.Check'
-        type: array
-      status:
-        description: Status is the status of the health check.
-        type: boolean
-    type: object
-  model.ListUserResponse:
-    properties:
-      data:
-        description: Items is a list of users.
-        items:
-          $ref: '#/definitions/model.User'
+          $ref: '#/definitions/handler.User'
         type: array
       paginator:
-        allOf:
-        - $ref: '#/definitions/paginator.Paginator'
-        description: Paginator is the paginator for the list of users.
+        $ref: '#/definitions/paginator.Paginator'
     type: object
-  model.UpdateUserRequest:
+  handler.UpdateUserRequest:
     properties:
       email:
-        description: Email is the email address of the user.
         type: string
       first_name:
-        description: FirstName is the first name of the user.
         type: string
       last_name:
-        description: LastName is the last name of the user.
         type: string
     type: object
-  model.User:
+  handler.User:
     properties:
       created_at:
-        description: Email is the email address of the user.
         type: string
       email:
-        description: Email is the email address of the user.
         type: string
       first_name:
-        description: FirstName is the first name of the user.
         type: string
       id:
-        description: ID is the unique identifier of the user.
         type: string
       last_name:
-        description: LastName is the last name of the user.
         type: string
       updated_at:
-        description: UpdatedAt is the time the user was last updated.
         type: string
     type: object
   paginator.Paginator:
@@ -116,6 +70,27 @@ definitions:
       size:
         description: Size is the number of elements in the current page.
         type: integer
+    type: object
+  service.Check:
+    properties:
+      data:
+        additionalProperties: true
+        type: object
+      kind:
+        type: string
+      name:
+        type: string
+      status:
+        type: boolean
+    type: object
+  service.Health:
+    properties:
+      checks:
+        items:
+          $ref: '#/definitions/service.Check'
+        type: array
+      status:
+        type: boolean
     type: object
   version.VersionInfo:
     properties:
@@ -155,14 +130,14 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/model.Health'
+            $ref: '#/definitions/service.Health'
         "500":
           description: Internal Server Error
           schema:
             $ref: '#/definitions/handler.APIError'
       summary: Get the health of the service
       tags:
-      - health
+      - service.health
   /healthz:
     get:
       description: Get the health of the service
@@ -172,14 +147,14 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/model.Health'
+            $ref: '#/definitions/service.Health'
         "500":
           description: Internal Server Error
           schema:
             $ref: '#/definitions/handler.APIError'
       summary: Get the health of the service
       tags:
-      - health
+      - service.health
   /status:
     get:
       description: Get the health of the service
@@ -189,14 +164,14 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/model.Health'
+            $ref: '#/definitions/service.Health'
         "500":
           description: Internal Server Error
           schema:
             $ref: '#/definitions/handler.APIError'
       summary: Get the health of the service
       tags:
-      - health
+      - service.health
   /users:
     get:
       description: List all users
@@ -232,7 +207,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/model.ListUserResponse'
+            $ref: '#/definitions/handler.ListUserResponse'
         "400":
           description: Bad Request
           schema:
@@ -256,7 +231,7 @@ paths:
         name: user
         required: true
         schema:
-          $ref: '#/definitions/model.CreateUserRequest'
+          $ref: '#/definitions/handler.CreateUserRequest'
       produces:
       - application/json
       responses:
@@ -318,7 +293,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/model.User'
+            $ref: '#/definitions/handler.User'
         "400":
           description: Bad Request
           schema:
@@ -345,7 +320,7 @@ paths:
         name: user
         required: true
         schema:
-          $ref: '#/definitions/model.UpdateUserRequest'
+          $ref: '#/definitions/handler.UpdateUserRequest'
       produces:
       - application/json
       responses:

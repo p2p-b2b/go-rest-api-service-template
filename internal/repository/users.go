@@ -11,7 +11,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/p2p-b2b/go-rest-api-service-template/internal/model"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/o11y"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/paginator"
 	"go.opentelemetry.io/otel/attribute"
@@ -116,7 +115,7 @@ func (r *PGSQLUserRepository) PingContext(ctx context.Context) error {
 }
 
 // Insert a new user into the database.
-func (r *PGSQLUserRepository) Insert(ctx context.Context, user *model.InsertUserInput) error {
+func (r *PGSQLUserRepository) Insert(ctx context.Context, user *InsertUserInput) error {
 	ctx, cancel := context.WithTimeout(ctx, r.maxQueryTimeout)
 	defer cancel()
 
@@ -174,6 +173,7 @@ func (r *PGSQLUserRepository) Insert(ctx context.Context, user *model.InsertUser
 
 	_, err := r.db.ExecContext(ctx, query)
 	if err != nil {
+
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) {
 			span.SetStatus(codes.Error, pgErr.Error())
@@ -185,14 +185,14 @@ func (r *PGSQLUserRepository) Insert(ctx context.Context, user *model.InsertUser
 				),
 			)
 
-			// return the pgErr as an error without the (SQLSTATE XXXXX) suffix
-			// remove the SQLSTATE XXXXX suffix
-			// https://github.com/jackc/pgconn/blob/1860f4e57204614f40d05a5c76a43e8d80fde9da/errors.go#L52
-			errMessage := strings.Split(pgErr.Message, "(SQLSTATE")[0]
-			return fmt.Errorf("%s", errMessage)
+			if pgErr.Code == "23505" {
+				return fmt.Errorf("user with email %s already exists", user.Email)
+			}
+
+			return err
 		}
 
-		span.SetStatus(codes.Error, "query failed")
+		span.SetStatus(codes.Error, err.Error())
 		span.RecordError(err)
 		slog.Error("repository.users.Insert", "error", err)
 		r.metrics.repositoryCalls.Add(ctx, 1,
@@ -213,7 +213,7 @@ func (r *PGSQLUserRepository) Insert(ctx context.Context, user *model.InsertUser
 }
 
 // Update updates the user with the specified ID.
-func (r *PGSQLUserRepository) Update(ctx context.Context, user *model.UpdateUserInput) error {
+func (r *PGSQLUserRepository) Update(ctx context.Context, user *UpdateUserInput) error {
 	ctx, cancel := context.WithTimeout(ctx, r.maxQueryTimeout)
 	defer cancel()
 
@@ -246,17 +246,17 @@ func (r *PGSQLUserRepository) Update(ctx context.Context, user *model.UpdateUser
 		return ErrUserIsNil
 	}
 
-	if user.ID == uuid.Nil {
-		span.SetStatus(codes.Error, ErrUserIDIsNil.Error())
-		span.RecordError(ErrUserIDIsNil)
-		slog.Error("repository.users.Update", "error", "user id is nil")
+	if err := user.Validate(); err != nil {
+		span.SetStatus(codes.Error, err.Error())
+		span.RecordError(err)
+		slog.Error("repository.users.Update", "error", err)
 		r.metrics.repositoryCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				append(metricCommonAttributes, attribute.String("successful", "false"))...,
 			),
 		)
 
-		return ErrUserIDIsNil
+		return err
 	}
 
 	var queryFields []string
@@ -331,7 +331,7 @@ func (r *PGSQLUserRepository) Update(ctx context.Context, user *model.UpdateUser
 }
 
 // Delete deletes the user with the specified ID.
-func (r *PGSQLUserRepository) Delete(ctx context.Context, user *model.DeleteUserInput) error {
+func (r *PGSQLUserRepository) Delete(ctx context.Context, user *DeleteUserInput) error {
 	ctx, cancel := context.WithTimeout(ctx, r.maxQueryTimeout)
 	defer cancel()
 
@@ -364,17 +364,17 @@ func (r *PGSQLUserRepository) Delete(ctx context.Context, user *model.DeleteUser
 		return ErrUserIsNil
 	}
 
-	if user.ID == uuid.Nil {
-		span.SetStatus(codes.Error, ErrUserIDIsNil.Error())
-		span.RecordError(ErrUserIDIsNil)
-		slog.Error("repository.users.Delete", "error", "user id is nil")
+	if err := user.Validate(); err != nil {
+		span.SetStatus(codes.Error, err.Error())
+		span.RecordError(err)
+		slog.Error("repository.users.Delete", "error", err)
 		r.metrics.repositoryCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				append(metricCommonAttributes, attribute.String("successful", "false"))...,
 			),
 		)
 
-		return ErrUserIDIsNil
+		return err
 	}
 
 	query := fmt.Sprintf(`
@@ -427,7 +427,7 @@ func (r *PGSQLUserRepository) Delete(ctx context.Context, user *model.DeleteUser
 }
 
 // SelectByID returns the user with the specified ID.
-func (r *PGSQLUserRepository) SelectByID(ctx context.Context, id uuid.UUID) (*model.User, error) {
+func (r *PGSQLUserRepository) SelectByID(ctx context.Context, id uuid.UUID) (*User, error) {
 	ctx, cancel := context.WithTimeout(ctx, r.maxQueryTimeout)
 	defer cancel()
 
@@ -471,7 +471,7 @@ func (r *PGSQLUserRepository) SelectByID(ctx context.Context, id uuid.UUID) (*mo
 
 	row := r.db.QueryRowContext(ctx, query)
 
-	var u model.User
+	var u User
 	if err := row.Scan(&u.ID, &u.FirstName, &u.LastName, &u.Email, &u.CreatedAt, &u.UpdatedAt); err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) {
@@ -511,8 +511,8 @@ func (r *PGSQLUserRepository) SelectByID(ctx context.Context, id uuid.UUID) (*mo
 	return &u, nil
 }
 
-// SelectAll selects all users from the repository.
-func (r *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.SelectAllUserQueryInput) (*model.SelectAllUserQueryOutput, error) {
+// Select selects all users from the repository.
+func (r *PGSQLUserRepository) Select(ctx context.Context, params *SelectUserInput) (*SelectUserOutput, error) {
 	ctx, cancel := context.WithTimeout(ctx, r.maxQueryTimeout)
 	defer cancel()
 
@@ -701,9 +701,9 @@ func (r *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.Selec
 	}
 	defer rows.Close()
 
-	var users []*model.User
+	var users []*User
 	for rows.Next() {
-		var u model.User
+		var u User
 
 		scanFields := make([]interface{}, 0)
 
@@ -771,8 +771,8 @@ func (r *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.Selec
 	outLen := len(users)
 	if outLen == 0 {
 		slog.Warn("repository.user.SelectAll", "message", "no users found")
-		return &model.SelectAllUserQueryOutput{
-			Items:     make([]*model.User, 0),
+		return &SelectUserOutput{
+			Items:     make([]*User, 0),
 			Paginator: paginator.Paginator{},
 		}, nil
 	}
@@ -789,7 +789,7 @@ func (r *PGSQLUserRepository) SelectAll(ctx context.Context, params *model.Selec
 		users[outLen-1].SerialID,
 	)
 
-	ret := &model.SelectAllUserQueryOutput{
+	ret := &SelectUserOutput{
 		Items: users,
 		Paginator: paginator.Paginator{
 			Size:      outLen,

@@ -97,6 +97,16 @@ func (p *Paginator) Validate() error {
 	return nil
 }
 
+// GeneratePages generates the next and previous pages.
+func (p *Paginator) GeneratePages(url string) {
+	if p.NextToken != "" {
+		p.NextPage = url + "?next_token=" + p.NextToken + "&limit=" + strconv.Itoa(p.Limit)
+	}
+	if p.PrevToken != "" {
+		p.PrevPage = url + "?prev_token=" + p.PrevToken + "&limit=" + strconv.Itoa(p.Limit)
+	}
+}
+
 // EncodeToken encodes the date and id
 // into a base64 string after joining them with a separator.
 // use the package variables DataSeparator and DateFormat

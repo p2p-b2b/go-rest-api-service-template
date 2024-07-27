@@ -27,9 +27,9 @@ func (h *HealthHandler) RegisterRoutes(mux *http.ServeMux) {
 // Get returns the health of the service
 // @Summary Get the health of the service
 // @Description Get the health of the service
-// @Tags health
+// @Tags service.health
 // @Produce json
-// @Success 200 {object} model.Health
+// @Success 200 {object} service.Health
 // @Failure 500 {object} APIError
 // @Router /health [get]
 // @Router /healthz [get]

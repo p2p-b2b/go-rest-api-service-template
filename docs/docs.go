@@ -22,14 +22,14 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "health"
+                    "service.health"
                 ],
                 "summary": "Get the health of the service",
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/model.Health"
+                            "$ref": "#/definitions/service.Health"
                         }
                     },
                     "500": {
@@ -48,14 +48,14 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "health"
+                    "service.health"
                 ],
                 "summary": "Get the health of the service",
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/model.Health"
+                            "$ref": "#/definitions/service.Health"
                         }
                     },
                     "500": {
@@ -74,14 +74,14 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "health"
+                    "service.health"
                 ],
                 "summary": "Get the health of the service",
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/model.Health"
+                            "$ref": "#/definitions/service.Health"
                         }
                     },
                     "500": {
@@ -145,7 +145,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/model.ListUserResponse"
+                            "$ref": "#/definitions/handler.ListUserResponse"
                         }
                     },
                     "400": {
@@ -181,7 +181,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/model.CreateUserRequest"
+                            "$ref": "#/definitions/handler.CreateUserRequest"
                         }
                     }
                 ],
@@ -236,7 +236,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/model.User"
+                            "$ref": "#/definitions/handler.User"
                         }
                     },
                     "400": {
@@ -279,7 +279,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/model.UpdateUserRequest"
+                            "$ref": "#/definitions/handler.UpdateUserRequest"
                         }
                     }
                 ],
@@ -374,129 +374,70 @@ const docTemplate = `{
                 }
             }
         },
-        "model.Check": {
-            "description": "Check information.",
-            "type": "object",
-            "properties": {
-                "data": {
-                    "description": "Data is an optional field that can be used to provide additional information about the check.",
-                    "type": "object",
-                    "additionalProperties": true
-                },
-                "kind": {
-                    "description": "Kind is the kind of check.",
-                    "type": "string"
-                },
-                "name": {
-                    "description": "Name is the name of the check.",
-                    "type": "string"
-                },
-                "status": {
-                    "description": "Status is the status of the check.",
-                    "type": "boolean"
-                }
-            }
-        },
-        "model.CreateUserRequest": {
+        "handler.CreateUserRequest": {
             "type": "object",
             "properties": {
                 "email": {
-                    "description": "Email is the email address of the user.",
                     "type": "string"
                 },
                 "first_name": {
-                    "description": "FirstName is the first name of the user.",
                     "type": "string"
                 },
                 "id": {
-                    "description": "ID is the unique identifier of the user.",
                     "type": "string"
                 },
                 "last_name": {
-                    "description": "LastName is the last name of the user.",
                     "type": "string"
                 }
             }
         },
-        "model.Health": {
-            "description": "Health information.",
+        "handler.ListUserResponse": {
             "type": "object",
             "properties": {
-                "checks": {
-                    "description": "Checks is a list of health checks.",
+                "items": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/model.Check"
-                    }
-                },
-                "status": {
-                    "description": "Status is the status of the health check.",
-                    "type": "boolean"
-                }
-            }
-        },
-        "model.ListUserResponse": {
-            "type": "object",
-            "properties": {
-                "data": {
-                    "description": "Items is a list of users.",
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/model.User"
+                        "$ref": "#/definitions/handler.User"
                     }
                 },
                 "paginator": {
-                    "description": "Paginator is the paginator for the list of users.",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/paginator.Paginator"
-                        }
-                    ]
+                    "$ref": "#/definitions/paginator.Paginator"
                 }
             }
         },
-        "model.UpdateUserRequest": {
+        "handler.UpdateUserRequest": {
             "type": "object",
             "properties": {
                 "email": {
-                    "description": "Email is the email address of the user.",
                     "type": "string"
                 },
                 "first_name": {
-                    "description": "FirstName is the first name of the user.",
                     "type": "string"
                 },
                 "last_name": {
-                    "description": "LastName is the last name of the user.",
                     "type": "string"
                 }
             }
         },
-        "model.User": {
+        "handler.User": {
             "type": "object",
             "properties": {
                 "created_at": {
-                    "description": "Email is the email address of the user.",
                     "type": "string"
                 },
                 "email": {
-                    "description": "Email is the email address of the user.",
                     "type": "string"
                 },
                 "first_name": {
-                    "description": "FirstName is the first name of the user.",
                     "type": "string"
                 },
                 "id": {
-                    "description": "ID is the unique identifier of the user.",
                     "type": "string"
                 },
                 "last_name": {
-                    "description": "LastName is the last name of the user.",
                     "type": "string"
                 },
                 "updated_at": {
-                    "description": "UpdatedAt is the time the user was last updated.",
                     "type": "string"
                 }
             }
@@ -527,6 +468,38 @@ const docTemplate = `{
                 "size": {
                     "description": "Size is the number of elements in the current page.",
                     "type": "integer"
+                }
+            }
+        },
+        "service.Check": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "kind": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "service.Health": {
+            "type": "object",
+            "properties": {
+                "checks": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/service.Check"
+                    }
+                },
+                "status": {
+                    "type": "boolean"
                 }
             }
         },
