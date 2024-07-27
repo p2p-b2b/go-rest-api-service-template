@@ -46,9 +46,6 @@ type UserRepository interface {
 	// SelectByID returns the user with the specified ID.
 	SelectByID(ctx context.Context, id uuid.UUID) (*model.User, error)
 
-	// SelectByEmail returns the user with the specified email.
-	SelectByEmail(ctx context.Context, email string) (*model.User, error)
-
 	// SelectAll returns a list of users.
 	SelectAll(ctx context.Context, params *model.SelectAllUserQueryInput) (*model.SelectAllUserQueryOutput, error)
 }
@@ -191,45 +188,6 @@ func (s *User) GetUserByID(ctx context.Context, id uuid.UUID) (*model.User, erro
 	}
 
 	span.SetStatus(codes.Ok, "user found")
-	s.metrics.serviceCalls.Add(ctx, 1,
-		metric.WithAttributes(
-			append(metricCommonAttributes, attribute.String("successful", "true"))...,
-		),
-	)
-
-	return user, nil
-}
-
-// GetUserByEmail returns the user with the specified email.
-func (s *User) GetUserByEmail(ctx context.Context, email string) (*model.User, error) {
-	ctx, span := s.ot.Traces.Tracer.Start(ctx, "service.users.GetUserByEmail")
-	defer span.End()
-
-	span.SetAttributes(
-		attribute.String("component", "service.users"),
-		attribute.String("function", "GetUserByEmail"),
-		attribute.String("user.email", email),
-	)
-
-	metricCommonAttributes := []attribute.KeyValue{
-		attribute.String("component", "service.users"),
-		attribute.String("function", "GetUserByEmail"),
-	}
-
-	user, err := s.repository.SelectByEmail(ctx, email)
-	if err != nil {
-		span.SetStatus(codes.Error, err.Error())
-		span.RecordError(err)
-		slog.Error("service.users.GetUserByEmail", "error", err)
-		s.metrics.serviceCalls.Add(ctx, 1,
-			metric.WithAttributes(
-				append(metricCommonAttributes, attribute.String("successful", "false"))...,
-			),
-		)
-		return nil, ErrGettingUserByEmail
-	}
-
-	span.SetStatus(codes.Ok, "User found")
 	s.metrics.serviceCalls.Add(ctx, 1,
 		metric.WithAttributes(
 			append(metricCommonAttributes, attribute.String("successful", "true"))...,

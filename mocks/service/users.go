@@ -137,21 +137,6 @@ func (mr *MockUserRepositoryMockRecorder) SelectAll(ctx, params interface{}) *go
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SelectAll", reflect.TypeOf((*MockUserRepository)(nil).SelectAll), ctx, params)
 }
 
-// SelectByEmail mocks base method.
-func (m *MockUserRepository) SelectByEmail(ctx context.Context, email string) (*model.User, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SelectByEmail", ctx, email)
-	ret0, _ := ret[0].(*model.User)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// SelectByEmail indicates an expected call of SelectByEmail.
-func (mr *MockUserRepositoryMockRecorder) SelectByEmail(ctx, email interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SelectByEmail", reflect.TypeOf((*MockUserRepository)(nil).SelectByEmail), ctx, email)
-}
-
 // SelectByID mocks base method.
 func (m *MockUserRepository) SelectByID(ctx context.Context, id uuid.UUID) (*model.User, error) {
 	m.ctrl.T.Helper()

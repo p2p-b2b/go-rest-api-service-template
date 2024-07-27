@@ -3,6 +3,7 @@ package model
 import (
 	"encoding/json"
 	"errors"
+	"net/mail"
 	"time"
 
 	"github.com/google/uuid"
@@ -16,8 +17,14 @@ var (
 	// ErrInvalidID is an error that is returned when the ID is not a valid UUID.
 	ErrInvalidID = errors.New("invalid ID")
 
-	// ErrInvalidField is an error that is returned when the field is not valid.
-	ErrInvalidField = errors.New("invalid field")
+	// ErrInvalidFirstName is an error that is returned when the first name is not valid.
+	ErrInvalidFirstName = errors.New("invalid first name, the first name must be at least 2 characters long")
+
+	// ErrInvalidLastName is an error that is returned when the last name is not valid.
+	ErrInvalidLastName = errors.New("invalid last name, the last name must be at least 2 characters long")
+
+	// ErrInvalidEmail is an error that is returned when the email is not valid.
+	ErrInvalidEmail = errors.New("invalid email")
 )
 
 var (
@@ -123,6 +130,32 @@ type CreateUserRequest struct {
 
 	// Email is the email address of the user.
 	Email string `json:"email"`
+}
+
+func (c *CreateUserRequest) Validate() error {
+	if c.ID == uuid.Nil {
+		return ErrInvalidID
+	}
+
+	if len(c.FirstName) < 2 {
+		return ErrInvalidFirstName
+	}
+
+	if len(c.LastName) < 2 {
+		return ErrInvalidLastName
+	}
+
+	// minimal email validation li@m.io
+	if len(c.Email) < 6 {
+		return ErrInvalidEmail
+	}
+
+	_, err := mail.ParseAddress(c.Email)
+	if err != nil {
+		return ErrInvalidEmail
+	}
+
+	return nil
 }
 
 // UpdateUserRequest represents the input for the UpdateUser method.

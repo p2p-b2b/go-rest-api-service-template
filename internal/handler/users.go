@@ -31,9 +31,6 @@ type UserService interface {
 	// GetUserByID returns the user with the specified ID.
 	GetUserByID(ctx context.Context, id uuid.UUID) (*model.User, error)
 
-	// GetUserByEmail returns the user with the specified email.
-	GetUserByEmail(ctx context.Context, email string) (*model.User, error)
-
 	// CreateUser inserts a new user into the database.
 	CreateUser(ctx context.Context, user *model.UserParamsInput) error
 
@@ -114,6 +111,7 @@ func (h *UserHandler) RegisterRoutes(mux *http.ServeMux) {
 // @Tags users
 // @Produce json
 // @Param uid path string true "The user ID in UUID format"
+// @Param fields query string false "Fields to return. Example: id,first_name,last_name"
 // @Success 200 {object} model.User
 // @Failure 400 {object} APIError
 // @Failure 500 {object} APIError
@@ -273,49 +271,21 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 		req.ID = uuid.New()
 	}
 
-	if req.FirstName == "" {
-		span.SetStatus(codes.Error, ErrFirstNameRequired.Error())
-		span.RecordError(ErrFirstNameRequired)
-		slog.Error("handler.CreateUser", "error", ErrFirstNameRequired.Error())
+	if err := req.Validate(); err != nil {
+		span.SetStatus(codes.Error, err.Error())
+		span.RecordError(err)
+		slog.Error("handler.CreateUser", "error", err.Error())
 		h.metrics.handlerCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				append(metricCommonAttributes, attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)))...,
 			),
 		)
 
-		WriteError(w, r, http.StatusBadRequest, ErrFirstNameRequired.Error())
+		WriteError(w, r, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	if req.LastName == "" {
-		span.SetStatus(codes.Error, ErrLastNameRequired.Error())
-		span.RecordError(ErrLastNameRequired)
-		slog.Error("handler.CreateUser", "error", ErrLastNameRequired.Error())
-		h.metrics.handlerCalls.Add(ctx, 1,
-			metric.WithAttributes(
-				append(metricCommonAttributes, attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)))...,
-			),
-		)
-
-		WriteError(w, r, http.StatusBadRequest, ErrLastNameRequired.Error())
-		return
-	}
-
-	if req.Email == "" {
-		span.SetStatus(codes.Error, ErrEmailRequired.Error())
-		span.RecordError(ErrEmailRequired)
-		slog.Error("handler.CreateUser", "error", ErrEmailRequired.Error())
-		h.metrics.handlerCalls.Add(ctx, 1,
-			metric.WithAttributes(
-				append(metricCommonAttributes, attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)))...,
-			),
-		)
-
-		WriteError(w, r, http.StatusBadRequest, ErrEmailRequired.Error())
-		return
-	}
-
-	user := model.UserParamsInput{
+	user := &model.UserParamsInput{
 		ID:        req.ID,
 		FirstName: req.FirstName,
 		LastName:  req.LastName,
@@ -324,7 +294,7 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 
 	slog.Debug("handler.CreateUser", "user", user)
 
-	if err := h.service.CreateUser(ctx, &user); err != nil {
+	if err := h.service.CreateUser(ctx, user); err != nil {
 		if errors.Is(err, service.ErrUserIDAlreadyExists) {
 			span.SetStatus(codes.Error, err.Error())
 			span.RecordError(service.ErrUserIDAlreadyExists)

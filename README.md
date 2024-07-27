@@ -13,6 +13,7 @@ This is a template for a Go HTTP REST API Service.
 - [x] Containerize your service with Podman, see [Building](#building)
 - [x] Podman pod file for development [dev-service-pod.yaml](dev-service-pod.yaml), see [Running](#running). This is something like `docker-compose/podman-compose` but more powerful
 - [x] Database migrations with [goose](https://github.com/pressly/goose). Check the [db](db/README.md) documentation
+- [x] Validation with [go-playground/validator](https://github.com/go-playground/validator)
 
 ## References
 

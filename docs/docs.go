@@ -224,6 +224,12 @@ const docTemplate = `{
                         "name": "uid",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Fields to return. Example: id,first_name,last_name",
+                        "name": "fields",
+                        "in": "query"
                     }
                 ],
                 "responses": {
