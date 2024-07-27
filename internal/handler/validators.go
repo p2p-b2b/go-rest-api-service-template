@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"encoding/base64"
 	"errors"
 	"fmt"
 	"strconv"
@@ -93,8 +92,8 @@ func parseFieldsQueryParams(fields string) ([]string, error) {
 
 // parseNextTokenQueryParams parses a string into a nextToken field.
 func parseNextTokenQueryParams(nextToken string) (string, error) {
-	// check if this is a valid base64 encoded string
-	if _, err := base64.StdEncoding.DecodeString(nextToken); err != nil {
+	_, _, err := paginator.DecodeToken(nextToken)
+	if err != nil {
 		return "", ErrInvalidNextToken
 	}
 
@@ -103,9 +102,9 @@ func parseNextTokenQueryParams(nextToken string) (string, error) {
 
 // parsePrevTokenQueryParams parses a string into a prevToken field.
 func parsePrevTokenQueryParams(prevToken string) (string, error) {
-	// check if this is a valid base64 encoded string
-	if _, err := base64.StdEncoding.DecodeString(prevToken); err != nil {
-		return "", ErrInvalidPrevToken
+	_, _, err := paginator.DecodeToken(prevToken)
+	if err != nil {
+		return "", ErrInvalidNextToken
 	}
 
 	return prevToken, nil

@@ -516,7 +516,7 @@ func (r *PGSQLUserRepository) Select(ctx context.Context, params *SelectUserInpu
 	ctx, cancel := context.WithTimeout(ctx, r.maxQueryTimeout)
 	defer cancel()
 
-	ctx, span := r.ot.Traces.Tracer.Start(ctx, "repository.user.SelectAll")
+	ctx, span := r.ot.Traces.Tracer.Start(ctx, "repository.user.Select")
 	defer span.End()
 
 	span.SetAttributes(
@@ -532,13 +532,13 @@ func (r *PGSQLUserRepository) Select(ctx context.Context, params *SelectUserInpu
 	metricCommonAttributes := []attribute.KeyValue{
 		attribute.String("driver", r.DriverName()),
 		attribute.String("component", "repository.user"),
-		attribute.String("function", "SelectAll"),
+		attribute.String("function", "Select"),
 	}
 
 	if params == nil {
 		span.SetStatus(codes.Error, ErrFunctionParameterIsNil.Error())
 		span.RecordError(ErrFunctionParameterIsNil)
-		slog.Error("repository.users.SelectAll", "error", "params is nil")
+		slog.Error("repository.users.Select", "error", "params is nil")
 		r.metrics.repositoryCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				append(metricCommonAttributes, attribute.String("successful", "false"))...,
@@ -567,7 +567,7 @@ func (r *PGSQLUserRepository) Select(ctx context.Context, params *SelectUserInpu
 	var paginationQuery string
 	// if both next and prev tokens are provided, use next token
 	if params.Paginator.NextToken != "" && params.Paginator.PrevToken != "" {
-		slog.Warn("repository.user.SelectAll",
+		slog.Warn("repository.user.Select",
 			"message",
 			"both next and prev tokens are provided, going to use next token")
 
@@ -580,7 +580,7 @@ func (r *PGSQLUserRepository) Select(ctx context.Context, params *SelectUserInpu
 		// decode the token
 		id, serial, err := paginator.DecodeToken(params.Paginator.NextToken)
 		if err != nil {
-			slog.Error("repository.user.SelectAll", "error", err)
+			slog.Error("repository.user.Select", "error", err)
 			span.SetStatus(codes.Error, "invalid token")
 			span.RecordError(err)
 			r.metrics.repositoryCalls.Add(ctx, 1,
@@ -611,7 +611,7 @@ func (r *PGSQLUserRepository) Select(ctx context.Context, params *SelectUserInpu
 		// decode the token
 		id, serial, err := paginator.DecodeToken(params.Paginator.PrevToken)
 		if err != nil {
-			slog.Error("repository.user.SelectAll", "error", err)
+			slog.Error("repository.user.Select", "error", err)
 			span.SetStatus(codes.Error, "invalid token")
 			span.RecordError(err)
 			r.metrics.repositoryCalls.Add(ctx, 1,
@@ -654,7 +654,7 @@ func (r *PGSQLUserRepository) Select(ctx context.Context, params *SelectUserInpu
 		)
 	}
 
-	slog.Debug("repository.user.SelectAll", "filter_query", filterQuery)
+	slog.Debug("repository.user.Select", "filter_query", filterQuery)
 
 	var whereQuery string
 	if filterQuery != "" && paginationQuery != "" {
@@ -683,12 +683,12 @@ func (r *PGSQLUserRepository) Select(ctx context.Context, params *SelectUserInpu
 		whereQuery,
 		sortQuery,
 	)
-	slog.Debug("repository.user.SelectAll", "query", prettyPrint(query))
+	slog.Debug("repository.user.Select", "query", prettyPrint(query))
 
 	// execute the query
 	rows, err := r.db.QueryContext(ctx, query)
 	if err != nil {
-		slog.Error("repository.user.SelectAll", "error", err)
+		slog.Error("repository.user.Select", "error", err)
 		span.SetStatus(codes.Error, "failed to select all users")
 		span.RecordError(err)
 		r.metrics.repositoryCalls.Add(ctx, 1,
@@ -726,7 +726,7 @@ func (r *PGSQLUserRepository) Select(ctx context.Context, params *SelectUserInpu
 					scanFields = append(scanFields, &u.UpdatedAt)
 
 				default:
-					slog.Warn("repository.user.SelectAll", "message", "field not found", "field", field)
+					slog.Warn("repository.user.Select", "message", "field not found", "field", field)
 				}
 			}
 
@@ -740,7 +740,7 @@ func (r *PGSQLUserRepository) Select(ctx context.Context, params *SelectUserInpu
 			if errors.As(err, &pgErr) {
 				span.SetStatus(codes.Error, pgErr.Error())
 				span.RecordError(pgErr)
-				slog.Error("repository.users.SelectAll", "error", pgErr.Error())
+				slog.Error("repository.users.Select", "error", pgErr.Error())
 				r.metrics.repositoryCalls.Add(ctx, 1,
 					metric.WithAttributes(
 						append(metricCommonAttributes, attribute.String("successful", "false"))...,
@@ -754,7 +754,7 @@ func (r *PGSQLUserRepository) Select(ctx context.Context, params *SelectUserInpu
 				return nil, fmt.Errorf("%s", errMessage)
 			}
 
-			slog.Error("repository.user.SelectAll", "error", err)
+			slog.Error("repository.user.Select", "error", err)
 			span.SetStatus(codes.Error, "failed to scan user")
 			span.RecordError(err)
 			r.metrics.repositoryCalls.Add(ctx, 1,
@@ -770,15 +770,15 @@ func (r *PGSQLUserRepository) Select(ctx context.Context, params *SelectUserInpu
 
 	outLen := len(users)
 	if outLen == 0 {
-		slog.Warn("repository.user.SelectAll", "message", "no users found")
+		slog.Warn("repository.user.Select", "message", "no users found")
 		return &SelectUserOutput{
 			Items:     make([]*User, 0),
 			Paginator: paginator.Paginator{},
 		}, nil
 	}
 
-	slog.Debug("repository.users.SelectAll", "next_id", users[outLen-1].ID, "next_serial_id", users[outLen-1].SerialID)
-	slog.Debug("repository.users.SelectAll", "prev_id", users[0].ID, "prev_serial_id", users[0].SerialID)
+	slog.Debug("repository.users.Select", "next_id", users[outLen-1].ID, "next_serial_id", users[outLen-1].SerialID)
+	slog.Debug("repository.users.Select", "prev_id", users[0].ID, "prev_serial_id", users[0].SerialID)
 
 	nextToken, prevToken := paginator.GetTokens(
 		outLen,
