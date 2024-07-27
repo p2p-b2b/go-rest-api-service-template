@@ -398,7 +398,6 @@ const docTemplate = `{
             }
         },
         "model.CreateUserRequest": {
-            "description": "Create user request.",
             "type": "object",
             "properties": {
                 "email": {
@@ -457,7 +456,6 @@ const docTemplate = `{
             }
         },
         "model.UpdateUserRequest": {
-            "description": "Update user request.",
             "type": "object",
             "properties": {
                 "email": {
@@ -475,7 +473,6 @@ const docTemplate = `{
             }
         },
         "model.User": {
-            "description": "User information.",
             "type": "object",
             "properties": {
                 "created_at": {

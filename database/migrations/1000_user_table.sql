@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS users (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
 
     -- email is unique
-    CONSTRAINT "uq_users_email" UNIQUE (email),
+    CONSTRAINT "users_email" UNIQUE (email),
 
     -- serial_id is used for pagination
     serial_id BIGSERIAL NOT NULL UNIQUE

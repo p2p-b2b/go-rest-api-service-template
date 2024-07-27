@@ -35,13 +35,13 @@ type UserRepository interface {
 	Conn(ctx context.Context) (*sql.Conn, error)
 
 	// Insert a new user into the database.
-	Insert(ctx context.Context, user *model.UserParamsInput) error
+	Insert(ctx context.Context, user *model.InsertUserInput) error
 
 	// Update updates the user.
-	Update(ctx context.Context, user *model.UserParamsInput) error
+	Update(ctx context.Context, user *model.UpdateUserInput) error
 
 	// Delete deletes the user.
-	Delete(ctx context.Context, user *model.UserParamsInput) error
+	Delete(ctx context.Context, user *model.DeleteUserInput) error
 
 	// SelectByID returns the user with the specified ID.
 	SelectByID(ctx context.Context, id uuid.UUID) (*model.User, error)
@@ -198,7 +198,7 @@ func (s *User) GetUserByID(ctx context.Context, id uuid.UUID) (*model.User, erro
 }
 
 // CreateUser inserts a new user into the database.
-func (s *User) CreateUser(ctx context.Context, user *model.UserParamsInput) error {
+func (s *User) CreateUser(ctx context.Context, user *model.CreateUserInput) error {
 	ctx, span := s.ot.Traces.Tracer.Start(ctx, "service.users.CreateUser")
 	defer span.End()
 
@@ -229,7 +229,8 @@ func (s *User) CreateUser(ctx context.Context, user *model.UserParamsInput) erro
 		user.ID = uuid.New()
 	}
 
-	if err := s.repository.Insert(ctx, user); err != nil {
+	// validate the user input
+	if err := user.Validate(); err != nil {
 		span.SetStatus(codes.Error, err.Error())
 		span.RecordError(err)
 		slog.Error("service.users.CreateUser", "error", err)
@@ -238,7 +239,27 @@ func (s *User) CreateUser(ctx context.Context, user *model.UserParamsInput) erro
 				append(metricCommonAttributes, attribute.String("successful", "false"))...,
 			),
 		)
-		return ErrCreatingUser
+
+		return err
+	}
+
+	userInput := &model.InsertUserInput{
+		ID:        user.ID,
+		FirstName: user.FirstName,
+		LastName:  user.LastName,
+		Email:     user.Email,
+	}
+
+	if err := s.repository.Insert(ctx, userInput); err != nil {
+		span.SetStatus(codes.Error, err.Error())
+		span.RecordError(err)
+		slog.Error("service.users.CreateUser", "error", err)
+		s.metrics.serviceCalls.Add(ctx, 1,
+			metric.WithAttributes(
+				append(metricCommonAttributes, attribute.String("successful", "false"))...,
+			),
+		)
+		return fmt.Errorf("%w: %s", ErrCreatingUser, err)
 	}
 
 	span.SetStatus(codes.Ok, "User created")
@@ -251,7 +272,7 @@ func (s *User) CreateUser(ctx context.Context, user *model.UserParamsInput) erro
 }
 
 // UpdateUser updates the user with the specified ID.
-func (s *User) UpdateUser(ctx context.Context, user *model.UserParamsInput) error {
+func (s *User) UpdateUser(ctx context.Context, user *model.UpdateUserInput) error {
 	ctx, span := s.ot.Traces.Tracer.Start(ctx, "service.users.UpdateUser")
 	defer span.End()
 
@@ -301,7 +322,7 @@ func (s *User) UpdateUser(ctx context.Context, user *model.UserParamsInput) erro
 }
 
 // DeleteUser deletes the user with the specified ID.
-func (s *User) DeleteUser(ctx context.Context, user *model.UserParamsInput) error {
+func (s *User) DeleteUser(ctx context.Context, user *model.DeleteUserInput) error {
 	ctx, span := s.ot.Traces.Tracer.Start(ctx, "service.users.DeleteUser")
 	defer span.End()
 
@@ -350,7 +371,7 @@ func (s *User) DeleteUser(ctx context.Context, user *model.UserParamsInput) erro
 }
 
 // ListUsers returns a list of users.
-func (s *User) ListUsers(ctx context.Context, params *model.ListUserRequest) (*model.ListUserResponse, error) {
+func (s *User) ListUsers(ctx context.Context, params *model.ListUserInput) (*model.ListUserResponse, error) {
 	ctx, span := s.ot.Traces.Tracer.Start(ctx, "service.users.ListUsers")
 	defer span.End()
 

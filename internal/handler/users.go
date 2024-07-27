@@ -14,7 +14,6 @@ import (
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/model"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/o11y"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/paginator"
-	"github.com/p2p-b2b/go-rest-api-service-template/internal/query"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/service"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -23,7 +22,7 @@ import (
 
 //go:generate go run github.com/golang/mock/mockgen@v1.6.0 -package=mocks -destination=../../mocks/handler/users.go -source=users.go UserService
 
-// UserService represents a service for managing users.
+// UserService represents a consumer interface for the user service.
 type UserService interface {
 	// UserHealthCheck verifies a connection to the repository is still alive.
 	UserHealthCheck(ctx context.Context) (model.Health, error)
@@ -32,16 +31,16 @@ type UserService interface {
 	GetUserByID(ctx context.Context, id uuid.UUID) (*model.User, error)
 
 	// CreateUser inserts a new user into the database.
-	CreateUser(ctx context.Context, user *model.UserParamsInput) error
+	CreateUser(ctx context.Context, user *model.CreateUserInput) error
 
 	// UpdateUser updates the user.
-	UpdateUser(ctx context.Context, user *model.UserParamsInput) error
+	UpdateUser(ctx context.Context, user *model.UpdateUserInput) error
 
 	// DeleteUser deletes the user.
-	DeleteUser(ctx context.Context, user *model.UserParamsInput) error
+	DeleteUser(ctx context.Context, user *model.DeleteUserInput) error
 
 	// ListUsers returns a list of users.
-	ListUsers(ctx context.Context, params *model.ListUserRequest) (*model.ListUserResponse, error)
+	ListUsers(ctx context.Context, params *model.ListUserInput) (*model.ListUserResponse, error)
 }
 
 // UserHandler represents the handler for the user.
@@ -133,47 +132,18 @@ func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 		attribute.String("http.path", r.URL.Path[:strings.LastIndex(r.URL.Path, "/")]),
 	}
 
-	uidString := r.PathValue("uid")
-	if uidString == "" {
-		span.SetStatus(codes.Error, ErrUserIDRequired.Error())
-		span.RecordError(ErrUserIDRequired)
-		slog.Error("handler.GetByID", "error", ErrUserIDRequired.Error())
-		h.metrics.handlerCalls.Add(ctx, 1,
-			metric.WithAttributes(
-				append(metricCommonAttributes, attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)))...,
-			),
-		)
-
-		WriteError(w, r, http.StatusBadRequest, ErrUserIDRequired.Error())
-		return
-	}
-
-	// convert the id to uuid.UUID
-	id, err := uuid.Parse(uidString)
+	id, err := parseUUIDQueryParams(r.PathValue("uid"))
 	if err != nil {
-		span.SetStatus(codes.Error, ErrInvalidUserID.Error())
-		span.RecordError(ErrInvalidUserID)
-		slog.Error("handler.GetByID", "error", ErrInvalidUserID.Error())
-		h.metrics.handlerCalls.Add(ctx, 1,
-			metric.WithAttributes(
-				append(metricCommonAttributes, attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)))...,
-			),
-		)
-		WriteError(w, r, http.StatusBadRequest, ErrInvalidUserID.Error())
-		return
-	}
-
-	if id == uuid.Nil {
-		span.SetStatus(codes.Error, ErrInvalidUserID.Error())
-		span.RecordError(ErrInvalidUserID)
-		slog.Error("handler.GetByID", "error", ErrInvalidUserID.Error())
+		span.SetStatus(codes.Error, err.Error())
+		span.RecordError(err)
+		slog.Error("handler.GetByID", "error", err.Error())
 		h.metrics.handlerCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				append(metricCommonAttributes, attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)))...,
 			),
 		)
 
-		WriteError(w, r, http.StatusBadRequest, ErrInvalidUserID.Error())
+		WriteError(w, r, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -285,7 +255,7 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user := &model.UserParamsInput{
+	user := &model.CreateUserInput{
 		ID:        req.ID,
 		FirstName: req.FirstName,
 		LastName:  req.LastName,
@@ -363,48 +333,18 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 		attribute.String("http.path", r.URL.Path[:strings.LastIndex(r.URL.Path, "/")]),
 	}
 
-	uidParam := r.PathValue("uid")
-	if uidParam == "" {
-		span.SetStatus(codes.Error, ErrUserIDRequired.Error())
-		span.RecordError(ErrUserIDRequired)
-		slog.Error("handler.UpdateUser", "error", ErrUserIDRequired.Error())
-		h.metrics.handlerCalls.Add(ctx, 1,
-			metric.WithAttributes(
-				append(metricCommonAttributes, attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)))...,
-			),
-		)
-
-		WriteError(w, r, http.StatusBadRequest, ErrUserIDRequired.Error())
-		return
-	}
-
-	// convert the id to uuid.UUID
-	id, err := uuid.Parse(uidParam)
+	id, err := parseUUIDQueryParams(r.PathValue("uid"))
 	if err != nil {
-		span.SetStatus(codes.Error, ErrInvalidUserID.Error())
-		span.RecordError(ErrInvalidUserID)
-		slog.Error("handler.UpdateUser", "error", ErrInvalidUserID.Error())
+		span.SetStatus(codes.Error, err.Error())
+		span.RecordError(err)
+		slog.Error("handler.UpdateUser", "error", err.Error())
 		h.metrics.handlerCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				append(metricCommonAttributes, attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)))...,
 			),
 		)
 
-		WriteError(w, r, http.StatusBadRequest, ErrInvalidUserID.Error())
-		return
-	}
-
-	if id == uuid.Nil {
-		span.SetStatus(codes.Error, ErrInvalidUserID.Error())
-		span.RecordError(ErrInvalidUserID)
-		slog.Error("handler.UpdateUser", "error", ErrInvalidUserID.Error())
-		h.metrics.handlerCalls.Add(ctx, 1,
-			metric.WithAttributes(
-				append(metricCommonAttributes, attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)))...,
-			),
-		)
-
-		WriteError(w, r, http.StatusBadRequest, ErrInvalidUserID.Error())
+		WriteError(w, r, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -423,22 +363,21 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// at least one field must be updated
-	if req.FirstName == "" && req.LastName == "" && req.Email == "" {
-		span.SetStatus(codes.Error, ErrAtLeastOneFieldRequired.Error())
-		span.RecordError(ErrAtLeastOneFieldRequired)
-		slog.Error("handler.UpdateUser", "error", ErrAtLeastOneFieldRequired.Error())
+	if err := req.Validate(); err != nil {
+		span.SetStatus(codes.Error, err.Error())
+		span.RecordError(err)
+		slog.Error("handler.UpdateUser", "error", err.Error())
 		h.metrics.handlerCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				append(metricCommonAttributes, attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)))...,
 			),
 		)
 
-		WriteError(w, r, http.StatusBadRequest, ErrAtLeastOneFieldRequired.Error())
+		WriteError(w, r, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	user := model.UserParamsInput{
+	user := model.UpdateUserInput{
 		ID:        id,
 		FirstName: req.FirstName,
 		LastName:  req.LastName,
@@ -497,52 +436,22 @@ func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 		attribute.String("http.path", r.URL.Path[:strings.LastIndex(r.URL.Path, "/")]),
 	}
 
-	uidParam := r.PathValue("uid")
-	if uidParam == "" {
-		span.SetStatus(codes.Error, ErrUserIDRequired.Error())
-		span.RecordError(ErrUserIDRequired)
-		slog.Error("handler.DeleteUser", "error", ErrUserIDRequired.Error())
-		h.metrics.handlerCalls.Add(ctx, 1,
-			metric.WithAttributes(
-				append(metricCommonAttributes, attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)))...,
-			),
-		)
-
-		WriteError(w, r, http.StatusBadRequest, ErrUserIDRequired.Error())
-		return
-	}
-
-	// convert the id to uuid.UUID
-	id, err := uuid.Parse(uidParam)
+	id, err := parseUUIDQueryParams(r.PathValue("uid"))
 	if err != nil {
-		span.SetStatus(codes.Error, ErrInvalidUserID.Error())
-		span.RecordError(ErrInvalidUserID)
-		slog.Error("handler.DeleteUser", "error", ErrInvalidUserID.Error())
+		span.SetStatus(codes.Error, err.Error())
+		span.RecordError(err)
+		slog.Error("handler.DeleteUser", "error", err.Error())
 		h.metrics.handlerCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				append(metricCommonAttributes, attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)))...,
 			),
 		)
 
-		WriteError(w, r, http.StatusBadRequest, ErrInvalidUserID.Error())
+		WriteError(w, r, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	if id == uuid.Nil {
-		span.SetStatus(codes.Error, ErrInvalidUserID.Error())
-		span.RecordError(ErrInvalidUserID)
-		slog.Error("handler.DeleteUser", "error", ErrInvalidUserID.Error())
-		h.metrics.handlerCalls.Add(ctx, 1,
-			metric.WithAttributes(
-				append(metricCommonAttributes, attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)))...,
-			),
-		)
-
-		WriteError(w, r, http.StatusBadRequest, ErrInvalidUserID.Error())
-		return
-	}
-
-	user := model.UserParamsInput{
+	user := model.DeleteUserInput{
 		ID: id,
 	}
 
@@ -604,104 +513,32 @@ func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 		attribute.String("http.path", r.URL.Path[:strings.LastIndex(r.URL.Path, "/")]),
 	}
 
-	// paginator
-	nextToken := r.URL.Query().Get("next_token")
-	prevToken := r.URL.Query().Get("prev_token")
-	limitString := r.URL.Query().Get("limit")
+	// parse the query parameters
+	params := map[string]any{
+		"sort":      r.URL.Query().Get("sort"),
+		"filter":    r.URL.Query().Get("filter"),
+		"fields":    r.URL.Query().Get("fields"),
+		"nextToken": r.URL.Query().Get("next_token"),
+		"prevToken": r.URL.Query().Get("prev_token"),
+		"limit":     r.URL.Query().Get("limit"),
+	}
 
-	// sort, filter, and fields
-	sort := r.URL.Query().Get("sort")
-	slog.Debug("handler.ListUsers", "sort", sort)
-
-	if !query.IsValidSort(model.UserSortFields, sort) {
-		span.SetStatus(codes.Error, ErrInvalidSort.Error())
-		span.RecordError(ErrInvalidSort)
-		slog.Error("handler.ListUsers", "error", ErrInvalidSort.Error())
+	sort, filter, fields, nextToken, prevToken, limit, err := parseListQueryParams(params)
+	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
+		span.RecordError(err)
+		slog.Error("handler.ListUsers", "error", err.Error())
 		h.metrics.handlerCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				append(metricCommonAttributes, attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)))...,
 			),
 		)
 
-		WriteError(w, r, http.StatusBadRequest, ErrInvalidSort.Error())
+		WriteError(w, r, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	filter := r.URL.Query().Get("filter")
-	slog.Debug("handler.ListUsers", "filter", filter)
-
-	if !query.IsValidFilter(model.UserFilterFields, filter) {
-		span.SetStatus(codes.Error, ErrInvalidFilter.Error())
-		span.RecordError(ErrInvalidFilter)
-		slog.Error("handler.ListUsers", "error", ErrInvalidFilter.Error())
-		h.metrics.handlerCalls.Add(ctx, 1,
-			metric.WithAttributes(
-				append(metricCommonAttributes, attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)))...,
-			),
-		)
-
-		WriteError(w, r, http.StatusBadRequest, ErrInvalidFilter.Error())
-		return
-	}
-
-	fieldsFields := r.URL.Query().Get("fields")
-	slog.Debug("handler.ListUsers", "fields", fieldsFields)
-
-	if !query.IsValidFields(model.UserFields, fieldsFields) {
-		span.SetStatus(codes.Error, ErrInvalidField.Error())
-		span.RecordError(ErrInvalidField)
-		slog.Error("handler.ListUsers", "error", ErrInvalidField.Error())
-		h.metrics.handlerCalls.Add(ctx, 1,
-			metric.WithAttributes(
-				append(metricCommonAttributes, attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)))...,
-			),
-		)
-
-		WriteError(w, r, http.StatusBadRequest, ErrInvalidField.Error())
-		return
-	}
-
-	// list of fields after sanitize the fields (basically trim the spaces)
-	fields := query.GetFields(fieldsFields)
-
-	// convert the limit to int
-	limit := paginator.DefaultLimit
-	var err error
-	if limitString != "" {
-		limit, err = strconv.Atoi(limitString)
-		if err != nil {
-			span.SetStatus(codes.Error, "Invalid limit")
-			span.RecordError(err)
-			slog.Error("handler.ListUsers", "error", "Invalid limit")
-			h.metrics.handlerCalls.Add(ctx, 1,
-				metric.WithAttributes(
-					append(metricCommonAttributes, attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)))...,
-				),
-			)
-
-			WriteError(w, r, http.StatusBadRequest, "Invalid limit")
-			return
-		}
-
-		if limit < 0 {
-			span.SetStatus(codes.Error, "Limit must be greater than or equal to 0")
-			span.RecordError(err)
-			slog.Error("handler.ListUsers", "error", "Limit must be greater than or equal to 0")
-			h.metrics.handlerCalls.Add(ctx, 1,
-				metric.WithAttributes(
-					append(metricCommonAttributes, attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)))...,
-				),
-			)
-
-			WriteError(w, r, http.StatusBadRequest, "Limit must be greater than or equal to 0")
-			return
-		}
-		if limit == 0 {
-			limit = paginator.DefaultLimit
-		}
-	}
-
-	params := &model.ListUserRequest{
+	req := &model.ListUserInput{
 		Sort:   sort,
 		Filter: filter,
 		Fields: fields,
@@ -712,7 +549,7 @@ func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 
-	usersResponse, err := h.service.ListUsers(ctx, params)
+	usersResponse, err := h.service.ListUsers(ctx, req)
 	if err != nil {
 		span.SetStatus(codes.Error, err.Error())
 		span.RecordError(err)

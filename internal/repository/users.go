@@ -116,7 +116,7 @@ func (r *PGSQLUserRepository) PingContext(ctx context.Context) error {
 }
 
 // Insert a new user into the database.
-func (r *PGSQLUserRepository) Insert(ctx context.Context, user *model.UserParamsInput) error {
+func (r *PGSQLUserRepository) Insert(ctx context.Context, user *model.InsertUserInput) error {
 	ctx, cancel := context.WithTimeout(ctx, r.maxQueryTimeout)
 	defer cancel()
 
@@ -139,7 +139,7 @@ func (r *PGSQLUserRepository) Insert(ctx context.Context, user *model.UserParams
 	if user == nil {
 		span.SetStatus(codes.Error, ErrUserIsNil.Error())
 		span.RecordError(ErrUserIsNil)
-		slog.Error("repository.users.Insert", "error", "user is nil")
+		slog.Error("repository.users.Insert", "error", ErrUserIsNil.Error())
 		r.metrics.repositoryCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				append(metricCommonAttributes, attribute.String("successful", "false"))...,
@@ -147,6 +147,18 @@ func (r *PGSQLUserRepository) Insert(ctx context.Context, user *model.UserParams
 		)
 
 		return ErrUserIsNil
+	}
+
+	if err := user.Validate(); err != nil {
+		span.SetStatus(codes.Error, err.Error())
+		span.RecordError(err)
+		slog.Error("repository.users.Insert", "error", err)
+		r.metrics.repositoryCalls.Add(ctx, 1,
+			metric.WithAttributes(
+				append(metricCommonAttributes, attribute.String("successful", "false"))...,
+			),
+		)
+		return err
 	}
 
 	query := fmt.Sprintf(`
@@ -201,7 +213,7 @@ func (r *PGSQLUserRepository) Insert(ctx context.Context, user *model.UserParams
 }
 
 // Update updates the user with the specified ID.
-func (r *PGSQLUserRepository) Update(ctx context.Context, user *model.UserParamsInput) error {
+func (r *PGSQLUserRepository) Update(ctx context.Context, user *model.UpdateUserInput) error {
 	ctx, cancel := context.WithTimeout(ctx, r.maxQueryTimeout)
 	defer cancel()
 
@@ -319,7 +331,7 @@ func (r *PGSQLUserRepository) Update(ctx context.Context, user *model.UserParams
 }
 
 // Delete deletes the user with the specified ID.
-func (r *PGSQLUserRepository) Delete(ctx context.Context, user *model.UserParamsInput) error {
+func (r *PGSQLUserRepository) Delete(ctx context.Context, user *model.DeleteUserInput) error {
 	ctx, cancel := context.WithTimeout(ctx, r.maxQueryTimeout)
 	defer cancel()
 

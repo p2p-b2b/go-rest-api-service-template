@@ -67,7 +67,7 @@ func (mr *MockUserRepositoryMockRecorder) Conn(ctx interface{}) *gomock.Call {
 }
 
 // Delete mocks base method.
-func (m *MockUserRepository) Delete(ctx context.Context, user *model.UserParamsInput) error {
+func (m *MockUserRepository) Delete(ctx context.Context, user *model.DeleteUserInput) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Delete", ctx, user)
 	ret0, _ := ret[0].(error)
@@ -95,7 +95,7 @@ func (mr *MockUserRepositoryMockRecorder) DriverName() *gomock.Call {
 }
 
 // Insert mocks base method.
-func (m *MockUserRepository) Insert(ctx context.Context, user *model.UserParamsInput) error {
+func (m *MockUserRepository) Insert(ctx context.Context, user *model.InsertUserInput) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Insert", ctx, user)
 	ret0, _ := ret[0].(error)
@@ -153,7 +153,7 @@ func (mr *MockUserRepositoryMockRecorder) SelectByID(ctx, id interface{}) *gomoc
 }
 
 // Update mocks base method.
-func (m *MockUserRepository) Update(ctx context.Context, user *model.UserParamsInput) error {
+func (m *MockUserRepository) Update(ctx context.Context, user *model.UpdateUserInput) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Update", ctx, user)
 	ret0, _ := ret[0].(error)

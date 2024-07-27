@@ -10,11 +10,19 @@ import (
 	"github.com/google/uuid"
 )
 
+const (
+	// DefaultLimit is the maximum number of elements to return.
+	DefaultLimit int = 10
+
+	// MinLimit is the minimum number of elements to return.
+	MinLimit int = 2
+
+	// MaxLimit is the maximum number of elements to return.
+	MaxLimit int = 100
+)
+
 // DataSeparator is the separator used to separate the data in the cursor token.
 var DataSeparator string = ";"
-
-// DefaultLimit is the maximum number of elements to return.
-const DefaultLimit int = 10
 
 var (
 	// ErrInvalidCursor is an error that is returned when the cursor token is invalid.

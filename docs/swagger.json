@@ -388,7 +388,6 @@
             }
         },
         "model.CreateUserRequest": {
-            "description": "Create user request.",
             "type": "object",
             "properties": {
                 "email": {
@@ -447,7 +446,6 @@
             }
         },
         "model.UpdateUserRequest": {
-            "description": "Update user request.",
             "type": "object",
             "properties": {
                 "email": {
@@ -465,7 +463,6 @@
             }
         },
         "model.User": {
-            "description": "User information.",
             "type": "object",
             "properties": {
                 "created_at": {
