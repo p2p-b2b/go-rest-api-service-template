@@ -23,6 +23,22 @@ func TestIsValidFilter(t *testing.T) {
 			want: true,
 		},
 		{
+			name: "valid filter when name has spaces",
+			args: args{
+				columns: []string{"id", "first_name", "last_name", "email", "salary", "age"},
+				filter:  "first_name='Alice Julie' OR last_name='Smith' and age=20 or salary=1000",
+			},
+			want: true,
+		},
+		{
+			name: "valid filter when name has spaces and there is more than one operator and spaces",
+			args: args{
+				columns: []string{"id", "first_name", "last_name", "email", "salary", "age"},
+				filter:  "first_name='Alice Julie'    OR last_name!='Smith' AND age>=20 or salary<=1000 AND email!='this@mail.com'",
+			},
+			want: true,
+		},
+		{
 			name: "valid filter when columns is empty",
 			args: args{
 				columns: []string{"id", "first_name", "last_name", "email", "created_at", "updated_at"},
@@ -63,18 +79,26 @@ func TestIsValidFilter(t *testing.T) {
 			want: true,
 		},
 		{
-			name: "invalid filter with bad pair building",
+			name: "valid filter, ignore trailing AND",
 			args: args{
-				columns: []string{"id"},
-				filter:  "id",
+				columns: []string{"id", "first_name", "last_name", "email", "created_at", "updated_at"},
+				filter:  "id=1 AND first_name='Alice' AND",
+			},
+			want: true,
+		},
+		{
+			name: "invalid filter, taking into account trailing AND because the space is not ignored",
+			args: args{
+				columns: []string{"id", "first_name", "last_name", "email", "created_at", "updated_at"},
+				filter:  "id=1 AND first_name='Alice' AND ",
 			},
 			want: false,
 		},
 		{
-			name: "invalid filter with extra operator",
+			name: "invalid filter with bad pair building",
 			args: args{
-				columns: []string{"id", "first_name", "last_name", "email", "created_at", "updated_at"},
-				filter:  "id=1 AND first_name='Alice' AND",
+				columns: []string{"id"},
+				filter:  "id",
 			},
 			want: false,
 		},

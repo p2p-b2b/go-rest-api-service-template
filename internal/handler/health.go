@@ -27,9 +27,9 @@ func (h *HealthHandler) RegisterRoutes(mux *http.ServeMux) {
 // Get returns the health of the service
 // @Summary Get the health of the service
 // @Description Get the health of the service
-// @Tags health
+// @Tags service.health
 // @Produce json
-// @Success 200 {object} model.Health
+// @Success 200 {object} service.Health
 // @Failure 500 {object} APIError
 // @Router /health [get]
 // @Router /healthz [get]
@@ -42,11 +42,11 @@ func (h *HealthHandler) Get(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// write the response
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+
 	if err := json.NewEncoder(w).Encode(health); err != nil {
 		WriteError(w, r, http.StatusInternalServerError, ErrInternalServerError.Error())
 		return
 	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
 }

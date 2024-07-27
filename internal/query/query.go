@@ -1,19 +1,12 @@
 package query
 
 import (
+	"regexp"
 	"strconv"
 	"strings"
 )
 
-var (
-	// !=, >=, <= are not supported yet
-	// filterComparators = []string{"!=", ">=", "<=", "=", ">", "<"}
-
-	filterComparators = []string{"=", ">", "<"}
-	filterOperators   = []string{"AND", "OR"}
-
-	sortOperators = []string{"ASC", "DESC"}
-)
+var sortOperators = []string{"ASC", "DESC"}
 
 // GetFields returns a list of fields for partial response after trimming spaces.
 func GetFields(fields string) []string {
@@ -148,14 +141,11 @@ func IsValidFilter(columns []string, filter string) bool {
 		return true
 	}
 
-	// Tokenize the filter string
-	tokens := tokenizeFilter(filter)
-
 	// get the operators in the filter
-	operators := getOperatorsFilter(tokens)
+	operators := getOperatorsFilter(filter)
 
 	// get the pairs in the filter
-	pairs := getPairsFilter(tokens)
+	pairs := getPairsFilter(filter)
 
 	// pairs cannot be zero
 	if len(pairs) == 0 {
@@ -175,8 +165,15 @@ func IsValidFilter(columns []string, filter string) bool {
 		return false
 	}
 
+	// check if cols are valid
+	for _, col := range cols {
+		if !isValidColumn(col, columns) {
+			return false
+		}
+	}
+
 	// get the values in the filter
-	values := getValues(pairs)
+	values := getValuesFilter(pairs)
 
 	// values cannot be zero
 	if len(values) == 0 {
@@ -188,8 +185,15 @@ func IsValidFilter(columns []string, filter string) bool {
 		return false
 	}
 
+	// check if values are valid
+	for _, value := range values {
+		if !isValue(value) {
+			return false
+		}
+	}
+
 	// get the comparators in the filter
-	comparators := getComparators(pairs)
+	comparators := getComparatorsFilter(pairs)
 
 	// comparators cannot be zero
 	if len(comparators) == 0 {
@@ -201,20 +205,6 @@ func IsValidFilter(columns []string, filter string) bool {
 		return false
 	}
 
-	// check if cols are valid
-	for _, col := range cols {
-		if !isValidColumn(col, columns) {
-			return false
-		}
-	}
-
-	// check if values are valid
-	for _, value := range values {
-		if !isValue(value) {
-			return false
-		}
-	}
-
 	return true
 }
 
@@ -222,14 +212,6 @@ func IsValidFilter(columns []string, filter string) bool {
 // separated by commas.
 func tokenizeSort(sort string) []string {
 	return strings.Split(sort, ",")
-}
-
-// tokenize splits a filter string into tokens
-// separated by spaces.
-func tokenizeFilter(filter string) []string {
-	// Implement tokenization logic here, e.g., using regexp
-	// Split by spaces, handle quotes for values, etc.
-	return strings.Split(filter, " ")
 }
 
 // isValidColumn checks if a value is a valid column.
@@ -243,16 +225,6 @@ func isValidColumn(value string, columns []string) bool {
 	return false
 }
 
-// isValidComparator checks if a token is a valid comparator.
-func isValidComparator(token string) bool {
-	for _, comparator := range filterComparators {
-		if token == comparator || strings.ToUpper(token) == comparator {
-			return true
-		}
-	}
-	return false
-}
-
 // isValidOperatorSort checks if a token is a valid operator.
 func isValidOperatorSort(value string) bool {
 	for _, operator := range sortOperators {
@@ -263,22 +235,12 @@ func isValidOperatorSort(value string) bool {
 	return false
 }
 
-// isValidOperatorFilter checks if a token is a valid operator.
-func isValidOperatorFilter(value string) bool {
-	for _, operator := range filterOperators {
-		if value == operator || strings.ToUpper(value) == operator {
-			return true
-		}
-	}
-	return false
-}
-
 // isValue checks if a token is a valid value.
 // Valid values can be single-quoted strings and numbers.
 func isValue(value any) bool {
-	switch value.(type) {
+	switch v := value.(type) {
 	case string:
-		return isQuotedString(value.(string))
+		return isQuotedString(v) || isNumber(v)
 	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
 		return true
 	case float32, float64:
@@ -291,6 +253,19 @@ func isValue(value any) bool {
 // isQuotedString checks if a value is a valid single-quoted string.
 func isQuotedString(value string) bool {
 	return value[0] == '\'' && value[len(value)-1] == '\''
+}
+
+// isNumber checks if a value is a valid number.
+func isNumber(value string) bool {
+	if _, err := strconv.Atoi(value); err == nil {
+		return true
+	} else {
+		if _, err := strconv.ParseFloat(value, 64); err == nil {
+			return true
+		} else {
+			return false
+		}
+	}
 }
 
 // getOperatorsSort returns the list of valid operators in the tokenized sort.
@@ -309,27 +284,51 @@ func getOperatorsSort(tokens []string) []string {
 }
 
 // getOperatorsFilter returns the list of valid operators in the tokenized filter.
-func getOperatorsFilter(tokens []string) []string {
-	operators := make([]string, 0)
-	for _, token := range tokens {
-		t := strings.TrimSpace(token)
+func getOperatorsFilter(filter string) []string {
+	// https://regex101.com/r/6HPVL2/1
+	re := regexp.MustCompile(`\s(AND|OR|and|or)\s`)
 
-		if isValidOperatorFilter(t) {
-			operators = append(operators, t)
+	matches := re.FindAllString(filter, -1)
+	tokens := make([]string, 0, len(matches))
+	for _, match := range matches {
+		if match != "" {
+			tokens = append(tokens, strings.TrimSpace(match))
 		}
 	}
-	return operators
+	return tokens
 }
 
 // getPairs returns the list of column-value pairs in the tokenized filter.
-func getPairsFilter(tokens []string) []string {
-	pairs := make([]string, 0)
-	for _, token := range tokens {
-		if !isValidOperatorFilter(token) {
-			pairs = append(pairs, token)
+func getPairsFilter(filter string) []string {
+	// https://regex101.com/r/3aqJcV/4
+	re := regexp.MustCompile(`(\w+\s*(=|!=)\s*('.*?'|".*?"))|(\w+\s{0,}(>=|<=|<|>|=)\s{0,}(\d{1,15}(\.\d{1,15}){0,1})\s{0,}?)`)
+
+	matches := re.FindAllString(filter, -1)
+	tokens := make([]string, 0, len(matches))
+	for _, match := range matches {
+		if match != "" {
+			tokens = append(tokens, strings.TrimSpace(match))
 		}
 	}
-	return pairs
+	return tokens
+}
+
+// getComparatorsFilter returns the list of valid comparators in the pairs values.
+func getComparatorsFilter(pairs []string) []string {
+	re := regexp.MustCompile(`(\s*(=|!=)\s*)|(\s{0,}(>=|<=|<|>|=)\s{0,})`)
+
+	comparators := make([]string, 0)
+	for _, pair := range pairs {
+		matches := re.FindAllString(pair, -1)
+
+		for _, match := range matches {
+			if match != "" && len(match) <= 2 {
+				comparators = append(comparators, strings.TrimSpace(match))
+			}
+		}
+	}
+
+	return comparators
 }
 
 // getColumnsSort returns the list of valid columns in the sort string.
@@ -344,64 +343,48 @@ func getColumnsSort(pairs []string) []string {
 	return columns
 }
 
-// getColumnsFilter returns the list of valid columns in the pairs values.
+// getColumnsFilter returns the list of columns in the pairs values.
 func getColumnsFilter(pairs []string) []string {
+	re := regexp.MustCompile(`(\s*(=|!=)\s*)|(\s{0,}(>=|<=|<|>|=)\s{0,})`)
+
 	columns := make([]string, 0)
 	for _, pair := range pairs {
 		p := strings.TrimSpace(pair)
-		for _, comparator := range filterComparators {
-			column := strings.Split(p, comparator)
-			if len(column) == 2 {
-				columns = append(columns, column[0])
+		matches := re.Split(p, 2)
+
+		for i, match := range matches {
+			if match != "" {
+				// get only the first part of the pair
+				if i%2 == 0 {
+					columns = append(columns, strings.TrimSpace(match))
+				}
 			}
 		}
+
 	}
 
 	return columns
 }
 
-// getValues returns the list of values in the pairs values.
-func getValues(pairs []string) []any {
-	values := make([]any, 0)
-	for _, pair := range pairs {
-		for _, comparator := range filterComparators {
-			if strings.Contains(pair, comparator) {
-				value := strings.Split(pair, comparator)[1]
+// getValuesFilter returns the list of values in the pairs values.
+func getValuesFilter(pairs []string) []string {
+	re := regexp.MustCompile(`(\s*(=|!=)\s*)|(\s{0,}(>=|<=|<|>|=)\s{0,})`)
 
-				// Check if the value is a quoted string
-				if isQuotedString(value) {
-					values = append(values, value)
-				} else {
-					// Try to parse the value as an integer
-					if intValue, err := strconv.Atoi(value); err == nil {
-						values = append(values, intValue)
-					} else {
-						// Try to parse the value as a float
-						if floatValue, err := strconv.ParseFloat(value, 64); err == nil {
-							values = append(values, floatValue)
-						} else {
-							// Invalid value
-							return nil
-						}
-					}
+	values := make([]string, 0)
+	for _, pair := range pairs {
+		p := strings.TrimSpace(pair)
+		matches := re.Split(p, 2)
+
+		for i, match := range matches {
+			if match != "" {
+				// get only the second part of the pair
+				if i%2 == 1 {
+					values = append(values, strings.TrimSpace(match))
 				}
 			}
 		}
+
 	}
 
 	return values
-}
-
-// getComparators returns the list of valid comparators in the pairs values.
-func getComparators(pairs []string) []string {
-	comparators := make([]string, 0)
-	for _, pair := range pairs {
-		for _, comparator := range filterComparators {
-			if strings.Contains(pair, comparator) {
-				comparators = append(comparators, comparator)
-			}
-		}
-	}
-
-	return comparators
 }

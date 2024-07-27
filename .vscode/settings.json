@@ -31,6 +31,7 @@
     "RESTAPI",
     "sdktrace",
     "semconv",
+    "SQLSTATE",
     "sslmode",
     "stdlib",
     "stdoutmetric",

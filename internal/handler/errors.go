@@ -34,15 +34,6 @@ var (
 
 	// ErrAtLeastOneFieldRequired is returned when at least one field is required.
 	ErrAtLeastOneFieldRequired = errors.New("at least one field is required")
-
-	// ErrInvalidFilter is returned when the filter is invalid.
-	ErrInvalidFilter = errors.New("invalid filter")
-
-	// ErrInvalidSort is returned when the sort is invalid.
-	ErrInvalidSort = errors.New("invalid sort")
-
-	// ErrInvalidField is returned when the field is invalid.
-	ErrInvalidField = errors.New("invalid field")
 )
 
 type APIError struct {
