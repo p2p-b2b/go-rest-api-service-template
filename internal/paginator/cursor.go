@@ -11,46 +11,27 @@ import (
 )
 
 const (
-	// DefaultLimit is the maximum number of elements to return.
 	DefaultLimit int = 10
-
-	// MinLimit is the minimum number of elements to return.
-	MinLimit int = 2
-
-	// MaxLimit is the maximum number of elements to return.
-	MaxLimit int = 100
+	MinLimit     int = 2
+	MaxLimit     int = 100
 )
 
 // DataSeparator is the separator used to separate the data in the cursor token.
 var DataSeparator string = ";"
 
 var (
-	// ErrInvalidCursor is an error that is returned when the cursor token is invalid.
-	ErrInvalidCursor = errors.New("invalid cursor token")
-
-	// ErrMustBeOneOrGreater is an error that is returned when the value is less than one.
+	ErrInvalidCursor      = errors.New("invalid cursor token")
 	ErrMustBeOneOrGreater = errors.New("limit must be one or greater")
 )
 
 // Paginator represents a paginator.
 type Paginator struct {
-	// NextToken is the cursor token to the next page.
 	NextToken string `json:"next_token"`
-
-	// NextPage the URL to the next page.
-	NextPage string `json:"next_page"`
-
-	// PrevToken is the cursor token to the previous page.
+	NextPage  string `json:"next_page"`
 	PrevToken string `json:"prev_token"`
-
-	// PrevPage is the cursor token to the previous page.
-	PrevPage string `json:"prev_page"`
-
-	// Size is the number of elements in the current page.
-	Size int `json:"size"`
-
-	// Limit is the maximum number of elements to return.
-	Limit int `json:"limit"`
+	PrevPage  string `json:"prev_page"`
+	Size      int    `json:"size"`
+	Limit     int    `json:"limit"`
 }
 
 // String returns the string representation of the paginator.

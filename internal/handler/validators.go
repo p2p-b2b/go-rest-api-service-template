@@ -75,7 +75,7 @@ func parsePrevTokenQueryParams(prevToken string) (string, error) {
 	if prevToken != "" {
 		_, _, err := paginator.DecodeToken(prevToken)
 		if err != nil {
-			return "", ErrInvalidNextToken
+			return "", ErrInvalidPrevToken
 		}
 	}
 
