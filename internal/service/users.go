@@ -10,7 +10,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/o11y"
-	"github.com/p2p-b2b/go-rest-api-service-template/internal/paginator"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/repository"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -429,28 +428,15 @@ func (s *UserService) ListUsers(ctx context.Context, params *ListUserInput) (*Li
 	}
 
 	users := make([]*User, 0, len(qryOut.Items))
-	for _, u := range qryOut.Items {
-		users = append(users, &User{
+	for i, u := range qryOut.Items {
+		users[i] = &User{
 			ID:        u.ID,
 			FirstName: u.FirstName,
 			LastName:  u.LastName,
 			Email:     u.Email,
 			CreatedAt: u.CreatedAt,
 			UpdatedAt: u.UpdatedAt,
-		})
-	}
-	if len(users) == 0 {
-		slog.Debug("service.users.ListUsers", "message", "no users found")
-		span.SetStatus(codes.Error, "no users found")
-		s.metrics.serviceCalls.Add(ctx, 1,
-			metric.WithAttributes(
-				append(metricCommonAttributes, attribute.String("successful", "true"))...,
-			),
-		)
-		return &ListUserOutput{
-			Items:     users,
-			Paginator: paginator.Paginator{},
-		}, nil
+		}
 	}
 
 	span.SetStatus(codes.Ok, "Users found")

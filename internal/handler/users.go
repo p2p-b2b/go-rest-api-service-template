@@ -534,7 +534,7 @@ func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	req := &service.ListUserInput{
+	sParams := &service.ListUserInput{
 		Sort:   sort,
 		Filter: filter,
 		Fields: fields,
@@ -545,7 +545,7 @@ func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 
-	SUsersResponse, err := h.service.ListUsers(ctx, req)
+	SUsers, err := h.service.ListUsers(ctx, sParams)
 	if err != nil {
 		span.SetStatus(codes.Error, err.Error())
 		span.RecordError(err)
@@ -560,13 +560,13 @@ func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	usersResponse := &ListUserResponse{
-		Items:     make([]*User, 0, len(SUsersResponse.Items)),
-		Paginator: SUsersResponse.Paginator,
+	users := &ListUserResponse{
+		Items:     make([]*User, len(SUsers.Items)),
+		Paginator: SUsers.Paginator,
 	}
 
-	for _, sUser := range SUsersResponse.Items {
-		user := &User{
+	for i, sUser := range SUsers.Items {
+		users.Items[i] = &User{
 			ID:        sUser.ID,
 			FirstName: sUser.FirstName,
 			LastName:  sUser.LastName,
@@ -574,15 +574,14 @@ func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 			CreatedAt: sUser.CreatedAt,
 			UpdatedAt: sUser.UpdatedAt,
 		}
-		usersResponse.Items = append(usersResponse.Items, user)
 	}
 
 	// set the next and previous page
-	usersResponse.Paginator.GeneratePages(r.URL.Path)
+	users.Paginator.GeneratePages(r.URL.Path)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(usersResponse); err != nil {
+	if err := json.NewEncoder(w).Encode(users); err != nil {
 		span.SetStatus(codes.Error, err.Error())
 		span.RecordError(err)
 		slog.Error("handler.ListUsers", "error", err.Error())
@@ -595,9 +594,9 @@ func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 		WriteError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	} else {
-		slog.Debug("handler.users.ListUsers: called", "users", len(usersResponse.Items))
+		slog.Debug("handler.users.ListUsers: called", "users", len(users.Items))
 		span.SetStatus(codes.Ok, "list users")
-		span.SetAttributes(attribute.Int("users.count", len(usersResponse.Items)))
+		span.SetAttributes(attribute.Int("users.count", len(users.Items)))
 		h.metrics.handlerCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				append(metricCommonAttributes, attribute.String("code", fmt.Sprintf("%d", http.StatusOK)))...,
