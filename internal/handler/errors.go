@@ -8,32 +8,28 @@ import (
 )
 
 var (
-	// ErrInvalidUserID is returned when the user ID is not a valid UUID.
-	ErrInvalidUserID = errors.New("invalid user ID")
-
-	// ErrUserIDRequired is returned when an ID is required.
-	ErrUserIDRequired = errors.New("user ID is required")
-
-	// ErrInternalServerError is returned when an internal server error occurs.
 	ErrInternalServerError = errors.New("internal server error")
 
-	// ErrEncodingPayload is returned when an error occurs while encoding the payload.
-	ErrEncodingPayload = errors.New("error encoding payload")
+	ErrInvalidUserID        = errors.New("invalid user ID, this must be a valid UUID")
+	ErrInvalidUserFirstName = errors.New("invalid user first name, the length must be at least 2 characters")
+	ErrInvalidUserLastName  = errors.New("invalid user last name, the length must be at least 2 characters")
+	ErrInvalidUserEmail     = errors.New("invalid user email, the length must be at least 6 characters and must be a valid email address")
 
-	// ErrDecodingPayload is returned when an error occurs while decoding the payload.
+	ErrAtLeastOneFieldMustBeUpdated = errors.New("at least one field must be updated, any of these could be empty")
+
+	ErrEncodingPayload = errors.New("error encoding payload")
 	ErrDecodingPayload = errors.New("error decoding payload")
 
-	// ErrFirstNameRequired is returned when the first name is required.
-	ErrFirstNameRequired = errors.New("first name is required")
+	ErrRequiredUUID    = errors.New("required UUID")
+	ErrInvalidUUID     = errors.New("invalid UUID")
+	ErrUUIDCannotBeNil = errors.New("UUID cannot be nil")
 
-	// ErrLastNameRequired is returned when the last name is required.
-	ErrLastNameRequired = errors.New("last name is required")
-
-	// ErrEmailRequired is returned when the email is required.
-	ErrEmailRequired = errors.New("email is required")
-
-	// ErrAtLeastOneFieldRequired is returned when at least one field is required.
-	ErrAtLeastOneFieldRequired = errors.New("at least one field is required")
+	ErrInvalidFilter    = errors.New("invalid filter field")
+	ErrInvalidSort      = errors.New("invalid sort field")
+	ErrInvalidFields    = errors.New("invalid fields field")
+	ErrInvalidLimit     = errors.New("invalid limit field")
+	ErrInvalidNextToken = errors.New("invalid nextToken field")
+	ErrInvalidPrevToken = errors.New("invalid prevToken field")
 )
 
 type APIError struct {

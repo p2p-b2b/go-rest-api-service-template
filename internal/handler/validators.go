@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"errors"
 	"fmt"
 	"strconv"
 
@@ -9,17 +8,6 @@ import (
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/paginator"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/query"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/repository"
-)
-
-var (
-	// ErrRequiredUUID is an error that is returned when a UUID is required.
-	ErrRequiredUUID = errors.New("required UUID")
-
-	// ErrInvalidID is an error that is returned when the ID is not a valid UUID.
-	ErrInvalidUUID = errors.New("invalid UUID")
-
-	// ErrUUIDCannotBeNil is an error that is returned when the UUID is nil.
-	ErrUUIDCannotBeNil = errors.New("UUID cannot be nil")
 )
 
 // parseUUIDQueryParams parses a string into a UUID.
@@ -42,26 +30,6 @@ func parseUUIDQueryParams(input string) (uuid.UUID, error) {
 
 	return id, nil
 }
-
-var (
-	// ErrInvalidFilter is returned when the filter is invalid.
-	ErrInvalidFilter = errors.New("invalid filter field")
-
-	// ErrInvalidSort is returned when the sort is invalid.
-	ErrInvalidSort = errors.New("invalid sort field")
-
-	// ErrInvalidFields is returned when the field is invalid.
-	ErrInvalidFields = errors.New("invalid fields field")
-
-	// ErrInvalidLimit is returned when the limit is invalid.
-	ErrInvalidLimit = errors.New("invalid limit field")
-
-	// ErrInvalidNextToken is returned when the nextToken is invalid.
-	ErrInvalidNextToken = errors.New("invalid nextToken field")
-
-	// ErrInvalidPrevToken is returned when the prevToken is invalid.
-	ErrInvalidPrevToken = errors.New("invalid prevToken field")
-)
 
 // parseSortQueryParams parses a string into a sort field.
 func parseSortQueryParams(sort string) (string, error) {
@@ -92,9 +60,11 @@ func parseFieldsQueryParams(fields string) ([]string, error) {
 
 // parseNextTokenQueryParams parses a string into a nextToken field.
 func parseNextTokenQueryParams(nextToken string) (string, error) {
-	_, _, err := paginator.DecodeToken(nextToken)
-	if err != nil {
-		return "", ErrInvalidNextToken
+	if nextToken != "" {
+		_, _, err := paginator.DecodeToken(nextToken)
+		if err != nil {
+			return "", ErrInvalidNextToken
+		}
 	}
 
 	return nextToken, nil
@@ -102,9 +72,11 @@ func parseNextTokenQueryParams(nextToken string) (string, error) {
 
 // parsePrevTokenQueryParams parses a string into a prevToken field.
 func parsePrevTokenQueryParams(prevToken string) (string, error) {
-	_, _, err := paginator.DecodeToken(prevToken)
-	if err != nil {
-		return "", ErrInvalidNextToken
+	if prevToken != "" {
+		_, _, err := paginator.DecodeToken(prevToken)
+		if err != nil {
+			return "", ErrInvalidNextToken
+		}
 	}
 
 	return prevToken, nil

@@ -157,12 +157,13 @@ func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	)
 
 	// create user from service.User
-
 	user := &User{
 		ID:        sUser.ID,
 		FirstName: sUser.FirstName,
 		LastName:  sUser.LastName,
 		Email:     sUser.Email,
+		CreatedAt: sUser.CreatedAt,
+		UpdatedAt: sUser.UpdatedAt,
 	}
 
 	// encode and write the response
@@ -545,7 +546,7 @@ func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 
-	SUsers, err := h.service.ListUsers(ctx, sParams)
+	sUsers, err := h.service.ListUsers(ctx, sParams)
 	if err != nil {
 		span.SetStatus(codes.Error, err.Error())
 		span.RecordError(err)
@@ -561,11 +562,11 @@ func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 	}
 
 	users := &ListUserResponse{
-		Items:     make([]*User, len(SUsers.Items)),
-		Paginator: SUsers.Paginator,
+		Items:     make([]*User, len(sUsers.Items)),
+		Paginator: sUsers.Paginator,
 	}
 
-	for i, sUser := range SUsers.Items {
+	for i, sUser := range sUsers.Items {
 		users.Items[i] = &User{
 			ID:        sUser.ID,
 			FirstName: sUser.FirstName,

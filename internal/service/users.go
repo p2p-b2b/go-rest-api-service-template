@@ -427,7 +427,7 @@ func (s *UserService) ListUsers(ctx context.Context, params *ListUserInput) (*Li
 		return nil, nil
 	}
 
-	users := make([]*User, 0, len(qryOut.Items))
+	users := make([]*User, len(qryOut.Items))
 	for i, u := range qryOut.Items {
 		users[i] = &User{
 			ID:        u.ID,

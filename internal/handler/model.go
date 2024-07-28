@@ -2,20 +2,11 @@ package handler
 
 import (
 	"encoding/json"
-	"errors"
 	"net/mail"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/paginator"
-)
-
-var (
-	ErrInvalidID                    = errors.New("invalid ID")
-	ErrInvalidFirstName             = errors.New("invalid first name, the first name must be at least 2 characters long")
-	ErrInvalidLastName              = errors.New("invalid last name, the last name must be at least 2 characters long")
-	ErrInvalidEmail                 = errors.New("invalid email")
-	ErrAtLeastOneFieldMustBeUpdated = errors.New("at least one field must be updated")
 )
 
 // User represents a user entity used to model the data stored in the database.
@@ -76,25 +67,25 @@ type CreateUserRequest struct {
 // Validate validates the CreateUserRequest.
 func (req *CreateUserRequest) Validate() error {
 	if req.ID == uuid.Nil {
-		return ErrInvalidID
+		return ErrInvalidUserID
 	}
 
 	if len(req.FirstName) < 2 {
-		return ErrInvalidFirstName
+		return ErrInvalidUserFirstName
 	}
 
 	if len(req.LastName) < 2 {
-		return ErrInvalidLastName
+		return ErrInvalidUserLastName
 	}
 
 	// minimal email validation
 	if len(req.Email) < 6 {
-		return ErrInvalidEmail
+		return ErrInvalidUserEmail
 	}
 
 	_, err := mail.ParseAddress(req.Email)
 	if err != nil {
-		return ErrInvalidEmail
+		return ErrInvalidUserEmail
 	}
 
 	return nil
@@ -109,21 +100,21 @@ type UpdateUserRequest struct {
 
 func (req *UpdateUserRequest) Validate() error {
 	if len(req.FirstName) < 2 {
-		return ErrInvalidFirstName
+		return ErrInvalidUserFirstName
 	}
 
 	if len(req.LastName) < 2 {
-		return ErrInvalidLastName
+		return ErrInvalidUserLastName
 	}
 
 	// minimal email validation
 	if len(req.Email) < 6 {
-		return ErrInvalidEmail
+		return ErrInvalidUserEmail
 	}
 
 	_, err := mail.ParseAddress(req.Email)
 	if err != nil {
-		return ErrInvalidEmail
+		return ErrInvalidUserEmail
 	}
 
 	// at least one field must be updated
