@@ -7,7 +7,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/paginator"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/query"
-	"github.com/p2p-b2b/go-rest-api-service-template/internal/repository"
 )
 
 // parseUUIDQueryParams parses a string into a UUID.
@@ -32,8 +31,8 @@ func parseUUIDQueryParams(input string) (uuid.UUID, error) {
 }
 
 // parseSortQueryParams parses a string into a sort field.
-func parseSortQueryParams(sort string) (string, error) {
-	if !query.IsValidSort(repository.UserSortFields, sort) {
+func parseSortQueryParams(sort string, allowedFields []string) (string, error) {
+	if !query.IsValidSort(allowedFields, sort) {
 		return "", ErrInvalidSort
 	}
 
@@ -41,8 +40,8 @@ func parseSortQueryParams(sort string) (string, error) {
 }
 
 // parseFilterQueryParams parses a string into a filter field.
-func parseFilterQueryParams(filter string) (string, error) {
-	if !query.IsValidFilter(repository.UserFilterFields, filter) {
+func parseFilterQueryParams(filter string, allowedFields []string) (string, error) {
+	if !query.IsValidFilter(allowedFields, filter) {
 		return "", ErrInvalidFilter
 	}
 
@@ -50,8 +49,8 @@ func parseFilterQueryParams(filter string) (string, error) {
 }
 
 // parseFieldsQueryParams parses a string into a list of fields.
-func parseFieldsQueryParams(fields string) ([]string, error) {
-	if !query.IsValidFields(repository.UserFields, fields) {
+func parseFieldsQueryParams(fields string, allowedFields []string) ([]string, error) {
+	if !query.IsValidFields(allowedFields, fields) {
 		return nil, ErrInvalidFields
 	}
 
@@ -110,18 +109,18 @@ func parseLimitQueryParams(limit string) (int, error) {
 }
 
 // parseListQueryParams parses a list of strings into a list of UUIDs.
-func parseListQueryParams(params map[string]any) (sort string, filter string, fields []string, nextToken string, prevToken string, limit int, err error) {
-	sort, err = parseSortQueryParams(params["sort"].(string))
+func parseListQueryParams(params map[string]any, fieldsFields, filterFields, sortFields []string) (sort string, filter string, fields []string, nextToken string, prevToken string, limit int, err error) {
+	sort, err = parseSortQueryParams(params["sort"].(string), sortFields)
 	if err != nil {
 		return "", "", nil, "", "", 0, err
 	}
 
-	filter, err = parseFilterQueryParams(params["filter"].(string))
+	filter, err = parseFilterQueryParams(params["filter"].(string), filterFields)
 	if err != nil {
 		return "", "", nil, "", "", 0, err
 	}
 
-	fields, err = parseFieldsQueryParams(params["fields"].(string))
+	fields, err = parseFieldsQueryParams(params["fields"].(string), fieldsFields)
 	if err != nil {
 		return "", "", nil, "", "", 0, err
 	}

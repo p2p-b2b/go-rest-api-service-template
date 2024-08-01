@@ -12,6 +12,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/o11y"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/paginator"
+	"github.com/p2p-b2b/go-rest-api-service-template/internal/repository"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/service"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -520,7 +521,12 @@ func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 		"limit":     r.URL.Query().Get("limit"),
 	}
 
-	sort, filter, fields, nextToken, prevToken, limit, err := parseListQueryParams(params)
+	sort, filter, fields, nextToken, prevToken, limit, err := parseListQueryParams(
+		params,
+		repository.UserFields,
+		repository.UserFilterFields,
+		repository.UserSortFields,
+	)
 	if err != nil {
 		span.SetStatus(codes.Error, err.Error())
 		span.RecordError(err)
