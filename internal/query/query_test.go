@@ -297,3 +297,65 @@ func TestIsValidFields(t *testing.T) {
 		})
 	}
 }
+
+func TestPrefixFilterFields(t *testing.T) {
+	type args struct {
+		filter string
+		prefix string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    string
+		wantErr bool
+	}{
+		{
+			name: "prefix filter with no filter",
+			args: args{
+				filter: "",
+				prefix: "users.",
+			},
+			want:    "",
+			wantErr: false,
+		},
+		{
+			name: "prefix filter with no prefix",
+			args: args{
+				filter: "id=1 AND first_name='Alice' or last_name='Smith'",
+				prefix: "",
+			},
+			want:    "id=1 AND first_name='Alice' or last_name='Smith'",
+			wantErr: false,
+		},
+		{
+			name: "prefix filter with spaces",
+			args: args{
+				filter: "id=1 AND first_name='Alice' or last_name='Smith'",
+				prefix: "users.",
+			},
+			want:    "users.id=1 AND users.first_name='Alice' or users.last_name='Smith'",
+			wantErr: false,
+		},
+		{
+			name: "prefix filter with spaces and no prefix",
+			args: args{
+				filter: "id=1 AND first_name='Alice' or last_name='Smith'",
+				prefix: " ",
+			},
+			want:    "id=1 AND first_name='Alice' or last_name='Smith'",
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := PrefixFilterFields(tt.args.filter, tt.args.prefix)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("PrefixFilterFields() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("PrefixFilterFields() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
