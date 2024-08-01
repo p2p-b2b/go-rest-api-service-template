@@ -13,6 +13,7 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/o11y"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/paginator"
+	"github.com/p2p-b2b/go-rest-api-service-template/internal/query"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/metric"
@@ -548,20 +549,35 @@ func (r *PGSQLUserRepository) Select(ctx context.Context, params *SelectUserInpu
 	}
 
 	// if no fields are provided, select all fields
-	fieldsStr := "usrs.*"
+	sqlFieldsPrefix := "usrs."
+	fieldsStr := sqlFieldsPrefix + "*"
 	if params.Fields[0] != "" {
 		fields := make([]string, 0)
 		for _, field := range params.Fields {
-			fields = append(fields, "usrs."+field)
+			fields = append(fields, sqlFieldsPrefix+field)
 		}
 
-		fields = append(fields, "usrs.serial_id")
+		fields = append(fields, sqlFieldsPrefix+"serial_id")
 		fieldsStr = strings.Join(fields, ", ")
 	}
 
 	var filterQuery string
 	if params.Filter != "" {
-		filterQuery = fmt.Sprintf("AND (%s)", params.Filter)
+		filter, err := query.PrefixFilterFields(params.Filter, sqlFieldsPrefix)
+		if err != nil {
+			span.SetStatus(codes.Error, err.Error())
+			span.RecordError(err)
+			slog.Error("repository.users.Select", "error", err)
+			r.metrics.repositoryCalls.Add(ctx, 1,
+				metric.WithAttributes(
+					append(metricCommonAttributes, attribute.String("successful", "false"))...,
+				),
+			)
+
+			return nil, err
+		}
+
+		filterQuery = fmt.Sprintf("AND (%s)", filter)
 	}
 
 	var paginationQuery string
@@ -641,7 +657,21 @@ func (r *PGSQLUserRepository) Select(ctx context.Context, params *SelectUserInpu
 	// newest to oldest
 	if params.Paginator.NextToken == "" && params.Paginator.PrevToken == "" {
 		if params.Filter != "" {
-			filterQuery = fmt.Sprintf("WHERE %s", params.Filter)
+			filter, err := query.PrefixFilterFields(params.Filter, sqlFieldsPrefix)
+			if err != nil {
+				span.SetStatus(codes.Error, err.Error())
+				span.RecordError(err)
+				slog.Error("repository.users.Select", "error", err)
+				r.metrics.repositoryCalls.Add(ctx, 1,
+					metric.WithAttributes(
+						append(metricCommonAttributes, attribute.String("successful", "false"))...,
+					),
+				)
+
+				return nil, err
+			}
+
+			filterQuery = fmt.Sprintf("WHERE %s", filter)
 		}
 
 		paginationQuery = fmt.Sprintf(`
