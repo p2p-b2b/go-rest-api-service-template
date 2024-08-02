@@ -11,7 +11,7 @@ import (
 
 var (
 	// UserFilterFields is a list of valid fields for filtering users.
-	UserFilterFields = []string{"first_name", "last_name", "email", "created_at", "updated_at"}
+	UserFilterFields = []string{"id", "first_name", "last_name", "email", "created_at", "updated_at"}
 
 	// UserSortFields is a list of valid fields for sorting users.
 	UserSortFields = []string{"id", "first_name", "last_name", "email", "created_at", "updated_at"}

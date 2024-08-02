@@ -491,12 +491,19 @@ func (r *PGSQLUserRepository) Select(ctx context.Context, params *SelectUserInpu
 	fieldsStr := sqlFieldsPrefix + "*"
 	if params.Fields[0] != "" {
 		fields := make([]string, 0)
+		var isIsPresent bool
 		for _, field := range params.Fields {
 			fields = append(fields, sqlFieldsPrefix+field)
+			if field == "id" {
+				isIsPresent = true
+			}
 		}
 
 		// id and serial_id are always selected because they are used for pagination
-		fields = append(fields, sqlFieldsPrefix+"id")
+		if !isIsPresent {
+			fields = append(fields, sqlFieldsPrefix+"id")
+		}
+
 		fields = append(fields, sqlFieldsPrefix+"serial_id")
 		fieldsStr = strings.Join(fields, ", ")
 	}
