@@ -99,22 +99,24 @@ type UpdateUserRequest struct {
 }
 
 func (req *UpdateUserRequest) Validate() error {
-	if len(req.FirstName) < 2 {
+	if req.FirstName != "" && len(req.FirstName) < 2 {
 		return ErrInvalidUserFirstName
 	}
 
-	if len(req.LastName) < 2 {
+	if req.LastName != "" && len(req.LastName) < 2 {
 		return ErrInvalidUserLastName
 	}
 
 	// minimal email validation
-	if len(req.Email) < 6 {
-		return ErrInvalidUserEmail
-	}
+	if req.Email != "" {
+		if len(req.Email) < 6 {
+			return ErrInvalidUserEmail
+		}
 
-	_, err := mail.ParseAddress(req.Email)
-	if err != nil {
-		return ErrInvalidUserEmail
+		_, err := mail.ParseAddress(req.Email)
+		if err != nil {
+			return ErrInvalidUserEmail
+		}
 	}
 
 	// at least one field must be updated

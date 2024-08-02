@@ -1,7 +1,6 @@
 package repository
 
 import (
-	"errors"
 	"net/mail"
 	"time"
 
@@ -11,22 +10,14 @@ import (
 )
 
 var (
-	ErrInvalidID                    = errors.New("invalid ID")
-	ErrInvalidFirstName             = errors.New("invalid first name, the first name must be at least 2 characters long")
-	ErrInvalidLastName              = errors.New("invalid last name, the last name must be at least 2 characters long")
-	ErrInvalidEmail                 = errors.New("invalid email")
-	ErrAtLeastOneFieldMustBeUpdated = errors.New("at least one field must be updated")
-)
-
-var (
 	// UserFilterFields is a list of valid fields for filtering users.
 	UserFilterFields = []string{"id", "first_name", "last_name", "email", "created_at", "updated_at"}
 
 	// UserSortFields is a list of valid fields for sorting users.
 	UserSortFields = []string{"id", "first_name", "last_name", "email", "created_at", "updated_at"}
 
-	// UserFields is a list of valid fields for partial responses.
-	UserFields = []string{"id", "first_name", "last_name", "email", "created_at", "updated_at"}
+	// UserPartialFields is a list of valid fields for partial responses.
+	UserPartialFields = []string{"id", "first_name", "last_name", "email", "created_at", "updated_at"}
 )
 
 // User represents a user entity used to model the data stored in the database.
@@ -55,21 +46,21 @@ func (ui *UserInput) Validate() error {
 	}
 
 	if len(ui.FirstName) < 2 {
-		return ErrInvalidFirstName
+		return ErrInvalidUserFirstName
 	}
 
 	if len(ui.LastName) < 2 {
-		return ErrInvalidLastName
+		return ErrInvalidUserLastName
 	}
 
 	// minimal email validation
 	if len(ui.Email) < 6 {
-		return ErrInvalidEmail
+		return ErrInvalidUserEmail
 	}
 
 	_, err := mail.ParseAddress(ui.Email)
 	if err != nil {
-		return ErrInvalidEmail
+		return ErrInvalidUserEmail
 	}
 
 	return nil
@@ -88,7 +79,36 @@ type UpdateUserInput UserInput
 
 // Validate validates the UpdateUserInput.
 func (ui *UpdateUserInput) Validate() error {
-	return (*UserInput)(ui).Validate()
+	if ui.ID == uuid.Nil {
+		return ErrInvalidID
+	}
+
+	if ui.FirstName != "" && len(ui.FirstName) < 2 {
+		return ErrInvalidUserFirstName
+	}
+
+	if ui.LastName != "" && len(ui.LastName) < 2 {
+		return ErrInvalidUserLastName
+	}
+
+	// minimal email validation
+	if ui.Email != "" {
+		if len(ui.Email) < 6 {
+			return ErrInvalidUserEmail
+		}
+
+		_, err := mail.ParseAddress(ui.Email)
+		if err != nil {
+			return ErrInvalidUserEmail
+		}
+	}
+
+	// at least one field must be updated
+	if ui.FirstName == "" && ui.LastName == "" && ui.Email == "" {
+		return ErrAtLeastOneFieldMustBeUpdated
+	}
+
+	return nil
 }
 
 // DeleteUserInput represents the input for the DeleteUser method.
@@ -141,7 +161,7 @@ func (ui *ListUserInput) Validate() error {
 	}
 
 	for _, field := range ui.Fields {
-		if !query.IsValidFields(UserFields, field) {
+		if !query.IsValidFields(UserPartialFields, field) {
 			return ErrInvalidFields
 		}
 	}

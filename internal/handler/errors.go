@@ -34,9 +34,10 @@ var (
 )
 
 type APIError struct {
-	Timestamp  time.Time `json:"date"`
+	Timestamp  time.Time `json:"timestamp"`
 	StatusCode int       `json:"status_code"`
 	Message    string    `json:"message"`
+	Method     string    `json:"method"`
 	Path       string    `json:"path"`
 }
 
@@ -59,6 +60,7 @@ func WriteError(w http.ResponseWriter, r *http.Request, statusCode int, message 
 	err.Timestamp = time.Now()
 	err.StatusCode = statusCode
 	err.Message = message
+	err.Method = r.Method
 	err.Path = r.URL.Path
 
 	if err := json.NewEncoder(w).Encode(err); err != nil {

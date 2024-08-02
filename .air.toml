@@ -29,6 +29,7 @@ exclude_file = [
 ]
 exclude_regex = [
   "_test.go",
+  "*.tmpl$",
 ]
 exclude_unchanged = false
 follow_symlink = false

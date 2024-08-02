@@ -224,12 +224,6 @@ const docTemplate = `{
                         "name": "uid",
                         "in": "path",
                         "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Fields to return. Example: id,first_name,last_name",
-                        "name": "fields",
-                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -369,8 +363,17 @@ const docTemplate = `{
                 "message": {
                     "type": "string"
                 },
+                "method": {
+                    "type": "string"
+                },
+                "path": {
+                    "type": "string"
+                },
                 "status_code": {
                     "type": "integer"
+                },
+                "timestamp": {
+                    "type": "string"
                 }
             }
         },
@@ -446,27 +449,21 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "limit": {
-                    "description": "Limit is the maximum number of elements to return.",
                     "type": "integer"
                 },
                 "next_page": {
-                    "description": "NextPage the URL to the next page.",
                     "type": "string"
                 },
                 "next_token": {
-                    "description": "NextToken is the cursor token to the next page.",
                     "type": "string"
                 },
                 "prev_page": {
-                    "description": "PrevPage is the cursor token to the previous page.",
                     "type": "string"
                 },
                 "prev_token": {
-                    "description": "PrevToken is the cursor token to the previous page.",
                     "type": "string"
                 },
                 "size": {
-                    "description": "Size is the number of elements in the current page.",
                     "type": "integer"
                 }
             }

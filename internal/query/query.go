@@ -1,6 +1,7 @@
 package query
 
 import (
+	"fmt"
 	"regexp"
 	"strconv"
 	"strings"
@@ -387,4 +388,53 @@ func getValuesFilter(pairs []string) []string {
 	}
 
 	return values
+}
+
+// PrefixFilterFields prefixes the fields in the filter with a given prefix.
+func PrefixFilterFields(filter string, prefix string) (string, error) {
+	// if filter is empty, then it is valid
+	if filter == "" {
+		return "", nil
+	}
+
+	if prefix == "" {
+		return filter, nil
+	}
+
+	// trim spaces on prefix
+	prefix = strings.TrimSpace(prefix)
+
+	// get the operators in the filter
+	operators := getOperatorsFilter(filter)
+
+	// get the pairs in the filter
+	pairs := getPairsFilter(filter)
+
+	// pairs cannot be zero
+	if len(pairs) == 0 {
+		return "", fmt.Errorf("filter is invalid")
+	}
+
+	// if pairs are greater than 1, then operators should be equal to pairs - 1
+	if len(pairs) > 1 && len(operators) != len(pairs)-1 {
+		return "", fmt.Errorf("invalid number of operators in filter")
+	}
+
+	// prefix the pairs
+	for i, pair := range pairs {
+		p := strings.TrimSpace(pair)
+		pairs[i] = prefix + p
+	}
+
+	// join the pairs with the operators
+	var sb strings.Builder
+	for i, pair := range pairs {
+		sb.WriteString(pair)
+		if i < len(operators) {
+			operator := fmt.Sprintf(" %s ", operators[i])
+			sb.WriteString(operator)
+		}
+	}
+
+	return sb.String(), nil
 }

@@ -1,18 +1,19 @@
 package repository
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
-	"errors"
 	"fmt"
+	"html/template"
 	"log/slog"
 	"strings"
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/o11y"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/paginator"
+	"github.com/p2p-b2b/go-rest-api-service-template/internal/query"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/metric"
@@ -173,25 +174,6 @@ func (r *PGSQLUserRepository) Insert(ctx context.Context, user *InsertUserInput)
 
 	_, err := r.db.ExecContext(ctx, query)
 	if err != nil {
-
-		var pgErr *pgconn.PgError
-		if errors.As(err, &pgErr) {
-			span.SetStatus(codes.Error, pgErr.Error())
-			span.RecordError(pgErr)
-			slog.Error("repository.users.Insert", "error", pgErr.Error())
-			r.metrics.repositoryCalls.Add(ctx, 1,
-				metric.WithAttributes(
-					append(metricCommonAttributes, attribute.String("successful", "false"))...,
-				),
-			)
-
-			if pgErr.Code == "23505" {
-				return fmt.Errorf("user with email %s already exists", user.Email)
-			}
-
-			return err
-		}
-
 		span.SetStatus(codes.Error, err.Error())
 		span.RecordError(err)
 		slog.Error("repository.users.Insert", "error", err)
@@ -200,7 +182,10 @@ func (r *PGSQLUserRepository) Insert(ctx context.Context, user *InsertUserInput)
 				append(metricCommonAttributes, attribute.String("successful", "false"))...,
 			),
 		)
-		return err
+
+		// remove the SQLSTATE XXXXX suffix
+		errMessage := strings.TrimSpace(strings.Split(err.Error(), "(SQLSTATE")[0])
+		return fmt.Errorf("%s", errMessage)
 	}
 
 	span.SetStatus(codes.Ok, "user inserted successfully")
@@ -291,24 +276,6 @@ func (r *PGSQLUserRepository) Update(ctx context.Context, user *UpdateUserInput)
 
 	_, err := r.db.ExecContext(ctx, query)
 	if err != nil {
-		var pgErr *pgconn.PgError
-		if errors.As(err, &pgErr) {
-			span.SetStatus(codes.Error, pgErr.Error())
-			span.RecordError(pgErr)
-			slog.Error("repository.users.Update", "error", pgErr.Error())
-			r.metrics.repositoryCalls.Add(ctx, 1,
-				metric.WithAttributes(
-					append(metricCommonAttributes, attribute.String("successful", "false"))...,
-				),
-			)
-
-			// return the pgErr as an error without the (SQLSTATE XXXXX) suffix
-			// remove the SQLSTATE XXXXX suffix
-			// https://github.com/jackc/pgconn/blob/1860f4e57204614f40d05a5c76a43e8d80fde9da/errors.go#L52
-			errMessage := strings.Split(pgErr.Message, "(SQLSTATE")[0]
-			return fmt.Errorf("%s", errMessage)
-		}
-
 		span.SetStatus(codes.Error, "query failed")
 		span.RecordError(err)
 		slog.Error("repository.users.Update", "error", err)
@@ -317,7 +284,10 @@ func (r *PGSQLUserRepository) Update(ctx context.Context, user *UpdateUserInput)
 				append(metricCommonAttributes, attribute.String("successful", "false"))...,
 			),
 		)
-		return err
+
+		// remove the SQLSTATE XXXXX suffix
+		errMessage := strings.TrimSpace(strings.Split(err.Error(), "(SQLSTATE")[0])
+		return fmt.Errorf("%s", errMessage)
 	}
 
 	span.SetStatus(codes.Ok, "user updated successfully")
@@ -387,24 +357,6 @@ func (r *PGSQLUserRepository) Delete(ctx context.Context, user *DeleteUserInput)
 
 	_, err := r.db.ExecContext(ctx, query)
 	if err != nil {
-		var pgErr *pgconn.PgError
-		if errors.As(err, &pgErr) {
-			span.SetStatus(codes.Error, pgErr.Error())
-			span.RecordError(pgErr)
-			slog.Error("repository.users.Delete", "error", pgErr.Error())
-			r.metrics.repositoryCalls.Add(ctx, 1,
-				metric.WithAttributes(
-					append(metricCommonAttributes, attribute.String("successful", "false"))...,
-				),
-			)
-
-			// return the pgErr as an error without the (SQLSTATE XXXXX) suffix
-			// remove the SQLSTATE XXXXX suffix
-			// https://github.com/jackc/pgconn/blob/1860f4e57204614f40d05a5c76a43e8d80fde9da/errors.go#L52
-			errMessage := strings.Split(pgErr.Message, "(SQLSTATE")[0]
-			return fmt.Errorf("%s", errMessage)
-		}
-
 		span.SetStatus(codes.Error, "query failed")
 		span.RecordError(err)
 		slog.Error("repository.users.Delete", "error", err)
@@ -413,7 +365,10 @@ func (r *PGSQLUserRepository) Delete(ctx context.Context, user *DeleteUserInput)
 				append(metricCommonAttributes, attribute.String("successful", "false"))...,
 			),
 		)
-		return err
+
+		// remove the SQLSTATE XXXXX suffix
+		errMessage := strings.TrimSpace(strings.Split(err.Error(), "(SQLSTATE")[0])
+		return fmt.Errorf("%s", errMessage)
 	}
 
 	span.SetStatus(codes.Ok, "user deleted successfully")
@@ -473,24 +428,6 @@ func (r *PGSQLUserRepository) SelectByID(ctx context.Context, id uuid.UUID) (*Us
 
 	var u User
 	if err := row.Scan(&u.ID, &u.FirstName, &u.LastName, &u.Email, &u.CreatedAt, &u.UpdatedAt); err != nil {
-		var pgErr *pgconn.PgError
-		if errors.As(err, &pgErr) {
-			span.SetStatus(codes.Error, pgErr.Error())
-			span.RecordError(pgErr)
-			slog.Error("repository.users.SelectByID", "error", pgErr.Error())
-			r.metrics.repositoryCalls.Add(ctx, 1,
-				metric.WithAttributes(
-					append(metricCommonAttributes, attribute.String("successful", "false"))...,
-				),
-			)
-
-			// return the pgErr as an error without the (SQLSTATE XXXXX) suffix
-			// remove the SQLSTATE XXXXX suffix
-			// https://github.com/jackc/pgconn/blob/1860f4e57204614f40d05a5c76a43e8d80fde9da/errors.go#L52
-			errMessage := strings.Split(pgErr.Message, "(SQLSTATE")[0]
-			return nil, fmt.Errorf("%s", errMessage)
-		}
-
 		span.SetStatus(codes.Error, "scan failed")
 		span.RecordError(err)
 		slog.Error("repository.users.SelectByID", "error", err)
@@ -499,7 +436,10 @@ func (r *PGSQLUserRepository) SelectByID(ctx context.Context, id uuid.UUID) (*Us
 				append(metricCommonAttributes, attribute.String("successful", "false"))...,
 			),
 		)
-		return nil, err
+
+		// remove the SQLSTATE XXXXX suffix
+		errMessage := strings.TrimSpace(strings.Split(err.Error(), "(SQLSTATE")[0])
+		return nil, fmt.Errorf("%s", errMessage)
 	}
 
 	span.SetStatus(codes.Ok, "user selected successfully")
@@ -511,7 +451,6 @@ func (r *PGSQLUserRepository) SelectByID(ctx context.Context, id uuid.UUID) (*Us
 	return &u, nil
 }
 
-// Select selects all users from the repository.
 func (r *PGSQLUserRepository) Select(ctx context.Context, params *SelectUserInput) (*SelectUserOutput, error) {
 	ctx, cancel := context.WithTimeout(ctx, r.maxQueryTimeout)
 	defer cancel()
@@ -522,7 +461,7 @@ func (r *PGSQLUserRepository) Select(ctx context.Context, params *SelectUserInpu
 	span.SetAttributes(
 		attribute.String("driver", r.DriverName()),
 		attribute.String("component", "repository.user"),
-		attribute.String("method", "SelectByEmail"),
+		attribute.String("method", "Select"),
 		attribute.String("user.sort", params.Sort),
 		attribute.String("user.filter", params.Filter),
 		attribute.Int("user.limit", params.Paginator.Limit),
@@ -548,23 +487,89 @@ func (r *PGSQLUserRepository) Select(ctx context.Context, params *SelectUserInpu
 	}
 
 	// if no fields are provided, select all fields
-	fieldsStr := "usrs.*"
+	sqlFieldsPrefix := "usrs."
+	fieldsStr := sqlFieldsPrefix + "*"
 	if params.Fields[0] != "" {
 		fields := make([]string, 0)
+		var isIsPresent bool
 		for _, field := range params.Fields {
-			fields = append(fields, "usrs."+field)
+			fields = append(fields, sqlFieldsPrefix+field)
+			if field == "id" {
+				isIsPresent = true
+			}
 		}
 
-		fields = append(fields, "usrs.serial_id")
+		// id and serial_id are always selected because they are used for pagination
+		if !isIsPresent {
+			fields = append(fields, sqlFieldsPrefix+"id")
+		}
+
+		fields = append(fields, sqlFieldsPrefix+"serial_id")
 		fieldsStr = strings.Join(fields, ", ")
 	}
 
 	var filterQuery string
 	if params.Filter != "" {
-		filterQuery = fmt.Sprintf("AND (%s)", params.Filter)
+		filter, err := query.PrefixFilterFields(params.Filter, sqlFieldsPrefix)
+		if err != nil {
+			span.SetStatus(codes.Error, err.Error())
+			span.RecordError(err)
+			slog.Error("repository.users.Select", "error", err)
+			r.metrics.repositoryCalls.Add(ctx, 1,
+				metric.WithAttributes(
+					append(metricCommonAttributes, attribute.String("successful", "false"))...,
+				),
+			)
+
+			return nil, err
+		}
+
+		filterQuery = fmt.Sprintf("WHERE (%s)", filter)
 	}
 
-	var paginationQuery string
+	var sortQuery string
+	if params.Sort == "" {
+		sortQuery = "usrs.serial_id DESC, usrs.id DESC"
+	} else {
+		sortQuery = params.Sort
+	}
+
+	// query template
+	var queryTemplate string = `
+WITH {{.TableAlias}} AS (
+  SELECT {{.QueryColumns}}
+  FROM {{.TableName}} {{.TableAlias}}
+  {{ .QueryWhere }}
+  ORDER BY {{.QueryInternalSort}}
+  LIMIT {{.QueryLimit}}
+) SELECT * FROM {{.TableAlias}} ORDER BY {{.QueryExternalSort}}
+`
+
+	// struct to hold the query values
+	var queryValues struct {
+		TableName         string
+		TableAlias        string
+		QueryColumns      string
+		QueryWhere        template.HTML
+		QueryLimit        int
+		QueryInternalSort string
+		QueryExternalSort string
+	}
+
+	// default values
+	queryValues.TableName = "users"
+	queryValues.TableAlias = "usrs"
+	queryValues.QueryColumns = fieldsStr
+	queryValues.QueryWhere = template.HTML(filterQuery)
+	queryValues.QueryLimit = params.Paginator.Limit
+	queryValues.QueryInternalSort = "usrs.serial_id DESC, usrs.id DESC"
+	queryValues.QueryExternalSort = sortQuery
+
+	filterQueryJoiner := "WHERE"
+	if filterQuery != "" {
+		filterQueryJoiner = "AND"
+	}
+
 	// if both next and prev tokens are provided, use next token
 	if params.Paginator.NextToken != "" && params.Paginator.PrevToken != "" {
 		slog.Warn("repository.user.Select",
@@ -588,22 +593,23 @@ func (r *PGSQLUserRepository) Select(ctx context.Context, params *SelectUserInpu
 					append(metricCommonAttributes, attribute.String("successful", "false"))...,
 				),
 			)
+
 			return nil, err
 		}
+
 		// from newest to oldest
-		paginationQuery = fmt.Sprintf(`
-            WHERE usrs.serial_id < '%d'
-                AND (usrs.id < '%s' OR usrs.serial_id < '%d')
+		queryValues.QueryInternalSort = "usrs.serial_id DESC, usrs.id DESC"
+		queryValues.QueryWhere = template.HTML(fmt.Sprintf(`
                 %s
-            ORDER BY usrs.serial_id DESC, usrs.id DESC
-            LIMIT %d
-        `,
+                    %s (usrs.serial_id < '%d')
+                    AND (usrs.id < '%s' OR usrs.serial_id < '%d')`,
+			filterQuery,
+			filterQueryJoiner,
 			serial,
 			id.String(),
 			serial,
-			filterQuery,
-			params.Paginator.Limit,
-		)
+		))
+
 	}
 
 	// if prev token is provided
@@ -623,66 +629,37 @@ func (r *PGSQLUserRepository) Select(ctx context.Context, params *SelectUserInpu
 		}
 
 		// from newest to oldest
-		paginationQuery = fmt.Sprintf(`
-                WHERE usrs.serial_id > '%d'
-                    AND (usrs.id > '%s' OR usrs.serial_id > '%d')
-                    %s
-                ORDER BY usrs.serial_id ASC, usrs.id ASC
-                LIMIT %d`,
+		queryValues.QueryInternalSort = "usrs.serial_id ASC, usrs.id ASC"
+		queryValues.QueryWhere = template.HTML(fmt.Sprintf(`
+                %s
+                    %s (usrs.serial_id > '%d')
+                    AND (usrs.id > '%s' OR usrs.serial_id > '%d')`,
+			filterQuery,
+			filterQueryJoiner,
 			serial,
 			id.String(),
 			serial,
-			filterQuery,
-			params.Paginator.Limit,
+		))
+	}
+
+	// render the template on query variable
+	var tpl bytes.Buffer
+	t := template.Must(template.New("query").Parse(queryTemplate))
+	err := t.Execute(&tpl, queryValues)
+	if err != nil {
+		slog.Error("repository.user.Select", "error", err)
+		span.SetStatus(codes.Error, "failed to render query template")
+		span.RecordError(err)
+		r.metrics.repositoryCalls.Add(ctx, 1,
+			metric.WithAttributes(
+				append(metricCommonAttributes, attribute.String("successful", "false"))...,
+			),
 		)
+
+		return nil, fmt.Errorf("failed to parse query: %w", err)
 	}
 
-	// if no token is provided, first page
-	// newest to oldest
-	if params.Paginator.NextToken == "" && params.Paginator.PrevToken == "" {
-		if params.Filter != "" {
-			filterQuery = fmt.Sprintf("WHERE %s", params.Filter)
-		}
-
-		paginationQuery = fmt.Sprintf(`
-            %s
-            ORDER BY usrs.serial_id DESC, usrs.id DESC
-            LIMIT %d
-            `,
-			filterQuery,
-			params.Paginator.Limit,
-		)
-	}
-
-	slog.Debug("repository.user.Select", "filter_query", filterQuery)
-
-	var whereQuery string
-	if filterQuery != "" && paginationQuery != "" {
-		whereQuery = paginationQuery
-	} else if filterQuery != "" && paginationQuery == "" {
-		whereQuery = filterQuery
-	} else if filterQuery == "" && paginationQuery != "" {
-		whereQuery = paginationQuery
-	} else {
-		whereQuery = ""
-	}
-
-	var sortQuery string
-	if params.Sort != "" {
-		sortQuery = fmt.Sprintf("ORDER BY %s", params.Sort)
-	}
-
-	// assemble the query
-	query := fmt.Sprintf(`
-        WITH usrs AS (
-            SELECT %s FROM users usrs %s
-        )
-        SELECT * FROM usrs %s
-        `,
-		fieldsStr,
-		whereQuery,
-		sortQuery,
-	)
+	query := tpl.String()
 	slog.Debug("repository.user.Select", "query", prettyPrint(query))
 
 	// execute the query
@@ -697,7 +674,9 @@ func (r *PGSQLUserRepository) Select(ctx context.Context, params *SelectUserInpu
 			),
 		)
 
-		return nil, err
+		// remove the SQLSTATE XXXXX suffix
+		errMessage := strings.TrimSpace(strings.Split(err.Error(), "(SQLSTATE")[0])
+		return nil, fmt.Errorf("%s", errMessage)
 	}
 	defer rows.Close()
 
@@ -712,8 +691,6 @@ func (r *PGSQLUserRepository) Select(ctx context.Context, params *SelectUserInpu
 		} else {
 			for _, field := range params.Fields {
 				switch field {
-				case "id":
-					scanFields = append(scanFields, &u.ID)
 				case "first_name":
 					scanFields = append(scanFields, &u.FirstName)
 				case "last_name":
@@ -730,30 +707,12 @@ func (r *PGSQLUserRepository) Select(ctx context.Context, params *SelectUserInpu
 				}
 			}
 
-			// always scan the serial id because it is used for pagination
+			// always select id and serial_id for pagination
+			scanFields = append(scanFields, &u.ID)
 			scanFields = append(scanFields, &u.SerialID)
 		}
 
 		if err := rows.Scan(scanFields...); err != nil {
-
-			var pgErr *pgconn.PgError
-			if errors.As(err, &pgErr) {
-				span.SetStatus(codes.Error, pgErr.Error())
-				span.RecordError(pgErr)
-				slog.Error("repository.users.Select", "error", pgErr.Error())
-				r.metrics.repositoryCalls.Add(ctx, 1,
-					metric.WithAttributes(
-						append(metricCommonAttributes, attribute.String("successful", "false"))...,
-					),
-				)
-
-				// return the pgErr as an error without the (SQLSTATE XXXXX) suffix
-				// remove the SQLSTATE XXXXX suffix
-				// https://github.com/jackc/pgconn/blob/1860f4e57204614f40d05a5c76a43e8d80fde9da/errors.go#L52
-				errMessage := strings.Split(pgErr.Message, "(SQLSTATE")[0]
-				return nil, fmt.Errorf("%s", errMessage)
-			}
-
 			slog.Error("repository.user.Select", "error", err)
 			span.SetStatus(codes.Error, "failed to scan user")
 			span.RecordError(err)
@@ -762,7 +721,10 @@ func (r *PGSQLUserRepository) Select(ctx context.Context, params *SelectUserInpu
 					append(metricCommonAttributes, attribute.String("successful", "false"))...,
 				),
 			)
-			return nil, err
+
+			// remove the SQLSTATE XXXXX suffix
+			errMessage := strings.TrimSpace(strings.Split(err.Error(), "(SQLSTATE")[0])
+			return nil, fmt.Errorf("%s", errMessage)
 		}
 
 		users = append(users, &u)
