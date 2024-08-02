@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"time"
 )
 
 var (
@@ -33,8 +34,11 @@ var (
 )
 
 type APIError struct {
-	StatusCode int    `json:"status_code"`
-	Message    string `json:"message"`
+	Timestamp  time.Time `json:"timestamp"`
+	StatusCode int       `json:"status_code"`
+	Message    string    `json:"message"`
+	Method     string    `json:"method"`
+	Path       string    `json:"path"`
 }
 
 func (e *APIError) Error() string {
@@ -53,8 +57,11 @@ func WriteError(w http.ResponseWriter, r *http.Request, statusCode int, message 
 	w.WriteHeader(statusCode)
 
 	var err APIError
+	err.Timestamp = time.Now()
 	err.StatusCode = statusCode
 	err.Message = message
+	err.Method = r.Method
+	err.Path = r.URL.Path
 
 	if err := json.NewEncoder(w).Encode(err); err != nil {
 		slog.Error("failed to encode error response", "error", err)

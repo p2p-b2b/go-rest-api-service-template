@@ -98,7 +98,6 @@ func (h *UserHandler) RegisterRoutes(mux *http.ServeMux) {
 // @Tags users
 // @Produce json
 // @Param uid path string true "The user ID in UUID format"
-// @Param fields query string false "Fields to return. Example: id,first_name,last_name"
 // @Success 200 {object} User
 // @Failure 400 {object} APIError
 // @Failure 500 {object} APIError
@@ -382,8 +381,6 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 		Email:     req.Email,
 	}
 
-	w.Header().Set("Content-Type", "text/plain")
-	w.WriteHeader(http.StatusOK)
 	if err := h.service.UpdateUser(ctx, &user); err != nil {
 		span.SetStatus(codes.Error, ErrInternalServerError.Error())
 		span.RecordError(ErrInternalServerError)
@@ -396,16 +393,19 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 
 		WriteError(w, r, http.StatusInternalServerError, ErrInternalServerError.Error())
 		return
-	}
+	} else {
+		w.Header().Set("Content-Type", "text/plain")
+		w.WriteHeader(http.StatusOK)
 
-	slog.Debug("handler.UpdateUser", "user", user)
-	span.SetStatus(codes.Ok, "User updated")
-	span.SetAttributes(attribute.String("user.id", user.ID.String()))
-	h.metrics.handlerCalls.Add(ctx, 1,
-		metric.WithAttributes(
-			append(metricCommonAttributes, attribute.String("code", fmt.Sprintf("%d", http.StatusOK)))...,
-		),
-	)
+		slog.Debug("handler.UpdateUser", "user", user)
+		span.SetStatus(codes.Ok, "User updated")
+		span.SetAttributes(attribute.String("user.id", user.ID.String()))
+		h.metrics.handlerCalls.Add(ctx, 1,
+			metric.WithAttributes(
+				append(metricCommonAttributes, attribute.String("code", fmt.Sprintf("%d", http.StatusOK)))...,
+			),
+		)
+	}
 }
 
 // DeleteUser Delete a user
@@ -523,7 +523,7 @@ func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 
 	sort, filter, fields, nextToken, prevToken, limit, err := parseListQueryParams(
 		params,
-		repository.UserFields,
+		repository.UserPartialFields,
 		repository.UserFilterFields,
 		repository.UserSortFields,
 	)

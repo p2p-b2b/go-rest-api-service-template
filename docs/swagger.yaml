@@ -3,8 +3,14 @@ definitions:
     properties:
       message:
         type: string
+      method:
+        type: string
+      path:
+        type: string
       status_code:
         type: integer
+      timestamp:
+        type: string
     type: object
   handler.CreateUserRequest:
     properties:
@@ -53,22 +59,16 @@ definitions:
   paginator.Paginator:
     properties:
       limit:
-        description: Limit is the maximum number of elements to return.
         type: integer
       next_page:
-        description: NextPage the URL to the next page.
         type: string
       next_token:
-        description: NextToken is the cursor token to the next page.
         type: string
       prev_page:
-        description: PrevPage is the cursor token to the previous page.
         type: string
       prev_token:
-        description: PrevToken is the cursor token to the previous page.
         type: string
       size:
-        description: Size is the number of elements in the current page.
         type: integer
     type: object
   service.Check:
@@ -282,10 +282,6 @@ paths:
         in: path
         name: uid
         required: true
-        type: string
-      - description: 'Fields to return. Example: id,first_name,last_name'
-        in: query
-        name: fields
         type: string
       produces:
       - application/json
