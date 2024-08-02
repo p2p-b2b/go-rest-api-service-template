@@ -689,8 +689,13 @@ WITH {{.TableAlias}} AS (
 		if params.Fields[0] == "" {
 			scanFields = []interface{}{&u.ID, &u.FirstName, &u.LastName, &u.Email, &u.CreatedAt, &u.UpdatedAt, &u.SerialID}
 		} else {
+			var idFound bool
+
 			for _, field := range params.Fields {
 				switch field {
+				case "id":
+					scanFields = append(scanFields, &u.ID)
+					idFound = true
 				case "first_name":
 					scanFields = append(scanFields, &u.FirstName)
 				case "last_name":
@@ -708,7 +713,11 @@ WITH {{.TableAlias}} AS (
 			}
 
 			// always select id and serial_id for pagination
-			scanFields = append(scanFields, &u.ID)
+			// if id is not selected, it will be added to the scanFields
+			if !idFound {
+				scanFields = append(scanFields, &u.ID)
+			}
+
 			scanFields = append(scanFields, &u.SerialID)
 		}
 
