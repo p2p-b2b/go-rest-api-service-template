@@ -3,13 +3,16 @@ package service
 import "errors"
 
 var (
-	ErrGettingUserByID     = errors.New("error getting user by ID")
-	ErrGettingUserByEmail  = errors.New("error getting user by email")
-	ErrCreatingUser        = errors.New("error creating user")
-	ErrUserIDAlreadyExists = errors.New("id already exists")
-	ErrUpdatingUser        = errors.New("error updating user")
-	ErrDeletingUser        = errors.New("error deleting user")
-	ErrListingUsers        = errors.New("error listing users")
+	ErrGettingUserByID    = errors.New("error getting user by ID")
+	ErrGettingUserByEmail = errors.New("error getting user by email")
+	ErrCreatingUser       = errors.New("error creating user")
+
+	ErrUserIDAlreadyExists    = errors.New("id already exists")
+	ErrUserEmailAlreadyExists = errors.New("email already exists")
+
+	ErrUpdatingUser = errors.New("error updating user")
+	ErrDeletingUser = errors.New("error deleting user")
+	ErrListingUsers = errors.New("error listing users")
 
 	ErrInvalidID                    = errors.New("invalid ID")
 	ErrInvalidUserID                = errors.New("invalid user ID")
@@ -24,4 +27,7 @@ var (
 	ErrInvalidLimit     = errors.New("invalid limit field")
 	ErrInvalidNextToken = errors.New("invalid nextToken field")
 	ErrInvalidPrevToken = errors.New("invalid prevToken field")
+
+	ErrUserNotFound    = errors.New("user not found")
+	ErrIdAlreadyExists = errors.New("id already exists")
 )

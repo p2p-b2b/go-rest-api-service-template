@@ -248,8 +248,8 @@ func (r *PGSQLUserRepository) Update(ctx context.Context, user *UpdateUserInput)
 	}
 
 	if len(queryFields) == 0 {
-		slog.Warn("Update", "error", "no fields to update")
-		return nil
+		slog.Error("Update", "error", "no fields to update")
+		return ErrAtLeastOneFieldMustBeUpdated
 	}
 
 	fields := strings.Join(queryFields, ", ")
@@ -263,7 +263,7 @@ func (r *PGSQLUserRepository) Update(ctx context.Context, user *UpdateUserInput)
 
 	slog.Debug("repository.users.Update", "query", prettyPrint(query))
 
-	_, err := r.db.ExecContext(ctx, query)
+	result, err := r.db.ExecContext(ctx, query)
 	if err != nil {
 		span.SetStatus(codes.Error, "query failed")
 		span.RecordError(err)
@@ -274,9 +274,20 @@ func (r *PGSQLUserRepository) Update(ctx context.Context, user *UpdateUserInput)
 			),
 		)
 
-		// remove the SQLSTATE XXXXX suffix
-		errMessage := strings.TrimSpace(strings.Split(err.Error(), "(SQLSTATE")[0])
-		return fmt.Errorf("%s", errMessage)
+		return err
+	}
+
+	if rowsAffected, _ := result.RowsAffected(); rowsAffected == 0 {
+		span.SetStatus(codes.Error, "user not found")
+		span.RecordError(ErrUserNotFound)
+		slog.Error("repository.user.Update", "error", ErrUserNotFound)
+		r.metrics.repositoryCalls.Add(ctx, 1,
+			metric.WithAttributes(
+				append(metricCommonAttributes, attribute.String("successful", "false"))...,
+			),
+		)
+
+		return ErrUserNotFound
 	}
 
 	span.SetStatus(codes.Ok, "user updated successfully")
@@ -426,9 +437,7 @@ func (r *PGSQLUserRepository) SelectByID(ctx context.Context, id uuid.UUID) (*Us
 			),
 		)
 
-		// remove the SQLSTATE XXXXX suffix
-		errMessage := strings.TrimSpace(strings.Split(err.Error(), "(SQLSTATE")[0])
-		return nil, fmt.Errorf("%s", errMessage)
+		return nil, err
 	}
 
 	span.SetStatus(codes.Ok, "user selected successfully")

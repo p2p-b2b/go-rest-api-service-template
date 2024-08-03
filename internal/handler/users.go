@@ -111,6 +111,7 @@ func (h *UserHandler) RegisterRoutes(mux *http.ServeMux) {
 // @Param uid path string true "The user ID in UUID format"
 // @Success 200 {object} User
 // @Failure 400 {object} APIError
+// @Failure 404 {object} APIError
 // @Failure 500 {object} APIError
 // @Router /users/{uid} [get]
 func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
@@ -150,9 +151,21 @@ func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 		span.SetStatus(codes.Error, err.Error())
 		span.RecordError(err)
 		slog.Error("handler.GetByID", "error", err.Error())
+
+		if errors.Is(err, service.ErrUserNotFound) {
+			h.metrics.handlerCalls.Add(ctx, 1,
+				metric.WithAttributes(
+					attribute.String("code", fmt.Sprintf("%d", http.StatusNotFound)),
+				),
+			)
+
+			WriteError(w, r, http.StatusNotFound, err.Error())
+			return
+		}
+
 		h.metrics.handlerCalls.Add(ctx, 1,
 			metric.WithAttributes(
-				attribute.String("code", fmt.Sprintf("%d", err)),
+				attribute.String("code", fmt.Sprintf("%d", http.StatusInternalServerError)),
 			),
 		)
 
@@ -174,15 +187,15 @@ func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 
 	if err := json.NewEncoder(w).Encode(user); err != nil {
-		span.SetStatus(codes.Error, ErrEncodingPayload.Error())
-		span.RecordError(ErrEncodingPayload)
-		slog.Error("handler.GetByID", "error", ErrEncodingPayload.Error())
+		span.SetStatus(codes.Error, err.Error())
+		span.RecordError(err)
+		slog.Error("handler.GetByID", "error", err.Error())
 		h.metrics.handlerCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				attribute.String("code", fmt.Sprintf("%d", http.StatusInternalServerError)),
 			),
 		)
-		WriteError(w, r, http.StatusInternalServerError, ErrEncodingPayload.Error())
+		WriteError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -206,6 +219,7 @@ func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 // @Param user body CreateUserRequest true "CreateUserRequest"
 // @Success 201 {object} string
 // @Failure 400 {object} APIError
+// @Failure 409 {object} APIError
 // @Failure 500 {object} APIError
 // @Router /users [post]
 func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
@@ -236,7 +250,7 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 			),
 		)
 
-		WriteError(w, r, http.StatusBadRequest, err.Error())
+		WriteError(w, r, http.StatusBadRequest, ErrBadRequest.Error())
 		return
 	}
 
@@ -266,25 +280,24 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	slog.Debug("handler.CreateUser", "user", user)
-
 	if err := h.service.CreateUser(ctx, user); err != nil {
-		if errors.Is(err, service.ErrUserIDAlreadyExists) {
-			span.SetStatus(codes.Error, err.Error())
-			span.RecordError(service.ErrUserIDAlreadyExists)
-			slog.Error("handler.CreateUser", "error", service.ErrUserIDAlreadyExists.Error())
+		span.SetStatus(codes.Error, err.Error())
+		span.RecordError(err)
+		slog.Error("handler.CreateUser", "error", err.Error())
+
+		if errors.Is(err, service.ErrUserIDAlreadyExists) ||
+			errors.Is(err, service.ErrUserEmailAlreadyExists) {
+
 			h.metrics.handlerCalls.Add(ctx, 1,
 				metric.WithAttributes(
 					append(metricCommonAttributes, attribute.String("code", fmt.Sprintf("%d", http.StatusConflict)))...,
 				),
 			)
 
-			WriteError(w, r, http.StatusConflict, service.ErrUserIDAlreadyExists.Error())
+			WriteError(w, r, http.StatusConflict, err.Error())
 			return
 		}
 
-		span.SetStatus(codes.Error, ErrInternalServerError.Error())
-		span.RecordError(ErrInternalServerError)
-		slog.Error("handler.CreateUser", "error", ErrInternalServerError.Error())
 		h.metrics.handlerCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				append(metricCommonAttributes, attribute.String("code", fmt.Sprintf("%d", http.StatusInternalServerError)))...,
@@ -317,6 +330,7 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 // @Param user body UpdateUserRequest true "User"
 // @Success 200 {object} string
 // @Failure 400 {object} APIError
+// @Failure 409 {object} APIError
 // @Failure 500 {object} APIError
 // @Router /users/{uid} [put]
 func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
@@ -353,16 +367,17 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 
 	var req UpdateUserRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		span.SetStatus(codes.Error, ErrDecodingPayload.Error())
-		span.RecordError(ErrDecodingPayload)
-		slog.Error("handler.UpdateUser", "error", ErrDecodingPayload.Error())
+		span.SetStatus(codes.Error, err.Error())
+		span.RecordError(err)
+		slog.Error("handler.UpdateUser", "error", err.Error())
+
 		h.metrics.handlerCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				append(metricCommonAttributes, attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)))...,
 			),
 		)
 
-		WriteError(w, r, http.StatusBadRequest, ErrDecodingPayload.Error())
+		WriteError(w, r, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -391,6 +406,19 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 		span.SetStatus(codes.Error, ErrInternalServerError.Error())
 		span.RecordError(ErrInternalServerError)
 		slog.Error("handler.UpdateUser", "error", ErrInternalServerError.Error())
+
+		if errors.Is(err, service.ErrUserEmailAlreadyExists) ||
+			errors.Is(err, service.ErrUserNotFound) {
+			h.metrics.handlerCalls.Add(ctx, 1,
+				metric.WithAttributes(
+					append(metricCommonAttributes, attribute.String("code", fmt.Sprintf("%d", http.StatusConflict)))...,
+				),
+			)
+
+			WriteError(w, r, http.StatusConflict, err.Error())
+			return
+		}
+
 		h.metrics.handlerCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				append(metricCommonAttributes, attribute.String("code", fmt.Sprintf("%d", http.StatusInternalServerError)))...,

@@ -3,12 +3,14 @@ package service
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"log/slog"
 	"runtime"
 	"strings"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/o11y"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/repository"
 	"go.opentelemetry.io/otel/attribute"
@@ -169,6 +171,11 @@ func (s *UserService) GetUserByID(ctx context.Context, id uuid.UUID) (*User, err
 				append(metricCommonAttributes, attribute.String("successful", "false"))...,
 			),
 		)
+
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrUserNotFound
+		}
+
 		return nil, ErrGettingUserByID
 	}
 
@@ -264,7 +271,21 @@ func (s *UserService) CreateUser(ctx context.Context, user *CreateUserInput) err
 				append(metricCommonAttributes, attribute.String("successful", "false"))...,
 			),
 		)
-		return fmt.Errorf("%w: %s", ErrCreatingUser, err)
+
+		pgxErr, ok := err.(*pgconn.PgError)
+		if ok {
+			if pgxErr.Code == "23505" {
+				if strings.Contains(pgxErr.Message, "_pkey") {
+					return ErrUserIDAlreadyExists
+				}
+
+				if strings.Contains(pgxErr.Message, "_email") {
+					return ErrUserEmailAlreadyExists
+				}
+			}
+		}
+
+		return ErrCreatingUser
 	}
 
 	span.SetStatus(codes.Ok, "User created")
@@ -319,6 +340,19 @@ func (s *UserService) UpdateUser(ctx context.Context, user *UpdateUserInput) err
 				append(metricCommonAttributes, attribute.String("successful", "false"))...,
 			),
 		)
+
+		pgxErr, ok := err.(*pgconn.PgError)
+		if ok {
+			if pgxErr.Code == "23505" {
+				if strings.Contains(pgxErr.Message, "_email") {
+					return ErrUserEmailAlreadyExists
+				}
+			}
+		}
+
+		if errors.Is(err, repository.ErrUserNotFound) {
+			return ErrUserNotFound
+		}
 
 		return ErrUpdatingUser
 	}
