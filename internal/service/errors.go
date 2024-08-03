@@ -12,6 +12,7 @@ var (
 	ErrListingUsers        = errors.New("error listing users")
 
 	ErrInvalidID                    = errors.New("invalid ID")
+	ErrInvalidUserID                = errors.New("invalid user ID")
 	ErrInvalidFirstName             = errors.New("invalid first name, the first name must be at least 2 characters long")
 	ErrInvalidLastName              = errors.New("invalid last name, the last name must be at least 2 characters long")
 	ErrInvalidEmail                 = errors.New("invalid email")

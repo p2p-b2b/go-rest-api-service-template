@@ -52,6 +52,16 @@ type UserHandler struct {
 
 // NewUserHandler creates a new UserHandler.
 func NewUserHandler(conf UserHandlerConf) *UserHandler {
+	if conf.Service == nil {
+		slog.Error("service is required")
+		panic("service is required")
+	}
+
+	if conf.OT == nil {
+		slog.Error("open telemetry is required")
+		panic("open telemetry is required")
+	}
+
 	uh := &UserHandler{
 		service: conf.Service,
 		ot:      conf.OT,
@@ -65,6 +75,7 @@ func NewUserHandler(conf UserHandlerConf) *UserHandler {
 		slog.Error("failed to register metrics", "error", err)
 		panic(err)
 	}
+
 	return uh
 }
 
@@ -136,25 +147,18 @@ func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 
 	sUser, err := h.service.GetUserByID(ctx, id)
 	if err != nil {
-		span.SetStatus(codes.Error, ErrInternalServerError.Error())
+		span.SetStatus(codes.Error, err.Error())
 		span.RecordError(err)
-		slog.Error("handler.GetByID", "error", ErrInternalServerError.Error())
+		slog.Error("handler.GetByID", "error", err.Error())
 		h.metrics.handlerCalls.Add(ctx, 1,
 			metric.WithAttributes(
-				attribute.String("code", fmt.Sprintf("%d", http.StatusInternalServerError)),
+				attribute.String("code", fmt.Sprintf("%d", err)),
 			),
 		)
-		WriteError(w, r, http.StatusInternalServerError, ErrInternalServerError.Error())
+
+		WriteError(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	h.metrics.handlerCalls.Add(ctx, 1,
-		metric.WithAttributes(
-			attribute.String("code", fmt.Sprintf("%d", http.StatusOK)),
-		),
-	)
 
 	// create user from service.User
 	user := &User{
@@ -166,7 +170,9 @@ func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 		UpdatedAt: sUser.UpdatedAt,
 	}
 
-	// encode and write the response
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+
 	if err := json.NewEncoder(w).Encode(user); err != nil {
 		span.SetStatus(codes.Error, ErrEncodingPayload.Error())
 		span.RecordError(ErrEncodingPayload)
@@ -393,19 +399,19 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 
 		WriteError(w, r, http.StatusInternalServerError, ErrInternalServerError.Error())
 		return
-	} else {
-		w.Header().Set("Content-Type", "text/plain")
-		w.WriteHeader(http.StatusOK)
-
-		slog.Debug("handler.UpdateUser", "user", user)
-		span.SetStatus(codes.Ok, "User updated")
-		span.SetAttributes(attribute.String("user.id", user.ID.String()))
-		h.metrics.handlerCalls.Add(ctx, 1,
-			metric.WithAttributes(
-				append(metricCommonAttributes, attribute.String("code", fmt.Sprintf("%d", http.StatusOK)))...,
-			),
-		)
 	}
+
+	w.Header().Set("Content-Type", "text/plain")
+	w.WriteHeader(http.StatusOK)
+
+	slog.Debug("handler.UpdateUser", "user", user)
+	span.SetStatus(codes.Ok, "User updated")
+	span.SetAttributes(attribute.String("user.id", user.ID.String()))
+	h.metrics.handlerCalls.Add(ctx, 1,
+		metric.WithAttributes(
+			append(metricCommonAttributes, attribute.String("code", fmt.Sprintf("%d", http.StatusOK)))...,
+		),
+	)
 }
 
 // DeleteUser Delete a user
@@ -588,6 +594,7 @@ func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
+
 	if err := json.NewEncoder(w).Encode(users); err != nil {
 		span.SetStatus(codes.Error, err.Error())
 		span.RecordError(err)
@@ -600,14 +607,14 @@ func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 
 		WriteError(w, r, http.StatusInternalServerError, err.Error())
 		return
-	} else {
-		slog.Debug("handler.users.ListUsers: called", "users", len(users.Items))
-		span.SetStatus(codes.Ok, "list users")
-		span.SetAttributes(attribute.Int("users.count", len(users.Items)))
-		h.metrics.handlerCalls.Add(ctx, 1,
-			metric.WithAttributes(
-				append(metricCommonAttributes, attribute.String("code", fmt.Sprintf("%d", http.StatusOK)))...,
-			),
-		)
 	}
+
+	slog.Debug("handler.users.ListUsers: called", "users", len(users.Items))
+	span.SetStatus(codes.Ok, "list users")
+	span.SetAttributes(attribute.Int("users.count", len(users.Items)))
+	h.metrics.handlerCalls.Add(ctx, 1,
+		metric.WithAttributes(
+			append(metricCommonAttributes, attribute.String("code", fmt.Sprintf("%d", http.StatusOK)))...,
+		),
+	)
 }

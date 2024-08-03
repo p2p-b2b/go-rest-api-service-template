@@ -145,6 +145,20 @@ func (s *UserService) GetUserByID(ctx context.Context, id uuid.UUID) (*User, err
 		attribute.String("function", "GetUserByID"),
 	}
 
+	if id == uuid.Nil {
+		span.SetStatus(codes.Error, ErrInvalidUserID.Error())
+		span.RecordError(ErrInvalidUserID)
+		slog.Error("service.users.GetUserByID", "error", ErrInvalidUserID)
+		s.metrics.serviceCalls.Add(ctx, 1,
+			metric.WithAttributes(
+				append(metricCommonAttributes, attribute.String("successful", "false"))...,
+			),
+		)
+
+		return nil, ErrInvalidUserID
+	}
+
+	slog.Debug("service.users.GetUserByID", "id", id)
 	qryOut, err := s.repository.SelectByID(ctx, id)
 	if err != nil {
 		span.SetStatus(codes.Error, err.Error())

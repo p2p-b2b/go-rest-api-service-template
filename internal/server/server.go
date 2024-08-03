@@ -60,19 +60,13 @@ func (s *Server) Start() error {
 	s.listenOsSignals()
 
 	if s.conf.TLSEnabled.Value {
-		err := s.httpServer.ListenAndServeTLS(
+		if err := s.httpServer.ListenAndServeTLS(
 			s.conf.CertificateFile.Value.Name(),
 			s.conf.PrivateKeyFile.Value.Name(),
-		)
-		if err != nil {
-			if !errors.Is(err, http.ErrServerClosed) {
-				slog.Error("server error", "error", err)
-				return err
-			}
-
-			return nil
+		); !errors.Is(err, http.ErrServerClosed) {
+			slog.Error("server error", "error", err)
+			return err
 		}
-
 	} else {
 		if err := s.httpServer.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
 			slog.Error("server error", "error", err)
