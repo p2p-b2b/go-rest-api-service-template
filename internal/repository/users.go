@@ -19,17 +19,6 @@ import (
 	"go.opentelemetry.io/otel/metric"
 )
 
-var (
-	// ErrUserIsNil is an error that is returned when the user is nil.
-	ErrUserIsNil = fmt.Errorf("user is nil")
-
-	// ErrUserIDIsNil is an error that is returned when the user ID is nil.
-	ErrUserIDIsNil = fmt.Errorf("user ID is nil")
-
-	// ErrFunctionParameterIsNil is an error that is returned when a function parameter is nil.
-	ErrFunctionParameterIsNil = fmt.Errorf("function parameter is nil")
-)
-
 type PGSQLUserRepositoryConfig struct {
 	DB              *sql.DB
 	MaxPingTimeout  time.Duration
@@ -403,8 +392,8 @@ func (r *PGSQLUserRepository) SelectByID(ctx context.Context, id uuid.UUID) (*Us
 	}
 
 	if id == uuid.Nil {
-		span.SetStatus(codes.Error, ErrUserIDIsNil.Error())
-		span.RecordError(ErrUserIDIsNil)
+		span.SetStatus(codes.Error, ErrInvalidUserID.Error())
+		span.RecordError(ErrInvalidUserID)
 		slog.Error("repository.users.SelectByID", "error", "id is nil")
 		r.metrics.repositoryCalls.Add(ctx, 1,
 			metric.WithAttributes(
@@ -412,7 +401,7 @@ func (r *PGSQLUserRepository) SelectByID(ctx context.Context, id uuid.UUID) (*Us
 			),
 		)
 
-		return nil, ErrUserIDIsNil
+		return nil, ErrInvalidUserID
 	}
 
 	query := fmt.Sprintf(`

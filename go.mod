@@ -13,7 +13,7 @@ require (
 	go.opentelemetry.io/otel/trace v1.28.0
 )
 
-require github.com/google/go-cmp v0.6.0 // indirect
+require github.com/google/go-cmp v0.6.0
 
 require (
 	github.com/KyleBanks/depth v1.2.1 // indirect

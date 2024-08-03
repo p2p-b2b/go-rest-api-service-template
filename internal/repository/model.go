@@ -42,7 +42,7 @@ type UserInput struct {
 // Validate validates the user input.
 func (ui *UserInput) Validate() error {
 	if ui.ID == uuid.Nil {
-		return ErrInvalidID
+		return ErrInvalidUserID
 	}
 
 	if len(ui.FirstName) < 2 {
@@ -80,7 +80,7 @@ type UpdateUserInput UserInput
 // Validate validates the UpdateUserInput.
 func (ui *UpdateUserInput) Validate() error {
 	if ui.ID == uuid.Nil {
-		return ErrInvalidID
+		return ErrInvalidUserID
 	}
 
 	if ui.FirstName != "" && len(ui.FirstName) < 2 {
@@ -120,7 +120,7 @@ type DeleteUserInput struct {
 // Validate validates the DeleteUserInput.
 func (ui *DeleteUserInput) Validate() error {
 	if ui.ID == uuid.Nil {
-		return ErrInvalidID
+		return ErrInvalidUserID
 	}
 
 	return nil
