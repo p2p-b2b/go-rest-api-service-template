@@ -8,9 +8,9 @@ var (
 	ErrInvalidUserLastName          = errors.New("invalid last name, the last name must be at least 2 characters long")
 	ErrInvalidUserEmail             = errors.New("invalid email")
 	ErrAtLeastOneFieldMustBeUpdated = errors.New("at least one field must be updated")
-
-	ErrUserIsNil              = errors.New("user is nil")
-	ErrFunctionParameterIsNil = errors.New("function parameter is nil")
+	ErrUserNotFound                 = errors.New("user not found")
+	ErrUserIsNil                    = errors.New("user is nil")
+	ErrFunctionParameterIsNil       = errors.New("function parameter is nil")
 )
 
 var (
