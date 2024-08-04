@@ -14,6 +14,8 @@ This is a template for a Go HTTP REST API Service.
 - [x] Podman pod file for development [dev-service-pod.yaml](dev-service-pod.yaml), see [Running](#running). This is something like `docker-compose/podman-compose` but more powerful
 - [x] Database migrations with [goose](https://github.com/pressly/goose). Check the [db](db/README.md) documentation
 - [x] Validation with [go-playground/validator](https://github.com/go-playground/validator)
+- [x] Allow filtering, sorting, pagination and partial responses
+- [x] Middleware for logging and headers versioning
 
 ## References
 
@@ -38,7 +40,7 @@ swag init \
   --parseInternal true
 ```
 
-## Certificates
+## Self-Signed Certificates
 
 This service uses self-signed certificates for HTTPS. You can generate new certificates using the following command:
 
@@ -57,43 +59,9 @@ ln -sf server.rsa.key server.key
 ln -sf server.rsa.crt server.crt
 ```
 
-## Building
-
-using Docker:
-
-```bash
-docker build \
-   --platform linux/arm64 \
-   --tag p2p-b2b/go-rest-api-service-template:v1.0.0-linux-arm64 \
-   --tag p2p-b2b/go-rest-api-service-template:v1.0.0-linux-arm64 \
-    --build-arg SERVICE_NAME=go-rest-api-service-template
-    --build-arg GOOS=linux
-    --build-arg GOARCH=arm64
-    --build-arg BUILD_DATE=2024-04-28T15:26:26
-    --build-arg BUILD_VERSION=v1.0.0
-   --file ./Containerfile .
-```
-
-Using Podman:
-
-```bash
-podman build
-    --platform linux/arm64
-    --manifest p2p-b2b/go-rest-api-service-template:v1.0.0
-    --tag p2p-b2b/go-rest-api-service-template:v1.0.0-linux-arm64
-    --build-arg SERVICE_NAME=go-rest-api-service-template
-    --build-arg GOOS=linux
-    --build-arg GOARCH=arm64
-    --build-arg BUILD_DATE=2024-04-28T15:26:26
-    --build-arg BUILD_VERSION=v1.0.0
-    --file ./Containerfile .
-```
-
 ## Running
 
-### With podman pod file
-
-Requirements:
+### Requirements
 
 By default Podman machine (Macbook ARM processors) adds only you $HOME directory to the container.
 
@@ -110,138 +78,31 @@ podman machine start
 
 __WARNING:__ This will remove the current machine and all the containers.
 
-Start the pod:
+### Development environment
+
+start
 
 ```bash
-mkdir -p /tmp/go-rest-api-service-template-db-volume-host
-podman play kube dev-service-pod.yaml
+# create the necessary containers
+make start-dev-env
+
+# start the development environment
+air
 ```
 
-Stop the pod:
+stop
 
 ```bash
-# WARNING: --force remove the volumes declared in the pod file
-podman play kube --force --down dev-service-pod.yaml
+# create the necessary containers
+make stop-dev-env
 ```
 
-### PostgreSQL
-
-Start a PostgreSQL container:
-
-```bash
-mkdir -p /tmp/go-rest-api-service-template-db-volume-host
-podman volume create \
-      -o device=/tmp/go-rest-api-service-template-db-volume-host \
-      -o=o=bind \
-      go-rest-api-service-template-db-volume-host
-
-podman run --name postgres \
-  --env POSTGRES_USER=username \
-  --env POSTGRES_PASSWORD=password \
-  --publish 5432:5432 \
-  --volume go-rest-api-service-template-db-volume-host:/var/lib/postgresq/data \
-  --detach postgres:16
-```
-
-Stop the PostgreSQL container:
-
-```bash
-podman stop postgres
-```
-
-Remove the PostgreSQL container and volume:
-
-```bash
-podman rm postgres
-podman volume rm local-db-volume-host-0
-```
-
-#### [OPTIONAL] Connect to the PostgreSQL container
-
-```bash
-podman exec -it postgres psql -U username
-```
-
-#### [OPTIONAL] Connect to the PostgreSQL database from the host
+[OPTIONAL] Connect to the PostgreSQL database from the host
 
 ```bash
 PGPASSWORD=password psql -h localhost -p 5432 -U username
 ```
 
-```bash
-# this is a personal access token (classic)
-export CR_PAT=ghp_uxxxxxxx
-podman login ghcr.io -u p2p-b2b -p $CR_PAT
+Database migrations
 
-make container-publish
-```
-
-From ghcr.io:
-
-```bash
-podman run --name go-rest-api-service-template --rm ghcr.io/p2p-b2b/go-rest-api-service-template:first-implementation
-```
-
-## Pagination
-
-This is implemented using Cursor-based pagination.
-
-```sql
--- Without pagination
--- regular query
-SELECT *
-FROM users
-ORDER BY created_at DESC, id DESC;
-
--- --------------------------------------------------
-
--- With pagination (cursor-based)
--- first query, no cursor (next or previous)
--- [filter here] is the filter you want to apply to the query
--- [filter here] is optional
--- [filter here] could be something like:
--- - WHERE usrs.first_name LIKE 'A%' AND usrs.email LIKE '%@gmail.com'
--- - WHERE usrs.first_name LIKE 'A%' AND usrs.email LIKE '%@gmail.com' AND usrs.created_at > '2024-03-07T07:00:00Z'
-WITH usrs AS (
- SELECT *
- FROM users usrs
-  -- [filter here]
- ORDER BY usrs.created_at DESC, id DESC
- LIMIT 3
-)
-SELECT * FROM usrs ORDER BY created_at DESC, id DESC;
-
--- moving forward, cursor (next)
--- [filter here] is the filter you want to apply to the query
--- [filter here] is optional
--- [filter here] could be something like:
--- - AND (usrs.first_name LIKE 'A%' AND usrs.email LIKE '%@gmail.com')
--- - AND (usrs.first_name LIKE 'A%' AND usrs.email LIKE '%@gmail.com' AND usrs.created_at > '2024-03-07T07:00:00Z')
-WITH usrs AS (
- SELECT *
- FROM users usrs
- WHERE usrs.created_at < '2024-03-08T08:00:00Z'
-  AND (usrs.id < 'c3b11505-9606-4046-b1f2-7a2a5cf6df58' OR usrs.created_at < '2024-03-08T08:00:00Z')
-  -- [filter here]
- ORDER BY usrs.created_at DESC, usrs.id DESC
- LIMIT 3
-)
-SELECT * FROM usrs ORDER BY created_at DESC, id DESC;
-
--- moving backward, cursor (previous)
--- [filter here] is the filter you want to apply to the query
--- [filter here] is optional
--- [filter here] could be something like:
--- - AND (usrs.first_name LIKE 'A%' AND usrs.email LIKE '%@gmail.com')
--- - AND (usrs.first_name LIKE 'A%' AND usrs.email LIKE '%@gmail.com' AND usrs.created_at > '2024-03-07T07:00:00Z')
-WITH usrs AS (
- SELECT *
- FROM users usrs
- WHERE usrs.created_at > '2024-03-07T07:00:00Z'
-  AND (usrs.id > '085d16e2-0200-47f9-8bdc-732dd12677be' OR usrs.created_at > '2024-03-07T07:00:00Z')
-  -- [filter here]
- ORDER BY usrs.created_at ASC, usrs.id ASC
- LIMIT 3
-)
-SELECT * FROM usrs ORDER BY created_at DESC, id DESC;
-```
+see [database](database/README.md)
