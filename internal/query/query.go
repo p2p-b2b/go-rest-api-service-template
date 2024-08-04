@@ -9,7 +9,8 @@ import (
 
 var sortOperators = []string{"ASC", "DESC"}
 
-// GetFields returns a list of fields for partial response after trimming spaces.
+// GetFields returns a list of fields for partial response after trimming spaces
+// and making these unique.
 func GetFields(fields string) []string {
 	return tokenizeFields(fields)
 }
@@ -50,11 +51,18 @@ func IsValidFields(fields []string, partial string) bool {
 	return true
 }
 
-// tokenizeFields splits a fields string into tokens trimmed by spaces.
+// tokenizeFields splits a fields string into tokens trimmed by spaces
+// and makes these unique.
 func tokenizeFields(fields string) []string {
 	var tokens []string
+	unique := make(map[string]interface{})
+
 	for _, token := range strings.Split(fields, ",") {
-		tokens = append(tokens, strings.TrimSpace(token))
+		token = strings.TrimSpace(token)
+		if _, ok := unique[token]; !ok {
+			tokens = append(tokens, token)
+			unique[token] = nil
+		}
 	}
 
 	return tokens
