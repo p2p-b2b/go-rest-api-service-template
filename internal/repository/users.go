@@ -366,9 +366,7 @@ func (r *PGSQLUserRepository) Delete(ctx context.Context, user *DeleteUserInput)
 			),
 		)
 
-		// remove the SQLSTATE XXXXX suffix
-		errMessage := strings.TrimSpace(strings.Split(err.Error(), "(SQLSTATE")[0])
-		return fmt.Errorf("%s", errMessage)
+		return err
 	}
 
 	span.SetStatus(codes.Ok, "user deleted successfully")
@@ -534,14 +532,14 @@ func (r *PGSQLUserRepository) Select(ctx context.Context, params *SelectUserInpu
 
 	// query template
 	var queryTemplate string = `
-WITH {{.TableAlias}} AS (
-  SELECT {{.QueryColumns}}
-  FROM {{.TableName}} {{.TableAlias}}
-  {{ .QueryWhere }}
-  ORDER BY {{.QueryInternalSort}}
-  LIMIT {{.QueryLimit}}
-) SELECT * FROM {{.TableAlias}} ORDER BY {{.QueryExternalSort}}
-`
+        WITH {{.TableAlias}} AS (
+            SELECT {{.QueryColumns}}
+            FROM {{.TableName}} {{.TableAlias}}
+            {{ .QueryWhere }}
+            ORDER BY {{.QueryInternalSort}}
+            LIMIT {{.QueryLimit}}
+        ) SELECT * FROM {{.TableAlias}} ORDER BY {{.QueryExternalSort}}
+    `
 
 	// struct to hold the query values
 	var queryValues struct {
@@ -729,9 +727,7 @@ WITH {{.TableAlias}} AS (
 				),
 			)
 
-			// remove the SQLSTATE XXXXX suffix
-			errMessage := strings.TrimSpace(strings.Split(err.Error(), "(SQLSTATE")[0])
-			return nil, fmt.Errorf("%s", errMessage)
+			return nil, err
 		}
 
 		users = append(users, &u)

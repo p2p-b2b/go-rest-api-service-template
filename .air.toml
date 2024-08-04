@@ -9,6 +9,7 @@ args_bin = [
   "-server.pprof.enabled=true",
   "-opentelemetry.trace.exporter=otlp-http",
   "-opentelemetry.metric.exporter=otlp-http",
+  "-server.port=8081",
 ]
 bin = "./build/go-rest-api-service-template"
 cmd = "make build"
