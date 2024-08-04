@@ -18,6 +18,7 @@ import (
 	"github.com/p2p-b2b/go-rest-api-service-template/docs"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/config"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/handler"
+	"github.com/p2p-b2b/go-rest-api-service-template/internal/middleware"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/o11y"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/repository"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/server"
@@ -26,7 +27,8 @@ import (
 )
 
 var (
-	appName = "go-rest-api-service-template"
+	appName    = "go-rest-api-service-template"
+	apiVersion = "v1"
 
 	LogConfig = config.NewLogConfig()
 	SrvConfig = config.NewServerConfig()
@@ -192,7 +194,7 @@ func main() {
 	if SrvConfig.TLSEnabled.Value {
 		serverProtocol = "https"
 	}
-	serverURL := fmt.Sprintf("%s://%s:%d", serverProtocol, SrvConfig.Address.Value, SrvConfig.Port.Value)
+	serverURL := fmt.Sprintf("%s://%s:%d/%s", serverProtocol, SrvConfig.Address.Value, SrvConfig.Port.Value, apiVersion)
 	statusURL := fmt.Sprintf("%s/status", serverURL)
 	serverHost := fmt.Sprintf("%s:%d", SrvConfig.Address.Value, SrvConfig.Port.Value)
 	swaggerURLIndex := fmt.Sprintf("%s/swagger/index.html", serverURL)
@@ -206,7 +208,7 @@ func main() {
 
 	// Configure Swagger metadata
 	docs.SwaggerInfo.Host = serverHost
-	docs.SwaggerInfo.BasePath = "/"
+	docs.SwaggerInfo.BasePath = fmt.Sprintf("/%s", apiVersion)
 	docs.SwaggerInfo.Schemes = []string{serverProtocol}
 	docs.SwaggerInfo.Version = version.Version
 
@@ -301,20 +303,37 @@ func main() {
 	pprofHandler := handler.NewPprofHandler()
 
 	// Create a new ServeMux and register the handlers
-	mux := http.NewServeMux()
-	swaggerHandler.RegisterRoutes(mux)
-	healthHandler.RegisterRoutes(mux)
-	versionHandler.RegisterRoutes(mux)
-	userHandler.RegisterRoutes(mux)
+	defaultRouter := http.NewServeMux()
+	swaggerHandler.RegisterRoutes(defaultRouter)
+	healthHandler.RegisterRoutes(defaultRouter)
+	versionHandler.RegisterRoutes(defaultRouter)
+	userHandler.RegisterRoutes(defaultRouter)
 
 	if SrvConfig.PprofEnabled.Value {
-		pprofHandler.RegisterRoutes(mux)
+		pprofHandler.RegisterRoutes(defaultRouter)
 	}
+
+	// set the api version path
+	globalRouter := http.NewServeMux()
+	globalRouter.Handle(
+		fmt.Sprintf("/%s/", apiVersion),
+		http.StripPrefix(
+			fmt.Sprintf("/%s", apiVersion),
+			defaultRouter,
+		),
+	)
+
+	// middleware chain
+	middleware.APIVersion = apiVersion
+	middlewares := middleware.Chain(
+		middleware.Logging,
+		middleware.AddAPIVersion,
+	)
 
 	httpServer := server.NewHttpServer(
 		server.ServerConfig{
 			Ctx:         ctx,
-			HttpHandler: mux,
+			HttpHandler: middlewares(globalRouter),
 			Config:      SrvConfig,
 		})
 

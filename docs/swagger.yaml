@@ -243,6 +243,10 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/handler.APIError'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/handler.APIError'
         "500":
           description: Internal Server Error
           schema:
@@ -294,6 +298,10 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/handler.APIError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handler.APIError'
         "500":
           description: Internal Server Error
           schema:
@@ -326,6 +334,10 @@ paths:
             type: string
         "400":
           description: Bad Request
+          schema:
+            $ref: '#/definitions/handler.APIError'
+        "409":
+          description: Conflict
           schema:
             $ref: '#/definitions/handler.APIError'
         "500":
