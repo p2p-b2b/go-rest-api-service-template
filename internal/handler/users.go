@@ -309,6 +309,9 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "text/plain")
+	// Location header is required for RESTful APIs
+	w.Header().Set("Location", fmt.Sprintf("%s%s/%s", r.Header.Get("Origin"), r.RequestURI, user.ID.String()))
+
 	w.WriteHeader(http.StatusCreated)
 
 	span.SetStatus(codes.Ok, "User created")
@@ -430,6 +433,9 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "text/plain")
+	// Location header is required for RESTful APIs
+	w.Header().Set("Location", fmt.Sprintf("%s%s/%s", r.Header.Get("Origin"), r.RequestURI, user.ID.String()))
+
 	w.WriteHeader(http.StatusOK)
 
 	slog.Debug("handler.UpdateUser", "user", user)

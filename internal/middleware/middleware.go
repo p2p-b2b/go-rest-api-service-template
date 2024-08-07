@@ -31,11 +31,11 @@ func Chain(mws ...Middleware) Middleware {
 	}
 }
 
-// AddAPIVersion adds the API version to the response headers
+// HeaderAPIVersion adds the API version to the response headers
 // Configurable via the APIVersion variable
 // Defaults to "v1"
 // Set the header X-API-Version
-func AddAPIVersion(next http.Handler) http.Handler {
+func HeaderAPIVersion(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("X-API-Version", APIVersion)
 		next.ServeHTTP(w, r)

@@ -303,37 +303,36 @@ func main() {
 	pprofHandler := handler.NewPprofHandler()
 
 	// Create a new ServeMux and register the handlers
-	defaultRouter := http.NewServeMux()
-	swaggerHandler.RegisterRoutes(defaultRouter)
-	healthHandler.RegisterRoutes(defaultRouter)
-	versionHandler.RegisterRoutes(defaultRouter)
-	userHandler.RegisterRoutes(defaultRouter)
-
-	if SrvConfig.PprofEnabled.Value {
-		pprofHandler.RegisterRoutes(defaultRouter)
-	}
-
-	// set the api version path
-	globalRouter := http.NewServeMux()
-	globalRouter.Handle(
+	router := http.NewServeMux()
+	// set the api version prefix
+	router.Handle(
 		fmt.Sprintf("/%s/", apiVersion),
 		http.StripPrefix(
 			fmt.Sprintf("/%s", apiVersion),
-			defaultRouter,
+			router,
 		),
 	)
+
+	swaggerHandler.RegisterRoutes(router)
+	healthHandler.RegisterRoutes(router)
+	versionHandler.RegisterRoutes(router)
+	userHandler.RegisterRoutes(router)
+
+	if SrvConfig.PprofEnabled.Value {
+		pprofHandler.RegisterRoutes(router)
+	}
 
 	// middleware chain
 	middleware.APIVersion = apiVersion
 	middlewares := middleware.Chain(
 		middleware.Logging,
-		middleware.AddAPIVersion,
+		middleware.HeaderAPIVersion,
 	)
 
 	httpServer := server.NewHttpServer(
 		server.ServerConfig{
 			Ctx:         ctx,
-			HttpHandler: middlewares(globalRouter),
+			HttpHandler: middlewares(router),
 			Config:      SrvConfig,
 		})
 
