@@ -434,8 +434,7 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "text/plain")
 	// Location header is required for RESTful APIs
-	w.Header().Set("Location", fmt.Sprintf("%s%s/%s", r.Header.Get("Origin"), r.RequestURI, user.ID.String()))
-
+	w.Header().Set("Location", fmt.Sprintf("%s%s", r.Header.Get("Origin"), r.RequestURI))
 	w.WriteHeader(http.StatusOK)
 
 	slog.Debug("handler.UpdateUser", "user", user)
