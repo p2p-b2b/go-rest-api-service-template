@@ -623,7 +623,7 @@ func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Generate the next and previous pages
-	location := fmt.Sprintf("http://%s%s", r.Host, r.RequestURI)
+	location := fmt.Sprintf("http://%s%s", r.Host, r.URL.Path)
 	users.Paginator.GeneratePages(location)
 
 	w.Header().Set("Content-Type", "application/json")
