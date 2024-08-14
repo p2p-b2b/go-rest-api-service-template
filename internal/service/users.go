@@ -197,6 +197,8 @@ func (s *UserService) GetUserByID(ctx context.Context, id uuid.UUID) (*User, err
 		FirstName: qryOut.FirstName,
 		LastName:  qryOut.LastName,
 		Email:     qryOut.Email,
+		CreatedAt: qryOut.CreatedAt,
+		UpdatedAt: qryOut.UpdatedAt,
 	}
 
 	span.SetStatus(codes.Ok, "user found")
