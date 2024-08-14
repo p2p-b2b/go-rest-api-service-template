@@ -7,13 +7,13 @@ import (
 
 // HealthHandler represents the handler for the health of the service.
 type HealthHandler struct {
-	userService UserService
+	service UserService
 }
 
 // NewHealthHandler returns a new instance of HealthHandler.
 func NewHealthHandler(us UserService) *HealthHandler {
 	return &HealthHandler{
-		userService: us,
+		service: us,
 	}
 }
 
@@ -35,7 +35,7 @@ func (h *HealthHandler) RegisterRoutes(mux *http.ServeMux) {
 // @Router /healthz [get]
 // @Router /status [get]
 func (h *HealthHandler) Get(w http.ResponseWriter, r *http.Request) {
-	health, err := h.userService.UserHealthCheck(r.Context())
+	health, err := h.service.UserHealthCheck(r.Context())
 	if err != nil {
 		WriteError(w, r, http.StatusInternalServerError, ErrInternalServerError.Error())
 		return
