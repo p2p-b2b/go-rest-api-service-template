@@ -247,12 +247,13 @@ func (r *PGSQLUserRepository) Update(ctx context.Context, user *UpdateUserInput)
 		queryFields = append(queryFields, fmt.Sprintf("email = '%s'", user.Email))
 	}
 
-	user.UpdatedAt = time.Now()
-
 	if len(queryFields) == 0 {
 		slog.Error("Update", "error", "no fields to update")
 		return ErrAtLeastOneFieldMustBeUpdated
 	}
+
+	updatedAt, _ := time.Now().In(time.FixedZone("UTC", 0)).MarshalText()
+	queryFields = append(queryFields, fmt.Sprintf("updated_at = '%s'", updatedAt))
 
 	fields := strings.Join(queryFields, ", ")
 
