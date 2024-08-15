@@ -75,7 +75,13 @@ func (ui *InsertUserInput) Validate() error {
 }
 
 // UpdateUserInput represents the input for the UpdateUser method.
-type UpdateUserInput UserInput
+type UpdateUserInput struct {
+	ID        uuid.UUID
+	FirstName string
+	LastName  string
+	Email     string
+	UpdatedAt time.Time
+}
 
 // Validate validates the UpdateUserInput.
 func (ui *UpdateUserInput) Validate() error {
