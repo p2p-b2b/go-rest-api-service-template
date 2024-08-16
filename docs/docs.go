@@ -213,7 +213,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/users/{uid}": {
+        "/users/{user_id}": {
             "get": {
                 "description": "Get a user by ID",
                 "produces": [
@@ -227,7 +227,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "description": "The user ID in UUID format",
-                        "name": "uid",
+                        "name": "user_id",
                         "in": "path",
                         "required": true
                     }
@@ -275,7 +275,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "description": "The user ID in UUID format",
-                        "name": "uid",
+                        "name": "user_id",
                         "in": "path",
                         "required": true
                     },
@@ -326,7 +326,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "description": "The user ID in UUID format",
-                        "name": "uid",
+                        "name": "user_id",
                         "in": "path",
                         "required": true
                     }

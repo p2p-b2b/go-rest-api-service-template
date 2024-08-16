@@ -254,13 +254,13 @@ paths:
       summary: Create a new user.
       tags:
       - users
-  /users/{uid}:
+  /users/{user_id}:
     delete:
       description: Delete a user
       parameters:
       - description: The user ID in UUID format
         in: path
-        name: uid
+        name: user_id
         required: true
         type: string
       responses:
@@ -284,7 +284,7 @@ paths:
       parameters:
       - description: The user ID in UUID format
         in: path
-        name: uid
+        name: user_id
         required: true
         type: string
       produces:
@@ -316,7 +316,7 @@ paths:
       parameters:
       - description: The user ID in UUID format
         in: path
-        name: uid
+        name: user_id
         required: true
         type: string
       - description: User

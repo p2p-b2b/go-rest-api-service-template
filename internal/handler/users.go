@@ -96,9 +96,9 @@ func (h *UserHandler) registerMetrics() error {
 
 // RegisterRoutes registers the routes for the user.
 func (h *UserHandler) RegisterRoutes(mux *http.ServeMux) {
-	mux.HandleFunc("GET /users/{uid}", h.GetByID)
-	mux.HandleFunc("PUT /users/{uid}", h.UpdateUser)
-	mux.HandleFunc("DELETE /users/{uid}", h.DeleteUser)
+	mux.HandleFunc("GET /users/{user_id}", h.GetByID)
+	mux.HandleFunc("PUT /users/{user_id}", h.UpdateUser)
+	mux.HandleFunc("DELETE /users/{user_id}", h.DeleteUser)
 	mux.HandleFunc("POST /users", h.CreateUser)
 	mux.HandleFunc("GET /users", h.ListUsers)
 }
@@ -108,12 +108,12 @@ func (h *UserHandler) RegisterRoutes(mux *http.ServeMux) {
 // @Description Get a user by ID
 // @Tags users
 // @Produce json
-// @Param uid path string true "The user ID in UUID format"
+// @Param user_id path string true "The user ID in UUID format"
 // @Success 200 {object} User
 // @Failure 400 {object} APIError
 // @Failure 404 {object} APIError
 // @Failure 500 {object} APIError
-// @Router /users/{uid} [get]
+// @Router /users/{user_id} [get]
 func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	ctx, span := h.ot.Traces.Tracer.Start(r.Context(), "handler.users.GetByID")
 	defer span.End()
@@ -131,7 +131,7 @@ func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 		attribute.String("http.path", r.URL.Path[:strings.LastIndex(r.URL.Path, "/")]),
 	}
 
-	id, err := parseUUIDQueryParams(r.PathValue("uid"))
+	id, err := parseUUIDQueryParams(r.PathValue("user_id"))
 	if err != nil {
 		span.SetStatus(codes.Error, err.Error())
 		span.RecordError(err)
@@ -329,13 +329,13 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 // @Tags users
 // @Accept json
 // @Produce json
-// @Param uid path string true "The user ID in UUID format"
+// @Param user_id path string true "The user ID in UUID format"
 // @Param user body UpdateUserRequest true "User"
 // @Success 200 {object} string
 // @Failure 400 {object} APIError
 // @Failure 409 {object} APIError
 // @Failure 500 {object} APIError
-// @Router /users/{uid} [put]
+// @Router /users/{user_id} [put]
 func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	ctx, span := h.ot.Traces.Tracer.Start(r.Context(), "handler.users.UpdateUser")
 	defer span.End()
@@ -353,7 +353,7 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 		attribute.String("http.path", r.URL.Path[:strings.LastIndex(r.URL.Path, "/")]),
 	}
 
-	id, err := parseUUIDQueryParams(r.PathValue("uid"))
+	id, err := parseUUIDQueryParams(r.PathValue("user_id"))
 	if err != nil {
 		span.SetStatus(codes.Error, err.Error())
 		span.RecordError(err)
@@ -451,11 +451,11 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 // @Summary Delete a user
 // @Description Delete a user
 // @Tags users
-// @Param uid path string true "The user ID in UUID format"
+// @Param user_id path string true "The user ID in UUID format"
 // @Success 200 {object} string
 // @Failure 400 {object} APIError
 // @Failure 500 {object} APIError
-// @Router /users/{uid} [delete]
+// @Router /users/{user_id} [delete]
 func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	ctx, span := h.ot.Traces.Tracer.Start(r.Context(), "handler.users.DeleteUser")
 	defer span.End()
@@ -473,7 +473,7 @@ func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 		attribute.String("http.path", r.URL.Path[:strings.LastIndex(r.URL.Path, "/")]),
 	}
 
-	id, err := parseUUIDQueryParams(r.PathValue("uid"))
+	id, err := parseUUIDQueryParams(r.PathValue("user_id"))
 	if err != nil {
 		span.SetStatus(codes.Error, err.Error())
 		span.RecordError(err)
