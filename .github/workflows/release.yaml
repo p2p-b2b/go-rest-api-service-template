@@ -106,3 +106,4 @@ jobs:
     secrets:
       DOCKER_HUB_TOKEN: ${{ secrets.DOCKER_HUB_TOKEN }}
       DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
