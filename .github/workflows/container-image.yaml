@@ -3,12 +3,12 @@ name: Container Image
 on:
   workflow_call:
     secrets:
-      DOCKERHUB_TOKEN:
+      DOCKER_HUB_TOKEN:
         required: true
-        description: ''
-      DOCKERHUB_USERNAME:
+        description: 'Docker Hub token'
+      DOCKER_HUB_USERNAME:
         required: true
-        description: ''
+        description: 'Docker Hub username'
   workflow_dispatch:
 
 env:

@@ -8,9 +8,11 @@ env:
   MAKE_STOP_ON_ERRORS: true
 
 permissions:
-  contents: write
-  discussions: write
   id-token: write
+  security-events: write
+  actions: write
+  contents: write
+  pull-requests: read
 
 jobs:
   build:
@@ -102,5 +104,5 @@ jobs:
     needs: build
     uses: p2p-b2b/go-rest-api-service-template/.github/workflows/container-image.yaml@main
     secrets:
-      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
-      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKER_HUB_TOKEN: ${{ secrets.DOCKER_HUB_TOKEN }}
+      DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
