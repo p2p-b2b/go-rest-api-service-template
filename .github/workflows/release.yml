@@ -101,6 +101,6 @@ jobs:
   containers:
     name: Create and publish container images
     needs: build
-    uses: p2p-b2b/go-rest-api-service-template/.github/workflows/container-image.yaml@main
+    uses: p2p-b2b/gha-workflows/.github/workflows/container-image.yml@main
     secrets:
       GH_PA_TOKEN: ${{ secrets.GITHUB_TOKEN }} # this is public repo, so we can use GITHUB_TOKEN
