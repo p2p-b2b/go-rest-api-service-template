@@ -42,7 +42,7 @@ jobs:
           echo "Git version: $git_version"
           echo "**Git Version:** $git_version" >> $GITHUB_STEP_SUMMARY
 
-          make_version=$(make --version | head -n 1 | awk '{print $3}')
+          make_version=$(make --version | head -n 1)
           echo "Make version: $make_version"
           echo "**Make Version:** $make_version" >> $GITHUB_STEP_SUMMARY
 
