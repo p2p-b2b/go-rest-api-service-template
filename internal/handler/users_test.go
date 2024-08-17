@@ -63,7 +63,7 @@ func TestUser_GetUserByID(t *testing.T) {
 			{
 				name:        "invalid uid, bad request",
 				method:      http.MethodGet,
-				pathPattern: "/users/{uid}",
+				pathPattern: "/users/{user_id}",
 				pathValue:   "/users/InvalidUUID",
 				apiError: APIError{
 					Method:     "GET",
@@ -76,7 +76,7 @@ func TestUser_GetUserByID(t *testing.T) {
 			{
 				name:        "nil uid, bad request",
 				method:      http.MethodGet,
-				pathPattern: "/users/{uid}",
+				pathPattern: "/users/{user_id}",
 				pathValue:   "/users/" + uuid.Nil.String(),
 				apiError: APIError{
 					Method:     "GET",
@@ -89,7 +89,7 @@ func TestUser_GetUserByID(t *testing.T) {
 			{
 				name:         "empty uid, 404 page not found",
 				method:       http.MethodGet,
-				pathPattern:  "/users/{uid}",
+				pathPattern:  "/users/{user_id}",
 				pathValue:    "/users/",
 				plainMessage: "404 page not found\n",
 				plainCode:    http.StatusNotFound,
@@ -98,7 +98,7 @@ func TestUser_GetUserByID(t *testing.T) {
 			{
 				name:        "empty uid, 404 page not found",
 				method:      http.MethodGet,
-				pathPattern: "/users/{uid}",
+				pathPattern: "/users/{user_id}",
 				pathValue:   "/users/''",
 				apiError: APIError{
 					Method:     "GET",
@@ -111,7 +111,7 @@ func TestUser_GetUserByID(t *testing.T) {
 			{
 				name:        "service fail with error, return internal server error",
 				method:      http.MethodGet,
-				pathPattern: "/users/{uid}",
+				pathPattern: "/users/{user_id}",
 				pathValue:   "/users/e1cdf461-87c7-465f-a374-dc6bc7e962b9",
 				apiError: APIError{
 					Method:     "GET",
@@ -131,7 +131,7 @@ func TestUser_GetUserByID(t *testing.T) {
 			{
 				name:        "service success",
 				method:      http.MethodGet,
-				pathPattern: "/users/{uid}",
+				pathPattern: "/users/{user_id}",
 				pathValue:   "/users/e1cdf461-87c7-465f-a374-dc6bc7e962b9",
 				apiResponse: User{
 					ID:        uuid.Must(uuid.Parse("e1cdf461-87c7-465f-a374-dc6bc7e962b9")),
@@ -168,7 +168,7 @@ func TestUser_GetUserByID(t *testing.T) {
 					t.Fatalf("could not create request: %v", err)
 				}
 
-				// build the pattern for the handler, e.g -> GET /users/{uid}
+				// build the pattern for the handler, e.g -> GET /users/{user_id}
 				handlerPattern := fmt.Sprintf("%s %s", tc.method, tc.pathPattern)
 
 				w := httptest.NewRecorder()
