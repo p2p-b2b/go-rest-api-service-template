@@ -66,7 +66,7 @@ jobs:
           echo "## Make container-login" >> $GITHUB_STEP_SUMMARY
           make container-login | tee -a $GITHUB_STEP_SUMMARY
         env:
-          REPOSITORY_REGISTRY_TOKEN: ${{ secrets.CONTAINER_REGISTRY }}
+          REPOSITORY_REGISTRY_TOKEN: ${{ secrets.REPOSITORY_REGISTRY_TOKEN }}
 
       - name: Make container-publish
         run: |
