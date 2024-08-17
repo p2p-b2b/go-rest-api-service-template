@@ -48,7 +48,7 @@ jobs:
 
           podman_version=$(podman --version | awk '{print $3}')
           echo "Podman version: $podman_version"
-          echo "**Podman Version:** $podman_version" >>
+          echo "**Podman Version:** $podman_version" >> $GITHUB_STEP_SUMMARY
 
       - name: Download Distribution files
         uses: actions/download-artifact@v4
