@@ -13,6 +13,7 @@ permissions:
   actions: write
   contents: write
   pull-requests: read
+  packages: write
 
 jobs:
   build:
