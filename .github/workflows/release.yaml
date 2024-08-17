@@ -70,12 +70,12 @@ jobs:
       - name: Make build-dist
         run: |
           echo "## Make build-dist" >> $GITHUB_STEP_SUMMARY
-          make build-dist | tee -a $GITHUB_STEP_SUMMARY
+          GIT_VERSION=${{ github.ref_name }} make build-dist | tee -a $GITHUB_STEP_SUMMARY
 
       - name: Make build-dist-zip
         run: |
           echo "## Make build-dist-zip" >> $GITHUB_STEP_SUMMARY
-          make build-dist-zip | tee -a $GITHUB_STEP_SUMMARY
+          GIT_VERSION=${{ github.ref_name }} make build-dist-zip | tee -a $GITHUB_STEP_SUMMARY
 
       - name: Create Release
         id: create-github-release

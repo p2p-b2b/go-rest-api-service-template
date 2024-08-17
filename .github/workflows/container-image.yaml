@@ -71,7 +71,7 @@ jobs:
       - name: Make container-build
         run: |
           echo "## Make container-build" >> $GITHUB_STEP_SUMMARY
-          make container-build | tee -a $GITHUB_STEP_SUMMARY
+          GIT_VERSION=${{ github.ref_name }} make container-build | tee -a $GITHUB_STEP_SUMMARY
 
       - name: Make container-login
         run: |
@@ -87,4 +87,4 @@ jobs:
       - name: Make container-publish
         run: |
           echo "## Make container-publish" >> $GITHUB_STEP_SUMMARY
-          make container-publish | tee -a $GITHUB_STEP_SUMMARY
+          GIT_VERSION=${{ github.ref_name }} make container-publish | tee -a $GITHUB_STEP_SUMMARY
