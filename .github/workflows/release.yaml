@@ -100,9 +100,5 @@ jobs:
   containers:
     name: Create and publish container images
     needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: p2p-b2b/go-rest-api-service-template/.github/workflows/container-image.yaml@main
-        env:
-          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+    uses: p2p-b2b/go-rest-api-service-template/.github/workflows/container-image.yaml@main
+    secrets: inherit
