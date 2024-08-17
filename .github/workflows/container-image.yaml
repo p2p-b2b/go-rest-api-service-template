@@ -59,16 +59,16 @@ jobs:
       - name: Make container-build
         run: |
           echo "## Make container-build" >> $GITHUB_STEP_SUMMARY
-          make container-build tee -a $GITHUB_STEP_SUMMARY
+          make container-build | tee -a $GITHUB_STEP_SUMMARY
 
       - name: Make container-login
         run: |
           echo "## Make container-login" >> $GITHUB_STEP_SUMMARY
-          make container-login tee -a $GITHUB_STEP_SUMMARY
+          make container-login | tee -a $GITHUB_STEP_SUMMARY
         env:
           REPOSITORY_REGISTRY_TOKEN: ${{ secrets.CONTAINER_REGISTRY }}
 
       - name: Make container-publish
         run: |
           echo "## Make container-publish" >> $GITHUB_STEP_SUMMARY
-          make container-publish tee -a $GITHUB_STEP_SUMMARY
+          make container-publish | tee -a $GITHUB_STEP_SUMMARY
