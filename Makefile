@@ -82,7 +82,7 @@ $(if $(filter $(MAKE_DEBUG),true),\
 	${1} \
 , \
 	$(if $(filter $(MAKE_STOP_ON_ERRORS),true),\
-		@${1}  > /dev/null 2>&1 && printf "  🤞 ${1} ✅\n" || (printf "  ${1} ❌ 🖕\n"; exit 1) \
+		@${1}  > /dev/null && printf "  🤞 ${1} ✅\n" || (printf "  ${1} ❌ 🖕\n"; exit 1) \
 	, \
 		$(if $(findstring >, $1),\
 			@${1} 2>/dev/null && printf "  🤞 ${1} ✅\n" || printf "  ${1} ❌ 🖕\n" \
@@ -296,7 +296,7 @@ rename-project: clean ## Rename the project.  This must be the first command to 
 ##@ Container commands
 CONTAINER_MANIFEST_EXISTS := $(shell podman manifest exists $(CONTAINER_NAMESPACE)/$(CONTAINER_IMAGE_NAME):$(GIT_VERSION) || echo "exists" )
 .PHONY: container-build
-container-build: ## Build the container image, requires make build-dist
+container-build: build-dist ## Build the container image, requires make build-dist
 	@printf "👉 Building container manifest...\n"
 	$(if $(CONTAINER_MANIFEST_EXISTS), \
 		$(call exec_cmd, podman manifest create $(CONTAINER_NAMESPACE)/$(CONTAINER_IMAGE_NAME):$(GIT_VERSION) ) \

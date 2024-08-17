@@ -83,8 +83,6 @@ jobs:
         with:
           tag_name: ${{ github.ref_name }}
           name: ${{ github.ref_name }}
-          # body: |
-          #   See the file: CHANGELOG.md
           draft: false
           prerelease: false
           generate_release_notes: true
@@ -103,8 +101,6 @@ jobs:
   containers:
     name: Create and publish container images
     needs: build
-    uses: p2p-b2b/go-rest-api-service-template/.github/workflows/container-image.yaml@main
+    uses: p2p-b2b/svc-menu/.github/workflows/container-image.yaml@main
     secrets:
-      DOCKER_HUB_TOKEN: ${{ secrets.DOCKER_HUB_TOKEN }}
-      DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
-      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GH_PA_TOKEN: ${{ secrets.GITHUB_TOKEN }} # this is public repo, so we can use GITHUB_TOKEN
