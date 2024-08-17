@@ -56,7 +56,7 @@ CONTAINER_IMAGE_NAME ?= $(PROJECT_NAME)
 CONTAINER_OS         ?= linux darwin
 CONTAINER_ARCH       ?= arm64 amd64
 # CONTAINER_REPOS      ?= docker.io ghcr.io public.ecr.aws
-CONTAINER_REPOS      ?= ghcr.io
+CONTAINER_REPOS      ?= docker.io
 
 AWS_SAM_LAMBDA_BINARY_NAME ?= bootstrap
 AWS_SAM_PROJECT_APP_NAME   ?= idpscim
