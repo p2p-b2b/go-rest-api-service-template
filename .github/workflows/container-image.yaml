@@ -30,7 +30,7 @@ jobs:
         run: |
           echo "## Tools and versions" >> $GITHUB_STEP_SUMMARY
 
-          ubuntu_version=$(lsb_release -a  grep "Description" | awk '{print $2, $3, $4}')
+          ubuntu_version=$(cat /etc/os-release | grep "VERSION=" | awk -F= '{print $2}' | sed 's/"//g')
           echo "Ubuntu version: $ubuntu_version"
           echo "**Ubuntu Version:** $ubuntu_version" >> $GITHUB_STEP_SUMMARY
 
