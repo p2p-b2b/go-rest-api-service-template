@@ -3,14 +3,6 @@ on:
   push:
     tags:
       - v[0-9].[0-9]+.[0-9]*
-  workflow_call:
-    secrets:
-      DOCKERHUB_TOKEN:
-        required: true
-        description: ''
-      DOCKERHUB_USERNAME:
-        required: true
-        description: ''
 
 env:
   MAKE_STOP_ON_ERRORS: true
