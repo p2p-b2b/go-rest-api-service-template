@@ -3,6 +3,17 @@ on:
   push:
     tags:
       - v[0-9].[0-9]+.[0-9]*
+  workflow_call:
+    secrets:
+      GITHUB_TOKEN:
+        required: true
+        description: ''
+      DOCKERHUB_TOKEN:
+        required: true
+        description: ''
+      DOCKERHUB_USERNAME:
+        required: true
+        description: ''
 
 env:
   MAKE_STOP_ON_ERRORS: true
@@ -101,4 +112,6 @@ jobs:
     name: Create and publish container images
     needs: build
     uses: p2p-b2b/go-rest-api-service-template/.github/workflows/container-image.yaml@main
-    secrets: inherit
+    secrets:
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
