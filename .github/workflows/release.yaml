@@ -84,9 +84,11 @@ jobs:
           #   See the file: CHANGELOG.md
           draft: false
           prerelease: false
+          generate_release_notes: true
+          make_latest: true
           token: ${{ secrets.GITHUB_TOKEN }}
-          files: |
-            ./dist/assets/**
+          # files: |
+          #   ./dist/assets/**
 
       - name: Upload Distribution files
         uses: actions/upload-artifact@v4
