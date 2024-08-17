@@ -10,6 +10,7 @@ env:
 permissions:
   contents: write
   discussions: write
+  id-token: write
 
 jobs:
   build:
