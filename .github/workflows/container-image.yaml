@@ -16,6 +16,7 @@ on:
 
 env:
   MAKE_STOP_ON_ERRORS: true
+  MAKE_DEBUG: true
 
 permissions:
   id-token: write
