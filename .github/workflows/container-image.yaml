@@ -4,9 +4,6 @@ on:
   workflow_call:
   workflow_dispatch:
 
-env:
-  MAKE_STOP_ON_ERRORS: "true" # Stop on errors when running make
-
 permissions:
   id-token: write
   contents: read
@@ -59,16 +56,16 @@ jobs:
       - name: Make container-build
         run: |
           echo "## Make container-build" >> $GITHUB_STEP_SUMMARY
-          make container-build | tee -a $GITHUB_STEP_SUMMARY
+          MAKE_STOP_ON_ERRORS=true make container-build | tee -a $GITHUB_STEP_SUMMARY
 
       - name: Make container-login
         run: |
           echo "## Make container-login" >> $GITHUB_STEP_SUMMARY
-          make container-login | tee -a $GITHUB_STEP_SUMMARY
+          MAKE_STOP_ON_ERRORS=true make container-login | tee -a $GITHUB_STEP_SUMMARY
         env:
           REPOSITORY_REGISTRY_TOKEN: ${{ secrets.REPOSITORY_REGISTRY_TOKEN }}
 
       - name: Make container-publish
         run: |
           echo "## Make container-publish" >> $GITHUB_STEP_SUMMARY
-          make container-publish | tee -a $GITHUB_STEP_SUMMARY
+          MAKE_STOP_ON_ERRORS=true make container-publish | tee -a $GITHUB_STEP_SUMMARY
