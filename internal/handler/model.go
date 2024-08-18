@@ -3,6 +3,7 @@ package handler
 import (
 	"encoding/json"
 	"net/mail"
+	"reflect"
 	"time"
 
 	"github.com/google/uuid"
@@ -99,8 +100,7 @@ type UpdateUserRequest struct {
 }
 
 func (req *UpdateUserRequest) Validate() error {
-	// check if req is equal to the empty struct
-	if *req == (UpdateUserRequest{}) {
+	if reflect.DeepEqual(req, &UpdateUserRequest{}) {
 		return ErrAtLeastOneFieldMustBeUpdated
 	}
 

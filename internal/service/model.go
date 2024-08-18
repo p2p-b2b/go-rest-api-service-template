@@ -2,6 +2,7 @@ package service
 
 import (
 	"net/mail"
+	"reflect"
 	"time"
 
 	"github.com/google/uuid"
@@ -71,6 +72,10 @@ type UpdateUserInput struct {
 
 // Validate validates the UpdateUserInput.
 func (ui *UpdateUserInput) Validate() error {
+	if reflect.DeepEqual(ui, &UpdateUserInput{}) {
+		return ErrAtLeastOneFieldMustBeUpdated
+	}
+
 	if ui.ID == uuid.Nil {
 		return ErrInvalidID
 	}

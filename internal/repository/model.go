@@ -2,6 +2,7 @@ package repository
 
 import (
 	"net/mail"
+	"reflect"
 	"time"
 
 	"github.com/google/uuid"
@@ -85,8 +86,7 @@ type UpdateUserInput struct {
 
 // Validate validates the UpdateUserInput.
 func (ui *UpdateUserInput) Validate() error {
-	// check if ui is equal to the empty struct
-	if *ui == (UpdateUserInput{}) {
+	if reflect.DeepEqual(ui, &UpdateUserInput{}) {
 		return ErrAtLeastOneFieldMustBeUpdated
 	}
 
