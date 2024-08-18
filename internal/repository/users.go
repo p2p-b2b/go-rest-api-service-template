@@ -235,16 +235,16 @@ func (r *PGSQLUserRepository) Update(ctx context.Context, user *UpdateUserInput)
 
 	var queryFields []string
 
-	if user.FirstName != "" {
-		queryFields = append(queryFields, fmt.Sprintf("first_name = '%s'", user.FirstName))
+	if user.FirstName != nil && *user.FirstName != "" {
+		queryFields = append(queryFields, fmt.Sprintf("first_name = '%s'", *user.FirstName))
 	}
 
-	if user.LastName != "" {
-		queryFields = append(queryFields, fmt.Sprintf("last_name = '%s'", user.LastName))
+	if user.LastName != nil && *user.LastName != "" {
+		queryFields = append(queryFields, fmt.Sprintf("last_name = '%s'", *user.LastName))
 	}
 
-	if user.Email != "" {
-		queryFields = append(queryFields, fmt.Sprintf("email = '%s'", user.Email))
+	if user.Email != nil && *user.Email != "" {
+		queryFields = append(queryFields, fmt.Sprintf("email = '%s'", *user.Email))
 	}
 
 	if len(queryFields) == 0 {
@@ -256,6 +256,8 @@ func (r *PGSQLUserRepository) Update(ctx context.Context, user *UpdateUserInput)
 	queryFields = append(queryFields, fmt.Sprintf("updated_at = '%s'", updatedAt))
 
 	fields := strings.Join(queryFields, ", ")
+
+	slog.Debug("repository.users.Update", "fields", fields)
 
 	query := fmt.Sprintf(`
         UPDATE users SET %s

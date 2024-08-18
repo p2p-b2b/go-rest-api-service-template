@@ -77,41 +77,41 @@ func (ui *InsertUserInput) Validate() error {
 // UpdateUserInput represents the input for the UpdateUser method.
 type UpdateUserInput struct {
 	ID        uuid.UUID
-	FirstName string
-	LastName  string
-	Email     string
-	UpdatedAt time.Time
+	FirstName *string
+	LastName  *string
+	Email     *string
+	UpdatedAt *time.Time
 }
 
 // Validate validates the UpdateUserInput.
 func (ui *UpdateUserInput) Validate() error {
+	// check if ui is equal to the empty struct
+	if *ui == (UpdateUserInput{}) {
+		return ErrAtLeastOneFieldMustBeUpdated
+	}
+
 	if ui.ID == uuid.Nil {
 		return ErrInvalidUserID
 	}
 
-	if ui.FirstName != "" && len(ui.FirstName) < 2 {
+	if ui.FirstName != nil && *ui.FirstName != "" && len(*ui.FirstName) < 2 {
 		return ErrInvalidUserFirstName
 	}
 
-	if ui.LastName != "" && len(ui.LastName) < 2 {
+	if ui.LastName != nil && *ui.LastName != "" && len(*ui.LastName) < 2 {
 		return ErrInvalidUserLastName
 	}
 
 	// minimal email validation
-	if ui.Email != "" {
-		if len(ui.Email) < 6 {
+	if ui.Email != nil && *ui.Email != "" {
+		if len(*ui.Email) < 6 {
 			return ErrInvalidUserEmail
 		}
 
-		_, err := mail.ParseAddress(ui.Email)
+		_, err := mail.ParseAddress(*ui.Email)
 		if err != nil {
 			return ErrInvalidUserEmail
 		}
-	}
-
-	// at least one field must be updated
-	if ui.FirstName == "" && ui.LastName == "" && ui.Email == "" {
-		return ErrAtLeastOneFieldMustBeUpdated
 	}
 
 	return nil

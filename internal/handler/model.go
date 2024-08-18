@@ -93,35 +93,35 @@ func (req *CreateUserRequest) Validate() error {
 
 // UpdateUserRequest represents the input for the UpdateUser method.
 type UpdateUserRequest struct {
-	FirstName string `json:"first_name"`
-	LastName  string `json:"last_name"`
-	Email     string `json:"email"`
+	FirstName *string
+	LastName  *string
+	Email     *string
 }
 
 func (req *UpdateUserRequest) Validate() error {
-	if req.FirstName != "" && len(req.FirstName) < 2 {
+	// check if req is equal to the empty struct
+	if *req == (UpdateUserRequest{}) {
+		return ErrAtLeastOneFieldMustBeUpdated
+	}
+
+	if req.FirstName != nil && *req.FirstName != "" && len(*req.FirstName) < 2 {
 		return ErrInvalidUserFirstName
 	}
 
-	if req.LastName != "" && len(req.LastName) < 2 {
+	if req.LastName != nil && *req.LastName != "" && len(*req.LastName) < 2 {
 		return ErrInvalidUserLastName
 	}
 
 	// minimal email validation
-	if req.Email != "" {
-		if len(req.Email) < 6 {
+	if req.Email != nil && *req.Email != "" {
+		if len(*req.Email) < 6 {
 			return ErrInvalidUserEmail
 		}
 
-		_, err := mail.ParseAddress(req.Email)
+		_, err := mail.ParseAddress(*req.Email)
 		if err != nil {
 			return ErrInvalidUserEmail
 		}
-	}
-
-	// at least one field must be updated
-	if req.FirstName == "" && req.LastName == "" && req.Email == "" {
-		return ErrAtLeastOneFieldMustBeUpdated
 	}
 
 	return nil
