@@ -36,9 +36,9 @@ definitions:
     properties:
       email:
         type: string
-      first_name:
+      firstName:
         type: string
-      last_name:
+      lastName:
         type: string
     type: object
   handler.User:

@@ -62,11 +62,38 @@ func (ui *CreateUserInput) Validate() error {
 }
 
 // UpdateUserInput represents the input for the UpdateUser method.
-type UpdateUserInput UserInput
+type UpdateUserInput struct {
+	ID        uuid.UUID
+	FirstName *string
+	LastName  *string
+	Email     *string
+}
 
 // Validate validates the UpdateUserInput.
 func (ui *UpdateUserInput) Validate() error {
-	return (*UserInput)(ui).Validate()
+	if ui.ID == uuid.Nil {
+		return ErrInvalidID
+	}
+	if ui.FirstName != nil && len(*ui.FirstName) < 2 {
+		return ErrInvalidFirstName
+	}
+
+	if ui.LastName != nil && len(*ui.LastName) < 2 {
+		return ErrInvalidLastName
+	}
+
+	if ui.Email != nil && *ui.Email != "" {
+		if len(*ui.Email) < 6 {
+			return ErrInvalidEmail
+		}
+
+		_, err := mail.ParseAddress(*ui.Email)
+		if err != nil {
+			return ErrInvalidEmail
+		}
+	}
+
+	return nil
 }
 
 // DeleteUserInput represents the input for the DeleteUser method.
