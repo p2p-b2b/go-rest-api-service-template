@@ -529,7 +529,7 @@ func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 // @Param next_token query string false "Next cursor"
 // @Param prev_token query string false "Previous cursor"
 // @Param limit query int false "Limit"
-// @Success 200 {object} ListUserResponse
+// @Success 200 {object} ListUsersResponse
 // @Failure 400 {object} APIError
 // @Failure 500 {object} APIError
 // @Router /users [get]

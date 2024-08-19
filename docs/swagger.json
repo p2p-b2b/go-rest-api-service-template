@@ -135,7 +135,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handler.ListUserResponse"
+                            "$ref": "#/definitions/handler.ListUsersResponse"
                         }
                     },
                     "400": {
@@ -402,7 +402,7 @@
                 }
             }
         },
-        "handler.ListUserResponse": {
+        "handler.ListUsersResponse": {
             "type": "object",
             "properties": {
                 "items": {
@@ -422,10 +422,10 @@
                 "email": {
                     "type": "string"
                 },
-                "firstName": {
+                "first_name": {
                     "type": "string"
                 },
-                "lastName": {
+                "last_name": {
                     "type": "string"
                 }
             }

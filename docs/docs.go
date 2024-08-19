@@ -145,7 +145,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handler.ListUserResponse"
+                            "$ref": "#/definitions/handler.ListUsersResponse"
                         }
                     },
                     "400": {
@@ -412,7 +412,7 @@ const docTemplate = `{
                 }
             }
         },
-        "handler.ListUserResponse": {
+        "handler.ListUsersResponse": {
             "type": "object",
             "properties": {
                 "items": {
@@ -432,10 +432,10 @@ const docTemplate = `{
                 "email": {
                     "type": "string"
                 },
-                "firstName": {
+                "first_name": {
                     "type": "string"
                 },
-                "lastName": {
+                "last_name": {
                     "type": "string"
                 }
             }
