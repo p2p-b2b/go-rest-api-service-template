@@ -94,9 +94,9 @@ func (req *CreateUserRequest) Validate() error {
 
 // UpdateUserRequest represents the input for the UpdateUser method.
 type UpdateUserRequest struct {
-	FirstName *string
-	LastName  *string
-	Email     *string
+	FirstName *string `json:"first_name"`
+	LastName  *string `json:"last_name"`
+	Email     *string `json:"email"`
 }
 
 func (req *UpdateUserRequest) Validate() error {
