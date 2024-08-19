@@ -30,7 +30,7 @@ type UserRepository interface {
 	Update(ctx context.Context, user *repository.UpdateUserInput) error
 	Delete(ctx context.Context, user *repository.DeleteUserInput) error
 	SelectByID(ctx context.Context, id uuid.UUID) (*repository.User, error)
-	Select(ctx context.Context, params *repository.SelectUserInput) (*repository.SelectUserOutput, error)
+	Select(ctx context.Context, params *repository.SelectUsersInput) (*repository.SelectUsersOutput, error)
 }
 
 type UserServiceConf struct {
@@ -443,7 +443,7 @@ func (s *UserService) ListUsers(ctx context.Context, params *ListUserInput) (*Li
 		attribute.String("function", "ListUsers"),
 	}
 
-	rParams := &repository.SelectUserInput{
+	rParams := &repository.SelectUsersInput{
 		Sort:      params.Sort,
 		Filter:    params.Filter,
 		Fields:    params.Fields,

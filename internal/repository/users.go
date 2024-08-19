@@ -452,7 +452,7 @@ func (r *PGSQLUserRepository) SelectByID(ctx context.Context, id uuid.UUID) (*Us
 	return &u, nil
 }
 
-func (r *PGSQLUserRepository) Select(ctx context.Context, params *SelectUserInput) (*SelectUserOutput, error) {
+func (r *PGSQLUserRepository) Select(ctx context.Context, params *SelectUsersInput) (*SelectUsersOutput, error) {
 	ctx, cancel := context.WithTimeout(ctx, r.maxQueryTimeout)
 	defer cancel()
 
@@ -741,7 +741,7 @@ func (r *PGSQLUserRepository) Select(ctx context.Context, params *SelectUserInpu
 	outLen := len(users)
 	if outLen == 0 {
 		slog.Warn("repository.user.Select", "message", "no users found")
-		return &SelectUserOutput{
+		return &SelectUsersOutput{
 			Items:     make([]*User, 0),
 			Paginator: paginator.Paginator{},
 		}, nil
@@ -759,7 +759,7 @@ func (r *PGSQLUserRepository) Select(ctx context.Context, params *SelectUserInpu
 		users[outLen-1].SerialID,
 	)
 
-	ret := &SelectUserOutput{
+	ret := &SelectUsersOutput{
 		Items: users,
 		Paginator: paginator.Paginator{
 			Size:      outLen,

@@ -123,10 +123,10 @@ func (mr *MockUserRepositoryMockRecorder) PingContext(ctx interface{}) *gomock.C
 }
 
 // Select mocks base method.
-func (m *MockUserRepository) Select(ctx context.Context, params *repository.SelectUserInput) (*repository.SelectUserOutput, error) {
+func (m *MockUserRepository) Select(ctx context.Context, params *repository.SelectUsersInput) (*repository.SelectUsersOutput, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Select", ctx, params)
-	ret0, _ := ret[0].(*repository.SelectUserOutput)
+	ret0, _ := ret[0].(*repository.SelectUsersOutput)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

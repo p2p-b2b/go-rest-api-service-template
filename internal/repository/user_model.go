@@ -175,11 +175,11 @@ func (ui *ListUserInput) Validate() error {
 	return nil
 }
 
-// SelectUserInput represents the common input for the select user method.
-type SelectUserInput ListUserInput
+// SelectUsersInput represents the common input for the select user method.
+type SelectUsersInput ListUserInput
 
-// ListUserOutput represents the output for the list user method.
-type SelectUserOutput struct {
+// SelectUsersOutput represents the output for the list user method.
+type SelectUsersOutput struct {
 	Items     []*User
 	Paginator paginator.Paginator
 }
