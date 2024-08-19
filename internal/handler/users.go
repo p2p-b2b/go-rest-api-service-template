@@ -328,7 +328,7 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 // @Description Update a user
 // @Tags users
 // @Accept json
-// @Produce json
+// @Produce text/plain
 // @Param user_id path string true "The user ID in UUID format"
 // @Param user body UpdateUserRequest true "User"
 // @Success 200 {object} string
@@ -435,7 +435,7 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/plain")
 	// Location header is required for RESTful APIs
 	w.Header().Set("Location", fmt.Sprintf("%s%s", r.Header.Get("Origin"), r.RequestURI))
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(http.StatusNoContent)
 
 	slog.Debug("handler.UpdateUser", "user", user)
 	span.SetStatus(codes.Ok, "User updated")
