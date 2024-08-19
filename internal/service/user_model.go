@@ -122,8 +122,8 @@ type ListUserInput struct {
 	Paginator paginator.Paginator
 }
 
-// ListUserOutput represents the output for the ListUser method.
-type ListUserOutput struct {
+// ListUsersOutput represents the output for the ListUser method.
+type ListUsersOutput struct {
 	Items     []*User
 	Paginator paginator.Paginator
 }

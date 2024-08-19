@@ -28,7 +28,7 @@ type UserService interface {
 	CreateUser(ctx context.Context, user *service.CreateUserInput) error
 	UpdateUser(ctx context.Context, user *service.UpdateUserInput) error
 	DeleteUser(ctx context.Context, user *service.DeleteUserInput) error
-	ListUsers(ctx context.Context, params *service.ListUserInput) (*service.ListUserOutput, error)
+	ListUsers(ctx context.Context, params *service.ListUserInput) (*service.ListUsersOutput, error)
 }
 
 // UserHandler represents the handler for the user.
@@ -606,7 +606,7 @@ func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	users := &ListUserResponse{
+	users := &ListUsersResponse{
 		Items:     make([]*User, len(sUsers.Items)),
 		Paginator: sUsers.Paginator,
 	}

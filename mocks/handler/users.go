@@ -80,10 +80,10 @@ func (mr *MockUserServiceMockRecorder) GetUserByID(ctx, id interface{}) *gomock.
 }
 
 // ListUsers mocks base method.
-func (m *MockUserService) ListUsers(ctx context.Context, params *service.ListUserInput) (*service.ListUserOutput, error) {
+func (m *MockUserService) ListUsers(ctx context.Context, params *service.ListUserInput) (*service.ListUsersOutput, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ListUsers", ctx, params)
-	ret0, _ := ret[0].(*service.ListUserOutput)
+	ret0, _ := ret[0].(*service.ListUsersOutput)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

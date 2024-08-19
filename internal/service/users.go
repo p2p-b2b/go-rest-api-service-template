@@ -425,7 +425,7 @@ func (s *UserService) DeleteUser(ctx context.Context, user *DeleteUserInput) err
 }
 
 // ListUsers returns a list of users.
-func (s *UserService) ListUsers(ctx context.Context, params *ListUserInput) (*ListUserOutput, error) {
+func (s *UserService) ListUsers(ctx context.Context, params *ListUserInput) (*ListUsersOutput, error) {
 	ctx, span := s.ot.Traces.Tracer.Start(ctx, "service.users.ListUsers")
 	defer span.End()
 
@@ -496,7 +496,7 @@ func (s *UserService) ListUsers(ctx context.Context, params *ListUserInput) (*Li
 		),
 	)
 
-	return &ListUserOutput{
+	return &ListUsersOutput{
 		Items:     users,
 		Paginator: qryOut.Paginator,
 	}, nil

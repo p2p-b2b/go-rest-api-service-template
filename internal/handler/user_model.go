@@ -127,8 +127,8 @@ func (req *UpdateUserRequest) Validate() error {
 	return nil
 }
 
-// ListUserResponse represents a list of users.
-type ListUserResponse struct {
+// ListUsersResponse represents a list of users.
+type ListUsersResponse struct {
 	Items     []*User             `json:"items"`
 	Paginator paginator.Paginator `json:"paginator"`
 }
