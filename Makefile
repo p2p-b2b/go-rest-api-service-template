@@ -291,7 +291,7 @@ rename-project: clean ## Rename the project.  This must be the first command to 
 ##@ Container commands
 CONTAINER_MANIFEST_EXISTS := $(shell podman manifest exists $(CONTAINER_NAMESPACE)/$(CONTAINER_IMAGE_NAME):$(GIT_VERSION) || echo "exists" )
 .PHONY: container-build
-container-build: build-dist ## Build the container image, requires make build-dist
+container-build: ## Build the container image, requires make build-dist
 	@printf "👉 Building container manifest...\n"
 	$(if $(CONTAINER_MANIFEST_EXISTS), \
 		$(call exec_cmd, podman manifest create $(CONTAINER_NAMESPACE)/$(CONTAINER_IMAGE_NAME):$(GIT_VERSION) ) \
