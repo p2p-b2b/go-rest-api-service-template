@@ -335,6 +335,7 @@ container-publish: ## Publish the container image to the container registry
 				$(call exec_cmd, podman manifest add $(REPO)/$(CONTAINER_NAMESPACE)/$(CONTAINER_IMAGE_NAME):latest $(CONTAINER_NAMESPACE)/$(CONTAINER_IMAGE_NAME):latest-$(OS)-$(ARCH) ) \
 			) \
 		) \
+		$(call exec_cmd, podman manifest add $(REPO)/$(CONTAINER_NAMESPACE)/$(CONTAINER_IMAGE_NAME):latest $(CONTAINER_NAMESPACE)/$(CONTAINER_IMAGE_NAME):$(GIT_VERSION) ) \
 	)
 
 	@printf "👉 Publishing container images...\n"

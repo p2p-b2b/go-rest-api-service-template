@@ -103,4 +103,4 @@ jobs:
     needs: build
     uses: p2p-b2b/gha-workflows/.github/workflows/container-image.yml@main
     secrets:
-      GH_PA_TOKEN: ${{ secrets.GITHUB_TOKEN }} # this is public repo, so we can use GITHUB_TOKEN
+      GH_PA_TOKEN: ${{ secrets.GH_PA_TOKEN }}
