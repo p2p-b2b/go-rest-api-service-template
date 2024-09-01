@@ -58,11 +58,6 @@ CONTAINER_ARCH       ?= arm64 amd64
 # CONTAINER_REPOS      ?= docker.io ghcr.io public.ecr.aws
 CONTAINER_REPOS      ?= ghcr.io
 
-AWS_SAM_LAMBDA_BINARY_NAME ?= bootstrap
-AWS_SAM_PROJECT_APP_NAME   ?= idpscim
-AWS_SAM_OS                 ?= linux
-AWS_SAM_ARCH               ?= arm64
-
 # detect operating system for sed command
 UNAME_S := $(shell uname -s)
 ifeq ($(UNAME_S),Linux)
