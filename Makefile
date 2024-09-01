@@ -322,15 +322,27 @@ container-publish: ## Publish the container image to the container registry
 	@printf "👉 Creating container manifest...\n"
 	$(foreach REPO, $(CONTAINER_REPOS), \
 		$(if $(shell podman manifest exists $(REPO)/$(CONTAINER_NAMESPACE)/$(CONTAINER_IMAGE_NAME):$(GIT_VERSION) || echo "exists" ), \
-			$(call exec_cmd, podman manifest create $(REPO)/$(CONTAINER_NAMESPACE)/$(CONTAINER_IMAGE_NAME):$(GIT_VERSION) ) \
 		, \
 			$(call exec_cmd, podman manifest rm $(REPO)/$(CONTAINER_NAMESPACE)/$(CONTAINER_IMAGE_NAME):$(GIT_VERSION) ) \
-			$(call exec_cmd, podman manifest create $(REPO)/$(CONTAINER_NAMESPACE)/$(CONTAINER_IMAGE_NAME):$(GIT_VERSION) ) \
+		) \
+		$(call exec_cmd, podman manifest create $(REPO)/$(CONTAINER_NAMESPACE)/$(CONTAINER_IMAGE_NAME):$(GIT_VERSION) \
 		) \
 		$(foreach OS, $(CONTAINER_OS), \
 			$(foreach ARCH, $(CONTAINER_ARCH), \
 				$(if $(findstring v, $(ARCH)), $(eval BIN_ARCH = arm64), $(eval BIN_ARCH = $(ARCH)) ) \
-				$(call exec_cmd, podman manifest add --os=$(OS) --arch=$(ARCH) $(REPO)/$(CONTAINER_NAMESPACE)/$(CONTAINER_IMAGE_NAME):$(GIT_VERSION) containers-storage:localhost/$(CONTAINER_NAMESPACE)/$(CONTAINER_IMAGE_NAME):$(GIT_VERSION)-$(OS)-$(ARCH) ) \
+				$(call exec_cmd, podman manifest add --os=$(OS) --arch=$(ARCH) \
+					$(REPO)/$(CONTAINER_NAMESPACE)/$(CONTAINER_IMAGE_NAME):$(GIT_VERSION) \
+					containers-storage:localhost/$(CONTAINER_NAMESPACE)/$(CONTAINER_IMAGE_NAME):$(GIT_VERSION)-$(OS)-$(ARCH) \
+				) \
+				$(call exec_cmd, podman manifest annotate \
+					--annotation "org.opencontainers.image.created=$(BUILD_DATE)" \
+					--annotation "org.opencontainers.image.title=$(PROJECT_NAME)" \
+					--annotation "org.opencontainers.image.version=$(GIT_VERSION)" \
+					--annotation "org.opencontainers.image.source=https://github.com/$(PROJECT_NAMESPACE)/$(PROJECT_NAME)" \
+					--annotation "org.opencontainers.image.description=Container image for $(PROJECT_NAME)" \
+					$(REPO)/$(CONTAINER_NAMESPACE)/$(CONTAINER_IMAGE_NAME):$(GIT_VERSION) \
+					containers-storage:localhost/$(CONTAINER_NAMESPACE)/$(CONTAINER_IMAGE_NAME):$(GIT_VERSION)-$(OS)-$(ARCH) \
+				) \
 			) \
 		) \
 	)
