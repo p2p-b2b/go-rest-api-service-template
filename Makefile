@@ -289,24 +289,15 @@ rename-project: clean ## Rename the project.  This must be the first command to 
 
 ###############################################################################
 ##@ Container commands
-CONTAINER_MANIFEST_EXISTS := $(shell podman manifest exists $(CONTAINER_NAMESPACE)/$(CONTAINER_IMAGE_NAME):$(GIT_VERSION) || echo "exists" )
 .PHONY: container-build
 container-build: ## Build the container image, requires make build-dist
-	@printf "👉 Building container manifest...\n"
-	$(if $(CONTAINER_MANIFEST_EXISTS), \
-		$(call exec_cmd, podman manifest create $(CONTAINER_NAMESPACE)/$(CONTAINER_IMAGE_NAME):$(GIT_VERSION) ) \
-	, \
-		$(call exec_cmd, podman manifest rm $(CONTAINER_NAMESPACE)/$(CONTAINER_IMAGE_NAME):$(GIT_VERSION) ) \
-		$(call exec_cmd, podman manifest create $(CONTAINER_NAMESPACE)/$(CONTAINER_IMAGE_NAME):$(GIT_VERSION) ) \
-	)
-
 	@printf "👉 Building container images...\n"
 	$(foreach OS, $(CONTAINER_OS), \
 		$(foreach ARCH, $(CONTAINER_ARCH), \
 			$(if $(findstring v, $(ARCH)), $(eval BIN_ARCH = arm64), $(eval BIN_ARCH = $(ARCH)) ) \
 			$(call exec_cmd, podman build \
 				--platform $(OS)/$(BIN_ARCH) \
-				--manifest $(CONTAINER_NAMESPACE)/$(CONTAINER_IMAGE_NAME):$(GIT_VERSION) \
+				--tag $(CONTAINER_NAMESPACE)/$(CONTAINER_IMAGE_NAME):$(GIT_VERSION) \
 				--tag $(CONTAINER_NAMESPACE)/$(CONTAINER_IMAGE_NAME):$(GIT_VERSION)-$(OS)-$(ARCH) \
 				--tag $(CONTAINER_NAMESPACE)/$(CONTAINER_IMAGE_NAME):latest-$(OS)-$(ARCH) \
 				--tag $(CONTAINER_NAMESPACE)/$(CONTAINER_IMAGE_NAME):latest \
@@ -329,14 +320,19 @@ container-login: ## Login to the container registry. Requires REPOSITORY_REGISTR
 
 .PHONY: container-publish
 container-publish: ## Publish the container image to the container registry
-	@printf "👉 Tagging container images...\n"
+	@printf "👉 Creating container manifest...\n"
 	$(foreach REPO, $(CONTAINER_REPOS), \
+		$(if $(shell podman manifest exists $(REPO)/$(CONTAINER_NAMESPACE)/$(CONTAINER_IMAGE_NAME):latest || echo "exists" ), \
+			$(call exec_cmd, podman manifest create $(REPO)/$(CONTAINER_NAMESPACE)/$(CONTAINER_IMAGE_NAME):latest ) \
+		, \
+			$(call exec_cmd, podman manifest rm $(REPO)/$(CONTAINER_NAMESPACE)/$(CONTAINER_IMAGE_NAME):latest ) \
+			$(call exec_cmd, podman manifest create $(REPO)/$(CONTAINER_NAMESPACE)/$(CONTAINER_IMAGE_NAME):latest ) \
+		) \
 		$(foreach OS, $(CONTAINER_OS), \
 			$(foreach ARCH, $(CONTAINER_ARCH), \
 				$(if $(findstring v, $(ARCH)), $(eval BIN_ARCH = arm64), $(eval BIN_ARCH = $(ARCH)) ) \
-				$(call exec_cmd, podman tag $(CONTAINER_NAMESPACE)/$(CONTAINER_IMAGE_NAME):$(GIT_VERSION)-$(OS)-$(ARCH) $(REPO)/$(CONTAINER_NAMESPACE)/$(CONTAINER_IMAGE_NAME):$(GIT_VERSION)-$(OS)-$(ARCH) ) \
-				$(call exec_cmd, podman tag $(CONTAINER_NAMESPACE)/$(CONTAINER_IMAGE_NAME):latest-$(OS)-$(ARCH) $(REPO)/$(CONTAINER_NAMESPACE)/$(CONTAINER_IMAGE_NAME):latest-$(OS)-$(ARCH) ) \
-				$(call exec_cmd, podman tag $(CONTAINER_NAMESPACE)/$(CONTAINER_IMAGE_NAME):latest $(REPO)/$(CONTAINER_NAMESPACE)/$(CONTAINER_IMAGE_NAME):latest ) \
+				$(call exec_cmd, podman manifest add $(REPO)/$(CONTAINER_NAMESPACE)/$(CONTAINER_IMAGE_NAME):latest $(CONTAINER_NAMESPACE)/$(CONTAINER_IMAGE_NAME):$(GIT_VERSION)-$(OS)-$(ARCH) ) \
+				$(call exec_cmd, podman manifest add $(REPO)/$(CONTAINER_NAMESPACE)/$(CONTAINER_IMAGE_NAME):latest $(CONTAINER_NAMESPACE)/$(CONTAINER_IMAGE_NAME):latest-$(OS)-$(ARCH) ) \
 			) \
 		) \
 	)
@@ -344,8 +340,8 @@ container-publish: ## Publish the container image to the container registry
 	@printf "👉 Publishing container images...\n"
 	$(foreach REPO, $(CONTAINER_REPOS), \
 		$(call exec_cmd, podman manifest push --all \
-			$(CONTAINER_NAMESPACE)/$(CONTAINER_IMAGE_NAME):$(GIT_VERSION) \
-			docker://$(REPO)/$(CONTAINER_NAMESPACE)/$(CONTAINER_IMAGE_NAME):$(GIT_VERSION) ) \
+			$(REPO)/$(CONTAINER_NAMESPACE)/$(CONTAINER_IMAGE_NAME):latest \
+			docker://$(REPO)/$(CONTAINER_NAMESPACE)/$(CONTAINER_IMAGE_NAME):latest ) \
 	)
 
 ###############################################################################
