@@ -297,7 +297,6 @@ container-build: ## Build the container image, requires make build-dist
 			$(if $(findstring v, $(ARCH)), $(eval BIN_ARCH = arm64), $(eval BIN_ARCH = $(ARCH)) ) \
 			$(call exec_cmd, podman build \
 				--platform $(OS)/$(BIN_ARCH) \
-				--tag $(CONTAINER_NAMESPACE)/$(CONTAINER_IMAGE_NAME):$(GIT_VERSION) \
 				--tag $(CONTAINER_NAMESPACE)/$(CONTAINER_IMAGE_NAME):$(GIT_VERSION)-$(OS)-$(ARCH) \
 				--build-arg SERVICE_NAME=$(PROJECT_NAME) \
 				--build-arg GOOS=$(OS) \
@@ -305,6 +304,7 @@ container-build: ## Build the container image, requires make build-dist
 				--build-arg BUILD_DATE=$(BUILD_DATE) \
 				--build-arg BUILD_VERSION=$(GIT_VERSION) \
 				--build-arg DESCRIPTION="Container image for $(PROJECT_NAME)" \
+				--build-arg REPO_URL="https://github.com/$(PROJECT_NAMESPACE)/$(PROJECT_NAME)" \
 				--file ./Containerfile . \
 			) \
 		) \
@@ -330,7 +330,7 @@ container-publish: ## Publish the container image to the container registry
 		$(foreach OS, $(CONTAINER_OS), \
 			$(foreach ARCH, $(CONTAINER_ARCH), \
 				$(if $(findstring v, $(ARCH)), $(eval BIN_ARCH = arm64), $(eval BIN_ARCH = $(ARCH)) ) \
-				$(call exec_cmd, podman manifest add --os=$(OS) --arch=$(ARCH) $(REPO)/$(CONTAINER_NAMESPACE)/$(CONTAINER_IMAGE_NAME):$(GIT_VERSION) containers-storage:localhost/$(CONTAINER_NAMESPACE)/$(CONTAINER_IMAGE_NAME):$(GIT_VERSION)-$(OS)-$(ARCH) ) \
+				$(call exec_cmd, podman manifest add $(REPO)/$(CONTAINER_NAMESPACE)/$(CONTAINER_IMAGE_NAME):$(GIT_VERSION) containers-storage:localhost/$(CONTAINER_NAMESPACE)/$(CONTAINER_IMAGE_NAME):$(GIT_VERSION)-$(OS)-$(ARCH) ) \
 			) \
 		) \
 	)
