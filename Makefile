@@ -306,6 +306,7 @@ container-build: ## Build the container image, requires make build-dist
 				--build-arg GOARCH=$(ARCH) \
 				--build-arg BUILD_DATE=$(BUILD_DATE) \
 				--build-arg BUILD_VERSION=$(GIT_VERSION) \
+				--build-arg DESCRIPTION="Container image for $(PROJECT_NAME)" \
 				--file ./Containerfile . \
 			) \
 		) \

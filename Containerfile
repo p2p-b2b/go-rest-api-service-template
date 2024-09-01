@@ -6,13 +6,15 @@ FROM --platform=${TARGETPLATFORM:-linux/amd64} scratch
 ARG SERVICE_NAME
 ARG BUILD_DATE
 ARG BUILD_VERSION
+ARG DESCRIPTION
 ARG GOOS
 ARG GOARCH
 
 # https://github.com/opencontainers/image-spec/blob/main/annotations.md
-LABEL org.opencontainers.image.created=${BUILD_DATE}
-LABEL org.opencontainers.image.title=${SERVICE_NAME}
-LABEL org.opencontainers.image.version=$BUILD_VERSION
+LABEL org.opencontainers.image.created ${BUILD_DATE}
+LABEL org.opencontainers.image.title ${SERVICE_NAME}
+LABEL org.opencontainers.image.version $BUILD_VERSION
+LABEL org.opencontainers.image.description ${DESCRIPTION}
 
 # make available the service name in the container
 ENV SERVICE_NAME=${SERVICE_NAME}
