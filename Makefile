@@ -299,7 +299,6 @@ container-build: ## Build the container image, requires make build-dist
 				--platform $(OS)/$(BIN_ARCH) \
 				--tag $(CONTAINER_NAMESPACE)/$(CONTAINER_IMAGE_NAME):$(GIT_VERSION) \
 				--tag $(CONTAINER_NAMESPACE)/$(CONTAINER_IMAGE_NAME):$(GIT_VERSION)-$(OS)-$(ARCH) \
-				--tag $(CONTAINER_NAMESPACE)/$(CONTAINER_IMAGE_NAME):latest-$(OS)-$(ARCH) \
 				--build-arg SERVICE_NAME=$(PROJECT_NAME) \
 				--build-arg GOOS=$(OS) \
 				--build-arg GOARCH=$(ARCH) \
