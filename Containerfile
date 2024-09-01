@@ -24,6 +24,6 @@ ENV SERVICE_NAME=${SERVICE_NAME}
 WORKDIR /app
 ENV PATH="/app:${PATH}"
 
-COPY "dist/${SERVICE_NAME}-${GOOS}-${GOARCH}" /app/microservice
+COPY --chmod=755 "dist/${SERVICE_NAME}-${GOOS}-${GOARCH}" /app/microservice
 
 ENTRYPOINT ["/app/microservice"]
