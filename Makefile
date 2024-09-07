@@ -334,15 +334,6 @@ container-publish: ## Publish the container image to the container registry
 					$(REPO)/$(CONTAINER_NAMESPACE)/$(CONTAINER_IMAGE_NAME):$(GIT_VERSION) \
 					containers-storage:localhost/$(CONTAINER_NAMESPACE)/$(CONTAINER_IMAGE_NAME):$(GIT_VERSION)-$(OS)-$(ARCH) \
 				) \
-				$(call exec_cmd, podman manifest annotate \
-					--annotation "org.opencontainers.image.created=$(BUILD_DATE)" \
-					--annotation "org.opencontainers.image.title=$(PROJECT_NAME)" \
-					--annotation "org.opencontainers.image.version=$(GIT_VERSION)" \
-					--annotation "org.opencontainers.image.source=https://github.com/$(PROJECT_NAMESPACE)/$(PROJECT_NAME)" \
-					--annotation "org.opencontainers.image.description=Container image for $(PROJECT_NAME)" \
-					$(REPO)/$(CONTAINER_NAMESPACE)/$(CONTAINER_IMAGE_NAME):$(GIT_VERSION) \
-					containers-storage:localhost/$(CONTAINER_NAMESPACE)/$(CONTAINER_IMAGE_NAME):$(GIT_VERSION)-$(OS)-$(ARCH) \
-				) \
 			) \
 		) \
 	)
