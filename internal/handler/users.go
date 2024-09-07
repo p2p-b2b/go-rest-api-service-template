@@ -128,7 +128,6 @@ func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 		attribute.String("component", "handler.users"),
 		attribute.String("function", "GetByID"),
 		attribute.String("http.method", r.Method),
-		attribute.String("http.path", r.URL.Path[:strings.LastIndex(r.URL.Path, "/")]),
 	}
 
 	id, err := parseUUIDQueryParams(r.PathValue("user_id"))
@@ -236,7 +235,6 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 		attribute.String("component", "handler.users"),
 		attribute.String("function", "CreateUser"),
 		attribute.String("http.method", r.Method),
-		attribute.String("http.path", r.URL.Path[:strings.LastIndex(r.URL.Path, "/")]),
 	}
 
 	var req CreateUserRequest
@@ -350,7 +348,6 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 		attribute.String("component", "handler.users"),
 		attribute.String("function", "UpdateUser"),
 		attribute.String("http.method", r.Method),
-		attribute.String("http.path", r.URL.Path[:strings.LastIndex(r.URL.Path, "/")]),
 	}
 
 	id, err := parseUUIDQueryParams(r.PathValue("user_id"))
@@ -470,7 +467,6 @@ func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 		attribute.String("component", "handler.users"),
 		attribute.String("function", "DeleteUser"),
 		attribute.String("http.method", r.Method),
-		attribute.String("http.path", r.URL.Path[:strings.LastIndex(r.URL.Path, "/")]),
 	}
 
 	id, err := parseUUIDQueryParams(r.PathValue("user_id"))
@@ -547,7 +543,6 @@ func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 		attribute.String("component", "handler.users"),
 		attribute.String("function", "ListUsers"),
 		attribute.String("http.method", r.Method),
-		attribute.String("http.path", r.URL.Path[:strings.LastIndex(r.URL.Path, "/")]),
 	}
 
 	// parse the query parameters
