@@ -137,14 +137,12 @@ func (s *UserService) GetUserByID(ctx context.Context, id uuid.UUID) (*User, err
 	defer span.End()
 
 	span.SetAttributes(
-		attribute.String("component", "service.users"),
-		attribute.String("function", "GetUserByID"),
+		attribute.String("component", "service.users.GetUserByID"),
 		attribute.String("user.id", id.String()),
 	)
 
 	metricCommonAttributes := []attribute.KeyValue{
-		attribute.String("component", "service.users"),
-		attribute.String("function", "GetUserByID"),
+		attribute.String("component", "service.users.GetUserByID"),
 	}
 
 	if id == uuid.Nil {
@@ -217,14 +215,12 @@ func (s *UserService) CreateUser(ctx context.Context, user *CreateUserInput) err
 	defer span.End()
 
 	span.SetAttributes(
-		attribute.String("component", "service.users"),
-		attribute.String("function", "CreateUser"),
+		attribute.String("component", "service.users.CreateUser"),
 		attribute.String("user.email", user.Email),
 	)
 
 	metricCommonAttributes := []attribute.KeyValue{
-		attribute.String("component", "service.users"),
-		attribute.String("function", "CreateUser"),
+		attribute.String("component", "service.users.CreateUser"),
 	}
 
 	if user == nil {
@@ -305,14 +301,12 @@ func (s *UserService) UpdateUser(ctx context.Context, user *UpdateUserInput) err
 	defer span.End()
 
 	span.SetAttributes(
-		attribute.String("component", "service.users"),
-		attribute.String("function", "UpdateUser"),
+		attribute.String("component", "service.users.UpdateUser"),
 		attribute.String("user.id", user.ID.String()),
 	)
 
 	metricCommonAttributes := []attribute.KeyValue{
-		attribute.String("component", "service.users"),
-		attribute.String("function", "UpdateUser"),
+		attribute.String("component", "service.users.UpdateUser"),
 	}
 
 	if user == nil {
@@ -375,14 +369,12 @@ func (s *UserService) DeleteUser(ctx context.Context, user *DeleteUserInput) err
 	defer span.End()
 
 	span.SetAttributes(
-		attribute.String("component", "service.users"),
-		attribute.String("function", "DeleteUser"),
+		attribute.String("component", "service.users.DeleteUser"),
 		attribute.String("user.id", user.ID.String()),
 	)
 
 	metricCommonAttributes := []attribute.KeyValue{
-		attribute.String("component", "service.users"),
-		attribute.String("function", "DeleteUser"),
+		attribute.String("component", "service.users.DeleteUser"),
 	}
 
 	if user.ID == uuid.Nil {
@@ -430,8 +422,7 @@ func (s *UserService) ListUsers(ctx context.Context, params *ListUserInput) (*Li
 	defer span.End()
 
 	span.SetAttributes(
-		attribute.String("component", "service.users"),
-		attribute.String("function", "ListUsers"),
+		attribute.String("component", "service.users.ListUsers"),
 		attribute.String("sort", params.Sort),
 		attribute.StringSlice("fields", params.Fields),
 		attribute.String("filter", params.Filter),
@@ -439,8 +430,7 @@ func (s *UserService) ListUsers(ctx context.Context, params *ListUserInput) (*Li
 	)
 
 	metricCommonAttributes := []attribute.KeyValue{
-		attribute.String("component", "service.users"),
-		attribute.String("function", "ListUsers"),
+		attribute.String("component", "service.users.ListUsers"),
 	}
 
 	rParams := &repository.SelectUsersInput{

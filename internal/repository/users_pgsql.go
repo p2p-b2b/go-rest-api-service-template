@@ -114,15 +114,13 @@ func (r *PGSQLUserRepository) Insert(ctx context.Context, user *InsertUserInput)
 
 	span.SetAttributes(
 		attribute.String("driver", r.DriverName()),
-		attribute.String("component", "repository.user"),
-		attribute.String("function", "Insert"),
+		attribute.String("component", "repository.user.Insert"),
 		attribute.String("user.id", user.ID.String()),
 	)
 
 	metricCommonAttributes := []attribute.KeyValue{
 		attribute.String("driver", r.DriverName()),
-		attribute.String("component", "repository.user"),
-		attribute.String("function", "Insert"),
+		attribute.String("component", "repository.user.Insert"),
 	}
 
 	if user == nil {
@@ -196,15 +194,13 @@ func (r *PGSQLUserRepository) Update(ctx context.Context, user *UpdateUserInput)
 
 	span.SetAttributes(
 		attribute.String("driver", r.DriverName()),
-		attribute.String("component", "repository.user"),
-		attribute.String("function", "Update"),
+		attribute.String("component", "repository.user.Update"),
 		attribute.String("user.id", user.ID.String()),
 	)
 
 	metricCommonAttributes := []attribute.KeyValue{
 		attribute.String("driver", r.DriverName()),
-		attribute.String("component", "repository.user"),
-		attribute.String("function", "Update"),
+		attribute.String("component", "repository.user.Update"),
 	}
 
 	if user == nil {
@@ -315,15 +311,13 @@ func (r *PGSQLUserRepository) Delete(ctx context.Context, user *DeleteUserInput)
 
 	span.SetAttributes(
 		attribute.String("driver", r.DriverName()),
-		attribute.String("component", "repository.user"),
-		attribute.String("function", "Delete"),
+		attribute.String("component", "repository.user.Delete"),
 		attribute.String("user.id", user.ID.String()),
 	)
 
 	metricCommonAttributes := []attribute.KeyValue{
 		attribute.String("driver", r.DriverName()),
-		attribute.String("component", "repository.user"),
-		attribute.String("function", "Delete"),
+		attribute.String("component", "repository.user.Delete"),
 	}
 
 	if user == nil {
@@ -394,15 +388,13 @@ func (r *PGSQLUserRepository) SelectByID(ctx context.Context, id uuid.UUID) (*Us
 
 	span.SetAttributes(
 		attribute.String("driver", r.DriverName()),
-		attribute.String("component", "repository.user"),
-		attribute.String("function", "SelectByID"),
+		attribute.String("component", "repository.user.SelectByID"),
 		attribute.String("user.id", id.String()),
 	)
 
 	metricCommonAttributes := []attribute.KeyValue{
 		attribute.String("driver", r.DriverName()),
-		attribute.String("component", "repository.user"),
-		attribute.String("function", "SelectByID"),
+		attribute.String("component", "repository.user.SelectByID"),
 	}
 
 	if id == uuid.Nil {
@@ -461,8 +453,7 @@ func (r *PGSQLUserRepository) Select(ctx context.Context, params *SelectUsersInp
 
 	span.SetAttributes(
 		attribute.String("driver", r.DriverName()),
-		attribute.String("component", "repository.user"),
-		attribute.String("method", "Select"),
+		attribute.String("component", "repository.user.Select"),
 		attribute.String("user.sort", params.Sort),
 		attribute.String("user.filter", params.Filter),
 		attribute.Int("user.limit", params.Paginator.Limit),
@@ -471,8 +462,7 @@ func (r *PGSQLUserRepository) Select(ctx context.Context, params *SelectUsersInp
 
 	metricCommonAttributes := []attribute.KeyValue{
 		attribute.String("driver", r.DriverName()),
-		attribute.String("component", "repository.user"),
-		attribute.String("function", "Select"),
+		attribute.String("component", "repository.user.Select"),
 	}
 
 	if params == nil {
