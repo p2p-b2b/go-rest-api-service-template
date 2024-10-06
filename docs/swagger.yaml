@@ -326,7 +326,7 @@ paths:
         schema:
           $ref: '#/definitions/handler.UpdateUserRequest'
       produces:
-      - application/json
+      - text/plain
       responses:
         "200":
           description: OK
