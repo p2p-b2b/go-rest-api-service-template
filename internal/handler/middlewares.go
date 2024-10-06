@@ -1,8 +1,11 @@
-package middleware
+package handler
 
 import (
 	"log/slog"
 	"net/http"
+
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/propagation"
 )
 
 var APIVersion = "v1"
@@ -53,5 +56,16 @@ func Logging(next http.Handler) http.Handler {
 		next.ServeHTTP(wrapped, r)
 
 		slog.Info("request", "method", r.Method, "path", r.URL.Path, "address", r.RemoteAddr, "status", wrapped.status)
+	})
+}
+
+// OtelTextMapPropagation middleware propagates the OpenTelemetry context
+// from incoming requests to outgoing requests
+func OtelTextMapPropagation(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := otel.GetTextMapPropagator().Extract(
+			r.Context(), propagation.HeaderCarrier(r.Header),
+		)
+		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
