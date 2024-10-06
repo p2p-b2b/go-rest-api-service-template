@@ -242,8 +242,6 @@ func main() {
 		"username", DBConfig.Username.Value,
 		"name", DBConfig.Name.Value,
 		"ssl_mode", DBConfig.SSLMode.Value,
-	)
-	slog.Debug("database configuration",
 		"max_idle_conns", DBConfig.MaxIdleConns.Value,
 		"max_open_conns", DBConfig.MaxOpenConns.Value,
 		"conn_max_lifetime", DBConfig.ConnMaxLifetime.Value,
