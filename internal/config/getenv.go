@@ -20,6 +20,10 @@ func GetEnv[T any](key string, defaultValue T) T {
 			if durationValue, err := time.ParseDuration(value); err == nil {
 				return any(durationValue).(T)
 			}
+		case bool:
+			if boolValue, err := strconv.ParseBool(value); err == nil {
+				return any(boolValue).(T)
+			}
 
 		default:
 			return defaultValue

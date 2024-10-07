@@ -18,7 +18,6 @@ import (
 	"github.com/p2p-b2b/go-rest-api-service-template/docs"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/config"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/handler"
-	"github.com/p2p-b2b/go-rest-api-service-template/internal/middleware"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/o11y"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/repository"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/server"
@@ -243,8 +242,6 @@ func main() {
 		"username", DBConfig.Username.Value,
 		"name", DBConfig.Name.Value,
 		"ssl_mode", DBConfig.SSLMode.Value,
-	)
-	slog.Debug("database configuration",
 		"max_idle_conns", DBConfig.MaxIdleConns.Value,
 		"max_open_conns", DBConfig.MaxOpenConns.Value,
 		"conn_max_lifetime", DBConfig.ConnMaxLifetime.Value,
@@ -323,10 +320,11 @@ func main() {
 	}
 
 	// middleware chain
-	middleware.APIVersion = apiVersion
-	middlewares := middleware.Chain(
-		middleware.Logging,
-		middleware.HeaderAPIVersion,
+	handler.APIVersion = apiVersion
+	middlewares := handler.Chain(
+		handler.Logging,
+		handler.HeaderAPIVersion,
+		handler.OtelTextMapPropagation,
 	)
 
 	httpServer := server.NewHttpServer(
