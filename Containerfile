@@ -1,5 +1,8 @@
-FROM --platform=${TARGETPLATFORM:-linux/amd64} scratch
+# FROM --platform=${TARGETPLATFORM:-linux/amd64} scratch
 # FROM --platform=${TARGETPLATFORM:-linux/amd64} alpine:latest
+
+# https://github.com/GoogleContainerTools/distroless/blob/main/base/README.md
+FROM --platform=${TARGETPLATFORM:-linux/amd64} gcr.io/distroless/base
 
 # these parameters are required
 # example: --build-arg SERVICE_NAME=go-rest-api-service-template --build-arg GOOS=linux --build-arg GOARCH=arm64
