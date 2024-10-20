@@ -96,11 +96,12 @@ func (h *UserHandler) registerMetrics() error {
 
 // RegisterRoutes registers the routes for the user.
 func (h *UserHandler) RegisterRoutes(mux *http.ServeMux) {
+	mux.HandleFunc("GET /users", h.ListUsers)
+	mux.HandleFunc("POST /users", h.CreateUser)
+
 	mux.HandleFunc("GET /users/{user_id}", h.GetByID)
 	mux.HandleFunc("PUT /users/{user_id}", h.UpdateUser)
 	mux.HandleFunc("DELETE /users/{user_id}", h.DeleteUser)
-	mux.HandleFunc("POST /users", h.CreateUser)
-	mux.HandleFunc("GET /users", h.ListUsers)
 }
 
 // GetByID Get a user by ID
@@ -110,9 +111,9 @@ func (h *UserHandler) RegisterRoutes(mux *http.ServeMux) {
 // @Produce json
 // @Param user_id path string true "The user ID in UUID format"
 // @Success 200 {object} User
-// @Failure 400 {object} APIError
-// @Failure 404 {object} APIError
-// @Failure 500 {object} APIError
+// @Failure 400 {object} APIResponse
+// @Failure 404 {object} APIResponse
+// @Failure 500 {object} APIResponse
 // @Router /users/{user_id} [get]
 func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	ctx, span := h.ot.Traces.Tracer.Start(r.Context(), "handler.users.GetByID")
@@ -140,7 +141,7 @@ func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 			),
 		)
 
-		WriteError(w, r, http.StatusBadRequest, err.Error())
+		WriteJSONMessage(w, r, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -157,7 +158,7 @@ func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 				),
 			)
 
-			WriteError(w, r, http.StatusNotFound, err.Error())
+			WriteJSONMessage(w, r, http.StatusNotFound, err.Error())
 			return
 		}
 
@@ -167,7 +168,7 @@ func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 			),
 		)
 
-		WriteError(w, r, http.StatusInternalServerError, err.Error())
+		WriteJSONMessage(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -181,10 +182,7 @@ func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 		UpdatedAt: sUser.UpdatedAt,
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-
-	if err := json.NewEncoder(w).Encode(user); err != nil {
+	if err := WriteJSONData(w, http.StatusOK, user); err != nil {
 		span.SetStatus(codes.Error, err.Error())
 		span.RecordError(err)
 		slog.Error("handler.users.GetByID", "error", err.Error())
@@ -193,7 +191,8 @@ func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 				attribute.String("code", fmt.Sprintf("%d", http.StatusInternalServerError)),
 			),
 		)
-		WriteError(w, r, http.StatusInternalServerError, err.Error())
+
+		WriteJSONMessage(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -215,10 +214,10 @@ func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 // @Accept json
 // @Produce json
 // @Param user body CreateUserRequest true "CreateUserRequest"
-// @Success 201 {object} string
-// @Failure 400 {object} APIError
-// @Failure 409 {object} APIError
-// @Failure 500 {object} APIError
+// @Success 201 {object} APIResponse
+// @Failure 400 {object} APIResponse
+// @Failure 409 {object} APIResponse
+// @Failure 500 {object} APIResponse
 // @Router /users [post]
 func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	ctx, span := h.ot.Traces.Tracer.Start(r.Context(), "handler.users.CreateUser")
@@ -246,7 +245,7 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 			),
 		)
 
-		WriteError(w, r, http.StatusBadRequest, ErrBadRequest.Error())
+		WriteJSONMessage(w, r, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -264,7 +263,7 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 			),
 		)
 
-		WriteError(w, r, http.StatusBadRequest, err.Error())
+		WriteJSONMessage(w, r, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -290,7 +289,7 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 				),
 			)
 
-			WriteError(w, r, http.StatusConflict, err.Error())
+			WriteJSONMessage(w, r, http.StatusConflict, err.Error())
 			return
 		}
 
@@ -300,15 +299,9 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 			),
 		)
 
-		WriteError(w, r, http.StatusInternalServerError, ErrInternalServerError.Error())
+		WriteJSONMessage(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
-
-	w.Header().Set("Content-Type", "text/plain")
-	// Location header is required for RESTful APIs
-	w.Header().Set("Location", fmt.Sprintf("%s%s/%s", r.Header.Get("Origin"), r.RequestURI, user.ID.String()))
-
-	w.WriteHeader(http.StatusCreated)
 
 	span.SetStatus(codes.Ok, "User created")
 	span.SetAttributes(attribute.String("user.id", user.ID.String()))
@@ -317,6 +310,10 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 			append(metricCommonAttributes, attribute.String("code", fmt.Sprintf("%d", http.StatusCreated)))...,
 		),
 	)
+
+	// Location header is required for RESTful APIs
+	w.Header().Set("Location", fmt.Sprintf("%s%s/%s", r.Header.Get("Origin"), r.RequestURI, user.ID.String()))
+	WriteJSONMessage(w, r, http.StatusCreated, "User created")
 }
 
 // UpdateUser Update a user
@@ -324,13 +321,13 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 // @Description Update a user
 // @Tags users
 // @Accept json
-// @Produce text/plain
+// @Produce json
 // @Param user_id path string true "The user ID in UUID format"
 // @Param user body UpdateUserRequest true "User"
-// @Success 200 {object} string
-// @Failure 400 {object} APIError
-// @Failure 409 {object} APIError
-// @Failure 500 {object} APIError
+// @Success 200 {object} APIResponse
+// @Failure 400 {object} APIResponse
+// @Failure 409 {object} APIResponse
+// @Failure 500 {object} APIResponse
 // @Router /users/{user_id} [put]
 func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	ctx, span := h.ot.Traces.Tracer.Start(r.Context(), "handler.users.UpdateUser")
@@ -358,7 +355,7 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 			),
 		)
 
-		WriteError(w, r, http.StatusBadRequest, err.Error())
+		WriteJSONMessage(w, r, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -374,7 +371,7 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 			),
 		)
 
-		WriteError(w, r, http.StatusBadRequest, err.Error())
+		WriteJSONMessage(w, r, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -388,7 +385,7 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 			),
 		)
 
-		WriteError(w, r, http.StatusBadRequest, err.Error())
+		WriteJSONMessage(w, r, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -412,7 +409,7 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 				),
 			)
 
-			WriteError(w, r, http.StatusConflict, err.Error())
+			WriteJSONMessage(w, r, http.StatusConflict, err.Error())
 			return
 		}
 
@@ -422,14 +419,9 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 			),
 		)
 
-		WriteError(w, r, http.StatusInternalServerError, ErrInternalServerError.Error())
+		WriteJSONMessage(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
-
-	w.Header().Set("Content-Type", "text/plain")
-	// Location header is required for RESTful APIs
-	w.Header().Set("Location", fmt.Sprintf("%s%s", r.Header.Get("Origin"), r.RequestURI))
-	w.WriteHeader(http.StatusNoContent)
 
 	slog.Debug("handler.users.UpdateUser", "user", user)
 	span.SetStatus(codes.Ok, "User updated")
@@ -439,6 +431,10 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 			append(metricCommonAttributes, attribute.String("code", fmt.Sprintf("%d", http.StatusOK)))...,
 		),
 	)
+
+	// Location header is required for RESTful APIs
+	w.Header().Set("Location", fmt.Sprintf("%s%s", r.Header.Get("Origin"), r.RequestURI))
+	WriteJSONMessage(w, r, http.StatusOK, "User updated")
 }
 
 // DeleteUser Delete a user
@@ -446,9 +442,10 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 // @Description Delete a user
 // @Tags users
 // @Param user_id path string true "The user ID in UUID format"
-// @Success 200 {object} string
-// @Failure 400 {object} APIError
-// @Failure 500 {object} APIError
+// @Produce json
+// @Success 200 {object} APIResponse
+// @Failure 400 {object} APIResponse
+// @Failure 500 {object} APIResponse
 // @Router /users/{user_id} [delete]
 func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	ctx, span := h.ot.Traces.Tracer.Start(r.Context(), "handler.users.DeleteUser")
@@ -476,7 +473,7 @@ func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 			),
 		)
 
-		WriteError(w, r, http.StatusBadRequest, err.Error())
+		WriteJSONMessage(w, r, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -484,19 +481,17 @@ func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 		ID: id,
 	}
 
-	w.Header().Set("Content-Type", "text/plain")
-	w.WriteHeader(http.StatusOK)
 	if err := h.service.DeleteUser(ctx, &user); err != nil {
-		span.SetStatus(codes.Error, ErrInternalServerError.Error())
-		span.RecordError(ErrInternalServerError)
-		slog.Error("handler.users.DeleteUser", "error", ErrInternalServerError.Error())
+		span.SetStatus(codes.Error, err.Error())
+		span.RecordError(err)
+		slog.Error("handler.users.DeleteUser", "error", err.Error())
 		h.metrics.handlerCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				append(metricCommonAttributes, attribute.String("code", fmt.Sprintf("%d", http.StatusInternalServerError)))...,
 			),
 		)
 
-		WriteError(w, r, http.StatusInternalServerError, ErrInternalServerError.Error())
+		WriteJSONMessage(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -508,6 +503,8 @@ func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 			append(metricCommonAttributes, attribute.String("code", fmt.Sprintf("%d", http.StatusOK)))...,
 		),
 	)
+
+	WriteJSONMessage(w, r, http.StatusOK, "User deleted")
 }
 
 // ListUsers Return a paginated list of users
@@ -522,8 +519,8 @@ func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 // @Param prev_token query string false "Previous cursor"
 // @Param limit query int false "Limit"
 // @Success 200 {object} ListUsersResponse
-// @Failure 400 {object} APIError
-// @Failure 500 {object} APIError
+// @Failure 400 {object} APIResponse
+// @Failure 500 {object} APIResponse
 // @Router /users [get]
 func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 	ctx, span := h.ot.Traces.Tracer.Start(r.Context(), "handler.users.ListUsers")
@@ -566,7 +563,7 @@ func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 			),
 		)
 
-		WriteError(w, r, http.StatusBadRequest, err.Error())
+		WriteJSONMessage(w, r, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -592,7 +589,7 @@ func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 			),
 		)
 
-		WriteError(w, r, http.StatusInternalServerError, err.Error())
+		WriteJSONMessage(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -616,10 +613,7 @@ func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 	location := fmt.Sprintf("http://%s%s", r.Host, r.URL.Path)
 	users.Paginator.GeneratePages(location)
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-
-	if err := json.NewEncoder(w).Encode(users); err != nil {
+	if err := WriteJSONData(w, http.StatusOK, users); err != nil {
 		span.SetStatus(codes.Error, err.Error())
 		span.RecordError(err)
 		slog.Error("handler.users.ListUsers", "error", err.Error())
@@ -629,7 +623,7 @@ func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 			),
 		)
 
-		WriteError(w, r, http.StatusInternalServerError, err.Error())
+		WriteJSONMessage(w, r, http.StatusInternalServerError, err.Error())
 		return
 	}
 

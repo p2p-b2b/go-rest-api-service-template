@@ -322,6 +322,7 @@ func main() {
 	// middleware chain
 	handler.APIVersion = apiVersion
 	middlewares := handler.Chain(
+		handler.RewriteStandardErrorsAsJSON,
 		handler.Logging,
 		handler.HeaderAPIVersion,
 		handler.OtelTextMapPropagation,

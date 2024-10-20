@@ -1,8 +1,10 @@
 package handler
 
 import (
+	"encoding/json"
 	"log/slog"
 	"net/http"
+	"time"
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/propagation"
@@ -67,5 +69,95 @@ func OtelTextMapPropagation(next http.Handler) http.Handler {
 			r.Context(), propagation.HeaderCarrier(r.Header),
 		)
 		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+// statusResponseWriter records status of the HTTP response.
+// Thanks to:
+// - https://github.com/denpeshkov/greenlight/blob/c68f5a2111adcd5b1a65a06595acc93a02b6380e/internal/http/middleware.go#L16-L71
+// - https://github.com/golang/go/issues/65648
+type statusResponseWriter struct {
+	http.ResponseWriter
+	status int
+}
+
+// newStatusResponseWriter creates a new statusResponseWriter.
+func newStatusResponseWriter(w http.ResponseWriter) *statusResponseWriter {
+	// WriteHeader() is not called if our response implicitly returns 200 OK, so we default to that status code.
+	return &statusResponseWriter{
+		ResponseWriter: w,
+		status:         http.StatusOK,
+	}
+}
+
+// WriteHeader records the status code of the response.
+func (w *statusResponseWriter) WriteHeader(statusCode int) {
+	w.status = statusCode
+	w.ResponseWriter.WriteHeader(statusCode)
+}
+
+// Unwrap is used by a [http.ResponseController].
+func (w *statusResponseWriter) Unwrap() http.ResponseWriter {
+	return w.ResponseWriter
+}
+
+// customResponseWriter is a custom response writer that handles custom error responses.
+type customResponseWriter struct {
+	*statusResponseWriter
+	method string
+	path   string
+}
+
+// Write writes the response data.
+func (w *customResponseWriter) Write(data []byte) (n int, err error) {
+	var apiResponse APIResponse
+
+	switch w.statusResponseWriter.status {
+	case http.StatusNotFound:
+		if err := json.Unmarshal(data, &apiResponse); err != nil {
+			data, err = json.Marshal(
+				APIResponse{
+					Timestamp:  time.Now().UTC(),
+					StatusCode: http.StatusNotFound,
+					Message:    "Not Found",
+					Method:     w.method,
+					Path:       w.path,
+				},
+			)
+			if err != nil {
+				return 0, err
+			}
+		}
+
+	case http.StatusMethodNotAllowed:
+		if err := json.Unmarshal(data, &apiResponse); err != nil {
+			data, err = json.Marshal(
+				APIResponse{
+					Timestamp:  time.Now().UTC(),
+					StatusCode: http.StatusMethodNotAllowed,
+					Message:    "Method Not Allowed",
+					Method:     w.method,
+					Path:       w.path,
+				},
+			)
+			if err != nil {
+				return 0, err
+			}
+		}
+	}
+
+	return w.statusResponseWriter.Write(data)
+}
+
+// RewriteStandardErrorsAsJSON is a middleware that rewrites standard HTTP errors as JSON responses.
+func RewriteStandardErrorsAsJSON(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		newW := &customResponseWriter{
+			statusResponseWriter: newStatusResponseWriter(w),
+			method:               r.Method,
+			path:                 r.URL.Path,
+		}
+
+		h.ServeHTTP(newW, r)
 	})
 }

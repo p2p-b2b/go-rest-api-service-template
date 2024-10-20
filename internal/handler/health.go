@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"encoding/json"
 	"net/http"
 )
 
@@ -30,23 +29,19 @@ func (h *HealthHandler) RegisterRoutes(mux *http.ServeMux) {
 // @Tags service.health
 // @Produce json
 // @Success 200 {object} service.Health
-// @Failure 500 {object} APIError
+// @Failure 500 {object} APIResponse
 // @Router /health [get]
 // @Router /healthz [get]
 // @Router /status [get]
 func (h *HealthHandler) Get(w http.ResponseWriter, r *http.Request) {
 	health, err := h.service.UserHealthCheck(r.Context())
 	if err != nil {
-		WriteError(w, r, http.StatusInternalServerError, ErrInternalServerError.Error())
+		WriteJSONMessage(w, r, http.StatusInternalServerError, ErrInternalServerError.Error())
 		return
 	}
 
-	// write the response
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-
-	if err := json.NewEncoder(w).Encode(health); err != nil {
-		WriteError(w, r, http.StatusInternalServerError, ErrInternalServerError.Error())
+	if err := WriteJSONData(w, http.StatusOK, health); err != nil {
+		WriteJSONMessage(w, r, http.StatusInternalServerError, ErrInternalServerError.Error())
 		return
 	}
 }

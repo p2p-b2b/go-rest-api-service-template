@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"encoding/json"
 	"net/http"
 
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/version"
@@ -26,6 +25,7 @@ func (h *VersionHandler) RegisterRoutes(mux *http.ServeMux) {
 // @Tags version
 // @Produce json
 // @Success 200 {object} version.VersionInfo
+// @Failure 500 {object} APIResponse
 // @Router /version [get]
 func (h *VersionHandler) Get(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
@@ -40,8 +40,8 @@ func (h *VersionHandler) Get(w http.ResponseWriter, r *http.Request) {
 		GoVersionOS:   version.GoVersionOS,
 	}
 
-	if err := json.NewEncoder(w).Encode(v); err != nil {
-		WriteError(w, r, http.StatusInternalServerError, ErrInternalServerError.Error())
+	if err := WriteJSONData(w, http.StatusOK, v); err != nil {
+		WriteJSONMessage(w, r, http.StatusInternalServerError, ErrInternalServerError.Error())
 		return
 	}
 }

@@ -1,5 +1,5 @@
 definitions:
-  handler.APIError:
+  handler.APIResponse:
     properties:
       message:
         type: string
@@ -134,7 +134,7 @@ paths:
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handler.APIError'
+            $ref: '#/definitions/handler.APIResponse'
       summary: Get the health of the service
       tags:
       - service.health
@@ -151,7 +151,7 @@ paths:
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handler.APIError'
+            $ref: '#/definitions/handler.APIResponse'
       summary: Get the health of the service
       tags:
       - service.health
@@ -168,7 +168,7 @@ paths:
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handler.APIError'
+            $ref: '#/definitions/handler.APIResponse'
       summary: Get the health of the service
       tags:
       - service.health
@@ -211,11 +211,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handler.APIError'
+            $ref: '#/definitions/handler.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handler.APIError'
+            $ref: '#/definitions/handler.APIResponse'
       summary: List all users
       tags:
       - users
@@ -238,19 +238,19 @@ paths:
         "201":
           description: Created
           schema:
-            type: string
+            $ref: '#/definitions/handler.APIResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handler.APIError'
+            $ref: '#/definitions/handler.APIResponse'
         "409":
           description: Conflict
           schema:
-            $ref: '#/definitions/handler.APIError'
+            $ref: '#/definitions/handler.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handler.APIError'
+            $ref: '#/definitions/handler.APIResponse'
       summary: Create a new user.
       tags:
       - users
@@ -263,19 +263,21 @@ paths:
         name: user_id
         required: true
         type: string
+      produces:
+      - application/json
       responses:
         "200":
           description: OK
           schema:
-            type: string
+            $ref: '#/definitions/handler.APIResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handler.APIError'
+            $ref: '#/definitions/handler.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handler.APIError'
+            $ref: '#/definitions/handler.APIResponse'
       summary: Delete a user
       tags:
       - users
@@ -297,15 +299,15 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handler.APIError'
+            $ref: '#/definitions/handler.APIResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/handler.APIError'
+            $ref: '#/definitions/handler.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handler.APIError'
+            $ref: '#/definitions/handler.APIResponse'
       summary: Get a user by ID
       tags:
       - users
@@ -326,24 +328,24 @@ paths:
         schema:
           $ref: '#/definitions/handler.UpdateUserRequest'
       produces:
-      - text/plain
+      - application/json
       responses:
         "200":
           description: OK
           schema:
-            type: string
+            $ref: '#/definitions/handler.APIResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handler.APIError'
+            $ref: '#/definitions/handler.APIResponse'
         "409":
           description: Conflict
           schema:
-            $ref: '#/definitions/handler.APIError'
+            $ref: '#/definitions/handler.APIResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handler.APIError'
+            $ref: '#/definitions/handler.APIResponse'
       summary: Update a user
       tags:
       - users
@@ -357,6 +359,10 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/version.VersionInfo'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handler.APIResponse'
       summary: Get the version of the service
       tags:
       - version
