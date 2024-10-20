@@ -16,6 +16,7 @@ This is a template for a Go HTTP REST API Service.
 - [x] Validation with [go-playground/validator](https://github.com/go-playground/validator)
 - [x] Allow filtering, sorting, pagination and partial responses
 - [x] Middleware for logging and headers versioning
+- [x] Return JSON as default response, even for standard http library errors
 
 ## References
 

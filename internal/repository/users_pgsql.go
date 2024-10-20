@@ -170,9 +170,7 @@ func (r *PGSQLUserRepository) Insert(ctx context.Context, user *InsertUserInput)
 			),
 		)
 
-		// remove the SQLSTATE XXXXX suffix
-		errMessage := strings.TrimSpace(strings.Split(err.Error(), "(SQLSTATE")[0])
-		return fmt.Errorf("%s", errMessage)
+		return err
 	}
 
 	span.SetStatus(codes.Ok, "user inserted successfully")
@@ -665,9 +663,7 @@ func (r *PGSQLUserRepository) Select(ctx context.Context, params *SelectUsersInp
 			),
 		)
 
-		// remove the SQLSTATE XXXXX suffix
-		errMessage := strings.TrimSpace(strings.Split(err.Error(), "(SQLSTATE")[0])
-		return nil, fmt.Errorf("%s", errMessage)
+		return nil, err
 	}
 	defer rows.Close()
 

@@ -52,7 +52,7 @@ func TestUser_GetUserByID(t *testing.T) {
 			method       string
 			pathPattern  string
 			pathValue    string
-			apiError     APIError
+			apiError     APIResponse
 			apiResponse  User
 			plainMessage string
 			plainCode    int
@@ -65,7 +65,7 @@ func TestUser_GetUserByID(t *testing.T) {
 				method:      http.MethodGet,
 				pathPattern: "/users/{user_id}",
 				pathValue:   "/users/InvalidUUID",
-				apiError: APIError{
+				apiError: APIResponse{
 					Method:     "GET",
 					Path:       "/users/InvalidUUID",
 					StatusCode: http.StatusBadRequest,
@@ -78,7 +78,7 @@ func TestUser_GetUserByID(t *testing.T) {
 				method:      http.MethodGet,
 				pathPattern: "/users/{user_id}",
 				pathValue:   "/users/" + uuid.Nil.String(),
-				apiError: APIError{
+				apiError: APIResponse{
 					Method:     "GET",
 					Path:       "/users/" + uuid.Nil.String(),
 					StatusCode: http.StatusBadRequest,
@@ -100,7 +100,7 @@ func TestUser_GetUserByID(t *testing.T) {
 				method:      http.MethodGet,
 				pathPattern: "/users/{user_id}",
 				pathValue:   "/users/''",
-				apiError: APIError{
+				apiError: APIResponse{
 					Method:     "GET",
 					Path:       "/users/''",
 					StatusCode: http.StatusBadRequest,
@@ -113,7 +113,7 @@ func TestUser_GetUserByID(t *testing.T) {
 				method:      http.MethodGet,
 				pathPattern: "/users/{user_id}",
 				pathValue:   "/users/e1cdf461-87c7-465f-a374-dc6bc7e962b9",
-				apiError: APIError{
+				apiError: APIResponse{
 					Method:     "GET",
 					Path:       "/users/e1cdf461-87c7-465f-a374-dc6bc7e962b9",
 					StatusCode: http.StatusInternalServerError,
@@ -194,7 +194,7 @@ func TestUser_GetUserByID(t *testing.T) {
 				if !startsWith(w.Code, 2) {
 
 					// when plain message is set, we don't expect a JSON response
-					if tc.apiError == (APIError{}) {
+					if tc.apiError == (APIResponse{}) {
 						if w.Code != tc.plainCode {
 							t.Errorf("expected status code %d, got %d", tc.plainCode, w.Code)
 						}
@@ -211,7 +211,7 @@ func TestUser_GetUserByID(t *testing.T) {
 					}
 
 					// decode the response
-					var apiError APIError
+					var apiError APIResponse
 					if err := json.Unmarshal(w.Body.Bytes(), &apiError); err != nil {
 						t.Logf("body = %s", w.Body.Bytes())
 

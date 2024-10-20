@@ -270,16 +270,18 @@ func (s *UserService) CreateUser(ctx context.Context, user *CreateUserInput) err
 			),
 		)
 
-		pgxErr, ok := err.(*pgconn.PgError)
-		if ok {
-			if pgxErr.Code == "23505" {
-				if strings.Contains(pgxErr.Message, "_pkey") {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) {
+			if pgErr.Code == "23505" {
+				if strings.Contains(pgErr.Message, "_pkey") {
 					return ErrUserIDAlreadyExists
 				}
 
-				if strings.Contains(pgxErr.Message, "_email") {
+				if strings.Contains(pgErr.Message, "_email") {
 					return ErrUserEmailAlreadyExists
 				}
+
+				return ErrCreatingUser
 			}
 		}
 
@@ -337,10 +339,10 @@ func (s *UserService) UpdateUser(ctx context.Context, user *UpdateUserInput) err
 			),
 		)
 
-		pgxErr, ok := err.(*pgconn.PgError)
-		if ok {
-			if pgxErr.Code == "23505" {
-				if strings.Contains(pgxErr.Message, "_email") {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) {
+			if pgErr.Code == "23505" {
+				if strings.Contains(pgErr.Message, "_email") {
 					return ErrUserEmailAlreadyExists
 				}
 			}
@@ -452,6 +454,7 @@ func (s *UserService) ListUsers(ctx context.Context, params *ListUserInput) (*Li
 				append(metricCommonAttributes, attribute.String("successful", "false"))...,
 			),
 		)
+
 		return nil, err
 	}
 
