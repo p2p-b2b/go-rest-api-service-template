@@ -137,13 +137,13 @@ func init() {
 
 	switch strings.ToLower(LogConfig.Level.Value) {
 	case "debug":
-		logHandlerOptions = &slog.HandlerOptions{Level: slog.LevelDebug}
+		logHandlerOptions = &slog.HandlerOptions{Level: slog.LevelDebug, AddSource: true}
 	case "info":
 		logHandlerOptions = &slog.HandlerOptions{Level: slog.LevelInfo}
 	case "warn":
 		logHandlerOptions = &slog.HandlerOptions{Level: slog.LevelWarn}
 	case "error":
-		logHandlerOptions = &slog.HandlerOptions{Level: slog.LevelError}
+		logHandlerOptions = &slog.HandlerOptions{Level: slog.LevelError, AddSource: true}
 	default:
 		slog.Error("invalid log level", "level", LogConfig.Level.Value)
 	}
