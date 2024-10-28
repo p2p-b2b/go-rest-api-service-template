@@ -96,15 +96,15 @@ func (h *UserHandler) registerMetrics() error {
 
 // RegisterRoutes registers the routes for the user.
 func (h *UserHandler) RegisterRoutes(mux *http.ServeMux) {
-	mux.HandleFunc("GET /users", h.ListUsers)
-	mux.HandleFunc("POST /users", h.CreateUser)
+	mux.HandleFunc("GET /users", h.listUsers)
+	mux.HandleFunc("POST /users", h.createUser)
 
-	mux.HandleFunc("GET /users/{user_id}", h.GetByID)
-	mux.HandleFunc("PUT /users/{user_id}", h.UpdateUser)
-	mux.HandleFunc("DELETE /users/{user_id}", h.DeleteUser)
+	mux.HandleFunc("GET /users/{user_id}", h.getByID)
+	mux.HandleFunc("PUT /users/{user_id}", h.updateUser)
+	mux.HandleFunc("DELETE /users/{user_id}", h.deleteUser)
 }
 
-// GetByID Get a user by ID
+// getByID Get a user by ID
 // @Summary Get a user by ID
 // @Description Get a user by ID
 // @Tags users
@@ -115,7 +115,7 @@ func (h *UserHandler) RegisterRoutes(mux *http.ServeMux) {
 // @Failure 404 {object} APIResponse
 // @Failure 500 {object} APIResponse
 // @Router /users/{user_id} [get]
-func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
+func (h *UserHandler) getByID(w http.ResponseWriter, r *http.Request) {
 	ctx, span := h.ot.Traces.Tracer.Start(r.Context(), "handler.users.GetByID")
 	defer span.End()
 
@@ -206,7 +206,7 @@ func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	)
 }
 
-// CreateUser Create a new user
+// createUser Create a new user
 // @Summary Create a new user.
 // @Description Create a new user from scratch.
 // @Description If the id is not provided, it will be generated automatically.
@@ -219,7 +219,7 @@ func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 // @Failure 409 {object} APIResponse
 // @Failure 500 {object} APIResponse
 // @Router /users [post]
-func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
+func (h *UserHandler) createUser(w http.ResponseWriter, r *http.Request) {
 	ctx, span := h.ot.Traces.Tracer.Start(r.Context(), "handler.users.CreateUser")
 	defer span.End()
 
@@ -316,7 +316,7 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	WriteJSONMessage(w, r, http.StatusCreated, "User created")
 }
 
-// UpdateUser Update a user
+// updateUser Update a user
 // @Summary Update a user
 // @Description Update a user
 // @Tags users
@@ -329,7 +329,7 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 // @Failure 409 {object} APIResponse
 // @Failure 500 {object} APIResponse
 // @Router /users/{user_id} [put]
-func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
+func (h *UserHandler) updateUser(w http.ResponseWriter, r *http.Request) {
 	ctx, span := h.ot.Traces.Tracer.Start(r.Context(), "handler.users.UpdateUser")
 	defer span.End()
 
@@ -437,7 +437,7 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	WriteJSONMessage(w, r, http.StatusOK, "User updated")
 }
 
-// DeleteUser Delete a user
+// deleteUser Delete a user
 // @Summary Delete a user
 // @Description Delete a user
 // @Tags users
@@ -447,7 +447,7 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 // @Failure 400 {object} APIResponse
 // @Failure 500 {object} APIResponse
 // @Router /users/{user_id} [delete]
-func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
+func (h *UserHandler) deleteUser(w http.ResponseWriter, r *http.Request) {
 	ctx, span := h.ot.Traces.Tracer.Start(r.Context(), "handler.users.DeleteUser")
 	defer span.End()
 
@@ -507,7 +507,7 @@ func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	WriteJSONMessage(w, r, http.StatusOK, "User deleted")
 }
 
-// ListUsers Return a paginated list of users
+// listUsers Return a paginated list of users
 // @Summary List all users
 // @Description List all users
 // @Tags users
@@ -522,7 +522,7 @@ func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 // @Failure 400 {object} APIResponse
 // @Failure 500 {object} APIResponse
 // @Router /users [get]
-func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
+func (h *UserHandler) listUsers(w http.ResponseWriter, r *http.Request) {
 	ctx, span := h.ot.Traces.Tracer.Start(r.Context(), "handler.users.ListUsers")
 	defer span.End()
 

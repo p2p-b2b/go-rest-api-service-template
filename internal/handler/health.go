@@ -18,12 +18,12 @@ func NewHealthHandler(us UserService) *HealthHandler {
 
 // RegisterRoutes registers the routes for the handler.
 func (h *HealthHandler) RegisterRoutes(mux *http.ServeMux) {
-	mux.HandleFunc("/health", h.Get)
-	mux.HandleFunc("/healthz", h.Get)
-	mux.HandleFunc("/status", h.Get)
+	mux.HandleFunc("/health", h.get)
+	mux.HandleFunc("/healthz", h.get)
+	mux.HandleFunc("/status", h.get)
 }
 
-// Get returns the health of the service
+// get returns the health of the service
 // @Summary Get the health of the service
 // @Description Get the health of the service
 // @Tags service.health
@@ -33,7 +33,7 @@ func (h *HealthHandler) RegisterRoutes(mux *http.ServeMux) {
 // @Router /health [get]
 // @Router /healthz [get]
 // @Router /status [get]
-func (h *HealthHandler) Get(w http.ResponseWriter, r *http.Request) {
+func (h *HealthHandler) get(w http.ResponseWriter, r *http.Request) {
 	health, err := h.service.UserHealthCheck(r.Context())
 	if err != nil {
 		WriteJSONMessage(w, r, http.StatusInternalServerError, ErrInternalServerError.Error())

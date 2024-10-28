@@ -16,10 +16,10 @@ func NewVersionHandler() *VersionHandler {
 
 // RegisterRoutes registers the routes for the version of the service.
 func (h *VersionHandler) RegisterRoutes(mux *http.ServeMux) {
-	mux.HandleFunc("GET /version", h.Get)
+	mux.HandleFunc("GET /version", h.get)
 }
 
-// Get returns the version of the service
+// get returns the version of the service
 // @Summary Get the version of the service
 // @Description Get the version of the service
 // @Tags version
@@ -27,7 +27,7 @@ func (h *VersionHandler) RegisterRoutes(mux *http.ServeMux) {
 // @Success 200 {object} version.VersionInfo
 // @Failure 500 {object} APIResponse
 // @Router /version [get]
-func (h *VersionHandler) Get(w http.ResponseWriter, r *http.Request) {
+func (h *VersionHandler) get(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	v := version.VersionInfo{

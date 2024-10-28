@@ -186,7 +186,7 @@ func TestUser_GetUserByID(t *testing.T) {
 				// When
 				mux := http.NewServeMux()
 				h := NewUserHandler(userHandlerConf)
-				mux.HandleFunc(handlerPattern, h.GetByID)
+				mux.HandleFunc(handlerPattern, h.getByID)
 				mux.ServeHTTP(w, r)
 
 				// Then
