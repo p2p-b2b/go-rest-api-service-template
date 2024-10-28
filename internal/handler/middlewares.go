@@ -14,14 +14,31 @@ var APIVersion = "v1"
 
 type Middleware func(http.Handler) http.Handler
 
+// Thanks to:
+// - https://github.com/denpeshkov/greenlight/blob/c68f5a2111adcd5b1a65a06595acc93a02b6380e/internal/http/middleware.go#L16-L71
+// - https://github.com/golang/go/issues/65648
 type wrappedResponseWriter struct {
 	http.ResponseWriter
 	status int
 }
 
+// newWrappedResponseWriter creates a new statusResponseWriter.
+func newWrappedResponseWriter(w http.ResponseWriter) *wrappedResponseWriter {
+	// WriteHeader() is not called if our response implicitly returns 200 OK, so we default to that status code.
+	return &wrappedResponseWriter{
+		ResponseWriter: w,
+		status:         http.StatusOK,
+	}
+}
+
 func (w *wrappedResponseWriter) WriteHeader(status int) {
 	w.ResponseWriter.WriteHeader(status)
 	w.status = status
+}
+
+// Unwrap is used by a [http.ResponseController].
+func (w *wrappedResponseWriter) Unwrap() http.ResponseWriter {
+	return w.ResponseWriter
 }
 
 // Chain applies middlewares to an http.Handler
@@ -72,38 +89,9 @@ func OtelTextMapPropagation(next http.Handler) http.Handler {
 	})
 }
 
-// statusResponseWriter records status of the HTTP response.
-// Thanks to:
-// - https://github.com/denpeshkov/greenlight/blob/c68f5a2111adcd5b1a65a06595acc93a02b6380e/internal/http/middleware.go#L16-L71
-// - https://github.com/golang/go/issues/65648
-type statusResponseWriter struct {
-	http.ResponseWriter
-	status int
-}
-
-// newStatusResponseWriter creates a new statusResponseWriter.
-func newStatusResponseWriter(w http.ResponseWriter) *statusResponseWriter {
-	// WriteHeader() is not called if our response implicitly returns 200 OK, so we default to that status code.
-	return &statusResponseWriter{
-		ResponseWriter: w,
-		status:         http.StatusOK,
-	}
-}
-
-// WriteHeader records the status code of the response.
-func (w *statusResponseWriter) WriteHeader(statusCode int) {
-	w.status = statusCode
-	w.ResponseWriter.WriteHeader(statusCode)
-}
-
-// Unwrap is used by a [http.ResponseController].
-func (w *statusResponseWriter) Unwrap() http.ResponseWriter {
-	return w.ResponseWriter
-}
-
 // customResponseWriter is a custom response writer that handles custom error responses.
 type customResponseWriter struct {
-	*statusResponseWriter
+	*wrappedResponseWriter
 	method string
 	path   string
 }
@@ -112,7 +100,7 @@ type customResponseWriter struct {
 func (w *customResponseWriter) Write(data []byte) (n int, err error) {
 	var apiResponse APIResponse
 
-	switch w.statusResponseWriter.status {
+	switch w.wrappedResponseWriter.status {
 	case http.StatusNotFound:
 		if err := json.Unmarshal(data, &apiResponse); err != nil {
 			data, err = json.Marshal(
@@ -146,16 +134,16 @@ func (w *customResponseWriter) Write(data []byte) (n int, err error) {
 		}
 	}
 
-	return w.statusResponseWriter.Write(data)
+	return w.wrappedResponseWriter.Write(data)
 }
 
 // RewriteStandardErrorsAsJSON is a middleware that rewrites standard HTTP errors as JSON responses.
 func RewriteStandardErrorsAsJSON(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		newW := &customResponseWriter{
-			statusResponseWriter: newStatusResponseWriter(w),
-			method:               r.Method,
-			path:                 r.URL.Path,
+			wrappedResponseWriter: newWrappedResponseWriter(w),
+			method:                r.Method,
+			path:                  r.URL.Path,
 		}
 
 		h.ServeHTTP(newW, r)
