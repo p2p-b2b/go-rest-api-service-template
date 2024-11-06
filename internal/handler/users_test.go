@@ -11,13 +11,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/golang/mock/gomock"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/uuid"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/config"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/o11y"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/service"
 	mocksService "github.com/p2p-b2b/go-rest-api-service-template/mocks/handler"
+	gomock "go.uber.org/mock/gomock"
 )
 
 func startsWith(value int, start int) bool {
