@@ -25,10 +25,10 @@ import (
 type UserService interface {
 	UserHealthCheck(ctx context.Context) (service.Health, error)
 	GetUserByID(ctx context.Context, id uuid.UUID) (*service.User, error)
-	CreateUser(ctx context.Context, user *service.CreateUserInput) error
-	UpdateUser(ctx context.Context, user *service.UpdateUserInput) error
-	DeleteUser(ctx context.Context, user *service.DeleteUserInput) error
-	ListUsers(ctx context.Context, params *service.ListUserInput) (*service.ListUsersOutput, error)
+	CreateUser(ctx context.Context, input *service.CreateUserInput) error
+	UpdateUser(ctx context.Context, input *service.UpdateUserInput) error
+	DeleteUser(ctx context.Context, input *service.DeleteUserInput) error
+	ListUsers(ctx context.Context, input *service.ListUserInput) (*service.ListUsersOutput, error)
 }
 
 // UserHandler represents the handler for the user.
@@ -116,17 +116,17 @@ func (h *UserHandler) RegisterRoutes(mux *http.ServeMux) {
 // @Failure 500 {object} APIResponse
 // @Router /users/{user_id} [get]
 func (h *UserHandler) getByID(w http.ResponseWriter, r *http.Request) {
-	ctx, span := h.ot.Traces.Tracer.Start(r.Context(), "handler.users.GetByID")
+	ctx, span := h.ot.Traces.Tracer.Start(r.Context(), "handler.users.getByID")
 	defer span.End()
 
 	span.SetAttributes(
-		attribute.String("component", "handler.users.GetByID"),
+		attribute.String("component", "handler.users.getByID"),
 		attribute.String("http.method", r.Method),
 		attribute.String("http.path", r.URL.Path[:strings.LastIndex(r.URL.Path, "/")]),
 	)
 
 	metricCommonAttributes := []attribute.KeyValue{
-		attribute.String("component", "handler.users.GetByID"),
+		attribute.String("component", "handler.users.getByID"),
 		attribute.String("http.method", r.Method),
 	}
 
@@ -134,7 +134,7 @@ func (h *UserHandler) getByID(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		span.SetStatus(codes.Error, err.Error())
 		span.RecordError(err)
-		slog.Error("handler.users.GetByID", "error", err.Error())
+		slog.Error("handler.users.getByID", "error", err.Error())
 		h.metrics.handlerCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				append(metricCommonAttributes, attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)))...,
@@ -149,7 +149,7 @@ func (h *UserHandler) getByID(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		span.SetStatus(codes.Error, err.Error())
 		span.RecordError(err)
-		slog.Error("handler.users.GetByID", "error", err.Error())
+		slog.Error("handler.users.getByID", "error", err.Error())
 
 		if errors.Is(err, service.ErrUserNotFound) {
 			h.metrics.handlerCalls.Add(ctx, 1,
@@ -185,7 +185,7 @@ func (h *UserHandler) getByID(w http.ResponseWriter, r *http.Request) {
 	if err := WriteJSONData(w, http.StatusOK, user); err != nil {
 		span.SetStatus(codes.Error, err.Error())
 		span.RecordError(err)
-		slog.Error("handler.users.GetByID", "error", err.Error())
+		slog.Error("handler.users.getByID", "error", err.Error())
 		h.metrics.handlerCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				attribute.String("code", fmt.Sprintf("%d", http.StatusInternalServerError)),
@@ -196,7 +196,7 @@ func (h *UserHandler) getByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	slog.Debug("handler.users.GetByID", "user", user)
+	slog.Debug("handler.users.getByID", "user", user)
 	span.SetStatus(codes.Ok, "User found")
 	span.SetAttributes(attribute.String("user.id", user.ID.String()))
 	h.metrics.handlerCalls.Add(ctx, 1,
@@ -220,17 +220,17 @@ func (h *UserHandler) getByID(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} APIResponse
 // @Router /users [post]
 func (h *UserHandler) createUser(w http.ResponseWriter, r *http.Request) {
-	ctx, span := h.ot.Traces.Tracer.Start(r.Context(), "handler.users.CreateUser")
+	ctx, span := h.ot.Traces.Tracer.Start(r.Context(), "handler.users.createUser")
 	defer span.End()
 
 	span.SetAttributes(
-		attribute.String("component", "handler.users.CreateUser"),
+		attribute.String("component", "handler.users.createUser"),
 		attribute.String("http.method", r.Method),
 		attribute.String("http.path", r.URL.Path[:strings.LastIndex(r.URL.Path, "/")]),
 	)
 
 	metricCommonAttributes := []attribute.KeyValue{
-		attribute.String("component", "handler.users.CreateUser"),
+		attribute.String("component", "handler.users.createUser"),
 		attribute.String("http.method", r.Method),
 	}
 
@@ -238,7 +238,7 @@ func (h *UserHandler) createUser(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		span.SetStatus(codes.Error, err.Error())
 		span.RecordError(err)
-		slog.Error("handler.users.CreateUser", "error", err.Error())
+		slog.Error("handler.users.createUser", "error", err.Error())
 		h.metrics.handlerCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				append(metricCommonAttributes, attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)))...,
@@ -256,7 +256,7 @@ func (h *UserHandler) createUser(w http.ResponseWriter, r *http.Request) {
 	if err := req.Validate(); err != nil {
 		span.SetStatus(codes.Error, err.Error())
 		span.RecordError(err)
-		slog.Error("handler.users.CreateUser", "error", err.Error())
+		slog.Error("handler.users.createUser", "error", err.Error())
 		h.metrics.handlerCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				append(metricCommonAttributes, attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)))...,
@@ -274,11 +274,11 @@ func (h *UserHandler) createUser(w http.ResponseWriter, r *http.Request) {
 		Email:     req.Email,
 	}
 
-	slog.Debug("handler.users.CreateUser", "user", user)
+	slog.Debug("handler.users.createUser", "user", user)
 	if err := h.service.CreateUser(ctx, user); err != nil {
 		span.SetStatus(codes.Error, err.Error())
 		span.RecordError(err)
-		slog.Error("handler.users.CreateUser", "error", err.Error())
+		slog.Error("handler.users.createUser", "error", err.Error())
 
 		if errors.Is(err, service.ErrUserIDAlreadyExists) ||
 			errors.Is(err, service.ErrUserEmailAlreadyExists) {
@@ -330,17 +330,17 @@ func (h *UserHandler) createUser(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} APIResponse
 // @Router /users/{user_id} [put]
 func (h *UserHandler) updateUser(w http.ResponseWriter, r *http.Request) {
-	ctx, span := h.ot.Traces.Tracer.Start(r.Context(), "handler.users.UpdateUser")
+	ctx, span := h.ot.Traces.Tracer.Start(r.Context(), "handler.users.updateUser")
 	defer span.End()
 
 	span.SetAttributes(
-		attribute.String("component", "handler.users.UpdateUser"),
+		attribute.String("component", "handler.users.updateUser"),
 		attribute.String("http.method", r.Method),
 		attribute.String("http.path", r.URL.Path[:strings.LastIndex(r.URL.Path, "/")]),
 	)
 
 	metricCommonAttributes := []attribute.KeyValue{
-		attribute.String("component", "handler.users.UpdateUser"),
+		attribute.String("component", "handler.users.updateUser"),
 		attribute.String("http.method", r.Method),
 	}
 
@@ -348,7 +348,7 @@ func (h *UserHandler) updateUser(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		span.SetStatus(codes.Error, err.Error())
 		span.RecordError(err)
-		slog.Error("handler.users.UpdateUser", "error", err.Error())
+		slog.Error("handler.users.updateUser", "error", err.Error())
 		h.metrics.handlerCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				append(metricCommonAttributes, attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)))...,
@@ -363,7 +363,7 @@ func (h *UserHandler) updateUser(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		span.SetStatus(codes.Error, err.Error())
 		span.RecordError(err)
-		slog.Error("handler.users.UpdateUser", "error", err.Error())
+		slog.Error("handler.users.updateUser", "error", err.Error())
 
 		h.metrics.handlerCalls.Add(ctx, 1,
 			metric.WithAttributes(
@@ -378,7 +378,7 @@ func (h *UserHandler) updateUser(w http.ResponseWriter, r *http.Request) {
 	if err := req.Validate(); err != nil {
 		span.SetStatus(codes.Error, err.Error())
 		span.RecordError(err)
-		slog.Error("handler.users.UpdateUser", "error", err.Error())
+		slog.Error("handler.users.updateUser", "error", err.Error())
 		h.metrics.handlerCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				append(metricCommonAttributes, attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)))...,
@@ -399,7 +399,7 @@ func (h *UserHandler) updateUser(w http.ResponseWriter, r *http.Request) {
 	if err := h.service.UpdateUser(ctx, &user); err != nil {
 		span.SetStatus(codes.Error, ErrInternalServerError.Error())
 		span.RecordError(ErrInternalServerError)
-		slog.Error("handler.users.UpdateUser", "error", ErrInternalServerError.Error())
+		slog.Error("handler.users.updateUser", "error", ErrInternalServerError.Error())
 
 		if errors.Is(err, service.ErrUserEmailAlreadyExists) ||
 			errors.Is(err, service.ErrUserNotFound) {
@@ -423,7 +423,7 @@ func (h *UserHandler) updateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	slog.Debug("handler.users.UpdateUser", "user", user)
+	slog.Debug("handler.users.updateUser", "user", user)
 	span.SetStatus(codes.Ok, "User updated")
 	span.SetAttributes(attribute.String("user.id", user.ID.String()))
 	h.metrics.handlerCalls.Add(ctx, 1,
@@ -448,17 +448,17 @@ func (h *UserHandler) updateUser(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} APIResponse
 // @Router /users/{user_id} [delete]
 func (h *UserHandler) deleteUser(w http.ResponseWriter, r *http.Request) {
-	ctx, span := h.ot.Traces.Tracer.Start(r.Context(), "handler.users.DeleteUser")
+	ctx, span := h.ot.Traces.Tracer.Start(r.Context(), "handler.users.deleteUser")
 	defer span.End()
 
 	span.SetAttributes(
-		attribute.String("component", "handler.users.DeleteUser"),
+		attribute.String("component", "handler.users.deleteUser"),
 		attribute.String("http.method", r.Method),
 		attribute.String("http.path", r.URL.Path[:strings.LastIndex(r.URL.Path, "/")]),
 	)
 
 	metricCommonAttributes := []attribute.KeyValue{
-		attribute.String("component", "handler.users.DeleteUser"),
+		attribute.String("component", "handler.users.deleteUser"),
 		attribute.String("http.method", r.Method),
 	}
 
@@ -466,7 +466,7 @@ func (h *UserHandler) deleteUser(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		span.SetStatus(codes.Error, err.Error())
 		span.RecordError(err)
-		slog.Error("handler.users.DeleteUser", "error", err.Error())
+		slog.Error("handler.users.deleteUser", "error", err.Error())
 		h.metrics.handlerCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				append(metricCommonAttributes, attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)))...,
@@ -484,7 +484,7 @@ func (h *UserHandler) deleteUser(w http.ResponseWriter, r *http.Request) {
 	if err := h.service.DeleteUser(ctx, &user); err != nil {
 		span.SetStatus(codes.Error, err.Error())
 		span.RecordError(err)
-		slog.Error("handler.users.DeleteUser", "error", err.Error())
+		slog.Error("handler.users.deleteUser", "error", err.Error())
 		h.metrics.handlerCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				append(metricCommonAttributes, attribute.String("code", fmt.Sprintf("%d", http.StatusInternalServerError)))...,
@@ -495,7 +495,7 @@ func (h *UserHandler) deleteUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	slog.Debug("handler.users.DeleteUser", "user", user)
+	slog.Debug("handler.users.deleteUser", "user", user)
 	span.SetStatus(codes.Ok, "User deleted")
 	span.SetAttributes(attribute.String("user.id", id.String()))
 	h.metrics.handlerCalls.Add(ctx, 1,
@@ -523,17 +523,17 @@ func (h *UserHandler) deleteUser(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} APIResponse
 // @Router /users [get]
 func (h *UserHandler) listUsers(w http.ResponseWriter, r *http.Request) {
-	ctx, span := h.ot.Traces.Tracer.Start(r.Context(), "handler.users.ListUsers")
+	ctx, span := h.ot.Traces.Tracer.Start(r.Context(), "handler.users.listUsers")
 	defer span.End()
 
 	span.SetAttributes(
-		attribute.String("component", "handler.users.ListUsers"),
+		attribute.String("component", "handler.users.listUsers"),
 		attribute.String("http.method", r.Method),
 		attribute.String("http.path", r.URL.Path[:strings.LastIndex(r.URL.Path, "/")]),
 	)
 
 	metricCommonAttributes := []attribute.KeyValue{
-		attribute.String("component", "handler.users.ListUsers"),
+		attribute.String("component", "handler.users.listUsers"),
 		attribute.String("http.method", r.Method),
 	}
 
@@ -556,7 +556,7 @@ func (h *UserHandler) listUsers(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		span.SetStatus(codes.Error, err.Error())
 		span.RecordError(err)
-		slog.Error("handler.users.ListUsers", "error", err.Error())
+		slog.Error("handler.users.listUsers", "error", err.Error())
 		h.metrics.handlerCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				append(metricCommonAttributes, attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)))...,
@@ -582,7 +582,7 @@ func (h *UserHandler) listUsers(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		span.SetStatus(codes.Error, err.Error())
 		span.RecordError(err)
-		slog.Error("handler.users.ListUsers", "error", err.Error())
+		slog.Error("handler.users.listUsers", "error", err.Error())
 		h.metrics.handlerCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				append(metricCommonAttributes, attribute.String("code", fmt.Sprintf("%d", http.StatusInternalServerError)))...,
@@ -616,7 +616,7 @@ func (h *UserHandler) listUsers(w http.ResponseWriter, r *http.Request) {
 	if err := WriteJSONData(w, http.StatusOK, users); err != nil {
 		span.SetStatus(codes.Error, err.Error())
 		span.RecordError(err)
-		slog.Error("handler.users.ListUsers", "error", err.Error())
+		slog.Error("handler.users.listUsers", "error", err.Error())
 		h.metrics.handlerCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				append(metricCommonAttributes, attribute.String("code", fmt.Sprintf("%d", http.StatusInternalServerError)))...,
@@ -627,7 +627,7 @@ func (h *UserHandler) listUsers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	slog.Debug("handler.users.ListUsers: called", "users", len(users.Items))
+	slog.Debug("handler.users.listUsers: called", "users", len(users.Items))
 	span.SetStatus(codes.Ok, "list users")
 	span.SetAttributes(attribute.Int("users.count", len(users.Items)))
 	h.metrics.handlerCalls.Add(ctx, 1,

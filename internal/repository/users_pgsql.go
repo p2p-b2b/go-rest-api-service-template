@@ -105,7 +105,7 @@ func (r *PGSQLUserRepository) PingContext(ctx context.Context) error {
 }
 
 // Insert a new user into the database.
-func (r *PGSQLUserRepository) Insert(ctx context.Context, user *InsertUserInput) error {
+func (r *PGSQLUserRepository) Insert(ctx context.Context, input *InsertUserInput) error {
 	ctx, cancel := context.WithTimeout(ctx, r.maxQueryTimeout)
 	defer cancel()
 
@@ -115,7 +115,7 @@ func (r *PGSQLUserRepository) Insert(ctx context.Context, user *InsertUserInput)
 	span.SetAttributes(
 		attribute.String("driver", r.DriverName()),
 		attribute.String("component", "repository.user.Insert"),
-		attribute.String("user.id", user.ID.String()),
+		attribute.String("user.id", input.ID.String()),
 	)
 
 	metricCommonAttributes := []attribute.KeyValue{
@@ -123,7 +123,7 @@ func (r *PGSQLUserRepository) Insert(ctx context.Context, user *InsertUserInput)
 		attribute.String("component", "repository.user.Insert"),
 	}
 
-	if user == nil {
+	if input == nil {
 		span.SetStatus(codes.Error, ErrUserIsNil.Error())
 		span.RecordError(ErrUserIsNil)
 		slog.Error("repository.users.Insert", "error", ErrUserIsNil.Error())
@@ -136,7 +136,7 @@ func (r *PGSQLUserRepository) Insert(ctx context.Context, user *InsertUserInput)
 		return ErrUserIsNil
 	}
 
-	if err := user.Validate(); err != nil {
+	if err := input.Validate(); err != nil {
 		span.SetStatus(codes.Error, err.Error())
 		span.RecordError(err)
 		slog.Error("repository.users.Insert", "error", err)
@@ -151,10 +151,10 @@ func (r *PGSQLUserRepository) Insert(ctx context.Context, user *InsertUserInput)
 	query := fmt.Sprintf(`
         INSERT INTO users (id, first_name, last_name, email)
         VALUES ('%s', '%s', '%s', '%s')`,
-		user.ID,
-		user.FirstName,
-		user.LastName,
-		user.Email,
+		input.ID,
+		input.FirstName,
+		input.LastName,
+		input.Email,
 	)
 
 	slog.Debug("repository.users.Insert", "query", prettyPrint(query))
@@ -174,6 +174,7 @@ func (r *PGSQLUserRepository) Insert(ctx context.Context, user *InsertUserInput)
 	}
 
 	span.SetStatus(codes.Ok, "user inserted successfully")
+	span.SetAttributes(attribute.String("user.id", input.ID.String()))
 	r.metrics.repositoryCalls.Add(ctx, 1,
 		metric.WithAttributes(
 			append(metricCommonAttributes, attribute.String("successful", "true"))...,
@@ -183,7 +184,7 @@ func (r *PGSQLUserRepository) Insert(ctx context.Context, user *InsertUserInput)
 }
 
 // Update updates the user with the specified ID.
-func (r *PGSQLUserRepository) Update(ctx context.Context, user *UpdateUserInput) error {
+func (r *PGSQLUserRepository) Update(ctx context.Context, input *UpdateUserInput) error {
 	ctx, cancel := context.WithTimeout(ctx, r.maxQueryTimeout)
 	defer cancel()
 
@@ -193,7 +194,7 @@ func (r *PGSQLUserRepository) Update(ctx context.Context, user *UpdateUserInput)
 	span.SetAttributes(
 		attribute.String("driver", r.DriverName()),
 		attribute.String("component", "repository.user.Update"),
-		attribute.String("user.id", user.ID.String()),
+		attribute.String("user.id", input.ID.String()),
 	)
 
 	metricCommonAttributes := []attribute.KeyValue{
@@ -201,7 +202,7 @@ func (r *PGSQLUserRepository) Update(ctx context.Context, user *UpdateUserInput)
 		attribute.String("component", "repository.user.Update"),
 	}
 
-	if user == nil {
+	if input == nil {
 		span.SetStatus(codes.Error, ErrUserIsNil.Error())
 		span.RecordError(ErrUserIsNil)
 		slog.Error("repository.users.Update", "error", "user is nil")
@@ -214,7 +215,7 @@ func (r *PGSQLUserRepository) Update(ctx context.Context, user *UpdateUserInput)
 		return ErrUserIsNil
 	}
 
-	if err := user.Validate(); err != nil {
+	if err := input.Validate(); err != nil {
 		span.SetStatus(codes.Error, err.Error())
 		span.RecordError(err)
 		slog.Error("repository.users.Update", "error", err)
@@ -229,16 +230,16 @@ func (r *PGSQLUserRepository) Update(ctx context.Context, user *UpdateUserInput)
 
 	var queryFields []string
 
-	if user.FirstName != nil && *user.FirstName != "" {
-		queryFields = append(queryFields, fmt.Sprintf("first_name = '%s'", *user.FirstName))
+	if input.FirstName != nil && *input.FirstName != "" {
+		queryFields = append(queryFields, fmt.Sprintf("first_name = '%s'", *input.FirstName))
 	}
 
-	if user.LastName != nil && *user.LastName != "" {
-		queryFields = append(queryFields, fmt.Sprintf("last_name = '%s'", *user.LastName))
+	if input.LastName != nil && *input.LastName != "" {
+		queryFields = append(queryFields, fmt.Sprintf("last_name = '%s'", *input.LastName))
 	}
 
-	if user.Email != nil && *user.Email != "" {
-		queryFields = append(queryFields, fmt.Sprintf("email = '%s'", *user.Email))
+	if input.Email != nil && *input.Email != "" {
+		queryFields = append(queryFields, fmt.Sprintf("email = '%s'", *input.Email))
 	}
 
 	if len(queryFields) == 0 {
@@ -257,7 +258,7 @@ func (r *PGSQLUserRepository) Update(ctx context.Context, user *UpdateUserInput)
         UPDATE users SET %s
         WHERE id = '%s'`,
 		fields,
-		user.ID,
+		input.ID,
 	)
 
 	slog.Debug("repository.users.Update", "query", prettyPrint(query))
@@ -290,6 +291,7 @@ func (r *PGSQLUserRepository) Update(ctx context.Context, user *UpdateUserInput)
 	}
 
 	span.SetStatus(codes.Ok, "user updated successfully")
+	span.SetAttributes(attribute.String("user.id", input.ID.String()))
 	r.metrics.repositoryCalls.Add(ctx, 1,
 		metric.WithAttributes(
 			append(metricCommonAttributes, attribute.String("successful", "true"))...,
@@ -300,7 +302,7 @@ func (r *PGSQLUserRepository) Update(ctx context.Context, user *UpdateUserInput)
 }
 
 // Delete deletes the user with the specified ID.
-func (r *PGSQLUserRepository) Delete(ctx context.Context, user *DeleteUserInput) error {
+func (r *PGSQLUserRepository) Delete(ctx context.Context, input *DeleteUserInput) error {
 	ctx, cancel := context.WithTimeout(ctx, r.maxQueryTimeout)
 	defer cancel()
 
@@ -310,7 +312,7 @@ func (r *PGSQLUserRepository) Delete(ctx context.Context, user *DeleteUserInput)
 	span.SetAttributes(
 		attribute.String("driver", r.DriverName()),
 		attribute.String("component", "repository.user.Delete"),
-		attribute.String("user.id", user.ID.String()),
+		attribute.String("user.id", input.ID.String()),
 	)
 
 	metricCommonAttributes := []attribute.KeyValue{
@@ -318,7 +320,7 @@ func (r *PGSQLUserRepository) Delete(ctx context.Context, user *DeleteUserInput)
 		attribute.String("component", "repository.user.Delete"),
 	}
 
-	if user == nil {
+	if input == nil {
 		span.SetStatus(codes.Error, ErrUserIsNil.Error())
 		span.RecordError(ErrUserIsNil)
 		slog.Error("repository.users.Delete", "error", "user is nil")
@@ -331,7 +333,7 @@ func (r *PGSQLUserRepository) Delete(ctx context.Context, user *DeleteUserInput)
 		return ErrUserIsNil
 	}
 
-	if err := user.Validate(); err != nil {
+	if err := input.Validate(); err != nil {
 		span.SetStatus(codes.Error, err.Error())
 		span.RecordError(err)
 		slog.Error("repository.users.Delete", "error", err)
@@ -347,7 +349,7 @@ func (r *PGSQLUserRepository) Delete(ctx context.Context, user *DeleteUserInput)
 	query := fmt.Sprintf(`
         DELETE FROM users
         WHERE id = '%s'`,
-		user.ID,
+		input.ID,
 	)
 
 	slog.Debug("repository.users.Delete", "query", prettyPrint(query))
@@ -367,6 +369,7 @@ func (r *PGSQLUserRepository) Delete(ctx context.Context, user *DeleteUserInput)
 	}
 
 	span.SetStatus(codes.Ok, "user deleted successfully")
+	span.SetAttributes(attribute.String("user.id", input.ID.String()))
 	r.metrics.repositoryCalls.Add(ctx, 1,
 		metric.WithAttributes(
 			append(metricCommonAttributes, attribute.String("successful", "true"))...,
@@ -442,7 +445,7 @@ func (r *PGSQLUserRepository) SelectByID(ctx context.Context, id uuid.UUID) (*Us
 	return &u, nil
 }
 
-func (r *PGSQLUserRepository) Select(ctx context.Context, params *SelectUsersInput) (*SelectUsersOutput, error) {
+func (r *PGSQLUserRepository) Select(ctx context.Context, input *SelectUsersInput) (*SelectUsersOutput, error) {
 	ctx, cancel := context.WithTimeout(ctx, r.maxQueryTimeout)
 	defer cancel()
 
@@ -452,10 +455,10 @@ func (r *PGSQLUserRepository) Select(ctx context.Context, params *SelectUsersInp
 	span.SetAttributes(
 		attribute.String("driver", r.DriverName()),
 		attribute.String("component", "repository.user.Select"),
-		attribute.String("user.sort", params.Sort),
-		attribute.String("user.filter", params.Filter),
-		attribute.Int("user.limit", params.Paginator.Limit),
-		attribute.String("user.fields", strings.Join(params.Fields, ",")),
+		attribute.String("user.sort", input.Sort),
+		attribute.String("user.filter", input.Filter),
+		attribute.Int("user.limit", input.Paginator.Limit),
+		attribute.String("user.fields", strings.Join(input.Fields, ",")),
 	)
 
 	metricCommonAttributes := []attribute.KeyValue{
@@ -463,25 +466,25 @@ func (r *PGSQLUserRepository) Select(ctx context.Context, params *SelectUsersInp
 		attribute.String("component", "repository.user.Select"),
 	}
 
-	if params == nil {
-		span.SetStatus(codes.Error, ErrFunctionParameterIsNil.Error())
-		span.RecordError(ErrFunctionParameterIsNil)
-		slog.Error("repository.users.Select", "error", "params is nil")
+	if input == nil {
+		span.SetStatus(codes.Error, ErrFunctionInputIsNil.Error())
+		span.RecordError(ErrFunctionInputIsNil)
+		slog.Error("repository.users.Select", "error", ErrFunctionInputIsNil)
 		r.metrics.repositoryCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				append(metricCommonAttributes, attribute.String("successful", "false"))...,
 			),
 		)
-		return nil, ErrFunctionParameterIsNil
+		return nil, ErrFunctionInputIsNil
 	}
 
 	// if no fields are provided, select all fields
 	sqlFieldsPrefix := "usrs."
 	fieldsStr := sqlFieldsPrefix + "*"
-	if params.Fields[0] != "" {
+	if input.Fields[0] != "" {
 		fields := make([]string, 0)
 		var isIsPresent bool
-		for _, field := range params.Fields {
+		for _, field := range input.Fields {
 			fields = append(fields, sqlFieldsPrefix+field)
 			if field == "id" {
 				isIsPresent = true
@@ -498,8 +501,8 @@ func (r *PGSQLUserRepository) Select(ctx context.Context, params *SelectUsersInp
 	}
 
 	var filterQuery string
-	if params.Filter != "" {
-		filter, err := query.PrefixFilterFields(params.Filter, sqlFieldsPrefix)
+	if input.Filter != "" {
+		filter, err := query.PrefixFilterFields(input.Filter, sqlFieldsPrefix)
 		if err != nil {
 			span.SetStatus(codes.Error, err.Error())
 			span.RecordError(err)
@@ -517,10 +520,10 @@ func (r *PGSQLUserRepository) Select(ctx context.Context, params *SelectUsersInp
 	}
 
 	var sortQuery string
-	if params.Sort == "" {
+	if input.Sort == "" {
 		sortQuery = "usrs.serial_id DESC, usrs.id DESC"
 	} else {
-		sortQuery = params.Sort
+		sortQuery = input.Sort
 	}
 
 	// query template
@@ -550,7 +553,7 @@ func (r *PGSQLUserRepository) Select(ctx context.Context, params *SelectUsersInp
 	queryValues.TableAlias = "usrs"
 	queryValues.QueryColumns = fieldsStr
 	queryValues.QueryWhere = template.HTML(filterQuery)
-	queryValues.QueryLimit = params.Paginator.Limit
+	queryValues.QueryLimit = input.Paginator.Limit
 	queryValues.QueryInternalSort = "usrs.serial_id DESC, usrs.id DESC"
 	queryValues.QueryExternalSort = sortQuery
 
@@ -560,19 +563,19 @@ func (r *PGSQLUserRepository) Select(ctx context.Context, params *SelectUsersInp
 	}
 
 	// if both next and prev tokens are provided, use next token
-	if params.Paginator.NextToken != "" && params.Paginator.PrevToken != "" {
+	if input.Paginator.NextToken != "" && input.Paginator.PrevToken != "" {
 		slog.Warn("repository.user.Select",
 			"message",
 			"both next and prev tokens are provided, going to use next token")
 
 		// clean the prev token
-		params.Paginator.PrevToken = ""
+		input.Paginator.PrevToken = ""
 	}
 
 	// if next token is provided
-	if params.Paginator.NextToken != "" {
+	if input.Paginator.NextToken != "" {
 		// decode the token
-		id, serial, err := paginator.DecodeToken(params.Paginator.NextToken)
+		id, serial, err := paginator.DecodeToken(input.Paginator.NextToken)
 		if err != nil {
 			slog.Error("repository.user.Select", "error", err)
 			span.SetStatus(codes.Error, "invalid token")
@@ -602,9 +605,9 @@ func (r *PGSQLUserRepository) Select(ctx context.Context, params *SelectUsersInp
 	}
 
 	// if prev token is provided
-	if params.Paginator.PrevToken != "" {
+	if input.Paginator.PrevToken != "" {
 		// decode the token
-		id, serial, err := paginator.DecodeToken(params.Paginator.PrevToken)
+		id, serial, err := paginator.DecodeToken(input.Paginator.PrevToken)
 		if err != nil {
 			slog.Error("repository.user.Select", "error", err)
 			span.SetStatus(codes.Error, "invalid token")
@@ -673,12 +676,12 @@ func (r *PGSQLUserRepository) Select(ctx context.Context, params *SelectUsersInp
 
 		scanFields := make([]interface{}, 0)
 
-		if params.Fields[0] == "" {
+		if input.Fields[0] == "" {
 			scanFields = []interface{}{&u.ID, &u.FirstName, &u.LastName, &u.Email, &u.CreatedAt, &u.UpdatedAt, &u.SerialID}
 		} else {
 			var idFound bool
 
-			for _, field := range params.Fields {
+			for _, field := range input.Fields {
 				switch field {
 				case "id":
 					scanFields = append(scanFields, &u.ID)
@@ -738,7 +741,7 @@ func (r *PGSQLUserRepository) Select(ctx context.Context, params *SelectUsersInp
 
 	nextToken, prevToken := paginator.GetTokens(
 		outLen,
-		params.Paginator.Limit,
+		input.Paginator.Limit,
 		users[0].ID,
 		users[0].SerialID,
 		users[outLen-1].ID,
@@ -749,7 +752,7 @@ func (r *PGSQLUserRepository) Select(ctx context.Context, params *SelectUsersInp
 		Items: users,
 		Paginator: paginator.Paginator{
 			Size:      outLen,
-			Limit:     params.Paginator.Limit,
+			Limit:     input.Paginator.Limit,
 			NextToken: nextToken,
 			PrevToken: prevToken,
 		},

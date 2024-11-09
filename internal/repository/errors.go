@@ -10,7 +10,7 @@ var (
 	ErrAtLeastOneFieldMustBeUpdated = errors.New("at least one field must be updated")
 	ErrUserNotFound                 = errors.New("user not found")
 	ErrUserIsNil                    = errors.New("user is nil")
-	ErrFunctionParameterIsNil       = errors.New("function parameter is nil")
+	ErrFunctionInputIsNil           = errors.New("function parameter is nil")
 )
 
 var (

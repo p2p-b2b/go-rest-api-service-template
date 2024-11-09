@@ -26,11 +26,11 @@ type UserRepository interface {
 	Close() error
 	PingContext(ctx context.Context) error
 	Conn(ctx context.Context) (*sql.Conn, error)
-	Insert(ctx context.Context, user *repository.InsertUserInput) error
-	Update(ctx context.Context, user *repository.UpdateUserInput) error
-	Delete(ctx context.Context, user *repository.DeleteUserInput) error
+	Insert(ctx context.Context, input *repository.InsertUserInput) error
+	Update(ctx context.Context, input *repository.UpdateUserInput) error
+	Delete(ctx context.Context, input *repository.DeleteUserInput) error
 	SelectByID(ctx context.Context, id uuid.UUID) (*repository.User, error)
-	Select(ctx context.Context, params *repository.SelectUsersInput) (*repository.SelectUsersOutput, error)
+	Select(ctx context.Context, input *repository.SelectUsersInput) (*repository.SelectUsersOutput, error)
 }
 
 type UserServiceConf struct {
@@ -210,20 +210,20 @@ func (s *UserService) GetUserByID(ctx context.Context, id uuid.UUID) (*User, err
 }
 
 // CreateUser inserts a new user into the database.
-func (s *UserService) CreateUser(ctx context.Context, user *CreateUserInput) error {
+func (s *UserService) CreateUser(ctx context.Context, input *CreateUserInput) error {
 	ctx, span := s.ot.Traces.Tracer.Start(ctx, "service.users.CreateUser")
 	defer span.End()
 
 	span.SetAttributes(
 		attribute.String("component", "service.users.CreateUser"),
-		attribute.String("user.email", user.Email),
+		attribute.String("user.email", input.Email),
 	)
 
 	metricCommonAttributes := []attribute.KeyValue{
 		attribute.String("component", "service.users.CreateUser"),
 	}
 
-	if user == nil {
+	if input == nil {
 		span.SetStatus(codes.Error, ErrCreatingUser.Error())
 		span.RecordError(ErrCreatingUser)
 		s.metrics.serviceCalls.Add(ctx, 1,
@@ -234,13 +234,12 @@ func (s *UserService) CreateUser(ctx context.Context, user *CreateUserInput) err
 		return ErrCreatingUser
 	}
 
-	// if user.ID is nil, generate a new UUID
-	if user.ID == uuid.Nil {
-		user.ID = uuid.New()
+	if input.ID == uuid.Nil {
+		input.ID = uuid.New()
 	}
 
 	// validate the user input
-	if err := user.Validate(); err != nil {
+	if err := input.Validate(); err != nil {
 		span.SetStatus(codes.Error, err.Error())
 		span.RecordError(err)
 		slog.Error("service.users.CreateUser", "error", err)
@@ -254,10 +253,10 @@ func (s *UserService) CreateUser(ctx context.Context, user *CreateUserInput) err
 	}
 
 	rParams := &repository.InsertUserInput{
-		ID:        user.ID,
-		FirstName: user.FirstName,
-		LastName:  user.LastName,
-		Email:     user.Email,
+		ID:        input.ID,
+		FirstName: input.FirstName,
+		LastName:  input.LastName,
+		Email:     input.Email,
 	}
 
 	if err := s.repository.Insert(ctx, rParams); err != nil {
@@ -298,20 +297,20 @@ func (s *UserService) CreateUser(ctx context.Context, user *CreateUserInput) err
 }
 
 // UpdateUser updates the user with the specified ID.
-func (s *UserService) UpdateUser(ctx context.Context, user *UpdateUserInput) error {
+func (s *UserService) UpdateUser(ctx context.Context, input *UpdateUserInput) error {
 	ctx, span := s.ot.Traces.Tracer.Start(ctx, "service.users.UpdateUser")
 	defer span.End()
 
 	span.SetAttributes(
 		attribute.String("component", "service.users.UpdateUser"),
-		attribute.String("user.id", user.ID.String()),
+		attribute.String("user.id", input.ID.String()),
 	)
 
 	metricCommonAttributes := []attribute.KeyValue{
 		attribute.String("component", "service.users.UpdateUser"),
 	}
 
-	if user == nil {
+	if input == nil {
 		span.SetStatus(codes.Error, ErrUpdatingUser.Error())
 		span.RecordError(ErrUpdatingUser)
 		s.metrics.serviceCalls.Add(ctx, 1,
@@ -323,10 +322,10 @@ func (s *UserService) UpdateUser(ctx context.Context, user *UpdateUserInput) err
 	}
 
 	rParams := &repository.UpdateUserInput{
-		ID:        user.ID,
-		FirstName: user.FirstName,
-		LastName:  user.LastName,
-		Email:     user.Email,
+		ID:        input.ID,
+		FirstName: input.FirstName,
+		LastName:  input.LastName,
+		Email:     input.Email,
 	}
 
 	if err := s.repository.Update(ctx, rParams); err != nil {
@@ -356,6 +355,7 @@ func (s *UserService) UpdateUser(ctx context.Context, user *UpdateUserInput) err
 	}
 
 	span.SetStatus(codes.Ok, "User updated")
+	span.SetAttributes(attribute.String("user.id", input.ID.String()))
 	s.metrics.serviceCalls.Add(ctx, 1,
 		metric.WithAttributes(
 			append(metricCommonAttributes, attribute.String("successful", "true"))...,
@@ -366,20 +366,20 @@ func (s *UserService) UpdateUser(ctx context.Context, user *UpdateUserInput) err
 }
 
 // DeleteUser deletes the user with the specified ID.
-func (s *UserService) DeleteUser(ctx context.Context, user *DeleteUserInput) error {
+func (s *UserService) DeleteUser(ctx context.Context, input *DeleteUserInput) error {
 	ctx, span := s.ot.Traces.Tracer.Start(ctx, "service.users.DeleteUser")
 	defer span.End()
 
 	span.SetAttributes(
 		attribute.String("component", "service.users.DeleteUser"),
-		attribute.String("user.id", user.ID.String()),
+		attribute.String("user.id", input.ID.String()),
 	)
 
 	metricCommonAttributes := []attribute.KeyValue{
 		attribute.String("component", "service.users.DeleteUser"),
 	}
 
-	if user.ID == uuid.Nil {
+	if input.ID == uuid.Nil {
 		span.SetStatus(codes.Error, ErrDeletingUser.Error())
 		span.RecordError(ErrDeletingUser)
 		s.metrics.serviceCalls.Add(ctx, 1,
@@ -391,7 +391,7 @@ func (s *UserService) DeleteUser(ctx context.Context, user *DeleteUserInput) err
 	}
 
 	rParams := &repository.DeleteUserInput{
-		ID: user.ID,
+		ID: input.ID,
 	}
 
 	slog.Debug("service.users.DeleteUser", "qParams", rParams)
@@ -409,6 +409,7 @@ func (s *UserService) DeleteUser(ctx context.Context, user *DeleteUserInput) err
 	}
 
 	span.SetStatus(codes.Ok, "User deleted")
+	span.SetAttributes(attribute.String("user.id", input.ID.String()))
 	s.metrics.serviceCalls.Add(ctx, 1,
 		metric.WithAttributes(
 			append(metricCommonAttributes, attribute.String("successful", "true"))...,
@@ -419,16 +420,16 @@ func (s *UserService) DeleteUser(ctx context.Context, user *DeleteUserInput) err
 }
 
 // ListUsers returns a list of users.
-func (s *UserService) ListUsers(ctx context.Context, params *ListUserInput) (*ListUsersOutput, error) {
+func (s *UserService) ListUsers(ctx context.Context, input *ListUserInput) (*ListUsersOutput, error) {
 	ctx, span := s.ot.Traces.Tracer.Start(ctx, "service.users.ListUsers")
 	defer span.End()
 
 	span.SetAttributes(
 		attribute.String("component", "service.users.ListUsers"),
-		attribute.String("sort", params.Sort),
-		attribute.StringSlice("fields", params.Fields),
-		attribute.String("filter", params.Filter),
-		attribute.Int("limit", params.Paginator.Limit),
+		attribute.String("sort", input.Sort),
+		attribute.StringSlice("fields", input.Fields),
+		attribute.String("filter", input.Filter),
+		attribute.Int("limit", input.Paginator.Limit),
 	)
 
 	metricCommonAttributes := []attribute.KeyValue{
@@ -436,10 +437,10 @@ func (s *UserService) ListUsers(ctx context.Context, params *ListUserInput) (*Li
 	}
 
 	rParams := &repository.SelectUsersInput{
-		Sort:      params.Sort,
-		Filter:    params.Filter,
-		Fields:    params.Fields,
-		Paginator: params.Paginator,
+		Sort:      input.Sort,
+		Filter:    input.Filter,
+		Fields:    input.Fields,
+		Paginator: input.Paginator,
 	}
 
 	slog.Debug("service.users.ListUsers", "qParams", rParams)
