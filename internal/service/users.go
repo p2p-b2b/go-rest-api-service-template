@@ -199,7 +199,9 @@ func (s *UserService) GetUserByID(ctx context.Context, id uuid.UUID) (*User, err
 		UpdatedAt: qryOut.UpdatedAt,
 	}
 
+	slog.Debug("service.users.GetUserByID", "email", user.Email)
 	span.SetStatus(codes.Ok, "user found")
+	span.SetAttributes(attribute.String("user.email", user.Email))
 	s.metrics.serviceCalls.Add(ctx, 1,
 		metric.WithAttributes(
 			append(metricCommonAttributes, attribute.String("successful", "true"))...,
@@ -287,7 +289,9 @@ func (s *UserService) CreateUser(ctx context.Context, input *CreateUserInput) er
 		return ErrCreatingUser
 	}
 
+	slog.Debug("service.users.CreateUser", "email", input.Email)
 	span.SetStatus(codes.Ok, "User created")
+	span.SetAttributes(attribute.String("user.email", input.Email))
 	s.metrics.serviceCalls.Add(ctx, 1,
 		metric.WithAttributes(
 			append(metricCommonAttributes, attribute.String("successful", "true"))...,
@@ -354,6 +358,7 @@ func (s *UserService) UpdateUser(ctx context.Context, input *UpdateUserInput) er
 		return ErrUpdatingUser
 	}
 
+	slog.Debug("service.users.UpdateUser", "email", input.Email)
 	span.SetStatus(codes.Ok, "User updated")
 	span.SetAttributes(attribute.String("user.id", input.ID.String()))
 	s.metrics.serviceCalls.Add(ctx, 1,
@@ -483,6 +488,7 @@ func (s *UserService) ListUsers(ctx context.Context, input *ListUserInput) (*Lis
 		}
 	}
 
+	slog.Debug("service.users.ListUsers", "users", len(users))
 	span.SetStatus(codes.Ok, "Users found")
 	s.metrics.serviceCalls.Add(ctx, 1,
 		metric.WithAttributes(

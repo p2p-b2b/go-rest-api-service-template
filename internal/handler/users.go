@@ -128,6 +128,7 @@ func (h *UserHandler) getByID(w http.ResponseWriter, r *http.Request) {
 	metricCommonAttributes := []attribute.KeyValue{
 		attribute.String("component", "handler.users.getByID"),
 		attribute.String("http.method", r.Method),
+		attribute.String("http.path", r.URL.Path[:strings.LastIndex(r.URL.Path, "/")]),
 	}
 
 	id, err := parseUUIDQueryParams(r.PathValue("user_id"))
@@ -196,7 +197,7 @@ func (h *UserHandler) getByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	slog.Debug("handler.users.getByID", "user", user)
+	slog.Debug("handler.users.getByID", "email", user.Email)
 	span.SetStatus(codes.Ok, "User found")
 	span.SetAttributes(attribute.String("user.id", user.ID.String()))
 	h.metrics.handlerCalls.Add(ctx, 1,
@@ -232,6 +233,7 @@ func (h *UserHandler) createUser(w http.ResponseWriter, r *http.Request) {
 	metricCommonAttributes := []attribute.KeyValue{
 		attribute.String("component", "handler.users.createUser"),
 		attribute.String("http.method", r.Method),
+		attribute.String("http.path", r.URL.Path[:strings.LastIndex(r.URL.Path, "/")]),
 	}
 
 	var req CreateUserRequest
@@ -274,7 +276,6 @@ func (h *UserHandler) createUser(w http.ResponseWriter, r *http.Request) {
 		Email:     req.Email,
 	}
 
-	slog.Debug("handler.users.createUser", "user", user)
 	if err := h.service.CreateUser(ctx, user); err != nil {
 		span.SetStatus(codes.Error, err.Error())
 		span.RecordError(err)
@@ -303,6 +304,7 @@ func (h *UserHandler) createUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	slog.Debug("handler.users.createUser", "email", user.Email)
 	span.SetStatus(codes.Ok, "User created")
 	span.SetAttributes(attribute.String("user.id", user.ID.String()))
 	h.metrics.handlerCalls.Add(ctx, 1,
@@ -342,6 +344,7 @@ func (h *UserHandler) updateUser(w http.ResponseWriter, r *http.Request) {
 	metricCommonAttributes := []attribute.KeyValue{
 		attribute.String("component", "handler.users.updateUser"),
 		attribute.String("http.method", r.Method),
+		attribute.String("http.path", r.URL.Path[:strings.LastIndex(r.URL.Path, "/")]),
 	}
 
 	id, err := parseUUIDQueryParams(r.PathValue("user_id"))
@@ -423,7 +426,7 @@ func (h *UserHandler) updateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	slog.Debug("handler.users.updateUser", "user", user)
+	slog.Debug("handler.users.updateUser", "email", user.Email)
 	span.SetStatus(codes.Ok, "User updated")
 	span.SetAttributes(attribute.String("user.id", user.ID.String()))
 	h.metrics.handlerCalls.Add(ctx, 1,
@@ -460,6 +463,7 @@ func (h *UserHandler) deleteUser(w http.ResponseWriter, r *http.Request) {
 	metricCommonAttributes := []attribute.KeyValue{
 		attribute.String("component", "handler.users.deleteUser"),
 		attribute.String("http.method", r.Method),
+		attribute.String("http.path", r.URL.Path[:strings.LastIndex(r.URL.Path, "/")]),
 	}
 
 	id, err := parseUUIDQueryParams(r.PathValue("user_id"))
@@ -495,7 +499,7 @@ func (h *UserHandler) deleteUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	slog.Debug("handler.users.deleteUser", "user", user)
+	slog.Debug("handler.users.deleteUser", "id", user.ID)
 	span.SetStatus(codes.Ok, "User deleted")
 	span.SetAttributes(attribute.String("user.id", id.String()))
 	h.metrics.handlerCalls.Add(ctx, 1,
@@ -535,6 +539,7 @@ func (h *UserHandler) listUsers(w http.ResponseWriter, r *http.Request) {
 	metricCommonAttributes := []attribute.KeyValue{
 		attribute.String("component", "handler.users.listUsers"),
 		attribute.String("http.method", r.Method),
+		attribute.String("http.path", r.URL.Path[:strings.LastIndex(r.URL.Path, "/")]),
 	}
 
 	// parse the query parameters

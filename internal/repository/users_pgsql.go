@@ -455,10 +455,6 @@ func (r *PGSQLUserRepository) Select(ctx context.Context, input *SelectUsersInpu
 	span.SetAttributes(
 		attribute.String("driver", r.DriverName()),
 		attribute.String("component", "repository.user.Select"),
-		attribute.String("user.sort", input.Sort),
-		attribute.String("user.filter", input.Filter),
-		attribute.Int("user.limit", input.Paginator.Limit),
-		attribute.String("user.fields", strings.Join(input.Fields, ",")),
 	)
 
 	metricCommonAttributes := []attribute.KeyValue{
