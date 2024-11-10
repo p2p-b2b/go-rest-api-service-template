@@ -73,17 +73,17 @@ func (mr *MockUserRepositoryMockRecorder) Conn(ctx any) *gomock.Call {
 }
 
 // Delete mocks base method.
-func (m *MockUserRepository) Delete(ctx context.Context, user *repository.DeleteUserInput) error {
+func (m *MockUserRepository) Delete(ctx context.Context, input *repository.DeleteUserInput) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Delete", ctx, user)
+	ret := m.ctrl.Call(m, "Delete", ctx, input)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Delete indicates an expected call of Delete.
-func (mr *MockUserRepositoryMockRecorder) Delete(ctx, user any) *gomock.Call {
+func (mr *MockUserRepositoryMockRecorder) Delete(ctx, input any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockUserRepository)(nil).Delete), ctx, user)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockUserRepository)(nil).Delete), ctx, input)
 }
 
 // DriverName mocks base method.
@@ -101,17 +101,17 @@ func (mr *MockUserRepositoryMockRecorder) DriverName() *gomock.Call {
 }
 
 // Insert mocks base method.
-func (m *MockUserRepository) Insert(ctx context.Context, user *repository.InsertUserInput) error {
+func (m *MockUserRepository) Insert(ctx context.Context, input *repository.InsertUserInput) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Insert", ctx, user)
+	ret := m.ctrl.Call(m, "Insert", ctx, input)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Insert indicates an expected call of Insert.
-func (mr *MockUserRepositoryMockRecorder) Insert(ctx, user any) *gomock.Call {
+func (mr *MockUserRepositoryMockRecorder) Insert(ctx, input any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Insert", reflect.TypeOf((*MockUserRepository)(nil).Insert), ctx, user)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Insert", reflect.TypeOf((*MockUserRepository)(nil).Insert), ctx, input)
 }
 
 // PingContext mocks base method.
@@ -129,18 +129,18 @@ func (mr *MockUserRepositoryMockRecorder) PingContext(ctx any) *gomock.Call {
 }
 
 // Select mocks base method.
-func (m *MockUserRepository) Select(ctx context.Context, params *repository.SelectUsersInput) (*repository.SelectUsersOutput, error) {
+func (m *MockUserRepository) Select(ctx context.Context, input *repository.SelectUsersInput) (*repository.SelectUsersOutput, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Select", ctx, params)
+	ret := m.ctrl.Call(m, "Select", ctx, input)
 	ret0, _ := ret[0].(*repository.SelectUsersOutput)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Select indicates an expected call of Select.
-func (mr *MockUserRepositoryMockRecorder) Select(ctx, params any) *gomock.Call {
+func (mr *MockUserRepositoryMockRecorder) Select(ctx, input any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Select", reflect.TypeOf((*MockUserRepository)(nil).Select), ctx, params)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Select", reflect.TypeOf((*MockUserRepository)(nil).Select), ctx, input)
 }
 
 // SelectByID mocks base method.
@@ -159,15 +159,15 @@ func (mr *MockUserRepositoryMockRecorder) SelectByID(ctx, id any) *gomock.Call {
 }
 
 // Update mocks base method.
-func (m *MockUserRepository) Update(ctx context.Context, user *repository.UpdateUserInput) error {
+func (m *MockUserRepository) Update(ctx context.Context, input *repository.UpdateUserInput) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Update", ctx, user)
+	ret := m.ctrl.Call(m, "Update", ctx, input)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Update indicates an expected call of Update.
-func (mr *MockUserRepositoryMockRecorder) Update(ctx, user any) *gomock.Call {
+func (mr *MockUserRepositoryMockRecorder) Update(ctx, input any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockUserRepository)(nil).Update), ctx, user)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockUserRepository)(nil).Update), ctx, input)
 }
