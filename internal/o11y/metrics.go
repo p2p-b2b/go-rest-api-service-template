@@ -112,12 +112,6 @@ func (o *OpenTelemetryMeter) newMetricExporter(ctx context.Context) (metric.Expo
 		if err != nil {
 			return nil, err
 		}
-	// 	// https://github.com/open-telemetry/opentelemetry-go/issues/4779
-	// case "prometheus":
-	// 	promExporter, err = prometheus.New()
-	// 	if err != nil {
-	// 		return nil, err
-	// 	}
 
 	default:
 		return nil, fmt.Errorf("unknown metric exporter: %s", o.metricExporter)

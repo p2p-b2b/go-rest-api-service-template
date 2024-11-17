@@ -87,14 +87,14 @@ spec:
         - mountPath: /mnt/config/tempo-local-config.yaml:Z
           name: tempo-config
     - name: prometheus
+      image: docker.io/prom/prometheus:latest
       args:
         - "--config.file=/etc/prometheus/prometheus.yml"
         - "--storage.tsdb.path=/prometheus"
         - "--web.console.libraries=/etc/prometheus/console_libraries"
         - "--web.console.templates=/etc/prometheus/consoles"
         - "--web.enable-lifecycle"
-        - "--enable-feature=otlp-write-receiver"
-      image: docker.io/prom/prometheus:latest
+        - "--web.enable-otlp-receiver"
       ports:
         - containerPort: 9090
           hostPort: 9090
