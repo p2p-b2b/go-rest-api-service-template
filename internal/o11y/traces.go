@@ -3,6 +3,7 @@ package o11y
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"go.opentelemetry.io/otel"
@@ -88,7 +89,9 @@ func (o *OpenTelemetryTracer) SetupTraces() error {
 
 func (o *OpenTelemetryTracer) Shutdown() {
 	if o.Tracer != nil {
-		o.tp.Shutdown(o.ctx)
+		if err := o.tp.Shutdown(o.ctx); err != nil {
+			slog.Error("failed to shutdown OpenTelemetry tracer", "error", err)
+		}
 	}
 }
 
@@ -125,7 +128,6 @@ func (o *OpenTelemetryTracer) newTraceExporter(ctx context.Context) (trace.SpanE
 }
 
 func (o *OpenTelemetryTracer) newTraceProvider(exp trace.SpanExporter) (*trace.TracerProvider, error) {
-
 	sampler := trace.TraceIDRatioBased(0.5)
 
 	p := trace.NewTracerProvider(

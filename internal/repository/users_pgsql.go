@@ -115,7 +115,6 @@ func (r *PGSQLUserRepository) Insert(ctx context.Context, input *InsertUserInput
 	span.SetAttributes(
 		attribute.String("driver", r.DriverName()),
 		attribute.String("component", "repository.user.Insert"),
-		attribute.String("user.id", input.ID.String()),
 	)
 
 	metricCommonAttributes := []attribute.KeyValue{
@@ -135,6 +134,8 @@ func (r *PGSQLUserRepository) Insert(ctx context.Context, input *InsertUserInput
 
 		return ErrUserIsNil
 	}
+
+	span.SetAttributes(attribute.String("user.id", input.ID.String()))
 
 	if err := input.Validate(); err != nil {
 		span.SetStatus(codes.Error, err.Error())
@@ -194,7 +195,6 @@ func (r *PGSQLUserRepository) Update(ctx context.Context, input *UpdateUserInput
 	span.SetAttributes(
 		attribute.String("driver", r.DriverName()),
 		attribute.String("component", "repository.user.Update"),
-		attribute.String("user.id", input.ID.String()),
 	)
 
 	metricCommonAttributes := []attribute.KeyValue{
@@ -214,6 +214,8 @@ func (r *PGSQLUserRepository) Update(ctx context.Context, input *UpdateUserInput
 
 		return ErrUserIsNil
 	}
+
+	span.SetAttributes(attribute.String("user.id", input.ID.String()))
 
 	if err := input.Validate(); err != nil {
 		span.SetStatus(codes.Error, err.Error())
@@ -312,7 +314,6 @@ func (r *PGSQLUserRepository) Delete(ctx context.Context, input *DeleteUserInput
 	span.SetAttributes(
 		attribute.String("driver", r.DriverName()),
 		attribute.String("component", "repository.user.Delete"),
-		attribute.String("user.id", input.ID.String()),
 	)
 
 	metricCommonAttributes := []attribute.KeyValue{
@@ -332,6 +333,8 @@ func (r *PGSQLUserRepository) Delete(ctx context.Context, input *DeleteUserInput
 
 		return ErrUserIsNil
 	}
+
+	span.SetAttributes(attribute.String("user.id", input.ID.String()))
 
 	if err := input.Validate(); err != nil {
 		span.SetStatus(codes.Error, err.Error())
