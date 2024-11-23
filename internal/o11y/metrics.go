@@ -3,6 +3,7 @@ package o11y
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"go.opentelemetry.io/otel"
@@ -84,7 +85,9 @@ func (o *OpenTelemetryMeter) SetupMetrics() error {
 
 func (o *OpenTelemetryMeter) Shutdown() {
 	if o.mp != nil {
-		o.mp.Shutdown(o.ctx)
+		if err := o.mp.Shutdown(o.ctx); err != nil {
+			slog.Error("failed to shutdown meter provider", "error", err)
+		}
 	}
 }
 

@@ -218,7 +218,6 @@ func (s *UserService) CreateUser(ctx context.Context, input *CreateUserInput) er
 
 	span.SetAttributes(
 		attribute.String("component", "service.users.CreateUser"),
-		attribute.String("user.email", input.Email),
 	)
 
 	metricCommonAttributes := []attribute.KeyValue{
@@ -235,6 +234,10 @@ func (s *UserService) CreateUser(ctx context.Context, input *CreateUserInput) er
 		)
 		return ErrCreatingUser
 	}
+
+	span.SetAttributes(
+		attribute.String("user.email", input.Email),
+	)
 
 	if input.ID == uuid.Nil {
 		input.ID = uuid.New()
@@ -307,7 +310,6 @@ func (s *UserService) UpdateUser(ctx context.Context, input *UpdateUserInput) er
 
 	span.SetAttributes(
 		attribute.String("component", "service.users.UpdateUser"),
-		attribute.String("user.id", input.ID.String()),
 	)
 
 	metricCommonAttributes := []attribute.KeyValue{
@@ -324,6 +326,10 @@ func (s *UserService) UpdateUser(ctx context.Context, input *UpdateUserInput) er
 		)
 		return ErrUpdatingUser
 	}
+
+	span.SetAttributes(
+		attribute.String("user.id", input.ID.String()),
+	)
 
 	rParams := &repository.UpdateUserInput{
 		ID:        input.ID,

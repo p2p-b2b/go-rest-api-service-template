@@ -53,7 +53,7 @@ func NewHttpServer(conf ServerConfig) *Server {
 	return s
 }
 
-func (s *Server) Start() error {
+func (s *Server) Start(errCh chan<- error) {
 	slog.Info("starting server", "address", s.httpServer.Addr, "tls", s.conf.TLSEnabled.Value)
 
 	// Listen for OS signals
@@ -65,16 +65,15 @@ func (s *Server) Start() error {
 			s.conf.PrivateKeyFile.Value.Name(),
 		); !errors.Is(err, http.ErrServerClosed) {
 			slog.Error("server error", "error", err)
-			return err
+
+			errCh <- err
 		}
 	} else {
 		if err := s.httpServer.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
 			slog.Error("server error", "error", err)
-			return err
+			errCh <- err
 		}
 	}
-
-	return nil
 }
 
 func (s *Server) Wait() <-chan struct{} {
@@ -120,6 +119,9 @@ func (s *Server) listenOsSignals() {
 	}()
 }
 
+// setTLSConfig sets the TLS configuration for the server.
+//
+//lint:ignore U1000 This function is used depending on the configuration.
 func (s *Server) setTLSConfig() error {
 	slog.Info("configuring tls")
 	if _, err := os.Stat(s.conf.CertificateFile.Value.Name()); os.IsNotExist(err) {

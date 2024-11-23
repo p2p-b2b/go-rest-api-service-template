@@ -36,7 +36,7 @@ func WriteJSONData(w http.ResponseWriter, statusCode int, data interface{}) erro
 }
 
 // WriteJSONMessage writes a success log and response to the client with the given status code and message.
-func WriteJSONMessage(w http.ResponseWriter, r *http.Request, statusCode int, message string) error {
+func WriteJSONMessage(w http.ResponseWriter, r *http.Request, statusCode int, message string) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
 
@@ -48,7 +48,9 @@ func WriteJSONMessage(w http.ResponseWriter, r *http.Request, statusCode int, me
 	success.Path = r.URL.Path
 
 	if err := json.NewEncoder(w).Encode(success); err != nil {
-		return err
+		slog.Error("failed to write JSON response", "error", err)
+
+		http.Error(w, "failed to write JSON response", http.StatusInternalServerError)
 	}
 
 	slog.Debug(message,
@@ -59,6 +61,4 @@ func WriteJSONMessage(w http.ResponseWriter, r *http.Request, statusCode int, me
 		"user_agent", r.UserAgent(),
 		"remote_addr", r.RemoteAddr,
 	)
-
-	return nil
 }
