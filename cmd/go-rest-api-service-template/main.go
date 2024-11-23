@@ -341,7 +341,7 @@ func main() {
 
 	// Handle the server errors
 	for err := range errCh {
-		slog.Error("server error", "error", err)
+		slog.Error("error starting server", "error", err)
 		os.Exit(1)
 	}
 
