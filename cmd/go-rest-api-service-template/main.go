@@ -336,14 +336,7 @@ func main() {
 		})
 
 	// Start the server
-	errCh := make(chan error, 1)
-	go httpServer.Start(errCh)
-
-	// Handle the server errors
-	for err := range errCh {
-		slog.Error("error starting server", "error", err)
-		os.Exit(1)
-	}
+	go httpServer.Start()
 
 	// Wait for stopChan to close
 	<-httpServer.Wait()

@@ -53,7 +53,7 @@ func NewHttpServer(conf ServerConfig) *Server {
 	return s
 }
 
-func (s *Server) Start(errCh chan<- error) {
+func (s *Server) Start() {
 	slog.Info("starting server", "address", s.httpServer.Addr, "tls", s.conf.TLSEnabled.Value)
 
 	// Listen for OS signals
@@ -66,18 +66,23 @@ func (s *Server) Start(errCh chan<- error) {
 		); !errors.Is(err, http.ErrServerClosed) {
 			slog.Error("server error", "error", err)
 
-			errCh <- err
+			s.Stop()
 		}
 	} else {
 		if err := s.httpServer.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
 			slog.Error("server error", "error", err)
-			errCh <- err
+
+			s.Stop()
 		}
 	}
 }
 
 func (s *Server) Wait() <-chan struct{} {
 	return s.stopChan
+}
+
+func (s *Server) Stop() {
+	s.stopChan <- struct{}{}
 }
 
 func (s *Server) listenOsSignals() {
