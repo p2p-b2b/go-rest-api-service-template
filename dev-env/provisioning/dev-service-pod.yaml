@@ -108,7 +108,7 @@ spec:
     - name: db-volume-host
       hostPath:
         path: /tmp/go-rest-api-service-template/db-volume-host
-        type: Directory
+        type: DirectoryOrCreate
     - name: grafana-datasources
       hostPath:
         path: /tmp/go-rest-api-service-template/grafana-ds/grafana-ds.yaml
@@ -120,11 +120,11 @@ spec:
     - name: grafana-dashboard
       hostPath:
         path: /tmp/go-rest-api-service-template/grafana-dashboard
-        type: Directory
+        type: DirectoryOrCreate
     - name: tempo
       hostPath:
         path: /tmp/go-rest-api-service-template/tempo-volume-host
-        type: Directory
+        type: DirectoryOrCreate
     - name: tempo-config
       hostPath:
         path: /tmp/go-rest-api-service-template/dev-env/tempo-local-config.yaml
@@ -132,7 +132,7 @@ spec:
     - name: prometheus
       hostPath:
         path: /tmp/go-rest-api-service-template/prometheus-volume-host
-        type: Directory
+        type: DirectoryOrCreate
     - name: prometheus-config
       hostPath:
         path: /tmp/go-rest-api-service-template/dev-env/prometheus.yaml

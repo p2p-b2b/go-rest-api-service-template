@@ -37,18 +37,24 @@ var (
 	logHandler        slog.Handler
 	logHandlerOptions *slog.HandlerOptions
 	logger            *slog.Logger
+
+	showVersion     bool
+	showLongVersion bool
+	showHelp        bool
+	debug           bool
 )
 
 func init() {
+	// Version flag
+	flag.BoolVar(&showVersion, "version", false, "Show the version information")
+	flag.BoolVar(&showLongVersion, "version.long", false, "Show the long version information")
+	flag.BoolVar(&debug, "debug", false, "Enable debug mode. This is a shorthand for -log.level=debug")
+	flag.BoolVar(&showHelp, "help", false, "Show this help message")
+
 	// Log configuration values
 	flag.StringVar(&LogConfig.Level.Value, LogConfig.Level.FlagName, config.DefaultLogLevel, LogConfig.Level.FlagDescription)
 	flag.StringVar(&LogConfig.Format.Value, LogConfig.Format.FlagName, config.DefaultLogFormat, LogConfig.Format.FlagDescription)
 	flag.Var(&LogConfig.Output.Value, LogConfig.Output.FlagName, LogConfig.Output.FlagDescription)
-
-	// Version flag
-	flag.Bool("version", false, "Show the version information")
-	flag.Bool("version.long", false, "Show the long version information")
-	flag.Bool("debug", false, "Enable debug mode. This is a shorthand for -log.level=debug")
 
 	// Server configuration values
 	flag.StringVar(&SrvConfig.Address.Value, SrvConfig.Address.FlagName, config.DefaultServerAddress, SrvConfig.Address.FlagDescription)
@@ -88,17 +94,16 @@ func init() {
 	flag.DurationVar(&OTConfig.MetricInterval.Value, OTConfig.MetricInterval.FlagName, config.DefaultMetricInterval, OTConfig.MetricInterval.FlagDescription)
 
 	// Parse the command line arguments
-	flag.Bool("help", false, "Show this help message")
 	flag.Parse()
 
 	// implement the version flag
-	if flag.Lookup("version").Value.(flag.Getter).Get().(bool) {
+	if showVersion {
 		fmt.Printf("%s version: %s\n", appName, version.Version)
 		os.Exit(0)
 	}
 
 	// implement the long version flag
-	if flag.Lookup("version.long").Value.(flag.Getter).Get().(bool) {
+	if showLongVersion {
 		fmt.Printf("%s version: %s,  Git Commit: %s, Build Date: %s, Go Version: %s, OS/Arch: %s/%s\n",
 			appName,
 			version.Version,
@@ -112,7 +117,7 @@ func init() {
 	}
 
 	// implement the help flag
-	if flag.Lookup("help").Value.(flag.Getter).Get().(bool) {
+	if showHelp {
 		flag.Usage()
 		os.Exit(0)
 	}
@@ -157,6 +162,10 @@ func init() {
 	default:
 		slog.Error("invalid log format", "format", LogConfig.Format.Value)
 	}
+
+	// Set the default logger
+	logger = slog.New(logHandler)
+	slog.SetDefault(logger)
 }
 
 // @tile Golang RESTful API Service Template
@@ -169,10 +178,6 @@ func init() {
 // @description - Debug mode to enable debug logging.
 // @description - TLS enabled to secure the communication.
 func main() {
-	// Set the default logger
-	logger = slog.New(logHandler)
-	slog.SetDefault(logger)
-
 	// Default context
 	ctx := context.Background()
 
