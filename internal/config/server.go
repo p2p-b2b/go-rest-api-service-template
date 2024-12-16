@@ -1,8 +1,21 @@
 package config
 
 import (
+	"errors"
+	"net"
 	"os"
 	"time"
+)
+
+var (
+	// ErrInvalidAddress is the error for invalid server address
+	ErrInvalidAddress = errors.New("invalid server address, must not be empty and a valid IP Address or Hostname")
+
+	// ErrInvalidPort is the error for invalid server port
+	ErrInvalidPort = errors.New("invalid server port, must be between 1 and 65535")
+
+	// ErrInvalidShutdownTimeout is the error for invalid server shutdown timeout
+	ErrInvalidShutdownTimeout = errors.New("invalid server shutdown timeout, must be between 1s and 600s")
 )
 
 const (
@@ -66,4 +79,23 @@ func (c *ServerConfig) ParseEnvVars() {
 	c.CertificateFile.Value = GetEnv(c.CertificateFile.EnVarName, c.CertificateFile.Value)
 	c.TLSEnabled.Value = GetEnv(c.TLSEnabled.EnVarName, c.TLSEnabled.Value)
 	c.PprofEnabled.Value = GetEnv(c.PprofEnabled.EnVarName, c.PprofEnabled.Value)
+}
+
+// Validate validates the server configuration values
+func (c *ServerConfig) Validate() error {
+	if c.Address.Value == "" || net.ParseIP(c.Address.Value) == nil {
+		return ErrInvalidAddress
+	}
+
+	// validate the if is a valid IP Address or Hostname
+
+	if c.Port.Value < 1 || c.Port.Value > 65535 {
+		return ErrInvalidPort
+	}
+
+	if c.ShutdownTimeout.Value < 1*time.Second || c.ShutdownTimeout.Value > 600*time.Second {
+		return ErrInvalidShutdownTimeout
+	}
+
+	return nil
 }

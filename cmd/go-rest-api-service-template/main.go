@@ -130,10 +130,7 @@ func init() {
 
 	// Get Configuration from Environment Variables
 	// and override the values when they are set
-	LogConfig.ParseEnvVars()
-	SrvConfig.ParseEnvVars()
-	DBConfig.PaseEnvVars()
-	OTConfig.PaseEnvVars()
+	config.ParseEnvVars(LogConfig, SrvConfig, DBConfig, OTConfig)
 
 	// Set the log level
 	if flag.Lookup("debug").Value.(flag.Getter).Get().(bool) {

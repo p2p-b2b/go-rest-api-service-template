@@ -1,7 +1,16 @@
 package config
 
 import (
+	"errors"
 	"time"
+)
+
+var (
+	// ErrInvalidDatabaseKind is the error for invalid database kind
+	ErrInvalidDatabaseKind = errors.New("invalid database kind, must be one of [pgx, postgres, mysql]")
+
+	// ErrInvalidDatabaseSSLMode is the error for invalid database SSL mode
+	ErrInvalidDatabaseSSLMode = errors.New("invalid database SSL mode, must be one of [disable, require, verify-ca, verify-full]")
 )
 
 const (
@@ -72,9 +81,9 @@ func NewDatabaseConfig() *DatabaseConfig {
 	}
 }
 
-// PaseEnvVars reads the database configuration from environment variables
+// ParseEnvVars reads the database configuration from environment variables
 // and sets the values in the configuration
-func (c *DatabaseConfig) PaseEnvVars() {
+func (c *DatabaseConfig) ParseEnvVars() {
 	c.Kind.Value = GetEnv(c.Kind.EnVarName, c.Kind.Value)
 	c.Address.Value = GetEnv(c.Address.EnVarName, c.Address.Value)
 	c.Port.Value = GetEnv(c.Port.EnVarName, c.Port.Value)
@@ -94,4 +103,26 @@ func (c *DatabaseConfig) PaseEnvVars() {
 	c.ConnMaxLifetime.Value = GetEnv(c.ConnMaxLifetime.EnVarName, c.ConnMaxLifetime.Value)
 
 	c.MigrationEnable.Value = GetEnv(c.MigrationEnable.EnVarName, c.MigrationEnable.Value)
+}
+
+// Validate validates the database configuration values
+func (c *DatabaseConfig) Validate() error {
+	if c.Kind.Value != "pgx" &&
+		c.Kind.Value != "postgres" &&
+		c.Kind.Value != "mysql" {
+		return ErrInvalidDatabaseKind
+	}
+
+	if c.SSLMode.Value != "disable" &&
+		c.SSLMode.Value != "require" &&
+		c.SSLMode.Value != "verify-ca" &&
+		c.SSLMode.Value != "verify-full" {
+		return ErrInvalidDatabaseSSLMode
+	}
+
+	if c.Port.Value < 1 || c.Port.Value > 65535 {
+		return ErrInvalidPort
+	}
+
+	return nil
 }

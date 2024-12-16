@@ -1,6 +1,20 @@
 package config
 
-import "time"
+import (
+	"errors"
+	"time"
+)
+
+var (
+	// ErrInvalidExporter is the error for invalid exporter
+	ErrInvalidExporter = errors.New("invalid exporter, must be one of [console, otlp-http]")
+
+	// ErrInvalidSampling is the error for invalid sampling
+	ErrInvalidSampling = errors.New("invalid sampling, must be between 0 and 100")
+
+	// ErrInvalidMetricInterval is the error for invalid metric interval
+	ErrInvalidMetricInterval = errors.New("invalid metric interval, must be greater than 0")
+)
 
 const (
 	TraceExporters  = "console|otlp-http"
@@ -52,9 +66,9 @@ func NewOpenTelemetryConfig(appName string, appVersion string) *OpenTelemetryCon
 	}
 }
 
-// PaseEnvVars reads the OpenTracing configuration from environment variables
+// ParseEnvVars reads the OpenTracing configuration from environment variables
 // and sets the values in the configuration
-func (c *OpenTelemetryConfig) PaseEnvVars() {
+func (c *OpenTelemetryConfig) ParseEnvVars() {
 	c.TraceEndpoint.Value = GetEnv(c.TraceEndpoint.EnVarName, c.TraceEndpoint.Value)
 	c.TracePort.Value = GetEnv(c.TracePort.EnVarName, c.TracePort.Value)
 	c.TraceExporter.Value = GetEnv(c.TraceExporter.EnVarName, c.TraceExporter.Value)
@@ -65,4 +79,36 @@ func (c *OpenTelemetryConfig) PaseEnvVars() {
 	c.MetricPort.Value = GetEnv(c.MetricPort.EnVarName, c.MetricPort.Value)
 	c.MetricExporter.Value = GetEnv(c.MetricExporter.EnVarName, c.MetricExporter.Value)
 	c.MetricInterval.Value = GetEnv(c.MetricInterval.EnVarName, c.MetricInterval.Value)
+}
+
+// Validate validates the OpenTracing configuration values
+func (c *OpenTelemetryConfig) Validate() error {
+	if c.TraceExporter.Value != "console" &&
+		c.TraceExporter.Value != "otlp-http" {
+		return ErrInvalidExporter
+	}
+
+	if c.MetricExporter.Value != "console" &&
+		c.MetricExporter.Value != "otlp-http" &&
+		c.MetricExporter.Value != "prometheus" {
+		return ErrInvalidExporter
+	}
+
+	if c.TraceSampling.Value < 0 || c.TraceSampling.Value > 100 {
+		return ErrInvalidSampling
+	}
+
+	if c.MetricInterval.Value < 0 {
+		return ErrInvalidMetricInterval
+	}
+
+	if c.MetricPort.Value < 1 || c.MetricPort.Value > 65535 {
+		return ErrInvalidPort
+	}
+
+	if c.TracePort.Value < 1 || c.TracePort.Value > 65535 {
+		return ErrInvalidPort
+	}
+
+	return nil
 }
