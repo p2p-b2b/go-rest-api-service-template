@@ -122,18 +122,18 @@ func init() {
 		os.Exit(0)
 	}
 
-	// validate the database kind
-	if DBConfig.Kind.Value != "pgx" && DBConfig.Kind.Value != "postgres" && DBConfig.Kind.Value != "mysql" {
-		slog.Error("Invalid database kind. Use --help to get more info", "kind", DBConfig.Kind.Value)
-		os.Exit(1)
-	}
-
 	// Get Configuration from Environment Variables
 	// and override the values when they are set
 	config.ParseEnvVars(LogConfig, SrvConfig, DBConfig, OTConfig)
 
+	// Validate the configuration
+	if err := config.Validate(LogConfig, SrvConfig, DBConfig, OTConfig); err != nil {
+		slog.Error("error validating configuration", "error", err)
+		os.Exit(1)
+	}
+
 	// Set the log level
-	if flag.Lookup("debug").Value.(flag.Getter).Get().(bool) {
+	if debug {
 		LogConfig.Level.Value = "debug"
 	}
 
