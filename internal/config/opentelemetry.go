@@ -14,6 +14,12 @@ var (
 
 	// ErrInvalidMetricInterval is the error for invalid metric interval
 	ErrInvalidMetricInterval = errors.New("invalid metric interval, must be greater than 0")
+
+	// ErrInvalidTracePort is the error for invalid trace port
+	ErrInvalidTracePort = errors.New("invalid trace port, must be between 0 and 65535")
+
+	// ErrInvalidMetricPort is the error for invalid metric port
+	ErrInvalidMetricPort = errors.New("invalid metric port, must be between 0 and 65535")
 )
 
 const (
@@ -103,11 +109,11 @@ func (c *OpenTelemetryConfig) Validate() error {
 	}
 
 	if c.MetricPort.Value < 1 || c.MetricPort.Value > 65535 {
-		return ErrInvalidPort
+		return ErrInvalidMetricPort
 	}
 
 	if c.TracePort.Value < 1 || c.TracePort.Value > 65535 {
-		return ErrInvalidPort
+		return ErrInvalidTracePort
 	}
 
 	return nil
