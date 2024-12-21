@@ -6,11 +6,44 @@ import (
 )
 
 var (
-	// ErrInvalidDatabaseKind is the error for invalid database kind
-	ErrInvalidDatabaseKind = errors.New("invalid database kind, must be one of [pgx, postgres, mysql]")
+	// ErrInvalidDatabaseKind is returned when an invalid database kind is provided
+	ErrInvalidDatabaseKind = errors.New("invalid database kind, must be one of [pgx|postgres]")
 
-	// ErrInvalidDatabaseSSLMode is the error for invalid database SSL mode
-	ErrInvalidDatabaseSSLMode = errors.New("invalid database SSL mode, must be one of [disable, require, verify-ca, verify-full]")
+	// ErrInvalidDatabasePort is returned when an invalid database port is provided
+	ErrInvalidDatabasePort = errors.New("invalid database port, must be between 0 and 65535")
+
+	// ErrInvalidUsername is returned when an invalid username is provided
+	ErrInvalidUsername = errors.New("invalid username, must be between 2 and 32 characters")
+
+	// ErrInvalidDatabaseName is returned when an invalid database name is provided
+	ErrInvalidDatabaseName = errors.New("invalid database name, must be between 2 and 32 characters")
+
+	// ErrInvalidSSLMode is returned when an invalid SSL mode is provided
+	ErrInvalidSSLMode = errors.New("invalid SSL mode, must be between 2 and 32 characters")
+
+	// ErrInvalidTimeZone is returned when an invalid timezone is provided
+	ErrInvalidTimeZone = errors.New("invalid timezone, must be between 2 and 32 characters")
+
+	// ErrInvalidPassword is returned when an invalid password is provided
+	ErrInvalidPassword = errors.New("invalid password, must be between 2 and 128 characters")
+
+	// ErrInvalidMaxIdleConns is returned when an invalid max idle connections is provided
+	ErrInvalidMaxIdleConns = errors.New("invalid max idle connections, must be between 0 and 100")
+
+	// ErrInvalidMaxOpenConns is returned when an invalid max open connections is provided
+	ErrInvalidMaxOpenConns = errors.New("invalid max open connections, must be between 0 and 100")
+
+	// ErrInvalidMaxPingTimeout is returned when an invalid max ping timeout is provided
+	ErrInvalidMaxPingTimeout = errors.New("invalid max ping timeout, must be between 1s and 30s")
+
+	// ErrInvalidMaxQueryTimeout is returned when an invalid max query timeout is provided
+	ErrInvalidMaxQueryTimeout = errors.New("invalid max query timeout, must be between 1s and 30s")
+
+	// ErrInvalidConnMaxIdleTime is returned when an invalid connection max idle time is provided
+	ErrInvalidConnMaxIdleTime = errors.New("invalid connection max idle time, must be between 0 and 100")
+
+	// ErrInvalidConnMaxLifetime is returned when an invalid connection max lifetime is provided
+	ErrInvalidConnMaxLifetime = errors.New("invalid connection max lifetime, must be between 0 and 100")
 )
 
 const (
@@ -107,21 +140,59 @@ func (c *DatabaseConfig) ParseEnvVars() {
 
 // Validate validates the database configuration values
 func (c *DatabaseConfig) Validate() error {
-	if c.Kind.Value != "pgx" &&
-		c.Kind.Value != "postgres" &&
-		c.Kind.Value != "mysql" {
+	if c.Kind.Value != "pgx" && c.Kind.Value != "postgres" {
 		return ErrInvalidDatabaseKind
+	}
+
+	if c.Port.Value <= 0 || c.Port.Value >= 65535 {
+		return ErrInvalidDatabasePort
+	}
+
+	if c.Username.Value == "" || len(c.Username.Value) < 2 || len(c.Username.Value) > 32 {
+		return ErrInvalidUsername
+	}
+
+	if c.Password.Value == "" || len(c.Password.Value) < 2 || len(c.Password.Value) > 128 {
+		return ErrInvalidPassword
+	}
+
+	if c.Name.Value == "" || len(c.Name.Value) < 2 || len(c.Name.Value) > 32 {
+		return ErrInvalidDatabaseName
 	}
 
 	if c.SSLMode.Value != "disable" &&
 		c.SSLMode.Value != "require" &&
 		c.SSLMode.Value != "verify-ca" &&
 		c.SSLMode.Value != "verify-full" {
-		return ErrInvalidDatabaseSSLMode
+		return ErrInvalidSSLMode
 	}
 
-	if c.Port.Value < 1 || c.Port.Value > 65535 {
-		return ErrInvalidPort
+	if c.TimeZone.Value == "" || len(c.TimeZone.Value) < 2 || len(c.TimeZone.Value) > 32 {
+		return ErrInvalidTimeZone
+	}
+
+	if c.MaxIdleConns.Value < 0 || c.MaxIdleConns.Value > 100 {
+		return ErrInvalidMaxIdleConns
+	}
+
+	if c.MaxOpenConns.Value < 0 || c.MaxOpenConns.Value > 100 {
+		return ErrInvalidMaxOpenConns
+	}
+
+	if c.MaxPingTimeout.Value < 1*time.Second || c.MaxPingTimeout.Value > 30*time.Second {
+		return ErrInvalidMaxPingTimeout
+	}
+
+	if c.MaxQueryTimeout.Value < 1*time.Second || c.MaxQueryTimeout.Value > 30*time.Second {
+		return ErrInvalidMaxQueryTimeout
+	}
+
+	if c.ConnMaxIdleTime.Value < 0 || c.ConnMaxIdleTime.Value > 100 {
+		return ErrInvalidConnMaxIdleTime
+	}
+
+	if c.ConnMaxLifetime.Value < 0 || c.ConnMaxLifetime.Value > 100 {
+		return ErrInvalidConnMaxLifetime
 	}
 
 	return nil
