@@ -1,5 +1,8 @@
 # go-rest-api-service-template
 
+[![Go Report Card](https://goreportcard.com/badge/github.com/p2p-b2b/go-rest-api-service-template)](https://goreportcard.com/report/github.com/p2p-b2b/go-rest-api-service-template)
+![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/p2p-b2b/go-rest-api-service-template)
+
 This is a template for a Go HTTP REST API Service.
 
 ## Features
@@ -8,6 +11,7 @@ This is a template for a Go HTTP REST API Service.
 - [x] Change the module name in `go.mod` using the command `go mod edit -module github.com/your-username/your-repo`
 - [x] Change the service name in `cmd/go-rest-api-service-template` to the name of your service, e.g. `cmd/your-service-name`
 - [x] Change the service name in `Makefile` to the name of your service
+- [x] Use flags, Environment Variables of `.env` file to configure the service.
 - [x] Hot reload with [air](https://github.com/cosmtrek/air), use `make install-air` to install it, then `air` to run it
 - [x] Ready to use Certificates for HTTPS, see [Certificates](#certificates)
 - [x] Containerize your service with Podman, see [Building](#building)

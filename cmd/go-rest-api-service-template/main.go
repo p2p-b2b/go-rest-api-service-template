@@ -12,8 +12,6 @@ import (
 
 	_ "github.com/jackc/pgx/v5/stdlib" // load the PostgreSQL driver for pgx
 
-	// _ "github.com/go-sql-driver/mysql" // load the MySQL driver for database/sql
-
 	"github.com/p2p-b2b/go-rest-api-service-template/database"
 	"github.com/p2p-b2b/go-rest-api-service-template/docs"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/config"
