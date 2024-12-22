@@ -5,7 +5,7 @@ go 1.23.4
 require (
 	github.com/google/go-cmp v0.6.0
 	github.com/google/uuid v1.6.0
-	github.com/jackc/pgx/v5 v5.7.1
+	github.com/jackc/pgx/v5 v5.7.2
 	go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.33.0
 	go.opentelemetry.io/otel/metric v1.33.0
 	go.opentelemetry.io/otel/sdk v1.33.0
