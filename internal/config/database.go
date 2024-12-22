@@ -2,6 +2,7 @@ package config
 
 import (
 	"errors"
+	"slices"
 	"time"
 )
 
@@ -19,7 +20,7 @@ var (
 	ErrInvalidDatabaseName = errors.New("invalid database name, must be between 2 and 32 characters")
 
 	// ErrInvalidSSLMode is returned when an invalid SSL mode is provided
-	ErrInvalidSSLMode = errors.New("invalid SSL mode, must be between 2 and 32 characters")
+	ErrInvalidSSLMode = errors.New("invalid SSL mode, must be one of [disable|allow|prefer|require|verify-ca|verify-full]")
 
 	// ErrInvalidTimeZone is returned when an invalid timezone is provided
 	ErrInvalidTimeZone = errors.New("invalid timezone, must be between 2 and 32 characters")
@@ -45,6 +46,8 @@ var (
 	// ErrInvalidConnMaxLifetime is returned when an invalid connection max lifetime is provided
 	ErrInvalidConnMaxLifetime = errors.New("invalid connection max lifetime, must be between 0 and 100")
 )
+
+var ValidSSLModes = []string{"disable", "allow", "prefer", "require", "verify-ca", "verify-full"}
 
 const (
 	DefaultDatabaseKind     = "pgx"
@@ -160,10 +163,7 @@ func (c *DatabaseConfig) Validate() error {
 		return ErrInvalidDatabaseName
 	}
 
-	if c.SSLMode.Value != "disable" &&
-		c.SSLMode.Value != "require" &&
-		c.SSLMode.Value != "verify-ca" &&
-		c.SSLMode.Value != "verify-full" {
+	if !slices.Contains(ValidSSLModes, c.SSLMode.Value) {
 		return ErrInvalidSSLMode
 	}
 
