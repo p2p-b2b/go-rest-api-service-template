@@ -9,10 +9,10 @@ import (
 
 var (
 	// ErrInvalidTraceExporter is the error for invalid exporter
-	ErrInvalidTraceExporter = errors.New("invalid exporter, must be one of [" + ValidTraceExporters + "]")
+	ErrInvalidTraceExporter = errors.New("invalid trace exporter, must be one of [" + ValidTraceExporters + "]")
 
 	// ErrInvalidMetricExporter is the error for invalid exporter
-	ErrInvalidMetricExporter = errors.New("invalid exporter, must be one of [" + ValidMetricExporters + "]")
+	ErrInvalidMetricExporter = errors.New("invalid metric exporter, must be one of [" + ValidMetricExporters + "]")
 
 	// ErrInvalidSampling is the error for invalid sampling
 	ErrInvalidSampling = errors.New("invalid sampling, must be between 0 and 100")
@@ -94,11 +94,11 @@ func (c *OpenTelemetryConfig) ParseEnvVars() {
 
 // Validate validates the OpenTracing configuration values
 func (c *OpenTelemetryConfig) Validate() error {
-	if slices.Contains(strings.Split(ValidTraceExporters, "|"), c.TraceExporter.Value) {
+	if !slices.Contains(strings.Split(ValidTraceExporters, "|"), c.TraceExporter.Value) {
 		return ErrInvalidTraceExporter
 	}
 
-	if slices.Contains(strings.Split(ValidMetricExporters, "|"), c.MetricExporter.Value) {
+	if !slices.Contains(strings.Split(ValidMetricExporters, "|"), c.MetricExporter.Value) {
 		return ErrInvalidMetricExporter
 	}
 

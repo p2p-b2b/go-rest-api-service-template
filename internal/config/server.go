@@ -83,7 +83,7 @@ func (c *ServerConfig) ParseEnvVars() {
 
 // Validate validates the server configuration values
 func (c *ServerConfig) Validate() error {
-	if c.Address.Value == "" || net.ParseIP(c.Address.Value) == nil {
+	if c.Address.Value == "" || c.Address.Value != "localhost" && net.ParseIP(c.Address.Value) == nil {
 		return ErrInvalidAddress
 	}
 
