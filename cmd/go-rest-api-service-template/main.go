@@ -257,17 +257,7 @@ func main() {
 	ctx, cancel := context.WithTimeout(ctx, DBConfig.MaxPingTimeout.Value)
 	defer cancel()
 
-	// Create a new userRepository
-	userRepository := repository.NewPGSQLUserRepository(
-		repository.PGSQLUserRepositoryConfig{
-			DB:              db,
-			MaxPingTimeout:  DBConfig.MaxPingTimeout.Value,
-			MaxQueryTimeout: DBConfig.MaxQueryTimeout.Value,
-			OT:              telemetry,
-		},
-	)
-
-	if err := userRepository.PingContext(ctx); err != nil {
+	if err := db.PingContext(ctx); err != nil {
 		slog.Error("database ping error",
 			"kind", DBConfig.Kind.Value,
 			"address", DBConfig.Address.Value,
@@ -281,6 +271,16 @@ func main() {
 			"error", err)
 		os.Exit(1)
 	}
+
+	// Create a new userRepository
+	userRepository := repository.NewPGSQLUserRepository(
+		repository.PGSQLUserRepositoryConfig{
+			DB:              db,
+			MaxPingTimeout:  DBConfig.MaxPingTimeout.Value,
+			MaxQueryTimeout: DBConfig.MaxQueryTimeout.Value,
+			OT:              telemetry,
+		},
+	)
 
 	// Run the database migrations
 	if DBConfig.MigrationEnable.Value {
