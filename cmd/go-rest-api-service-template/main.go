@@ -94,6 +94,11 @@ func init() {
 	// Parse the command line arguments
 	flag.Parse()
 
+	flag.Usage = func() {
+		fmt.Fprintf(flag.CommandLine.Output(), "Usage: %s [options]\n\nOptions:\n", appName)
+		flag.PrintDefaults()
+	}
+
 	// implement the version flag
 	if showVersion {
 		fmt.Printf("%s version: %s\n", appName, version.Version)
