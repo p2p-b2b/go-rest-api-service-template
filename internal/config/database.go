@@ -3,12 +3,13 @@ package config
 import (
 	"errors"
 	"slices"
+	"strings"
 	"time"
 )
 
 var (
 	// ErrInvalidDatabaseKind is returned when an invalid database kind is provided
-	ErrInvalidDatabaseKind = errors.New("invalid database kind, must be one of [pgx|postgres]")
+	ErrInvalidDatabaseKind = errors.New("invalid database kind, must be one of [" + ValidDatabaseKind + "]")
 
 	// ErrInvalidDatabasePort is returned when an invalid database port is provided
 	ErrInvalidDatabasePort = errors.New("invalid database port, must be between 0 and 65535")
@@ -20,7 +21,7 @@ var (
 	ErrInvalidDatabaseName = errors.New("invalid database name, must be between 2 and 32 characters")
 
 	// ErrInvalidSSLMode is returned when an invalid SSL mode is provided
-	ErrInvalidSSLMode = errors.New("invalid SSL mode, must be one of [disable|allow|prefer|require|verify-ca|verify-full]")
+	ErrInvalidSSLMode = errors.New("invalid SSL mode, must be one of [" + ValidSSLModes + "]")
 
 	// ErrInvalidTimeZone is returned when an invalid timezone is provided
 	ErrInvalidTimeZone = errors.New("invalid timezone, must be between 2 and 32 characters")
@@ -47,9 +48,10 @@ var (
 	ErrInvalidConnMaxLifetime = errors.New("invalid connection max lifetime, must be between 0 and 100")
 )
 
-var ValidSSLModes = []string{"disable", "allow", "prefer", "require", "verify-ca", "verify-full"}
-
 const (
+	ValidDatabaseKind = "pgx|postgres"
+	ValidSSLModes     = "disable|allow|prefer|require|verify-ca|verify-full"
+
 	DefaultDatabaseKind     = "pgx"
 	DefaultDatabaseAddress  = "localhost"
 	DefaultDatabasePort     = 5432
@@ -95,13 +97,13 @@ type DatabaseConfig struct {
 
 func NewDatabaseConfig() *DatabaseConfig {
 	return &DatabaseConfig{
-		Kind:     NewField("database.kind", "DATABASE_KIND", "Database Kind. Possible values [pgx|postgres|mysql]", DefaultDatabaseKind),
+		Kind:     NewField("database.kind", "DATABASE_KIND", "Database Kind. Possible values ["+ValidDatabaseKind+"]", DefaultDatabaseKind),
 		Address:  NewField("database.address", "DATABASE_ADDRESS", "Database IP Address or Hostname", DefaultDatabaseAddress),
 		Port:     NewField("database.port", "DATABASE_PORT", "Database Port", DefaultDatabasePort),
 		Username: NewField("database.username", "DATABASE_USERNAME", "Database Username", DefaultDatabaseUsername),
 		Password: NewField("database.password", "DATABASE_PASSWORD", "Database Password", DefaultDatabasePassword),
 		Name:     NewField("database.name", "DATABASE_NAME", "Database Name", DefaultDatabaseName),
-		SSLMode:  NewField("database.ssl.mode", "DATABASE_SSL_MODE", "Database SSL Mode", DefaultDatabaseSSLMode),
+		SSLMode:  NewField("database.ssl.mode", "DATABASE_SSL_MODE", "Database SSL Mode. Possible values ["+ValidSSLModes+"]", DefaultDatabaseSSLMode),
 		TimeZone: NewField("database.time.zone", "DATABASE_TIME_ZONE", "Database Time Zone", DefaultDatabaseTimeZone),
 
 		MaxPingTimeout:  NewField("database.max.ping.timeout", "DATABASE_MAX_PING_TIMEOUT", "Database Max Ping Timeout", DefaultDatabaseMaxPingTimeout),
@@ -143,7 +145,7 @@ func (c *DatabaseConfig) ParseEnvVars() {
 
 // Validate validates the database configuration values
 func (c *DatabaseConfig) Validate() error {
-	if c.Kind.Value != "pgx" && c.Kind.Value != "postgres" {
+	if !slices.Contains(strings.Split(ValidDatabaseKind, "|"), c.Kind.Value) {
 		return ErrInvalidDatabaseKind
 	}
 
@@ -163,7 +165,7 @@ func (c *DatabaseConfig) Validate() error {
 		return ErrInvalidDatabaseName
 	}
 
-	if !slices.Contains(ValidSSLModes, c.SSLMode.Value) {
+	if !slices.Contains(strings.Split(ValidSSLModes, "|"), c.SSLMode.Value) {
 		return ErrInvalidSSLMode
 	}
 

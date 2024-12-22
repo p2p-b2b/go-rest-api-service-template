@@ -2,12 +2,17 @@ package config
 
 import (
 	"errors"
+	"slices"
+	"strings"
 	"time"
 )
 
 var (
-	// ErrInvalidExporter is the error for invalid exporter
-	ErrInvalidExporter = errors.New("invalid exporter, must be one of [console, otlp-http]")
+	// ErrInvalidTraceExporter is the error for invalid exporter
+	ErrInvalidTraceExporter = errors.New("invalid exporter, must be one of [" + ValidTraceExporters + "]")
+
+	// ErrInvalidMetricExporter is the error for invalid exporter
+	ErrInvalidMetricExporter = errors.New("invalid exporter, must be one of [" + ValidMetricExporters + "]")
 
 	// ErrInvalidSampling is the error for invalid sampling
 	ErrInvalidSampling = errors.New("invalid sampling, must be between 0 and 100")
@@ -23,8 +28,8 @@ var (
 )
 
 const (
-	TraceExporters  = "console|otlp-http"
-	MetricExporters = "console|otlp-http|prometheus"
+	ValidTraceExporters  = "console|otlp-http"
+	ValidMetricExporters = "console|otlp-http|prometheus"
 
 	DefaultTraceEndpoint             = "localhost"
 	DefaultTracePort                 = 4318
@@ -58,13 +63,13 @@ func NewOpenTelemetryConfig(appName string, appVersion string) *OpenTelemetryCon
 	return &OpenTelemetryConfig{
 		TraceEndpoint:             NewField("opentelemetry.trace.endpoint", "OPENTELEMETRY_TRACE_ENDPOINT", "OpenTelemetry Endpoint to send traces to", DefaultTraceEndpoint),
 		TracePort:                 NewField("opentelemetry.trace.port", "OPENTELEMETRY_TRACE_PORT", "OpenTelemetry Port to send traces to", DefaultTracePort),
-		TraceExporter:             NewField("opentelemetry.trace.exporter", "OPENTELEMETRY_TRACE_EXPORTER", "OpenTelemetry Exporter to send traces to ["+TraceExporters+"]", DefaultTraceExporter),
+		TraceExporter:             NewField("opentelemetry.trace.exporter", "OPENTELEMETRY_TRACE_EXPORTER", "OpenTelemetry Exporter to send traces to. Possible values ["+ValidTraceExporters+"]", DefaultTraceExporter),
 		TraceExporterBatchTimeout: NewField("opentelemetry.trace.exporter.batch.timeout", "OPENTELEMETRY_TRACE_EXPORTER_BATCH_TIMEOUT", "OpenTelemetry Exporter Batch Timeout", DefaultTraceExporterBatchTimeout),
 		TraceSampling:             NewField("opentelemetry.trace.sampling", "OPENTELEMETRY_TRACE_SAMPLING", "OpenTelemetry Exporter trace sampling", DefaultTraceSampling),
 
 		MetricEndpoint: NewField("opentelemetry.metric.endpoint", "OPENTELEMETRY_METRIC_ENDPOINT", "OpenTelemetry Endpoint to send metrics to", DefaultMetricEndpoint),
 		MetricPort:     NewField("opentelemetry.metric.port", "OPENTELEMETRY_METRIC_PORT", "OpenTelemetry Port to send metrics to", DefaultMetricPort),
-		MetricExporter: NewField("opentelemetry.metric.exporter", "OPENTELEMETRY_METRIC_EXPORTER", "OpenTelemetry Exporter to send metrics to ["+MetricExporters+"]", DefaultMetricExporter),
+		MetricExporter: NewField("opentelemetry.metric.exporter", "OPENTELEMETRY_METRIC_EXPORTER", "OpenTelemetry Exporter to send metrics to. Possible values ["+ValidMetricExporters+"]", DefaultMetricExporter),
 		MetricInterval: NewField("opentelemetry.metric.interval", "OPENTELEMETRY_METRIC_INTERVAL", "OpenTelemetry Interval in to send metrics", DefaultMetricInterval),
 
 		AttributeServiceVersion: appVersion,
@@ -89,15 +94,12 @@ func (c *OpenTelemetryConfig) ParseEnvVars() {
 
 // Validate validates the OpenTracing configuration values
 func (c *OpenTelemetryConfig) Validate() error {
-	if c.TraceExporter.Value != "console" &&
-		c.TraceExporter.Value != "otlp-http" {
-		return ErrInvalidExporter
+	if slices.Contains(strings.Split(ValidTraceExporters, "|"), c.TraceExporter.Value) {
+		return ErrInvalidTraceExporter
 	}
 
-	if c.MetricExporter.Value != "console" &&
-		c.MetricExporter.Value != "otlp-http" &&
-		c.MetricExporter.Value != "prometheus" {
-		return ErrInvalidExporter
+	if slices.Contains(strings.Split(ValidMetricExporters, "|"), c.MetricExporter.Value) {
+		return ErrInvalidMetricExporter
 	}
 
 	if c.TraceSampling.Value < 0 || c.TraceSampling.Value > 100 {
