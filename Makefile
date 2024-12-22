@@ -158,7 +158,7 @@ go-test-coverage: test ## Shows in you browser the test coverage report per pack
 ###############################################################################
 ##@ Test commands
 .PHONY: test
-test: $(PROJECT_COVERAGE_FILE) go-mod-tidy go-fmt go-vet go-generate ## Run tests
+test: $(PROJECT_COVERAGE_FILE) go-generate go-mod-tidy go-fmt go-vet ## Run tests
 	@printf "👉 Running tests...\n"
 	$(call exec_cmd, go test \
 		-v -race \
@@ -171,7 +171,7 @@ test: $(PROJECT_COVERAGE_FILE) go-mod-tidy go-fmt go-vet go-generate ## Run test
 ###############################################################################
 ##@ Build commands
 .PHONY: build
-build: docs-swagger go-generate ## Build the application
+build: go-generate docs-swagger ## Build the application
 	@printf "👉 Building...\n"
 	$(foreach proj_mod, $(PROJECT_MODULES_NAME), \
 		$(call exec_cmd, CGO_ENABLED=$(GO_CGO_ENABLED) go build $(GO_LDFLAGS) $(GO_OPTS) -o $(BUILD_DIR)/$(proj_mod) ./cmd/$(proj_mod)/ ) \
