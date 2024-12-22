@@ -42,10 +42,10 @@ var (
 	ErrInvalidMaxQueryTimeout = errors.New("invalid max query timeout, must be between 1s and 30s")
 
 	// ErrInvalidConnMaxIdleTime is returned when an invalid connection max idle time is provided
-	ErrInvalidConnMaxIdleTime = errors.New("invalid connection max idle time, must be between 0 and 100")
+	ErrInvalidConnMaxIdleTime = errors.New("invalid connection max idle time, must be between 1s and 60m")
 
 	// ErrInvalidConnMaxLifetime is returned when an invalid connection max lifetime is provided
-	ErrInvalidConnMaxLifetime = errors.New("invalid connection max lifetime, must be between 0 and 100")
+	ErrInvalidConnMaxLifetime = errors.New("invalid connection max lifetime, must be between 1s and 600s")
 )
 
 const (
@@ -189,11 +189,11 @@ func (c *DatabaseConfig) Validate() error {
 		return ErrInvalidMaxQueryTimeout
 	}
 
-	if c.ConnMaxIdleTime.Value < 0 || c.ConnMaxIdleTime.Value > 100 {
+	if c.ConnMaxIdleTime.Value < 1*time.Second || c.ConnMaxIdleTime.Value > 600*time.Minute {
 		return ErrInvalidConnMaxIdleTime
 	}
 
-	if c.ConnMaxLifetime.Value < 0 || c.ConnMaxLifetime.Value > 100 {
+	if c.ConnMaxLifetime.Value < 1*time.Second || c.ConnMaxLifetime.Value > 600*time.Second {
 		return ErrInvalidConnMaxLifetime
 	}
 

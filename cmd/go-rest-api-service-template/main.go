@@ -267,9 +267,18 @@ func main() {
 		},
 	)
 
-	slog.Info("testing database connection...", "dsn", dbDSN)
 	if err := userRepository.PingContext(ctx); err != nil {
-		slog.Error("database ping error", "error", err)
+		slog.Error("database ping error",
+			"kind", DBConfig.Kind.Value,
+			"address", DBConfig.Address.Value,
+			"port", DBConfig.Port.Value,
+			"username", DBConfig.Username.Value,
+			"ssl_mode", DBConfig.SSLMode.Value,
+			"max_idle_conns", DBConfig.MaxIdleConns.Value,
+			"max_open_conns", DBConfig.MaxOpenConns.Value,
+			"conn_max_lifetime", DBConfig.ConnMaxLifetime.Value,
+			"conn_max_idle_time", DBConfig.ConnMaxIdleTime.Value,
+			"error", err)
 		os.Exit(1)
 	}
 
