@@ -87,7 +87,7 @@ func (s *Server) Stop() {
 
 func (s *Server) listenOsSignals() {
 	go func() {
-		slog.Info("server listening for os signals")
+		slog.Info("server listening for OS signals")
 
 		ctx, cancel := context.WithTimeout(s.ctx, s.conf.ShutdownTimeout.Value)
 		defer cancel()
@@ -95,7 +95,7 @@ func (s *Server) listenOsSignals() {
 		for {
 			select {
 			case sig := <-s.osSigChan:
-				slog.Debug("received signal", "signal", sig)
+				slog.Debug("received OS signal", "signal", sig)
 
 				// Handle the signal to shutdown the server or reload
 				switch sig {
@@ -130,17 +130,17 @@ func (s *Server) listenOsSignals() {
 func (s *Server) setTLSConfig() error {
 	slog.Info("configuring tls")
 	if _, err := os.Stat(s.conf.CertificateFile.Value.Name()); os.IsNotExist(err) {
-		slog.Error("tls.crt file not found")
+		slog.Error(".crt file not found", "file", s.conf.CertificateFile.Value.Name(), "error", err)
 		return err
 	}
 
 	if _, err := os.Stat(s.conf.PrivateKeyFile.Value.Name()); os.IsNotExist(err) {
-		slog.Error("tls.key file not found")
+		slog.Error(".key file not found", "file", s.conf.PrivateKeyFile.Value.Name(), "error", err)
 		return err
 	}
 
 	tlsCfg := &tls.Config{
-		MinVersion:               tls.VersionTLS12,
+		MinVersion:               tls.VersionTLS13,
 		CurvePreferences:         []tls.CurveID{tls.CurveP521, tls.CurveP384, tls.CurveP256},
 		PreferServerCipherSuites: true,
 		CipherSuites: []uint16{
