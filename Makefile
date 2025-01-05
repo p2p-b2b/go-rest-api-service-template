@@ -220,7 +220,7 @@ docs-swagger: ## Generate swagger documentation
 	@printf "👉 Generating swagger documentation...\n"
 	$(foreach proj_mod, $(PROJECT_MODULES_NAME), \
 		$(call exec_cmd, swag init \
-			--dir ./cmd/$(proj_mod)$(COMMA_SIGN)./internal/handler \
+			--dir ./cmd/$(proj_mod)$(COMMA_SIGN)./internal/http/handler \
 			--output ./docs \
 			--parseDependency true \
 			--parseInternal true \

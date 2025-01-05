@@ -1,26 +1,25 @@
 definitions:
-  handler.APIResponse:
-    properties:
-      message:
-        type: string
-      method:
-        type: string
-      path:
-        type: string
-      status_code:
-        type: integer
-      timestamp:
-        type: string
-    type: object
   handler.CreateUserRequest:
     properties:
       email:
+        example: my@email.com
+        format: email
         type: string
       first_name:
+        example: John
+        format: string
         type: string
       id:
+        example: 550e8400-e29b-41d4-a716-446655440000
+        format: uuid
         type: string
       last_name:
+        example: Doe
+        format: string
+        type: string
+      password:
+        example: ThisIs4Passw0rd
+        format: string
         type: string
     type: object
   handler.ListUsersResponse:
@@ -34,26 +33,56 @@ definitions:
     type: object
   handler.UpdateUserRequest:
     properties:
+      disabled:
+        example: false
+        format: boolean
+        type: boolean
       email:
+        example: my@email.com
+        format: email
         type: string
       first_name:
+        example: John
+        format: string
         type: string
       last_name:
+        example: Doe
+        format: string
+        type: string
+      password:
+        example: ThisIs4Passw0rd
+        format: string
         type: string
     type: object
   handler.User:
     properties:
       created_at:
+        example: "2021-01-01T00:00:00Z"
+        format: date-time
         type: string
+      disabled:
+        example: false
+        format: boolean
+        type: boolean
       email:
+        example: my@email.com
+        format: email
         type: string
       first_name:
+        example: John
+        format: string
         type: string
       id:
+        example: 550e8400-e29b-41d4-a716-446655440000
+        format: uuid
         type: string
       last_name:
+        example: Doe
+        format: string
         type: string
       updated_at:
+        example: "2021-01-01T00:00:00Z"
+        format: date-time
         type: string
     type: object
   paginator.Paginator:
@@ -70,6 +99,19 @@ definitions:
         type: string
       size:
         type: integer
+    type: object
+  respond.HTTPMessage:
+    properties:
+      message:
+        type: string
+      method:
+        type: string
+      path:
+        type: string
+      status_code:
+        type: integer
+      timestamp:
+        type: string
     type: object
   service.Check:
     properties:
@@ -134,7 +176,7 @@ paths:
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handler.APIResponse'
+            $ref: '#/definitions/respond.HTTPMessage'
       summary: Get the health of the service
       tags:
       - service.health
@@ -151,7 +193,7 @@ paths:
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handler.APIResponse'
+            $ref: '#/definitions/respond.HTTPMessage'
       summary: Get the health of the service
       tags:
       - service.health
@@ -168,7 +210,7 @@ paths:
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handler.APIResponse'
+            $ref: '#/definitions/respond.HTTPMessage'
       summary: Get the health of the service
       tags:
       - service.health
@@ -178,26 +220,32 @@ paths:
       parameters:
       - description: 'Comma-separated list of fields to sort by. Example: first_name
           ASC, created_at DESC'
+        format: string
         in: query
         name: sort
         type: string
       - description: 'Filter field. Example: id=1 AND first_name=''John'''
+        format: string
         in: query
         name: filter
         type: string
       - description: 'Fields to return. Example: id,first_name,last_name'
+        format: string
         in: query
         name: fields
         type: string
       - description: Next cursor
+        format: string
         in: query
         name: next_token
         type: string
       - description: Previous cursor
+        format: string
         in: query
         name: prev_token
         type: string
       - description: Limit
+        format: int
         in: query
         name: limit
         type: integer
@@ -211,14 +259,14 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handler.APIResponse'
+            $ref: '#/definitions/respond.HTTPMessage'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handler.APIResponse'
+            $ref: '#/definitions/respond.HTTPMessage'
       summary: List all users
       tags:
-      - users
+      - Users
     post:
       consumes:
       - application/json
@@ -227,6 +275,7 @@ paths:
         If the id is not provided, it will be generated automatically.
       parameters:
       - description: CreateUserRequest
+        format: json
         in: body
         name: user
         required: true
@@ -238,27 +287,28 @@ paths:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/handler.APIResponse'
+            $ref: '#/definitions/respond.HTTPMessage'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handler.APIResponse'
+            $ref: '#/definitions/respond.HTTPMessage'
         "409":
           description: Conflict
           schema:
-            $ref: '#/definitions/handler.APIResponse'
+            $ref: '#/definitions/respond.HTTPMessage'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handler.APIResponse'
+            $ref: '#/definitions/respond.HTTPMessage'
       summary: Create a new user.
       tags:
-      - users
+      - Users
   /users/{user_id}:
     delete:
       description: Delete a user
       parameters:
       - description: The user ID in UUID format
+        format: uuid
         in: path
         name: user_id
         required: true
@@ -266,25 +316,26 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
-          description: OK
+        "204":
+          description: No Content
           schema:
-            $ref: '#/definitions/handler.APIResponse'
+            $ref: '#/definitions/respond.HTTPMessage'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handler.APIResponse'
+            $ref: '#/definitions/respond.HTTPMessage'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handler.APIResponse'
+            $ref: '#/definitions/respond.HTTPMessage'
       summary: Delete a user
       tags:
-      - users
+      - Users
     get:
       description: Get a user by ID
       parameters:
       - description: The user ID in UUID format
+        format: uuid
         in: path
         name: user_id
         required: true
@@ -299,29 +350,31 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handler.APIResponse'
+            $ref: '#/definitions/respond.HTTPMessage'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/handler.APIResponse'
+            $ref: '#/definitions/respond.HTTPMessage'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handler.APIResponse'
+            $ref: '#/definitions/respond.HTTPMessage'
       summary: Get a user by ID
       tags:
-      - users
+      - Users
     put:
       consumes:
       - application/json
       description: Update a user
       parameters:
       - description: The user ID in UUID format
+        format: uuid
         in: path
         name: user_id
         required: true
         type: string
       - description: User
+        format: json
         in: body
         name: user
         required: true
@@ -333,22 +386,22 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/handler.APIResponse'
+            $ref: '#/definitions/respond.HTTPMessage'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/handler.APIResponse'
+            $ref: '#/definitions/respond.HTTPMessage'
         "409":
           description: Conflict
           schema:
-            $ref: '#/definitions/handler.APIResponse'
+            $ref: '#/definitions/respond.HTTPMessage'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handler.APIResponse'
+            $ref: '#/definitions/respond.HTTPMessage'
       summary: Update a user
       tags:
-      - users
+      - Users
   /version:
     get:
       description: Get the version of the service
@@ -362,7 +415,7 @@ paths:
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/handler.APIResponse'
+            $ref: '#/definitions/respond.HTTPMessage'
       summary: Get the version of the service
       tags:
       - version

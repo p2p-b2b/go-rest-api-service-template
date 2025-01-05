@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"html/template"
 	"log/slog"
@@ -11,15 +12,17 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/o11y"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/paginator"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/query"
+
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/metric"
 )
 
-type PGSQLUserRepositoryConfig struct {
+type UserRepositoryConfig struct {
 	DB              *sql.DB
 	MaxPingTimeout  time.Duration
 	MaxQueryTimeout time.Duration
@@ -27,74 +30,81 @@ type PGSQLUserRepositoryConfig struct {
 	MetricsPrefix   string
 }
 
-type pgsqlUserRepositoryMetrics struct {
+type userRepositoryMetrics struct {
 	repositoryCalls metric.Int64Counter
 }
 
 // this implement repository.UserRepository
-// PGSQLUserRepository is a PostgreSQL store.
-type PGSQLUserRepository struct {
+// UserRepository is a PostgreSQL store.
+type UserRepository struct {
 	db              *sql.DB
 	maxPingTimeout  time.Duration
 	maxQueryTimeout time.Duration
 	ot              *o11y.OpenTelemetry
 	metricsPrefix   string
-	metrics         pgsqlUserRepositoryMetrics
+	metrics         userRepositoryMetrics
 }
 
-// NewPGSQLUserRepository creates a new PGSQLUserRepository.
-func NewPGSQLUserRepository(conf PGSQLUserRepositoryConfig) *PGSQLUserRepository {
-	r := &PGSQLUserRepository{
+// NewUserRepository creates a new UserRepository.
+func NewUserRepository(conf UserRepositoryConfig) (*UserRepository, error) {
+	if conf.DB == nil {
+		return nil, ErrInvalidDBConfiguration
+	}
+
+	if conf.MaxPingTimeout < 10*time.Millisecond {
+		return nil, ErrInvalidMaxPingTimeout
+	}
+
+	if conf.MaxQueryTimeout < 10*time.Millisecond {
+		return nil, ErrInvalidMaxQueryTimeout
+	}
+
+	if conf.OT == nil {
+		return nil, ErrInvalidOTConfiguration
+	}
+
+	repo := &UserRepository{
 		db:              conf.DB,
 		maxPingTimeout:  conf.MaxPingTimeout,
 		maxQueryTimeout: conf.MaxQueryTimeout,
 		ot:              conf.OT,
 	}
 	if conf.MetricsPrefix != "" {
-		r.metricsPrefix = strings.ReplaceAll(conf.MetricsPrefix, "-", "_")
-		r.metricsPrefix += "_"
+		repo.metricsPrefix = strings.ReplaceAll(conf.MetricsPrefix, "-", "_")
+		repo.metricsPrefix += "_"
 	}
 
-	if err := r.registerMetrics(); err != nil {
-		slog.Error("failed to register metrics", "error", err)
-		panic(err)
-	}
-
-	return r
-}
-
-// registerMetrics registers the metrics for the user handler.
-func (r *PGSQLUserRepository) registerMetrics() error {
-	repositoryCalls, err := r.ot.Metrics.Meter.Int64Counter(
-		fmt.Sprintf("%s%s", r.metricsPrefix, "repositories_calls_total"),
+	repositoryCalls, err := repo.ot.Metrics.Meter.Int64Counter(
+		fmt.Sprintf("%s%s", repo.metricsPrefix, "repository_calls_total"),
 		metric.WithDescription("The number of calls to the user repository"),
 	)
 	if err != nil {
-		slog.Error("repository.users.registerMetrics", "error", err)
-		return err
+		slog.Error("repository.users.NewUserRepository", "error", err)
+		return nil, err
 	}
-	r.metrics.repositoryCalls = repositoryCalls
 
-	return nil
+	repo.metrics.repositoryCalls = repositoryCalls
+
+	return repo, nil
 }
 
 // DriverName returns the name of the driver.
-func (r *PGSQLUserRepository) DriverName() string {
+func (r *UserRepository) DriverName() string {
 	return sql.Drivers()[0]
 }
 
 // Conn returns the connection to the repository.
-func (r *PGSQLUserRepository) Conn(ctx context.Context) (*sql.Conn, error) {
+func (r *UserRepository) Conn(ctx context.Context) (*sql.Conn, error) {
 	return r.db.Conn(ctx)
 }
 
 // Close closes the repository, releasing any open resources.
-func (r *PGSQLUserRepository) Close() error {
+func (r *UserRepository) Close() error {
 	return r.db.Close()
 }
 
 // PingContext verifies a connection to the repository is still alive, establishing a connection if necessary.
-func (r *PGSQLUserRepository) PingContext(ctx context.Context) error {
+func (r *UserRepository) PingContext(ctx context.Context) error {
 	ctx, cancel := context.WithTimeout(ctx, r.maxPingTimeout)
 	defer cancel()
 
@@ -105,7 +115,7 @@ func (r *PGSQLUserRepository) PingContext(ctx context.Context) error {
 }
 
 // Insert a new user into the database.
-func (r *PGSQLUserRepository) Insert(ctx context.Context, input *InsertUserInput) error {
+func (r *UserRepository) Insert(ctx context.Context, input *InsertUserInput) error {
 	ctx, cancel := context.WithTimeout(ctx, r.maxQueryTimeout)
 	defer cancel()
 
@@ -123,16 +133,16 @@ func (r *PGSQLUserRepository) Insert(ctx context.Context, input *InsertUserInput
 	}
 
 	if input == nil {
-		span.SetStatus(codes.Error, ErrUserIsNil.Error())
-		span.RecordError(ErrUserIsNil)
-		slog.Error("repository.users.Insert", "error", ErrUserIsNil.Error())
+		span.SetStatus(codes.Error, ErrInputIsNil.Error())
+		span.RecordError(ErrInputIsNil)
+		slog.Error("repository.users.Insert", "error", ErrInputIsNil.Error())
 		r.metrics.repositoryCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				append(metricCommonAttributes, attribute.String("successful", "false"))...,
 			),
 		)
 
-		return ErrUserIsNil
+		return ErrInputIsNil
 	}
 
 	span.SetAttributes(attribute.String("user.id", input.ID.String()))
@@ -149,31 +159,47 @@ func (r *PGSQLUserRepository) Insert(ctx context.Context, input *InsertUserInput
 		return err
 	}
 
-	query := fmt.Sprintf(`
-        INSERT INTO users (id, first_name, last_name, email)
-        VALUES ('%s', '%s', '%s', '%s')`,
+	query := `INSERT INTO
+                users (id, first_name, last_name, email, password_hash, disabled)
+              VALUES ($1, $2, $3, $4, $5, $6);`
+
+	_, err := r.db.ExecContext(ctx, query,
 		input.ID,
 		input.FirstName,
 		input.LastName,
 		input.Email,
+		input.PasswordHash,
+		input.Disabled,
 	)
-
-	slog.Debug("repository.users.Insert", "query", prettyPrint(query))
-
-	_, err := r.db.ExecContext(ctx, query)
 	if err != nil {
+		slog.Error("repository.users.Insert", "error", err)
 		span.SetStatus(codes.Error, err.Error())
 		span.RecordError(err)
-		slog.Error("repository.users.Insert", "error", err)
 		r.metrics.repositoryCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				append(metricCommonAttributes, attribute.String("successful", "false"))...,
 			),
 		)
 
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) {
+			if pgErr.Code == "23505" {
+				if strings.Contains(pgErr.Message, "_pkey") {
+					return ErrUserIDAlreadyExists
+				}
+
+				if strings.Contains(pgErr.Message, "_email") {
+					return ErrUserEmailAlreadyExists
+				}
+
+				return err
+			}
+		}
+
 		return err
 	}
 
+	slog.Debug("repository.users.Insert", "user.id", input.ID)
 	span.SetStatus(codes.Ok, "user inserted successfully")
 	span.SetAttributes(attribute.String("user.id", input.ID.String()))
 	r.metrics.repositoryCalls.Add(ctx, 1,
@@ -181,11 +207,12 @@ func (r *PGSQLUserRepository) Insert(ctx context.Context, input *InsertUserInput
 			append(metricCommonAttributes, attribute.String("successful", "true"))...,
 		),
 	)
+
 	return nil
 }
 
 // Update updates the user with the specified ID.
-func (r *PGSQLUserRepository) Update(ctx context.Context, input *UpdateUserInput) error {
+func (r *UserRepository) Update(ctx context.Context, input *UpdateUserInput) error {
 	ctx, cancel := context.WithTimeout(ctx, r.maxQueryTimeout)
 	defer cancel()
 
@@ -203,8 +230,8 @@ func (r *PGSQLUserRepository) Update(ctx context.Context, input *UpdateUserInput
 	}
 
 	if input == nil {
-		span.SetStatus(codes.Error, ErrUserIsNil.Error())
-		span.RecordError(ErrUserIsNil)
+		span.SetStatus(codes.Error, ErrInputIsNil.Error())
+		span.RecordError(ErrInputIsNil)
 		slog.Error("repository.users.Update", "error", "user is nil")
 		r.metrics.repositoryCalls.Add(ctx, 1,
 			metric.WithAttributes(
@@ -212,15 +239,15 @@ func (r *PGSQLUserRepository) Update(ctx context.Context, input *UpdateUserInput
 			),
 		)
 
-		return ErrUserIsNil
+		return ErrInputIsNil
 	}
 
 	span.SetAttributes(attribute.String("user.id", input.ID.String()))
 
 	if err := input.Validate(); err != nil {
+		slog.Error("repository.users.Update", "error", err)
 		span.SetStatus(codes.Error, err.Error())
 		span.RecordError(err)
-		slog.Error("repository.users.Update", "error", err)
 		r.metrics.repositoryCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				append(metricCommonAttributes, attribute.String("successful", "false"))...,
@@ -230,46 +257,71 @@ func (r *PGSQLUserRepository) Update(ctx context.Context, input *UpdateUserInput
 		return err
 	}
 
-	var queryFields []string
+	args := []interface{}{input.ID}
 
 	if input.FirstName != nil && *input.FirstName != "" {
-		queryFields = append(queryFields, fmt.Sprintf("first_name = '%s'", *input.FirstName))
+		args = append(args, *input.FirstName)
+	} else {
+		args = append(args, nil)
 	}
 
 	if input.LastName != nil && *input.LastName != "" {
-		queryFields = append(queryFields, fmt.Sprintf("last_name = '%s'", *input.LastName))
+		args = append(args, *input.LastName)
+	} else {
+		args = append(args, nil)
 	}
 
 	if input.Email != nil && *input.Email != "" {
-		queryFields = append(queryFields, fmt.Sprintf("email = '%s'", *input.Email))
+		args = append(args, *input.Email)
+	} else {
+		args = append(args, nil)
 	}
 
-	if len(queryFields) == 0 {
-		slog.Error("Update", "error", "no fields to update")
-		return ErrAtLeastOneFieldMustBeUpdated
+	if input.PasswordHash != nil && *input.PasswordHash != "" {
+		args = append(args, *input.PasswordHash)
+	} else {
+		args = append(args, nil)
+	}
+
+	if input.Disabled != nil {
+		args = append(args, *input.Disabled)
+	} else {
+		args = append(args, nil)
 	}
 
 	updatedAt, _ := time.Now().In(time.FixedZone("UTC", 0)).MarshalText()
-	queryFields = append(queryFields, fmt.Sprintf("updated_at = '%s'", updatedAt))
+	args = append(args, updatedAt)
 
-	fields := strings.Join(queryFields, ", ")
+	query := `UPDATE users
+                SET
+                    first_name = COALESCE($2, first_name),
+                    last_name = COALESCE($3,  last_name),
+                    email = COALESCE($4, email),
+                    password_hash = COALESCE($5, password_hash),
+                    disabled = COALESCE($6, disabled),
+                    updated_at = COALESCE($7 , updated_at)
+              WHERE id = $1;`
 
-	slog.Debug("repository.users.Update", "fields", fields)
-
-	query := fmt.Sprintf(`
-        UPDATE users SET %s
-        WHERE id = '%s'`,
-		fields,
-		input.ID,
-	)
-
-	slog.Debug("repository.users.Update", "query", prettyPrint(query))
-
-	result, err := r.db.ExecContext(ctx, query)
+	stmt, err := r.db.PrepareContext(ctx, query)
 	if err != nil {
+		slog.Error("repository.users.Update", "error", err)
 		span.SetStatus(codes.Error, "query failed")
 		span.RecordError(err)
+		r.metrics.repositoryCalls.Add(ctx, 1,
+			metric.WithAttributes(
+				append(metricCommonAttributes, attribute.String("successful", "false"))...,
+			),
+		)
+
+		return err
+	}
+	defer stmt.Close()
+
+	result, err := stmt.ExecContext(ctx, args...)
+	if err != nil {
 		slog.Error("repository.users.Update", "error", err)
+		span.SetStatus(codes.Error, "query failed")
+		span.RecordError(err)
 		r.metrics.repositoryCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				append(metricCommonAttributes, attribute.String("successful", "false"))...,
@@ -279,8 +331,22 @@ func (r *PGSQLUserRepository) Update(ctx context.Context, input *UpdateUserInput
 		return err
 	}
 
-	if rowsAffected, _ := result.RowsAffected(); rowsAffected == 0 {
-		span.SetStatus(codes.Error, "user not found")
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		slog.Error("repository.users.Update", "error", err)
+		span.SetStatus(codes.Error, "query failed")
+		span.RecordError(err)
+		r.metrics.repositoryCalls.Add(ctx, 1,
+			metric.WithAttributes(
+				append(metricCommonAttributes, attribute.String("successful", "false"))...,
+			),
+		)
+
+		return err
+	}
+
+	if rowsAffected == 0 {
+		span.SetStatus(codes.Error, ErrUserNotFound.Error())
 		span.RecordError(ErrUserNotFound)
 		slog.Error("repository.user.Update", "error", ErrUserNotFound)
 		r.metrics.repositoryCalls.Add(ctx, 1,
@@ -304,7 +370,7 @@ func (r *PGSQLUserRepository) Update(ctx context.Context, input *UpdateUserInput
 }
 
 // Delete deletes the user with the specified ID.
-func (r *PGSQLUserRepository) Delete(ctx context.Context, input *DeleteUserInput) error {
+func (r *UserRepository) Delete(ctx context.Context, input *DeleteUserInput) error {
 	ctx, cancel := context.WithTimeout(ctx, r.maxQueryTimeout)
 	defer cancel()
 
@@ -322,24 +388,24 @@ func (r *PGSQLUserRepository) Delete(ctx context.Context, input *DeleteUserInput
 	}
 
 	if input == nil {
-		span.SetStatus(codes.Error, ErrUserIsNil.Error())
-		span.RecordError(ErrUserIsNil)
 		slog.Error("repository.users.Delete", "error", "user is nil")
+		span.SetStatus(codes.Error, ErrInputIsNil.Error())
+		span.RecordError(ErrInputIsNil)
 		r.metrics.repositoryCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				append(metricCommonAttributes, attribute.String("successful", "false"))...,
 			),
 		)
 
-		return ErrUserIsNil
+		return ErrInputIsNil
 	}
 
 	span.SetAttributes(attribute.String("user.id", input.ID.String()))
 
 	if err := input.Validate(); err != nil {
+		slog.Error("repository.users.Delete", "error", err)
 		span.SetStatus(codes.Error, err.Error())
 		span.RecordError(err)
-		slog.Error("repository.users.Delete", "error", err)
 		r.metrics.repositoryCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				append(metricCommonAttributes, attribute.String("successful", "false"))...,
@@ -349,15 +415,9 @@ func (r *PGSQLUserRepository) Delete(ctx context.Context, input *DeleteUserInput
 		return err
 	}
 
-	query := fmt.Sprintf(`
-        DELETE FROM users
-        WHERE id = '%s'`,
-		input.ID,
-	)
+	query := `DELETE FROM users WHERE id = $1`
 
-	slog.Debug("repository.users.Delete", "query", prettyPrint(query))
-
-	_, err := r.db.ExecContext(ctx, query)
+	result, err := r.db.ExecContext(ctx, query, input.ID)
 	if err != nil {
 		span.SetStatus(codes.Error, "query failed")
 		span.RecordError(err)
@@ -371,6 +431,33 @@ func (r *PGSQLUserRepository) Delete(ctx context.Context, input *DeleteUserInput
 		return err
 	}
 
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		slog.Error("repository.users.Delete", "error", err)
+		span.SetStatus(codes.Error, "query failed")
+		span.RecordError(err)
+		r.metrics.repositoryCalls.Add(ctx, 1,
+			metric.WithAttributes(
+				append(metricCommonAttributes, attribute.String("successful", "false"))...,
+			),
+		)
+
+		return err
+	}
+
+	if rowsAffected == 0 {
+		span.SetStatus(codes.Error, ErrUserNotFound.Error())
+		span.RecordError(ErrUserNotFound)
+		slog.Error("repository.user.Delete", "error", ErrUserNotFound)
+		r.metrics.repositoryCalls.Add(ctx, 1,
+			metric.WithAttributes(
+				append(metricCommonAttributes, attribute.String("successful", "false"))...,
+			),
+		)
+
+		return ErrUserNotFound
+	}
+
 	span.SetStatus(codes.Ok, "user deleted successfully")
 	span.SetAttributes(attribute.String("user.id", input.ID.String()))
 	r.metrics.repositoryCalls.Add(ctx, 1,
@@ -382,8 +469,8 @@ func (r *PGSQLUserRepository) Delete(ctx context.Context, input *DeleteUserInput
 	return nil
 }
 
-// SelectByID returns the user with the specified ID.
-func (r *PGSQLUserRepository) SelectByID(ctx context.Context, id uuid.UUID) (*User, error) {
+// SelectUserByID returns the user with the specified ID.
+func (r *UserRepository) SelectUserByID(ctx context.Context, id uuid.UUID) (*User, error) {
 	ctx, cancel := context.WithTimeout(ctx, r.maxQueryTimeout)
 	defer cancel()
 
@@ -402,9 +489,9 @@ func (r *PGSQLUserRepository) SelectByID(ctx context.Context, id uuid.UUID) (*Us
 	}
 
 	if id == uuid.Nil {
+		slog.Error("repository.users.SelectByID", "error", "id is nil")
 		span.SetStatus(codes.Error, ErrInvalidUserID.Error())
 		span.RecordError(ErrInvalidUserID)
-		slog.Error("repository.users.SelectByID", "error", "id is nil")
 		r.metrics.repositoryCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				append(metricCommonAttributes, attribute.String("successful", "false"))...,
@@ -414,22 +501,36 @@ func (r *PGSQLUserRepository) SelectByID(ctx context.Context, id uuid.UUID) (*Us
 		return nil, ErrInvalidUserID
 	}
 
-	query := fmt.Sprintf(`
-        SELECT id, first_name, last_name, email, created_at, updated_at
-        FROM users
-        WHERE id = '%s'`,
-		id,
-	)
+	query := `SELECT
+                id,
+                first_name,
+                last_name,
+                email,
+                password_hash,
+                disabled,
+                created_at,
+                updated_at
+              FROM users
+              WHERE id = $1;`
 
-	slog.Debug("repository.users.SelectByID", "query", prettyPrint(query))
+	// slog.Debug("repository.users.SelectByID", "query", prettyPrint(query))
 
-	row := r.db.QueryRowContext(ctx, query)
+	row := r.db.QueryRowContext(ctx, query, id)
 
 	var u User
-	if err := row.Scan(&u.ID, &u.FirstName, &u.LastName, &u.Email, &u.CreatedAt, &u.UpdatedAt); err != nil {
+	if err := row.Scan(
+		&u.ID,
+		&u.FirstName,
+		&u.LastName,
+		&u.Email,
+		&u.PasswordHash,
+		&u.Disabled,
+		&u.CreatedAt,
+		&u.UpdatedAt,
+	); err != nil {
+		slog.Error("repository.users.SelectByID", "error", err)
 		span.SetStatus(codes.Error, "scan failed")
 		span.RecordError(err)
-		slog.Error("repository.users.SelectByID", "error", err)
 		r.metrics.repositoryCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				append(metricCommonAttributes, attribute.String("successful", "false"))...,
@@ -440,6 +541,7 @@ func (r *PGSQLUserRepository) SelectByID(ctx context.Context, id uuid.UUID) (*Us
 	}
 
 	span.SetStatus(codes.Ok, "user selected successfully")
+	span.SetAttributes(attribute.String("user.id", id.String()))
 	r.metrics.repositoryCalls.Add(ctx, 1,
 		metric.WithAttributes(
 			append(metricCommonAttributes, attribute.String("successful", "true"))...,
@@ -448,7 +550,93 @@ func (r *PGSQLUserRepository) SelectByID(ctx context.Context, id uuid.UUID) (*Us
 	return &u, nil
 }
 
-func (r *PGSQLUserRepository) Select(ctx context.Context, input *SelectUsersInput) (*SelectUsersOutput, error) {
+// SelectUserByEmail returns the user with the specified email.
+func (r *UserRepository) SelectUserByEmail(ctx context.Context, email string) (*User, error) {
+	ctx, cancel := context.WithTimeout(ctx, r.maxQueryTimeout)
+	defer cancel()
+
+	ctx, span := r.ot.Traces.Tracer.Start(ctx, "repository.user.SelectByEmail")
+	defer span.End()
+
+	span.SetAttributes(
+		attribute.String("driver", r.DriverName()),
+		attribute.String("component", "repository.user.SelectByEmail"),
+		attribute.String("user.email", email),
+	)
+
+	metricCommonAttributes := []attribute.KeyValue{
+		attribute.String("driver", r.DriverName()),
+		attribute.String("component", "repository.user.SelectByEmail"),
+	}
+
+	if email == "" {
+		slog.Error("repository.users.SelectByEmail", "error", "email is empty")
+		span.SetStatus(codes.Error, ErrInvalidUserEmail.Error())
+		span.RecordError(ErrInvalidUserEmail)
+		r.metrics.repositoryCalls.Add(ctx, 1,
+			metric.WithAttributes(
+				append(metricCommonAttributes, attribute.String("successful", "false"))...,
+			),
+		)
+
+		return nil, ErrInvalidUserEmail
+	}
+
+	query := `SELECT
+                id,
+                first_name,
+                last_name,
+                email,
+                password_hash,
+                disabled,
+                created_at,
+                updated_at
+              FROM users
+              WHERE email = $1;`
+
+	// slog.Debug("repository.users.SelectByEmail", "query", prettyPrint(query))
+
+	row := r.db.QueryRowContext(ctx, query, email)
+
+	var u User
+	if err := row.Scan(
+		&u.ID,
+		&u.FirstName,
+		&u.LastName,
+		&u.Email,
+		&u.PasswordHash,
+		&u.Disabled,
+		&u.CreatedAt,
+		&u.UpdatedAt,
+	); err != nil {
+		slog.Error("repository.users.SelectByEmail", "error", err)
+		span.SetStatus(codes.Error, "scan failed")
+		span.RecordError(err)
+		r.metrics.repositoryCalls.Add(ctx, 1,
+			metric.WithAttributes(
+				append(metricCommonAttributes, attribute.String("successful", "false"))...,
+			),
+		)
+
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrUserNotFound
+		}
+
+		return nil, err
+	}
+
+	span.SetStatus(codes.Ok, "user selected successfully")
+	span.SetAttributes(attribute.String("user.email", email))
+	r.metrics.repositoryCalls.Add(ctx, 1,
+		metric.WithAttributes(
+			append(metricCommonAttributes, attribute.String("successful", "true"))...,
+		),
+	)
+
+	return &u, nil
+}
+
+func (r *UserRepository) Select(ctx context.Context, input *SelectUsersInput) (*SelectUsersOutput, error) {
 	ctx, cancel := context.WithTimeout(ctx, r.maxQueryTimeout)
 	defer cancel()
 
@@ -466,15 +654,28 @@ func (r *PGSQLUserRepository) Select(ctx context.Context, input *SelectUsersInpu
 	}
 
 	if input == nil {
-		span.SetStatus(codes.Error, ErrFunctionInputIsNil.Error())
-		span.RecordError(ErrFunctionInputIsNil)
-		slog.Error("repository.users.Select", "error", ErrFunctionInputIsNil)
+		span.SetStatus(codes.Error, ErrInputIsNil.Error())
+		span.RecordError(ErrInputIsNil)
+		slog.Error("repository.users.Select", "error", ErrInputIsNil)
 		r.metrics.repositoryCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				append(metricCommonAttributes, attribute.String("successful", "false"))...,
 			),
 		)
-		return nil, ErrFunctionInputIsNil
+		return nil, ErrInputIsNil
+	}
+
+	if err := input.Validate(); err != nil {
+		span.SetStatus(codes.Error, err.Error())
+		span.RecordError(err)
+		slog.Error("repository.users.Select", "error", err)
+		r.metrics.repositoryCalls.Add(ctx, 1,
+			metric.WithAttributes(
+				append(metricCommonAttributes, attribute.String("successful", "false"))...,
+			),
+		)
+
+		return nil, err
 	}
 
 	// if no fields are provided, select all fields
@@ -527,19 +728,18 @@ func (r *PGSQLUserRepository) Select(ctx context.Context, input *SelectUsersInpu
 
 	// query template
 	var queryTemplate string = `
-        WITH {{.TableAlias}} AS (
-            SELECT {{.QueryColumns}}
-            FROM {{.TableName}} {{.TableAlias}}
+        WITH usrs AS (
+            SELECT
+                {{.QueryColumns}}
+            FROM users AS usrs
             {{ .QueryWhere }}
             ORDER BY {{.QueryInternalSort}}
             LIMIT {{.QueryLimit}}
-        ) SELECT * FROM {{.TableAlias}} ORDER BY {{.QueryExternalSort}}
+        ) SELECT * FROM usrs ORDER BY {{.QueryExternalSort}}
     `
 
 	// struct to hold the query values
 	var queryValues struct {
-		TableName         string
-		TableAlias        string
 		QueryColumns      string
 		QueryWhere        template.HTML
 		QueryLimit        int
@@ -548,8 +748,6 @@ func (r *PGSQLUserRepository) Select(ctx context.Context, input *SelectUsersInpu
 	}
 
 	// default values
-	queryValues.TableName = "users"
-	queryValues.TableAlias = "usrs"
 	queryValues.QueryColumns = fieldsStr
 	queryValues.QueryWhere = template.HTML(filterQuery)
 	queryValues.QueryLimit = input.Paginator.Limit
@@ -676,7 +874,17 @@ func (r *PGSQLUserRepository) Select(ctx context.Context, input *SelectUsersInpu
 		scanFields := make([]interface{}, 0)
 
 		if input.Fields[0] == "" {
-			scanFields = []interface{}{&u.ID, &u.FirstName, &u.LastName, &u.Email, &u.CreatedAt, &u.UpdatedAt, &u.SerialID}
+			scanFields = []interface{}{
+				&u.ID,
+				&u.FirstName,
+				&u.LastName,
+				&u.Email,
+				&u.PasswordHash,
+				&u.Disabled,
+				&u.CreatedAt,
+				&u.UpdatedAt,
+				&u.SerialID,
+			}
 		} else {
 			var idFound bool
 
@@ -691,13 +899,17 @@ func (r *PGSQLUserRepository) Select(ctx context.Context, input *SelectUsersInpu
 					scanFields = append(scanFields, &u.LastName)
 				case "email":
 					scanFields = append(scanFields, &u.Email)
+				case "password_hash":
+					scanFields = append(scanFields, &u.PasswordHash)
+				case "disabled":
+					scanFields = append(scanFields, &u.Disabled)
 				case "created_at":
 					scanFields = append(scanFields, &u.CreatedAt)
 				case "updated_at":
 					scanFields = append(scanFields, &u.UpdatedAt)
 
 				default:
-					slog.Warn("repository.user.Select", "message", "field not found", "field", field)
+					slog.Warn("repository.user.Select", "what", "field not found", "field", field)
 				}
 			}
 
@@ -728,7 +940,7 @@ func (r *PGSQLUserRepository) Select(ctx context.Context, input *SelectUsersInpu
 
 	outLen := len(users)
 	if outLen == 0 {
-		slog.Warn("repository.user.Select", "message", "no users found")
+		slog.Warn("repository.user.Select", "what", "no users found")
 		return &SelectUsersOutput{
 			Items:     make([]*User, 0),
 			Paginator: paginator.Paginator{},

@@ -3,6 +3,7 @@ package handler
 import (
 	"net/http"
 
+	"github.com/p2p-b2b/go-rest-api-service-template/internal/http/respond"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/version"
 )
 
@@ -20,12 +21,13 @@ func (h *VersionHandler) RegisterRoutes(mux *http.ServeMux) {
 }
 
 // get returns the version of the service
+//
 // @Summary Get the version of the service
 // @Description Get the version of the service
 // @Tags version
 // @Produce json
 // @Success 200 {object} version.VersionInfo
-// @Failure 500 {object} APIResponse
+// @Failure 500 {object} respond.HTTPMessage
 // @Router /version [get]
 func (h *VersionHandler) get(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
@@ -40,8 +42,8 @@ func (h *VersionHandler) get(w http.ResponseWriter, r *http.Request) {
 		GoVersionOS:   version.GoVersionOS,
 	}
 
-	if err := WriteJSONData(w, http.StatusOK, v); err != nil {
-		WriteJSONMessage(w, r, http.StatusInternalServerError, ErrInternalServerError.Error())
+	if err := respond.WriteJSONData(w, http.StatusOK, v); err != nil {
+		respond.WriteJSONMessage(w, r, http.StatusInternalServerError, ErrInternalServerError.Error())
 		return
 	}
 }

@@ -1,67 +1,54 @@
-package handler
+package middleware
 
 import (
 	"encoding/json"
 	"log/slog"
 	"net/http"
+	"slices"
+	"strings"
 	"time"
 
+	"github.com/p2p-b2b/go-rest-api-service-template/internal/http/respond"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/propagation"
 )
 
-var APIVersion = "v1"
+type JWTClaimsName string
+
+const (
+	ClaimsName JWTClaimsName = "jwt_claims"
+)
 
 type Middleware func(http.Handler) http.Handler
-
-// Thanks to:
-// - https://github.com/denpeshkov/greenlight/blob/c68f5a2111adcd5b1a65a06595acc93a02b6380e/internal/http/middleware.go#L16-L71
-// - https://github.com/golang/go/issues/65648
-type wrappedResponseWriter struct {
-	http.ResponseWriter
-	status int
-}
-
-// newWrappedResponseWriter creates a new statusResponseWriter.
-func newWrappedResponseWriter(w http.ResponseWriter) *wrappedResponseWriter {
-	// WriteHeader() is not called if our response implicitly returns 200 OK, so we default to that status code.
-	return &wrappedResponseWriter{
-		ResponseWriter: w,
-		status:         http.StatusOK,
-	}
-}
-
-func (w *wrappedResponseWriter) WriteHeader(status int) {
-	w.ResponseWriter.WriteHeader(status)
-	w.status = status
-}
-
-// Unwrap is used by a [http.ResponseController].
-func (w *wrappedResponseWriter) Unwrap() http.ResponseWriter {
-	return w.ResponseWriter
-}
 
 // Chain applies middlewares to an http.Handler
 // in the order they are provided
 func Chain(mws ...Middleware) Middleware {
-	return func(next http.Handler) http.Handler {
+	return func(h http.Handler) http.Handler {
 		for i := range mws {
-			next = mws[len(mws)-1-i](next)
+			h = mws[len(mws)-1-i](h)
 		}
-
-		return next
+		return h
 	}
 }
 
+// Append appends a middleware to the chain
+func Append(m Middleware, mws ...Middleware) []Middleware {
+	return append(mws, m)
+}
+
 // HeaderAPIVersion adds the API version to the response headers
-// Configurable via the APIVersion variable
-// Defaults to "v1"
-// Set the header X-API-Version
-func HeaderAPIVersion(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("X-API-Version", APIVersion)
-		next.ServeHTTP(w, r)
-	})
+func HeaderAPIVersion(version string) Middleware {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if version == "" {
+				version = "v1"
+			}
+
+			w.Header().Set("X-API-Version", version)
+			next.ServeHTTP(w, r)
+		})
+	}
 }
 
 // Logging middleware logs the request and response
@@ -98,13 +85,13 @@ type customResponseWriter struct {
 
 // Write writes the response data.
 func (w *customResponseWriter) Write(data []byte) (n int, err error) {
-	var apiResponse APIResponse
+	var apiResponse respond.HTTPMessage
 
-	switch w.wrappedResponseWriter.status {
+	switch w.status {
 	case http.StatusNotFound:
 		if err := json.Unmarshal(data, &apiResponse); err != nil {
 			data, err = json.Marshal(
-				APIResponse{
+				respond.HTTPMessage{
 					Timestamp:  time.Now().UTC(),
 					StatusCode: http.StatusNotFound,
 					Message:    "Not Found",
@@ -120,7 +107,7 @@ func (w *customResponseWriter) Write(data []byte) (n int, err error) {
 	case http.StatusMethodNotAllowed:
 		if err := json.Unmarshal(data, &apiResponse); err != nil {
 			data, err = json.Marshal(
-				APIResponse{
+				respond.HTTPMessage{
 					Timestamp:  time.Now().UTC(),
 					StatusCode: http.StatusMethodNotAllowed,
 					Message:    "Method Not Allowed",
@@ -148,4 +135,52 @@ func RewriteStandardErrorsAsJSON(h http.Handler) http.Handler {
 
 		h.ServeHTTP(newW, r)
 	})
+}
+
+type CorsOpts struct {
+	AllowedOrigins   []string
+	AllowedMethods   []string
+	AllowedHeaders   []string
+	AllowCredentials bool
+}
+
+func Cors(opts CorsOpts) Middleware {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			origin := r.Header.Get("Origin")
+			if slices.Contains(opts.AllowedOrigins, origin) {
+				w.Header().Set("Access-Control-Allow-Origin", origin)
+			}
+
+			if len(opts.AllowedOrigins) == 0 {
+				opts.AllowedOrigins = []string{"*"}
+			}
+
+			if len(opts.AllowedMethods) == 0 {
+				opts.AllowedMethods = []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete, http.MethodOptions}
+			}
+
+			if len(opts.AllowedHeaders) == 0 {
+				opts.AllowedHeaders = []string{"Accept", "Content-Type", "Content-Length", "Accept-Encoding", "Authorization"}
+			}
+
+			w.Header().Set("Access-Control-Allow-Methods", strings.Join(opts.AllowedMethods, ", "))
+			w.Header().Set("Access-Control-Allow-Headers", strings.Join(opts.AllowedHeaders, ", "))
+
+			if opts.AllowCredentials {
+				w.Header().Set("Access-Control-Allow-Credentials", "true")
+			} else {
+				w.Header().Set("Access-Control-Allow-Credentials", "false")
+			}
+
+			// TODO: remove this block of code and implement a better way
+			// to handle OPTIONS requests
+			if r.Method == http.MethodOptions {
+				w.WriteHeader(http.StatusOK)
+				return
+			}
+
+			next.ServeHTTP(w, r)
+		})
+	}
 }

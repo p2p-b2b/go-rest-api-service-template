@@ -143,19 +143,34 @@ func (mr *MockUserRepositoryMockRecorder) Select(ctx, input any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Select", reflect.TypeOf((*MockUserRepository)(nil).Select), ctx, input)
 }
 
-// SelectByID mocks base method.
-func (m *MockUserRepository) SelectByID(ctx context.Context, id uuid.UUID) (*repository.User, error) {
+// SelectUserByEmail mocks base method.
+func (m *MockUserRepository) SelectUserByEmail(ctx context.Context, email string) (*repository.User, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SelectByID", ctx, id)
+	ret := m.ctrl.Call(m, "SelectUserByEmail", ctx, email)
 	ret0, _ := ret[0].(*repository.User)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// SelectByID indicates an expected call of SelectByID.
-func (mr *MockUserRepositoryMockRecorder) SelectByID(ctx, id any) *gomock.Call {
+// SelectUserByEmail indicates an expected call of SelectUserByEmail.
+func (mr *MockUserRepositoryMockRecorder) SelectUserByEmail(ctx, email any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SelectByID", reflect.TypeOf((*MockUserRepository)(nil).SelectByID), ctx, id)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SelectUserByEmail", reflect.TypeOf((*MockUserRepository)(nil).SelectUserByEmail), ctx, email)
+}
+
+// SelectUserByID mocks base method.
+func (m *MockUserRepository) SelectUserByID(ctx context.Context, id uuid.UUID) (*repository.User, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SelectUserByID", ctx, id)
+	ret0, _ := ret[0].(*repository.User)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// SelectUserByID indicates an expected call of SelectUserByID.
+func (mr *MockUserRepositoryMockRecorder) SelectUserByID(ctx, id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SelectUserByID", reflect.TypeOf((*MockUserRepository)(nil).SelectUserByID), ctx, id)
 }
 
 // Update mocks base method.

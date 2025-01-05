@@ -15,10 +15,11 @@ import (
 	"github.com/p2p-b2b/go-rest-api-service-template/database"
 	"github.com/p2p-b2b/go-rest-api-service-template/docs"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/config"
-	"github.com/p2p-b2b/go-rest-api-service-template/internal/handler"
+	"github.com/p2p-b2b/go-rest-api-service-template/internal/http/handler"
+	"github.com/p2p-b2b/go-rest-api-service-template/internal/http/middleware"
+	"github.com/p2p-b2b/go-rest-api-service-template/internal/http/server"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/o11y"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/repository"
-	"github.com/p2p-b2b/go-rest-api-service-template/internal/server"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/service"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/version"
 )
@@ -26,11 +27,12 @@ import (
 var (
 	appName    = "go-rest-api-service-template"
 	apiVersion = "v1"
+	apiPrefix  = fmt.Sprintf("api/%s", apiVersion)
 
-	LogConfig = config.NewLogConfig()
-	SrvConfig = config.NewServerConfig()
-	DBConfig  = config.NewDatabaseConfig()
-	OTConfig  = config.NewOpenTelemetryConfig(appName, version.Version)
+	LogConfig     = config.NewLogConfig()
+	HTTPSrvConfig = config.NewHTTPServerConfig()
+	DBConfig      = config.NewDatabaseConfig()
+	OTConfig      = config.NewOpenTelemetryConfig(appName, version.Version)
 
 	logHandler        slog.Handler
 	logHandlerOptions *slog.HandlerOptions
@@ -54,14 +56,19 @@ func init() {
 	flag.StringVar(&LogConfig.Format.Value, LogConfig.Format.FlagName, config.DefaultLogFormat, LogConfig.Format.FlagDescription)
 	flag.Var(&LogConfig.Output.Value, LogConfig.Output.FlagName, LogConfig.Output.FlagDescription)
 
-	// Server configuration values
-	flag.StringVar(&SrvConfig.Address.Value, SrvConfig.Address.FlagName, config.DefaultServerAddress, SrvConfig.Address.FlagDescription)
-	flag.IntVar(&SrvConfig.Port.Value, SrvConfig.Port.FlagName, config.DefaultServerPort, SrvConfig.Port.FlagDescription)
-	flag.DurationVar(&SrvConfig.ShutdownTimeout.Value, SrvConfig.ShutdownTimeout.FlagName, config.DefaultShutdownTimeout, SrvConfig.ShutdownTimeout.FlagDescription)
-	flag.Var(&SrvConfig.PrivateKeyFile.Value, SrvConfig.PrivateKeyFile.FlagName, SrvConfig.PrivateKeyFile.FlagDescription)
-	flag.Var(&SrvConfig.CertificateFile.Value, SrvConfig.CertificateFile.FlagName, SrvConfig.CertificateFile.FlagDescription)
-	flag.BoolVar(&SrvConfig.TLSEnabled.Value, SrvConfig.TLSEnabled.FlagName, config.DefaultServerTLSEnabled, SrvConfig.TLSEnabled.FlagDescription)
-	flag.BoolVar(&SrvConfig.PprofEnabled.Value, SrvConfig.PprofEnabled.FlagName, config.DefaultServerPprofEnabled, SrvConfig.PprofEnabled.FlagDescription)
+	// HTTP Server configuration values
+	flag.StringVar(&HTTPSrvConfig.Address.Value, HTTPSrvConfig.Address.FlagName, config.DefaultHTTPServerAddress, HTTPSrvConfig.Address.FlagDescription)
+	flag.IntVar(&HTTPSrvConfig.Port.Value, HTTPSrvConfig.Port.FlagName, config.DefaultHTTPServerPort, HTTPSrvConfig.Port.FlagDescription)
+	flag.DurationVar(&HTTPSrvConfig.ShutdownTimeout.Value, HTTPSrvConfig.ShutdownTimeout.FlagName, config.DefaultHTTPServerShutdownTimeout, HTTPSrvConfig.ShutdownTimeout.FlagDescription)
+	flag.Var(&HTTPSrvConfig.PrivateKeyFile.Value, HTTPSrvConfig.PrivateKeyFile.FlagName, HTTPSrvConfig.PrivateKeyFile.FlagDescription)
+	flag.Var(&HTTPSrvConfig.CertificateFile.Value, HTTPSrvConfig.CertificateFile.FlagName, HTTPSrvConfig.CertificateFile.FlagDescription)
+	flag.BoolVar(&HTTPSrvConfig.TLSEnabled.Value, HTTPSrvConfig.TLSEnabled.FlagName, config.DefaultHTTPServerTLSEnabled, HTTPSrvConfig.TLSEnabled.FlagDescription)
+	flag.BoolVar(&HTTPSrvConfig.PprofEnabled.Value, HTTPSrvConfig.PprofEnabled.FlagName, config.DefaultHTTPServerPprofEnabled, HTTPSrvConfig.PprofEnabled.FlagDescription)
+	flag.BoolVar(&HTTPSrvConfig.CorsEnabled.Value, HTTPSrvConfig.CorsEnabled.FlagName, config.DefaultHTTPServerCorsEnabled, HTTPSrvConfig.CorsEnabled.FlagDescription)
+	flag.BoolVar(&HTTPSrvConfig.CorsAllowCredentials.Value, HTTPSrvConfig.CorsAllowCredentials.FlagName, config.DefaultHTTPServerCorsAllowCredentials, HTTPSrvConfig.CorsAllowCredentials.FlagDescription)
+	flag.StringVar(&HTTPSrvConfig.CorsAllowedOrigins.Value, HTTPSrvConfig.CorsAllowedOrigins.FlagName, config.DefaultHTTPServerCorsAllowedOrigins, HTTPSrvConfig.CorsAllowedOrigins.FlagDescription)
+	flag.StringVar(&HTTPSrvConfig.CorsAllowedMethods.Value, HTTPSrvConfig.CorsAllowedMethods.FlagName, config.DefaultHTTPServerCorsAllowedMethods, HTTPSrvConfig.CorsAllowedMethods.FlagDescription)
+	flag.StringVar(&HTTPSrvConfig.CorsAllowedHeaders.Value, HTTPSrvConfig.CorsAllowedHeaders.FlagName, config.DefaultHTTPServerCorsAllowedHeaders, HTTPSrvConfig.CorsAllowedHeaders.FlagDescription)
 
 	// Database configuration values
 	flag.StringVar(&DBConfig.Kind.Value, DBConfig.Kind.FlagName, config.DefaultDatabaseKind, DBConfig.Kind.FlagDescription)
@@ -85,7 +92,6 @@ func init() {
 	flag.StringVar(&OTConfig.TraceExporter.Value, OTConfig.TraceExporter.FlagName, config.DefaultTraceExporter, OTConfig.TraceExporter.FlagDescription)
 	flag.DurationVar(&OTConfig.TraceExporterBatchTimeout.Value, OTConfig.TraceExporterBatchTimeout.FlagName, config.DefaultTraceExporterBatchTimeout, OTConfig.TraceExporterBatchTimeout.FlagDescription)
 	flag.IntVar(&OTConfig.TraceSampling.Value, OTConfig.TraceSampling.FlagName, config.DefaultTraceSampling, OTConfig.TraceSampling.FlagDescription)
-
 	flag.StringVar(&OTConfig.MetricEndpoint.Value, OTConfig.MetricEndpoint.FlagName, config.DefaultMetricEndpoint, OTConfig.TraceEndpoint.FlagDescription)
 	flag.IntVar(&OTConfig.MetricPort.Value, OTConfig.MetricPort.FlagName, config.DefaultMetricPort, OTConfig.MetricPort.FlagDescription)
 	flag.StringVar(&OTConfig.MetricExporter.Value, OTConfig.MetricExporter.FlagName, config.DefaultMetricExporter, OTConfig.MetricExporter.FlagDescription)
@@ -127,10 +133,10 @@ func init() {
 
 	// Get Configuration from Environment Variables
 	// and override the values when they are set
-	config.ParseEnvVars(LogConfig, SrvConfig, DBConfig, OTConfig)
+	config.ParseEnvVars(LogConfig, HTTPSrvConfig, DBConfig, OTConfig)
 
 	// Validate the configuration
-	if err := config.Validate(LogConfig, SrvConfig, DBConfig, OTConfig); err != nil {
+	if err := config.Validate(LogConfig, HTTPSrvConfig, DBConfig, OTConfig); err != nil {
 		slog.Error("error validating configuration", "error", err)
 		os.Exit(1)
 	}
@@ -195,24 +201,24 @@ func main() {
 
 	// Configure server URL information
 	serverProtocol := "http"
-	if SrvConfig.TLSEnabled.Value {
+	if HTTPSrvConfig.TLSEnabled.Value {
 		serverProtocol = "https"
 	}
-	serverURL := fmt.Sprintf("%s://%s:%d/%s", serverProtocol, SrvConfig.Address.Value, SrvConfig.Port.Value, apiVersion)
+	serverURL := fmt.Sprintf("%s://%s:%d/%s", serverProtocol, HTTPSrvConfig.Address.Value, HTTPSrvConfig.Port.Value, apiPrefix)
 	statusURL := fmt.Sprintf("%s/status", serverURL)
-	serverHost := fmt.Sprintf("%s:%d", SrvConfig.Address.Value, SrvConfig.Port.Value)
+	serverHost := fmt.Sprintf("%s:%d", HTTPSrvConfig.Address.Value, HTTPSrvConfig.Port.Value)
 	swaggerURLIndex := fmt.Sprintf("%s/swagger/index.html", serverURL)
 	swaggerURLDocs := fmt.Sprintf("%s/swagger/doc.json", serverURL)
 
 	slog.Info("server endpoints",
-		"url", serverURL,
+		"api", serverURL,
 		"status", statusURL,
 		"swagger", swaggerURLIndex,
 	)
 
 	// Configure Swagger metadata
 	docs.SwaggerInfo.Host = serverHost
-	docs.SwaggerInfo.BasePath = fmt.Sprintf("/%s", apiVersion)
+	docs.SwaggerInfo.BasePath = fmt.Sprintf("/%s", apiPrefix)
 	docs.SwaggerInfo.Schemes = []string{serverProtocol}
 	docs.SwaggerInfo.Version = version.Version
 
@@ -272,16 +278,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Create a new userRepository
-	userRepository := repository.NewPGSQLUserRepository(
-		repository.PGSQLUserRepositoryConfig{
-			DB:              db,
-			MaxPingTimeout:  DBConfig.MaxPingTimeout.Value,
-			MaxQueryTimeout: DBConfig.MaxQueryTimeout.Value,
-			OT:              telemetry,
-		},
-	)
-
 	// Run the database migrations
 	if DBConfig.MigrationEnable.Value {
 		slog.Info("running database migrations")
@@ -291,6 +287,20 @@ func main() {
 		}
 	}
 
+	// Create a new userRepository
+	userRepository, err := repository.NewUserRepository(
+		repository.UserRepositoryConfig{
+			DB:              db,
+			MaxPingTimeout:  DBConfig.MaxPingTimeout.Value,
+			MaxQueryTimeout: DBConfig.MaxQueryTimeout.Value,
+			OT:              telemetry,
+		},
+	)
+	if err != nil {
+		slog.Error("error creating user repository", "error", err)
+		os.Exit(1)
+	}
+
 	// Create user Service config
 	userServiceConf := service.UserServiceConf{
 		Repository: userRepository,
@@ -298,7 +308,11 @@ func main() {
 	}
 
 	// Create user Services
-	userService := service.NewUserService(userServiceConf)
+	userService, err := service.NewUserService(userServiceConf)
+	if err != nil {
+		slog.Error("error creating user service", "error", err)
+		os.Exit(1)
+	}
 
 	// Create handler config
 	userHandlerConf := handler.UserHandlerConf{
@@ -309,45 +323,66 @@ func main() {
 	// Create handlers
 	versionHandler := handler.NewVersionHandler()
 	healthHandler := handler.NewHealthHandler(userService)
-	userHandler := handler.NewUserHandler(userHandlerConf)
+	userHandler, err := handler.NewUserHandler(userHandlerConf)
+	if err != nil {
+		slog.Error("error creating user handler", "error", err)
+		os.Exit(1)
+	}
 	swaggerHandler := handler.NewSwaggerHandler(swaggerURLDocs)
 	pprofHandler := handler.NewPprofHandler()
 
 	// Create a new ServeMux and register the handlers
-	router := http.NewServeMux()
-	// set the api version prefix
-	router.Handle(
-		fmt.Sprintf("/%s/", apiVersion),
-		http.StripPrefix(
-			fmt.Sprintf("/%s", apiVersion),
-			router,
-		),
-	)
+	apiRouter := http.NewServeMux()
 
-	swaggerHandler.RegisterRoutes(router)
-	healthHandler.RegisterRoutes(router)
-	versionHandler.RegisterRoutes(router)
-	userHandler.RegisterRoutes(router)
+	swaggerHandler.RegisterRoutes(apiRouter)
+	healthHandler.RegisterRoutes(apiRouter)
+	versionHandler.RegisterRoutes(apiRouter)
+	userHandler.RegisterRoutes(apiRouter)
 
-	if SrvConfig.PprofEnabled.Value {
-		pprofHandler.RegisterRoutes(router)
+	if HTTPSrvConfig.PprofEnabled.Value {
+		pprofHandler.RegisterRoutes(apiRouter)
+	}
+
+	mdws := []middleware.Middleware{
+		middleware.RewriteStandardErrorsAsJSON,
+		middleware.Logging,
+		middleware.HeaderAPIVersion(apiPrefix),
+		middleware.OtelTextMapPropagation,
+	}
+
+	if HTTPSrvConfig.CorsEnabled.Value {
+		slog.Warn("CORS enabled",
+			"allowed_origins", HTTPSrvConfig.CorsAllowedOrigins.Value,
+			"allowed_methods", HTTPSrvConfig.CorsAllowedMethods.Value,
+			"allowed_headers", HTTPSrvConfig.CorsAllowedHeaders.Value,
+			"allow_credentials", HTTPSrvConfig.CorsAllowCredentials.Value,
+		)
+
+		corsOpts := middleware.CorsOpts{
+			AllowedOrigins:   strings.Split(strings.Trim(HTTPSrvConfig.CorsAllowedOrigins.Value, " "), ","),
+			AllowedMethods:   strings.Split(strings.Trim(HTTPSrvConfig.CorsAllowedMethods.Value, " "), ","),
+			AllowedHeaders:   strings.Split(strings.Trim(HTTPSrvConfig.CorsAllowedHeaders.Value, " "), ","),
+			AllowCredentials: HTTPSrvConfig.CorsAllowCredentials.Value,
+		}
+
+		mdws = append(mdws, middleware.Cors(corsOpts))
 	}
 
 	// middleware chain
-	handler.APIVersion = apiVersion
-	middlewares := handler.Chain(
-		handler.RewriteStandardErrorsAsJSON,
-		handler.Logging,
-		handler.HeaderAPIVersion,
-		handler.OtelTextMapPropagation,
+	apiMiddlewares := middleware.Chain(
+		mdws...,
 	)
 
-	httpServer := server.NewHttpServer(
-		server.ServerConfig{
+	mainRouter := http.NewServeMux()
+	mainRouter.Handle(fmt.Sprintf("/%s/", apiPrefix), http.StripPrefix(fmt.Sprintf("/%s", apiPrefix), apiMiddlewares(apiRouter)))
+
+	httpServer := server.NewHTTPServer(
+		server.HTTPServerConfig{
 			Ctx:         ctx,
-			HttpHandler: middlewares(router),
-			Config:      SrvConfig,
-		})
+			HttpHandler: mainRouter,
+			Config:      HTTPSrvConfig,
+		},
+	)
 
 	// Start the server
 	go httpServer.Start()
