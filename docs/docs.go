@@ -35,7 +35,7 @@ const docTemplate = `{
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handler.APIResponse"
+                            "$ref": "#/definitions/respond.HTTPMessage"
                         }
                     }
                 }
@@ -61,7 +61,7 @@ const docTemplate = `{
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handler.APIResponse"
+                            "$ref": "#/definitions/respond.HTTPMessage"
                         }
                     }
                 }
@@ -87,7 +87,7 @@ const docTemplate = `{
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handler.APIResponse"
+                            "$ref": "#/definitions/respond.HTTPMessage"
                         }
                     }
                 }
@@ -100,42 +100,48 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "users"
+                    "Users"
                 ],
                 "summary": "List all users",
                 "parameters": [
                     {
                         "type": "string",
+                        "format": "string",
                         "description": "Comma-separated list of fields to sort by. Example: first_name ASC, created_at DESC",
                         "name": "sort",
                         "in": "query"
                     },
                     {
                         "type": "string",
+                        "format": "string",
                         "description": "Filter field. Example: id=1 AND first_name='John'",
                         "name": "filter",
                         "in": "query"
                     },
                     {
                         "type": "string",
+                        "format": "string",
                         "description": "Fields to return. Example: id,first_name,last_name",
                         "name": "fields",
                         "in": "query"
                     },
                     {
                         "type": "string",
+                        "format": "string",
                         "description": "Next cursor",
                         "name": "next_token",
                         "in": "query"
                     },
                     {
                         "type": "string",
+                        "format": "string",
                         "description": "Previous cursor",
                         "name": "prev_token",
                         "in": "query"
                     },
                     {
                         "type": "integer",
+                        "format": "int",
                         "description": "Limit",
                         "name": "limit",
                         "in": "query"
@@ -151,13 +157,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handler.APIResponse"
+                            "$ref": "#/definitions/respond.HTTPMessage"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handler.APIResponse"
+                            "$ref": "#/definitions/respond.HTTPMessage"
                         }
                     }
                 }
@@ -171,11 +177,12 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "users"
+                    "Users"
                 ],
                 "summary": "Create a new user.",
                 "parameters": [
                     {
+                        "format": "json",
                         "description": "CreateUserRequest",
                         "name": "user",
                         "in": "body",
@@ -189,25 +196,25 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/handler.APIResponse"
+                            "$ref": "#/definitions/respond.HTTPMessage"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handler.APIResponse"
+                            "$ref": "#/definitions/respond.HTTPMessage"
                         }
                     },
                     "409": {
                         "description": "Conflict",
                         "schema": {
-                            "$ref": "#/definitions/handler.APIResponse"
+                            "$ref": "#/definitions/respond.HTTPMessage"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handler.APIResponse"
+                            "$ref": "#/definitions/respond.HTTPMessage"
                         }
                     }
                 }
@@ -220,12 +227,13 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "users"
+                    "Users"
                 ],
                 "summary": "Get a user by ID",
                 "parameters": [
                     {
                         "type": "string",
+                        "format": "uuid",
                         "description": "The user ID in UUID format",
                         "name": "user_id",
                         "in": "path",
@@ -242,19 +250,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handler.APIResponse"
+                            "$ref": "#/definitions/respond.HTTPMessage"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/handler.APIResponse"
+                            "$ref": "#/definitions/respond.HTTPMessage"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handler.APIResponse"
+                            "$ref": "#/definitions/respond.HTTPMessage"
                         }
                     }
                 }
@@ -268,18 +276,20 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "users"
+                    "Users"
                 ],
                 "summary": "Update a user",
                 "parameters": [
                     {
                         "type": "string",
+                        "format": "uuid",
                         "description": "The user ID in UUID format",
                         "name": "user_id",
                         "in": "path",
                         "required": true
                     },
                     {
+                        "format": "json",
                         "description": "User",
                         "name": "user",
                         "in": "body",
@@ -293,25 +303,25 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handler.APIResponse"
+                            "$ref": "#/definitions/respond.HTTPMessage"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handler.APIResponse"
+                            "$ref": "#/definitions/respond.HTTPMessage"
                         }
                     },
                     "409": {
                         "description": "Conflict",
                         "schema": {
-                            "$ref": "#/definitions/handler.APIResponse"
+                            "$ref": "#/definitions/respond.HTTPMessage"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handler.APIResponse"
+                            "$ref": "#/definitions/respond.HTTPMessage"
                         }
                     }
                 }
@@ -322,12 +332,13 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "users"
+                    "Users"
                 ],
                 "summary": "Delete a user",
                 "parameters": [
                     {
                         "type": "string",
+                        "format": "uuid",
                         "description": "The user ID in UUID format",
                         "name": "user_id",
                         "in": "path",
@@ -335,22 +346,22 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK",
+                    "204": {
+                        "description": "No Content",
                         "schema": {
-                            "$ref": "#/definitions/handler.APIResponse"
+                            "$ref": "#/definitions/respond.HTTPMessage"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/handler.APIResponse"
+                            "$ref": "#/definitions/respond.HTTPMessage"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handler.APIResponse"
+                            "$ref": "#/definitions/respond.HTTPMessage"
                         }
                     }
                 }
@@ -376,7 +387,7 @@ const docTemplate = `{
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/handler.APIResponse"
+                            "$ref": "#/definitions/respond.HTTPMessage"
                         }
                     }
                 }
@@ -384,40 +395,33 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "handler.APIResponse": {
-            "type": "object",
-            "properties": {
-                "message": {
-                    "type": "string"
-                },
-                "method": {
-                    "type": "string"
-                },
-                "path": {
-                    "type": "string"
-                },
-                "status_code": {
-                    "type": "integer"
-                },
-                "timestamp": {
-                    "type": "string"
-                }
-            }
-        },
         "handler.CreateUserRequest": {
             "type": "object",
             "properties": {
                 "email": {
-                    "type": "string"
+                    "type": "string",
+                    "format": "email",
+                    "example": "my@email.com"
                 },
                 "first_name": {
-                    "type": "string"
+                    "type": "string",
+                    "format": "string",
+                    "example": "John"
                 },
                 "id": {
-                    "type": "string"
+                    "type": "string",
+                    "format": "uuid",
+                    "example": "550e8400-e29b-41d4-a716-446655440000"
                 },
                 "last_name": {
-                    "type": "string"
+                    "type": "string",
+                    "format": "string",
+                    "example": "Doe"
+                },
+                "password": {
+                    "type": "string",
+                    "format": "string",
+                    "example": "ThisIs4Passw0rd"
                 }
             }
         },
@@ -438,14 +442,30 @@ const docTemplate = `{
         "handler.UpdateUserRequest": {
             "type": "object",
             "properties": {
+                "disabled": {
+                    "type": "boolean",
+                    "format": "boolean",
+                    "example": false
+                },
                 "email": {
-                    "type": "string"
+                    "type": "string",
+                    "format": "email",
+                    "example": "my@email.com"
                 },
                 "first_name": {
-                    "type": "string"
+                    "type": "string",
+                    "format": "string",
+                    "example": "John"
                 },
                 "last_name": {
-                    "type": "string"
+                    "type": "string",
+                    "format": "string",
+                    "example": "Doe"
+                },
+                "password": {
+                    "type": "string",
+                    "format": "string",
+                    "example": "ThisIs4Passw0rd"
                 }
             }
         },
@@ -453,22 +473,39 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "created_at": {
-                    "type": "string"
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2021-01-01T00:00:00Z"
+                },
+                "disabled": {
+                    "type": "boolean",
+                    "format": "boolean",
+                    "example": false
                 },
                 "email": {
-                    "type": "string"
+                    "type": "string",
+                    "format": "email",
+                    "example": "my@email.com"
                 },
                 "first_name": {
-                    "type": "string"
+                    "type": "string",
+                    "format": "string",
+                    "example": "John"
                 },
                 "id": {
-                    "type": "string"
+                    "type": "string",
+                    "format": "uuid",
+                    "example": "550e8400-e29b-41d4-a716-446655440000"
                 },
                 "last_name": {
-                    "type": "string"
+                    "type": "string",
+                    "format": "string",
+                    "example": "Doe"
                 },
                 "updated_at": {
-                    "type": "string"
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2021-01-01T00:00:00Z"
                 }
             }
         },
@@ -492,6 +529,26 @@ const docTemplate = `{
                 },
                 "size": {
                     "type": "integer"
+                }
+            }
+        },
+        "respond.HTTPMessage": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                },
+                "method": {
+                    "type": "string"
+                },
+                "path": {
+                    "type": "string"
+                },
+                "status_code": {
+                    "type": "integer"
+                },
+                "timestamp": {
+                    "type": "string"
                 }
             }
         },

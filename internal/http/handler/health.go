@@ -2,6 +2,8 @@ package handler
 
 import (
 	"net/http"
+
+	"github.com/p2p-b2b/go-rest-api-service-template/internal/http/respond"
 )
 
 // HealthHandler represents the handler for the health of the service.
@@ -29,19 +31,19 @@ func (h *HealthHandler) RegisterRoutes(mux *http.ServeMux) {
 // @Tags service.health
 // @Produce json
 // @Success 200 {object} service.Health
-// @Failure 500 {object} APIResponse
+// @Failure 500 {object} respond.HTTPMessage
 // @Router /health [get]
 // @Router /healthz [get]
 // @Router /status [get]
 func (h *HealthHandler) get(w http.ResponseWriter, r *http.Request) {
 	health, err := h.service.UserHealthCheck(r.Context())
 	if err != nil {
-		WriteJSONMessage(w, r, http.StatusInternalServerError, ErrInternalServerError.Error())
+		respond.WriteJSONMessage(w, r, http.StatusInternalServerError, ErrInternalServerError.Error())
 		return
 	}
 
-	if err := WriteJSONData(w, http.StatusOK, health); err != nil {
-		WriteJSONMessage(w, r, http.StatusInternalServerError, ErrInternalServerError.Error())
+	if err := respond.WriteJSONData(w, http.StatusOK, health); err != nil {
+		respond.WriteJSONMessage(w, r, http.StatusInternalServerError, ErrInternalServerError.Error())
 		return
 	}
 }

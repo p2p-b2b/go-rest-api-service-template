@@ -7,6 +7,8 @@ CREATE TABLE IF NOT EXISTS users (
     first_name VARCHAR(255) NOT NULL,
     last_name VARCHAR(255) NOT NULL,
     email VARCHAR(255) NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    disabled BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
 
@@ -34,5 +36,4 @@ DROP INDEX "idx_users_updated_at";
 DROP INDEX "idx_users_pagination";
 
 DROP TABLE IF EXISTS users;
-
 -- +goose StatementEnd

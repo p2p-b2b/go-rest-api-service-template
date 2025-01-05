@@ -1,4 +1,4 @@
-package handler
+package respond
 
 import (
 	"encoding/json"
@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-type APIResponse struct {
+type HTTPMessage struct {
 	Timestamp  time.Time `json:"timestamp"`
 	StatusCode int       `json:"status_code"`
 	Message    string    `json:"message"`
@@ -15,11 +15,11 @@ type APIResponse struct {
 	Path       string    `json:"path"`
 }
 
-func (e *APIResponse) String() string {
+func (e *HTTPMessage) String() string {
 	return e.Message
 }
 
-func (e *APIResponse) Error() string {
+func (e *HTTPMessage) Error() string {
 	return e.Message
 }
 
@@ -40,7 +40,7 @@ func WriteJSONMessage(w http.ResponseWriter, r *http.Request, statusCode int, me
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
 
-	var success APIResponse
+	var success HTTPMessage
 	success.Timestamp = time.Now()
 	success.StatusCode = statusCode
 	success.Message = message

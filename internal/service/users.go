@@ -6,11 +6,11 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"net/http"
 	"runtime"
 	"strings"
 
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/o11y"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/repository"
 	"go.opentelemetry.io/otel/attribute"
@@ -29,7 +29,8 @@ type UserRepository interface {
 	Insert(ctx context.Context, input *repository.InsertUserInput) error
 	Update(ctx context.Context, input *repository.UpdateUserInput) error
 	Delete(ctx context.Context, input *repository.DeleteUserInput) error
-	SelectByID(ctx context.Context, id uuid.UUID) (*repository.User, error)
+	SelectUserByID(ctx context.Context, id uuid.UUID) (*repository.User, error)
+	SelectUserByEmail(ctx context.Context, email string) (*repository.User, error)
 	Select(ctx context.Context, input *repository.SelectUsersInput) (*repository.SelectUsersOutput, error)
 }
 
@@ -51,7 +52,15 @@ type UserService struct {
 }
 
 // NewUserService creates a new UserService.
-func NewUserService(conf UserServiceConf) *UserService {
+func NewUserService(conf UserServiceConf) (*UserService, error) {
+	if conf.Repository == nil {
+		return nil, ErrInvalidRepository
+	}
+
+	if conf.OT == nil {
+		return nil, ErrInvalidOpenTelemetry
+	}
+
 	u := &UserService{
 		repository: conf.Repository,
 		ot:         conf.OT,
@@ -61,27 +70,17 @@ func NewUserService(conf UserServiceConf) *UserService {
 		u.metricsPrefix += "_"
 	}
 
-	if err := u.registerMetrics(); err != nil {
-		slog.Error("service.users.NewUserService", "error", err)
-		panic(err)
-	}
-
-	return u
-}
-
-// registerMetrics registers the metrics for the user handler.
-func (s *UserService) registerMetrics() error {
-	serviceCalls, err := s.ot.Metrics.Meter.Int64Counter(
-		fmt.Sprintf("%s%s", s.metricsPrefix, "services_calls_total"),
+	serviceCalls, err := u.ot.Metrics.Meter.Int64Counter(
+		fmt.Sprintf("%s%s", u.metricsPrefix, "services_calls_total"),
 		metric.WithDescription("The number of calls to the user service"),
 	)
 	if err != nil {
 		slog.Error("service.users.registerMetrics", "error", err)
-		return err
+		return nil, err
 	}
-	s.metrics.serviceCalls = serviceCalls
+	u.metrics.serviceCalls = serviceCalls
 
-	return nil
+	return u, nil
 }
 
 // UserHealthCheck verifies a connection to the repository is still alive.
@@ -146,9 +145,9 @@ func (s *UserService) GetUserByID(ctx context.Context, id uuid.UUID) (*User, err
 	}
 
 	if id == uuid.Nil {
+		slog.Error("service.users.GetUserByID", "error", ErrInvalidUserID)
 		span.SetStatus(codes.Error, ErrInvalidUserID.Error())
 		span.RecordError(ErrInvalidUserID)
-		slog.Error("service.users.GetUserByID", "error", ErrInvalidUserID)
 		s.metrics.serviceCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				append(metricCommonAttributes, attribute.String("successful", "false"))...,
@@ -159,7 +158,7 @@ func (s *UserService) GetUserByID(ctx context.Context, id uuid.UUID) (*User, err
 	}
 
 	slog.Debug("service.users.GetUserByID", "id", id)
-	qryOut, err := s.repository.SelectByID(ctx, id)
+	qryOut, err := s.repository.SelectUserByID(ctx, id)
 	if err != nil {
 		span.SetStatus(codes.Error, err.Error())
 		span.RecordError(err)
@@ -170,24 +169,11 @@ func (s *UserService) GetUserByID(ctx context.Context, id uuid.UUID) (*User, err
 			),
 		)
 
-		if errors.Is(err, sql.ErrNoRows) {
+		if errors.Is(err, sql.ErrNoRows) || errors.Is(err, repository.ErrUserNotFound) {
 			return nil, ErrUserNotFound
 		}
 
-		return nil, ErrGettingUserByID
-	}
-
-	if qryOut == nil {
-		span.SetStatus(codes.Error, ErrGettingUserByID.Error())
-		span.RecordError(ErrGettingUserByID)
-		slog.Error("service.users.GetUserByID", "error", ErrGettingUserByID)
-		s.metrics.serviceCalls.Add(ctx, 1,
-			metric.WithAttributes(
-				append(metricCommonAttributes, attribute.String("successful", "false"))...,
-			),
-		)
-
-		return nil, ErrGettingUserByID
+		return nil, err
 	}
 
 	user := &User{
@@ -195,11 +181,81 @@ func (s *UserService) GetUserByID(ctx context.Context, id uuid.UUID) (*User, err
 		FirstName: qryOut.FirstName,
 		LastName:  qryOut.LastName,
 		Email:     qryOut.Email,
+		Disabled:  qryOut.Disabled,
 		CreatedAt: qryOut.CreatedAt,
 		UpdatedAt: qryOut.UpdatedAt,
 	}
 
 	slog.Debug("service.users.GetUserByID", "email", user.Email)
+	span.SetStatus(codes.Ok, "user found")
+	span.SetAttributes(attribute.String("user.email", user.Email))
+	s.metrics.serviceCalls.Add(ctx, 1,
+		metric.WithAttributes(
+			append(metricCommonAttributes, attribute.String("successful", "true"))...,
+		),
+	)
+
+	return user, nil
+}
+
+// GetUserByEmail returns the user with the specified email.
+func (s *UserService) GetUserByEmail(ctx context.Context, email string) (*User, error) {
+	ctx, span := s.ot.Traces.Tracer.Start(ctx, "service.users.GetUserByEmail")
+	defer span.End()
+
+	span.SetAttributes(
+		attribute.String("component", "service.users.GetUserByEmail"),
+		attribute.String("user.email", email),
+	)
+
+	metricCommonAttributes := []attribute.KeyValue{
+		attribute.String("component", "service.users.GetUserByEmail"),
+	}
+
+	if email == "" {
+		slog.Error("service.users.GetUserByEmail", "error", ErrInvalidUserEmail)
+		span.SetStatus(codes.Error, ErrInvalidUserEmail.Error())
+		span.RecordError(ErrInvalidUserEmail)
+		s.metrics.serviceCalls.Add(ctx, 1,
+			metric.WithAttributes(
+				append(metricCommonAttributes, attribute.String("successful", "false"))...,
+			),
+		)
+
+		return nil, ErrInvalidUserEmail
+	}
+
+	slog.Debug("service.users.GetUserByEmail", "email", email)
+	qryOut, err := s.repository.SelectUserByEmail(ctx, email)
+	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
+		span.RecordError(err)
+		slog.Error("service.users.GetUserByEmail", "error", err)
+		s.metrics.serviceCalls.Add(ctx, 1,
+			metric.WithAttributes(
+				append(metricCommonAttributes, attribute.String("successful", "false"))...,
+			),
+		)
+
+		if errors.Is(err, sql.ErrNoRows) || errors.Is(err, repository.ErrUserNotFound) {
+			return nil, ErrUserNotFound
+		}
+
+		return nil, err
+	}
+
+	user := &User{
+		ID:        qryOut.ID,
+		FirstName: qryOut.FirstName,
+		LastName:  qryOut.LastName,
+		Email:     qryOut.Email,
+		Disabled:  qryOut.Disabled,
+		CreatedAt: qryOut.CreatedAt,
+		UpdatedAt: qryOut.UpdatedAt,
+	}
+
+	slog.Debug("service.users.GetUserByEmail", "email", user.Email)
+
 	span.SetStatus(codes.Ok, "user found")
 	span.SetAttributes(attribute.String("user.email", user.Email))
 	s.metrics.serviceCalls.Add(ctx, 1,
@@ -225,14 +281,14 @@ func (s *UserService) CreateUser(ctx context.Context, input *CreateUserInput) er
 	}
 
 	if input == nil {
-		span.SetStatus(codes.Error, ErrCreatingUser.Error())
-		span.RecordError(ErrCreatingUser)
+		span.SetStatus(codes.Error, ErrInputIsNil.Error())
+		span.RecordError(ErrInputIsNil)
 		s.metrics.serviceCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				append(metricCommonAttributes, attribute.String("successful", "false"))...,
 			),
 		)
-		return ErrCreatingUser
+		return ErrInputIsNil
 	}
 
 	span.SetAttributes(
@@ -257,11 +313,28 @@ func (s *UserService) CreateUser(ctx context.Context, input *CreateUserInput) er
 		return err
 	}
 
+	hashPwd, err := hashAndSaltPassword(input.Password)
+	if err != nil {
+		slog.Error("handler.users.createUser", "error", err.Error())
+		span.SetStatus(codes.Error, err.Error())
+		span.RecordError(err)
+		slog.Error("handler.users.createUser", "error", err.Error())
+		s.metrics.serviceCalls.Add(ctx, 1,
+			metric.WithAttributes(
+				append(metricCommonAttributes, attribute.String("code", fmt.Sprintf("%d", http.StatusInternalServerError)))...,
+			),
+		)
+
+		return err
+	}
+
 	rParams := &repository.InsertUserInput{
-		ID:        input.ID,
-		FirstName: input.FirstName,
-		LastName:  input.LastName,
-		Email:     input.Email,
+		ID:           input.ID,
+		FirstName:    input.FirstName,
+		LastName:     input.LastName,
+		Email:        input.Email,
+		Disabled:     input.Disabled,
+		PasswordHash: hashPwd,
 	}
 
 	if err := s.repository.Insert(ctx, rParams); err != nil {
@@ -274,22 +347,15 @@ func (s *UserService) CreateUser(ctx context.Context, input *CreateUserInput) er
 			),
 		)
 
-		var pgErr *pgconn.PgError
-		if errors.As(err, &pgErr) {
-			if pgErr.Code == "23505" {
-				if strings.Contains(pgErr.Message, "_pkey") {
-					return ErrUserIDAlreadyExists
-				}
-
-				if strings.Contains(pgErr.Message, "_email") {
-					return ErrUserEmailAlreadyExists
-				}
-
-				return ErrCreatingUser
-			}
+		if errors.Is(err, repository.ErrUserEmailAlreadyExists) {
+			return ErrUserEmailAlreadyExists
 		}
 
-		return ErrCreatingUser
+		if errors.Is(err, repository.ErrUserIDAlreadyExists) {
+			return ErrUserIDAlreadyExists
+		}
+
+		return err
 	}
 
 	slog.Debug("service.users.CreateUser", "email", input.Email)
@@ -317,25 +383,61 @@ func (s *UserService) UpdateUser(ctx context.Context, input *UpdateUserInput) er
 	}
 
 	if input == nil {
-		span.SetStatus(codes.Error, ErrUpdatingUser.Error())
-		span.RecordError(ErrUpdatingUser)
+		span.SetStatus(codes.Error, ErrInputIsNil.Error())
+		span.RecordError(ErrInputIsNil)
 		s.metrics.serviceCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				append(metricCommonAttributes, attribute.String("successful", "false"))...,
 			),
 		)
-		return ErrUpdatingUser
+
+		return ErrInputIsNil
 	}
 
 	span.SetAttributes(
 		attribute.String("user.id", input.ID.String()),
 	)
 
+	if err := input.Validate(); err != nil {
+		span.SetStatus(codes.Error, err.Error())
+		span.RecordError(err)
+		slog.Error("service.users.UpdateUser", "error", err)
+		s.metrics.serviceCalls.Add(ctx, 1,
+			metric.WithAttributes(
+				append(metricCommonAttributes, attribute.String("successful", "false"))...,
+			),
+		)
+
+		return err
+	}
+
 	rParams := &repository.UpdateUserInput{
 		ID:        input.ID,
 		FirstName: input.FirstName,
 		LastName:  input.LastName,
 		Email:     input.Email,
+		Disabled:  input.Disabled,
+	}
+
+	// update the password if it is provided
+	if input.Password != nil && len(*input.Password) < UsersPasswordMinLength {
+
+		hashPwd, err := hashAndSaltPassword(*input.Password)
+		if err != nil {
+			slog.Error("handler.users.createUser", "error", err.Error())
+			span.SetStatus(codes.Error, err.Error())
+			span.RecordError(err)
+			slog.Error("handler.users.createUser", "error", err.Error())
+			s.metrics.serviceCalls.Add(ctx, 1,
+				metric.WithAttributes(
+					append(metricCommonAttributes, attribute.String("code", fmt.Sprintf("%d", http.StatusInternalServerError)))...,
+				),
+			)
+
+			return err
+		}
+
+		rParams.PasswordHash = &hashPwd
 	}
 
 	if err := s.repository.Update(ctx, rParams); err != nil {
@@ -348,20 +450,15 @@ func (s *UserService) UpdateUser(ctx context.Context, input *UpdateUserInput) er
 			),
 		)
 
-		var pgErr *pgconn.PgError
-		if errors.As(err, &pgErr) {
-			if pgErr.Code == "23505" {
-				if strings.Contains(pgErr.Message, "_email") {
-					return ErrUserEmailAlreadyExists
-				}
-			}
-		}
-
 		if errors.Is(err, repository.ErrUserNotFound) {
 			return ErrUserNotFound
 		}
 
-		return ErrUpdatingUser
+		if errors.Is(err, repository.ErrUserEmailAlreadyExists) {
+			return ErrUserEmailAlreadyExists
+		}
+
+		return err
 	}
 
 	slog.Debug("service.users.UpdateUser", "email", input.Email)
@@ -391,14 +488,15 @@ func (s *UserService) DeleteUser(ctx context.Context, input *DeleteUserInput) er
 	}
 
 	if input.ID == uuid.Nil {
-		span.SetStatus(codes.Error, ErrDeletingUser.Error())
-		span.RecordError(ErrDeletingUser)
+		span.SetStatus(codes.Error, ErrInputIsNil.Error())
+		span.RecordError(ErrInputIsNil)
 		s.metrics.serviceCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				append(metricCommonAttributes, attribute.String("successful", "false"))...,
 			),
 		)
-		return ErrDeletingUser
+
+		return ErrInputIsNil
 	}
 
 	rParams := &repository.DeleteUserInput{
@@ -416,7 +514,12 @@ func (s *UserService) DeleteUser(ctx context.Context, input *DeleteUserInput) er
 				append(metricCommonAttributes, attribute.String("successful", "false"))...,
 			),
 		)
-		return ErrDeletingUser
+
+		if errors.Is(err, repository.ErrUserNotFound) {
+			return ErrUserNotFound
+		}
+
+		return err
 	}
 
 	span.SetStatus(codes.Ok, "User deleted")
@@ -470,18 +573,6 @@ func (s *UserService) ListUsers(ctx context.Context, input *ListUserInput) (*Lis
 		return nil, err
 	}
 
-	if qryOut == nil {
-		span.SetStatus(codes.Error, ErrListingUsers.Error())
-		span.RecordError(ErrListingUsers)
-		slog.Error("service.users.ListUsers", "error", ErrListingUsers)
-		s.metrics.serviceCalls.Add(ctx, 1,
-			metric.WithAttributes(
-				append(metricCommonAttributes, attribute.String("successful", "false"))...,
-			),
-		)
-		return nil, nil
-	}
-
 	users := make([]*User, len(qryOut.Items))
 	for i, u := range qryOut.Items {
 		users[i] = &User{
@@ -489,6 +580,7 @@ func (s *UserService) ListUsers(ctx context.Context, input *ListUserInput) (*Lis
 			FirstName: u.FirstName,
 			LastName:  u.LastName,
 			Email:     u.Email,
+			Disabled:  u.Disabled,
 			CreatedAt: u.CreatedAt,
 			UpdatedAt: u.UpdatedAt,
 		}

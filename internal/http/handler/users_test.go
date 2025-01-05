@@ -14,6 +14,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/uuid"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/config"
+	"github.com/p2p-b2b/go-rest-api-service-template/internal/http/respond"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/o11y"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/service"
 	mocksService "github.com/p2p-b2b/go-rest-api-service-template/mocks/handler"
@@ -52,7 +53,7 @@ func TestUser_GetUserByID(t *testing.T) {
 			method       string
 			pathPattern  string
 			pathValue    string
-			apiError     APIResponse
+			apiError     respond.HTTPMessage
 			apiResponse  User
 			plainMessage string
 			plainCode    int
@@ -65,7 +66,7 @@ func TestUser_GetUserByID(t *testing.T) {
 				method:      http.MethodGet,
 				pathPattern: "/users/{user_id}",
 				pathValue:   "/users/InvalidUUID",
-				apiError: APIResponse{
+				apiError: respond.HTTPMessage{
 					Method:     "GET",
 					Path:       "/users/InvalidUUID",
 					StatusCode: http.StatusBadRequest,
@@ -78,7 +79,7 @@ func TestUser_GetUserByID(t *testing.T) {
 				method:      http.MethodGet,
 				pathPattern: "/users/{user_id}",
 				pathValue:   "/users/" + uuid.Nil.String(),
-				apiError: APIResponse{
+				apiError: respond.HTTPMessage{
 					Method:     "GET",
 					Path:       "/users/" + uuid.Nil.String(),
 					StatusCode: http.StatusBadRequest,
@@ -100,7 +101,7 @@ func TestUser_GetUserByID(t *testing.T) {
 				method:      http.MethodGet,
 				pathPattern: "/users/{user_id}",
 				pathValue:   "/users/''",
-				apiError: APIResponse{
+				apiError: respond.HTTPMessage{
 					Method:     "GET",
 					Path:       "/users/''",
 					StatusCode: http.StatusBadRequest,
@@ -113,7 +114,7 @@ func TestUser_GetUserByID(t *testing.T) {
 				method:      http.MethodGet,
 				pathPattern: "/users/{user_id}",
 				pathValue:   "/users/e1cdf461-87c7-465f-a374-dc6bc7e962b9",
-				apiError: APIResponse{
+				apiError: respond.HTTPMessage{
 					Method:     "GET",
 					Path:       "/users/e1cdf461-87c7-465f-a374-dc6bc7e962b9",
 					StatusCode: http.StatusInternalServerError,
@@ -185,7 +186,10 @@ func TestUser_GetUserByID(t *testing.T) {
 
 				// When
 				mux := http.NewServeMux()
-				h := NewUserHandler(userHandlerConf)
+				h, err := NewUserHandler(userHandlerConf)
+				if err != nil {
+					t.Fatalf("could not create user handler: %v", err)
+				}
 				mux.HandleFunc(handlerPattern, h.getByID)
 				mux.ServeHTTP(w, r)
 
@@ -194,7 +198,7 @@ func TestUser_GetUserByID(t *testing.T) {
 				if !startsWith(w.Code, 2) {
 
 					// when plain message is set, we don't expect a JSON response
-					if tc.apiError == (APIResponse{}) {
+					if tc.apiError == (respond.HTTPMessage{}) {
 						if w.Code != tc.plainCode {
 							t.Errorf("expected status code %d, got %d", tc.plainCode, w.Code)
 						}
@@ -211,7 +215,7 @@ func TestUser_GetUserByID(t *testing.T) {
 					}
 
 					// decode the response
-					var apiError APIResponse
+					var apiError respond.HTTPMessage
 					if err := json.Unmarshal(w.Body.Bytes(), &apiError); err != nil {
 						t.Logf("body = %s", w.Body.Bytes())
 

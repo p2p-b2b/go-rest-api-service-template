@@ -1,6 +1,8 @@
 package repository
 
 import (
+	"errors"
+	"fmt"
 	"net/mail"
 	"reflect"
 	"time"
@@ -10,34 +12,61 @@ import (
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/query"
 )
 
+const (
+	UsersFirstNameMinLength = 2
+	UsersFirstNameMaxLength = 255
+	UsersLastNameMinLength  = 2
+	UsersLastNameMaxLength  = 255
+	UsersEmailMinLength     = 6
+	UsersEmailMaxLength     = 255
+	UsersPasswordMinLength  = 6
+	UsersPasswordMaxLength  = 255
+)
+
+var (
+	ErrInvalidUserID        = errors.New("invalid user ID. Must be a valid UUID")
+	ErrInvalidUserFirstName = errors.New("invalid first name. Must be between " + fmt.Sprintf("%d and %d", UsersFirstNameMinLength, UsersFirstNameMaxLength) + " characters long")
+	ErrInvalidUserLastName  = errors.New("invalid last name. Must be between " + fmt.Sprintf("%d and %d", UsersLastNameMinLength, UsersLastNameMaxLength) + " characters long")
+	ErrInvalidUserEmail     = errors.New("invalid email. Must be between " + fmt.Sprintf("%d and %d", UsersEmailMinLength, UsersEmailMaxLength) + " characters long")
+	ErrInvalidUserPassword  = errors.New("invalid password. Must be between " + fmt.Sprintf("%d and %d", UsersPasswordMinLength, UsersPasswordMaxLength) + " characters long")
+	ErrUserNotFound         = errors.New("user not found")
+
+	ErrUserIDAlreadyExists    = errors.New("user ID already exists")
+	ErrUserEmailAlreadyExists = errors.New("user email already exists")
+)
+
 var (
 	// UserFilterFields is a list of valid fields for filtering users.
-	UserFilterFields = []string{"id", "first_name", "last_name", "email", "created_at", "updated_at"}
+	UserFilterFields = []string{"id", "first_name", "last_name", "email", "disabled", "created_at", "updated_at"}
 
 	// UserSortFields is a list of valid fields for sorting users.
-	UserSortFields = []string{"id", "first_name", "last_name", "email", "created_at", "updated_at"}
+	UserSortFields = []string{"id", "first_name", "last_name", "email", "disabled", "created_at", "updated_at"}
 
 	// UserPartialFields is a list of valid fields for partial responses.
-	UserPartialFields = []string{"id", "first_name", "last_name", "email", "created_at", "updated_at"}
+	UserPartialFields = []string{"id", "first_name", "last_name", "email", "disabled", "created_at", "updated_at"}
 )
 
 // User represents a user entity used to model the data stored in the database.
 type User struct {
-	ID        uuid.UUID
-	FirstName string
-	LastName  string
-	Email     string
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	SerialID  int64
+	ID           uuid.UUID
+	FirstName    string
+	LastName     string
+	Email        string
+	PasswordHash string
+	Disabled     bool
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
+	SerialID     int64
 }
 
 // UserInput represents the common input for the user entity.
 type UserInput struct {
-	ID        uuid.UUID
-	FirstName string
-	LastName  string
-	Email     string
+	ID           uuid.UUID
+	FirstName    string
+	LastName     string
+	Email        string
+	PasswordHash string
+	Disabled     bool
 }
 
 // Validate validates the user input.
@@ -46,22 +75,25 @@ func (ui *UserInput) Validate() error {
 		return ErrInvalidUserID
 	}
 
-	if len(ui.FirstName) < 2 {
+	if len(ui.FirstName) < UsersFirstNameMinLength || len(ui.FirstName) > UsersFirstNameMaxLength {
 		return ErrInvalidUserFirstName
 	}
 
-	if len(ui.LastName) < 2 {
+	if len(ui.LastName) < UsersLastNameMinLength || len(ui.LastName) > UsersLastNameMaxLength {
 		return ErrInvalidUserLastName
 	}
 
-	// minimal email validation
-	if len(ui.Email) < 6 {
+	if len(ui.Email) < UsersEmailMinLength || len(ui.Email) > UsersEmailMaxLength {
 		return ErrInvalidUserEmail
 	}
 
 	_, err := mail.ParseAddress(ui.Email)
 	if err != nil {
 		return ErrInvalidUserEmail
+	}
+
+	if len(ui.PasswordHash) < UsersPasswordMinLength {
+		return ErrInvalidUserPassword
 	}
 
 	return nil
@@ -77,11 +109,13 @@ func (ui *InsertUserInput) Validate() error {
 
 // UpdateUserInput represents the input for the UpdateUser method.
 type UpdateUserInput struct {
-	ID        uuid.UUID
-	FirstName *string
-	LastName  *string
-	Email     *string
-	UpdatedAt *time.Time
+	ID           uuid.UUID
+	FirstName    *string
+	LastName     *string
+	Email        *string
+	PasswordHash *string
+	Disabled     *bool
+	UpdatedAt    *time.Time
 }
 
 // Validate validates the UpdateUserInput.
@@ -94,24 +128,31 @@ func (ui *UpdateUserInput) Validate() error {
 		return ErrInvalidUserID
 	}
 
-	if ui.FirstName != nil && *ui.FirstName != "" && len(*ui.FirstName) < 2 {
+	if ui.FirstName != nil && *ui.FirstName != "" && len(*ui.FirstName) < UsersFirstNameMinLength || len(*ui.FirstName) > UsersFirstNameMaxLength {
 		return ErrInvalidUserFirstName
 	}
 
-	if ui.LastName != nil && *ui.LastName != "" && len(*ui.LastName) < 2 {
+	if ui.LastName != nil && *ui.LastName != "" && len(*ui.LastName) < UsersLastNameMinLength || len(*ui.LastName) > UsersLastNameMaxLength {
 		return ErrInvalidUserLastName
 	}
 
-	// minimal email validation
-	if ui.Email != nil && *ui.Email != "" {
-		if len(*ui.Email) < 6 {
-			return ErrInvalidUserEmail
-		}
+	if ui.Email != nil && *ui.Email != "" && len(*ui.Email) < UsersEmailMinLength || len(*ui.Email) > UsersEmailMaxLength {
+		return ErrInvalidUserEmail
+	}
 
+	if ui.Email != nil && *ui.Email != "" && len(*ui.Email) < UsersEmailMinLength || len(*ui.Email) > UsersEmailMaxLength {
+		return ErrInvalidUserEmail
+	}
+
+	if ui.PasswordHash != nil && *ui.PasswordHash != "" && len(*ui.PasswordHash) >= UsersPasswordMinLength && len(*ui.PasswordHash) <= UsersPasswordMaxLength {
 		_, err := mail.ParseAddress(*ui.Email)
 		if err != nil {
 			return ErrInvalidUserEmail
 		}
+	}
+
+	if ui.PasswordHash != nil && *ui.PasswordHash != "" && len(*ui.PasswordHash) < UsersPasswordMinLength {
+		return ErrInvalidUserPassword
 	}
 
 	return nil
@@ -119,8 +160,7 @@ func (ui *UpdateUserInput) Validate() error {
 
 // DeleteUserInput represents the input for the DeleteUser method.
 type DeleteUserInput struct {
-	// ID is the unique identifier of the user.
-	ID uuid.UUID `json:"id"`
+	ID uuid.UUID
 }
 
 // Validate validates the DeleteUserInput.
@@ -177,6 +217,11 @@ func (ui *ListUserInput) Validate() error {
 
 // SelectUsersInput represents the common input for the select user method.
 type SelectUsersInput ListUserInput
+
+// Validate validates the SelectUsersInput.
+func (ui *SelectUsersInput) Validate() error {
+	return (*ListUserInput)(ui).Validate()
+}
 
 // SelectUsersOutput represents the output for the list user method.
 type SelectUsersOutput struct {

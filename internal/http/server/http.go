@@ -14,29 +14,29 @@ import (
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/config"
 )
 
-type ServerConfig struct {
+type HTTPServerConfig struct {
 	Ctx         context.Context
 	HttpHandler http.Handler
-	Config      *config.ServerConfig
+	Config      *config.HTTPServerConfig
 }
 
-type Server struct {
+type HTTPServer struct {
 	ctx        context.Context
 	httpServer *http.Server
-	conf       *config.ServerConfig
+	conf       *config.HTTPServerConfig
 
 	osSigChan chan os.Signal
 	stopChan  chan struct{}
 }
 
-func NewHttpServer(conf ServerConfig) *Server {
+func NewHTTPServer(conf HTTPServerConfig) *HTTPServer {
 	if conf.Ctx == nil {
 		conf.Ctx = context.Background()
 	}
 
 	addr := fmt.Sprintf("%s:%d", conf.Config.Address.Value, conf.Config.Port.Value)
 
-	s := &Server{
+	s := &HTTPServer{
 		ctx: conf.Ctx,
 		httpServer: &http.Server{
 			Addr:    addr,
@@ -53,8 +53,8 @@ func NewHttpServer(conf ServerConfig) *Server {
 	return s
 }
 
-func (s *Server) Start() {
-	slog.Info("starting server", "address", s.httpServer.Addr, "tls", s.conf.TLSEnabled.Value)
+func (s *HTTPServer) Start() {
+	slog.Info("starting http server", "address", s.httpServer.Addr, "tls", s.conf.TLSEnabled.Value)
 
 	// Listen for OS signals
 	s.listenOsSignals()
@@ -64,30 +64,30 @@ func (s *Server) Start() {
 			s.conf.CertificateFile.Value.Name(),
 			s.conf.PrivateKeyFile.Value.Name(),
 		); !errors.Is(err, http.ErrServerClosed) {
-			slog.Error("server error", "error", err)
+			slog.Error("http server error", "error", err)
 
 			s.Stop()
 		}
 	} else {
 		if err := s.httpServer.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
-			slog.Error("server error", "error", err)
+			slog.Error("http server error", "error", err)
 
 			s.Stop()
 		}
 	}
 }
 
-func (s *Server) Wait() <-chan struct{} {
+func (s *HTTPServer) Wait() <-chan struct{} {
 	return s.stopChan
 }
 
-func (s *Server) Stop() {
+func (s *HTTPServer) Stop() {
 	s.stopChan <- struct{}{}
 }
 
-func (s *Server) listenOsSignals() {
+func (s *HTTPServer) listenOsSignals() {
 	go func() {
-		slog.Info("server listening for OS signals")
+		slog.Info("http server listening for OS signals")
 
 		ctx, cancel := context.WithTimeout(s.ctx, s.conf.ShutdownTimeout.Value)
 		defer cancel()
@@ -100,15 +100,15 @@ func (s *Server) listenOsSignals() {
 				// Handle the signal to shutdown the server or reload
 				switch sig {
 				case os.Interrupt, syscall.SIGINT, syscall.SIGTERM:
-					slog.Warn("shutting down server...")
+					slog.Warn("shutting down http server...")
 					if err := s.httpServer.Shutdown(ctx); err != nil {
-						slog.Error("server shutdown with error", "error", err)
+						slog.Error("http server shutdown with error", "error", err)
 						os.Exit(1)
 					}
 					close(s.stopChan)
 					return
 				case syscall.SIGHUP:
-					slog.Warn("reloading server...")
+					slog.Warn("reloading http server...")
 					// Reload the server
 					// This is where you would reload the server
 
@@ -127,7 +127,7 @@ func (s *Server) listenOsSignals() {
 // setTLSConfig sets the TLS configuration for the server.
 //
 //lint:ignore U1000 This function is used depending on the configuration.
-func (s *Server) setTLSConfig() error {
+func (s *HTTPServer) setTLSConfig() error {
 	slog.Info("configuring tls")
 	if _, err := os.Stat(s.conf.CertificateFile.Value.Name()); os.IsNotExist(err) {
 		slog.Error(".crt file not found", "file", s.conf.CertificateFile.Value.Name(), "error", err)
