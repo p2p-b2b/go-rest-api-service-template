@@ -25,13 +25,15 @@ var (
 )
 
 // Paginator represents a paginator.
+//
+// @Description Paginator represents a paginator
 type Paginator struct {
-	NextToken string `json:"next_token"`
-	NextPage  string `json:"next_page"`
-	PrevToken string `json:"prev_token"`
-	PrevPage  string `json:"prev_page"`
-	Size      int    `json:"size"`
-	Limit     int    `json:"limit"`
+	NextToken string `json:"next_token" example:"ZmZmZmZmZmYtZmZmZi0tZmZmZmZmZmY=" format:"string"`
+	NextPage  string `json:"next_page" example:"http://localhost:8080/users?next_token=ZmZmZmZmZmYtZmZmZi0tZmZmZmZmZmY=&limit=10" format:"string"`
+	PrevToken string `json:"prev_token" example:"ZmZmZmZmZmYtZmZmZi0tZmZmZmZmZmY=" format:"string"`
+	PrevPage  string `json:"prev_page" example:"http://localhost:8080/users?prev_token=ZmZmZmZmZmYtZmZmZi0tZmZmZmZmZmY=&limit=10" format:"string"`
+	Size      int    `json:"size" example:"10" format:"int"`
+	Limit     int    `json:"limit" example:"10" format:"int"`
 }
 
 // String returns the string representation of the paginator.

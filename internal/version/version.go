@@ -30,11 +30,11 @@ var (
 
 // VersionInfo represents the version information of the application.
 type VersionInfo struct {
-	Version       string `json:"version"`
-	BuildDate     string `json:"buildDate"`
-	GitCommit     string `json:"gitCommit"`
-	GitBranch     string `json:"gitBranch"`
-	GoVersion     string `json:"goVersion"`
-	GoVersionArch string `json:"goVersionArch"`
-	GoVersionOS   string `json:"goVersionOS"`
+	Version       string
+	BuildDate     string
+	GitCommit     string
+	GitBranch     string
+	GoVersion     string
+	GoVersionArch string
+	GoVersionOS   string
 }

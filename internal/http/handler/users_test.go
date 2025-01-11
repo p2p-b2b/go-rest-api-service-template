@@ -28,7 +28,7 @@ func startsWith(value int, start int) bool {
 	return len(numStr) > 0 && strings.HasPrefix(numStr, startStr)
 }
 
-func TestUser_GetUserByID(t *testing.T) {
+func TestUser_GetByID(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockService := mocksService.NewMockUserService(ctrl)
@@ -122,7 +122,7 @@ func TestUser_GetUserByID(t *testing.T) {
 				},
 				mockCall: mockService.
 					EXPECT().
-					GetUserByID(
+					GetByID(
 						gomock.Any(),
 						uuid.Must(uuid.Parse("e1cdf461-87c7-465f-a374-dc6bc7e962b9")),
 					).
@@ -144,7 +144,7 @@ func TestUser_GetUserByID(t *testing.T) {
 				},
 				mockCall: mockService.
 					EXPECT().
-					GetUserByID(
+					GetByID(
 						gomock.Any(),
 						uuid.Must(uuid.Parse("e1cdf461-87c7-465f-a374-dc6bc7e962b9")),
 					).

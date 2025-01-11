@@ -15,84 +15,6 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/health": {
-            "get": {
-                "description": "Get the health of the service",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "service.health"
-                ],
-                "summary": "Get the health of the service",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/service.Health"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/respond.HTTPMessage"
-                        }
-                    }
-                }
-            }
-        },
-        "/healthz": {
-            "get": {
-                "description": "Get the health of the service",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "service.health"
-                ],
-                "summary": "Get the health of the service",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/service.Health"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/respond.HTTPMessage"
-                        }
-                    }
-                }
-            }
-        },
-        "/status": {
-            "get": {
-                "description": "Get the health of the service",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "service.health"
-                ],
-                "summary": "Get the health of the service",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/service.Health"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/respond.HTTPMessage"
-                        }
-                    }
-                }
-            }
-        },
         "/users": {
             "get": {
                 "description": "List all users",
@@ -209,6 +131,33 @@ const docTemplate = `{
                         "description": "Conflict",
                         "schema": {
                             "$ref": "#/definitions/respond.HTTPMessage"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/respond.HTTPMessage"
+                        }
+                    }
+                }
+            }
+        },
+        "/users/health": {
+            "get": {
+                "description": "Get the health of the service",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users",
+                    "Health"
+                ],
+                "summary": "Get the health of the service",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handler.Health"
                         }
                     },
                     "500": {
@@ -374,14 +323,14 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "version"
+                    "Version"
                 ],
                 "summary": "Get the version of the service",
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/version.VersionInfo"
+                            "$ref": "#/definitions/handler.Version"
                         }
                     },
                     "500": {
@@ -395,7 +344,34 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "handler.Check": {
+            "description": "Health check of the service",
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "object",
+                    "format": "map",
+                    "additionalProperties": true
+                },
+                "kind": {
+                    "type": "string",
+                    "format": "string",
+                    "example": "database"
+                },
+                "name": {
+                    "type": "string",
+                    "format": "string",
+                    "example": "database"
+                },
+                "status": {
+                    "type": "string",
+                    "format": "boolean",
+                    "example": "true"
+                }
+            }
+        },
         "handler.CreateUserRequest": {
+            "description": "CreateUserRequest represents the input for the CreateUser method",
             "type": "object",
             "properties": {
                 "email": {
@@ -425,7 +401,26 @@ const docTemplate = `{
                 }
             }
         },
+        "handler.Health": {
+            "description": "Health check of the service",
+            "type": "object",
+            "properties": {
+                "checks": {
+                    "type": "array",
+                    "items": {
+                        "format": "array",
+                        "$ref": "#/definitions/handler.Check"
+                    }
+                },
+                "status": {
+                    "type": "string",
+                    "format": "boolean",
+                    "example": "true"
+                }
+            }
+        },
         "handler.ListUsersResponse": {
+            "description": "ListUsersResponse represents a list of users",
             "type": "object",
             "properties": {
                 "items": {
@@ -440,6 +435,7 @@ const docTemplate = `{
             }
         },
         "handler.UpdateUserRequest": {
+            "description": "UpdateUserRequest represents the input for the UpdateUser method",
             "type": "object",
             "properties": {
                 "disabled": {
@@ -470,6 +466,7 @@ const docTemplate = `{
             }
         },
         "handler.User": {
+            "description": "User represents a user entity",
             "type": "object",
             "properties": {
                 "created_at": {
@@ -509,26 +506,65 @@ const docTemplate = `{
                 }
             }
         },
+        "handler.Version": {
+            "type": "object",
+            "properties": {
+                "build_date": {
+                    "type": "string"
+                },
+                "git_branch": {
+                    "type": "string"
+                },
+                "git_commit": {
+                    "type": "string"
+                },
+                "go_version": {
+                    "type": "string"
+                },
+                "go_version_arch": {
+                    "type": "string"
+                },
+                "go_version_os": {
+                    "type": "string"
+                },
+                "version": {
+                    "type": "string"
+                }
+            }
+        },
         "paginator.Paginator": {
+            "description": "Paginator represents a paginator",
             "type": "object",
             "properties": {
                 "limit": {
-                    "type": "integer"
+                    "type": "integer",
+                    "format": "int",
+                    "example": 10
                 },
                 "next_page": {
-                    "type": "string"
+                    "type": "string",
+                    "format": "string",
+                    "example": "http://localhost:8080/users?next_token=ZmZmZmZmZmYtZmZmZi0tZmZmZmZmZmY=\u0026limit=10"
                 },
                 "next_token": {
-                    "type": "string"
+                    "type": "string",
+                    "format": "string",
+                    "example": "ZmZmZmZmZmYtZmZmZi0tZmZmZmZmZmY="
                 },
                 "prev_page": {
-                    "type": "string"
+                    "type": "string",
+                    "format": "string",
+                    "example": "http://localhost:8080/users?prev_token=ZmZmZmZmZmYtZmZmZi0tZmZmZmZmZmY=\u0026limit=10"
                 },
                 "prev_token": {
-                    "type": "string"
+                    "type": "string",
+                    "format": "string",
+                    "example": "ZmZmZmZmZmYtZmZmZi0tZmZmZmZmZmY="
                 },
                 "size": {
-                    "type": "integer"
+                    "type": "integer",
+                    "format": "int",
+                    "example": 10
                 }
             }
         },
@@ -548,64 +584,6 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "timestamp": {
-                    "type": "string"
-                }
-            }
-        },
-        "service.Check": {
-            "type": "object",
-            "properties": {
-                "data": {
-                    "type": "object",
-                    "additionalProperties": true
-                },
-                "kind": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "status": {
-                    "type": "boolean"
-                }
-            }
-        },
-        "service.Health": {
-            "type": "object",
-            "properties": {
-                "checks": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/service.Check"
-                    }
-                },
-                "status": {
-                    "type": "boolean"
-                }
-            }
-        },
-        "version.VersionInfo": {
-            "type": "object",
-            "properties": {
-                "buildDate": {
-                    "type": "string"
-                },
-                "gitBranch": {
-                    "type": "string"
-                },
-                "gitCommit": {
-                    "type": "string"
-                },
-                "goVersion": {
-                    "type": "string"
-                },
-                "goVersionArch": {
-                    "type": "string"
-                },
-                "goVersionOS": {
-                    "type": "string"
-                },
-                "version": {
                     "type": "string"
                 }
             }

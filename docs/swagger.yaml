@@ -1,5 +1,26 @@
 definitions:
+  handler.Check:
+    description: Health check of the service
+    properties:
+      data:
+        additionalProperties: true
+        format: map
+        type: object
+      kind:
+        example: database
+        format: string
+        type: string
+      name:
+        example: database
+        format: string
+        type: string
+      status:
+        example: "true"
+        format: boolean
+        type: string
+    type: object
   handler.CreateUserRequest:
+    description: CreateUserRequest represents the input for the CreateUser method
     properties:
       email:
         example: my@email.com
@@ -22,7 +43,21 @@ definitions:
         format: string
         type: string
     type: object
+  handler.Health:
+    description: Health check of the service
+    properties:
+      checks:
+        items:
+          $ref: '#/definitions/handler.Check'
+          format: array
+        type: array
+      status:
+        example: "true"
+        format: boolean
+        type: string
+    type: object
   handler.ListUsersResponse:
+    description: ListUsersResponse represents a list of users
     properties:
       items:
         items:
@@ -32,6 +67,7 @@ definitions:
         $ref: '#/definitions/paginator.Paginator'
     type: object
   handler.UpdateUserRequest:
+    description: UpdateUserRequest represents the input for the UpdateUser method
     properties:
       disabled:
         example: false
@@ -55,6 +91,7 @@ definitions:
         type: string
     type: object
   handler.User:
+    description: User represents a user entity
     properties:
       created_at:
         example: "2021-01-01T00:00:00Z"
@@ -85,19 +122,49 @@ definitions:
         format: date-time
         type: string
     type: object
+  handler.Version:
+    properties:
+      build_date:
+        type: string
+      git_branch:
+        type: string
+      git_commit:
+        type: string
+      go_version:
+        type: string
+      go_version_arch:
+        type: string
+      go_version_os:
+        type: string
+      version:
+        type: string
+    type: object
   paginator.Paginator:
+    description: Paginator represents a paginator
     properties:
       limit:
+        example: 10
+        format: int
         type: integer
       next_page:
+        example: http://localhost:8080/users?next_token=ZmZmZmZmZmYtZmZmZi0tZmZmZmZmZmY=&limit=10
+        format: string
         type: string
       next_token:
+        example: ZmZmZmZmZmYtZmZmZi0tZmZmZmZmZmY=
+        format: string
         type: string
       prev_page:
+        example: http://localhost:8080/users?prev_token=ZmZmZmZmZmYtZmZmZi0tZmZmZmZmZmY=&limit=10
+        format: string
         type: string
       prev_token:
+        example: ZmZmZmZmZmYtZmZmZi0tZmZmZmZmZmY=
+        format: string
         type: string
       size:
+        example: 10
+        format: int
         type: integer
     type: object
   respond.HTTPMessage:
@@ -113,44 +180,6 @@ definitions:
       timestamp:
         type: string
     type: object
-  service.Check:
-    properties:
-      data:
-        additionalProperties: true
-        type: object
-      kind:
-        type: string
-      name:
-        type: string
-      status:
-        type: boolean
-    type: object
-  service.Health:
-    properties:
-      checks:
-        items:
-          $ref: '#/definitions/service.Check'
-        type: array
-      status:
-        type: boolean
-    type: object
-  version.VersionInfo:
-    properties:
-      buildDate:
-        type: string
-      gitBranch:
-        type: string
-      gitCommit:
-        type: string
-      goVersion:
-        type: string
-      goVersionArch:
-        type: string
-      goVersionOS:
-        type: string
-      version:
-        type: string
-    type: object
 info:
   contact: {}
   description: |-
@@ -163,57 +192,6 @@ info:
     - Debug mode to enable debug logging.
     - TLS enabled to secure the communication.
 paths:
-  /health:
-    get:
-      description: Get the health of the service
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/service.Health'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/respond.HTTPMessage'
-      summary: Get the health of the service
-      tags:
-      - service.health
-  /healthz:
-    get:
-      description: Get the health of the service
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/service.Health'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/respond.HTTPMessage'
-      summary: Get the health of the service
-      tags:
-      - service.health
-  /status:
-    get:
-      description: Get the health of the service
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/service.Health'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/respond.HTTPMessage'
-      summary: Get the health of the service
-      tags:
-      - service.health
   /users:
     get:
       description: List all users
@@ -402,6 +380,24 @@ paths:
       summary: Update a user
       tags:
       - Users
+  /users/health:
+    get:
+      description: Get the health of the service
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.Health'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/respond.HTTPMessage'
+      summary: Get the health of the service
+      tags:
+      - Users
+      - Health
   /version:
     get:
       description: Get the version of the service
@@ -411,12 +407,12 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/version.VersionInfo'
+            $ref: '#/definitions/handler.Version'
         "500":
           description: Internal Server Error
           schema:
             $ref: '#/definitions/respond.HTTPMessage'
       summary: Get the version of the service
       tags:
-      - version
+      - Version
 swagger: "2.0"
