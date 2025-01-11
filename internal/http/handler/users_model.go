@@ -14,11 +14,11 @@ import (
 
 const (
 	UsersFirstNameMinLength = 2
-	UsersFirstNameMaxLength = 255
+	UsersFirstNameMaxLength = 25
 	UsersLastNameMinLength  = 2
-	UsersLastNameMaxLength  = 255
+	UsersLastNameMaxLength  = 25
 	UsersEmailMinLength     = 6
-	UsersEmailMaxLength     = 255
+	UsersEmailMaxLength     = 50
 	UsersPasswordMinLength  = 6
 	UsersPasswordMaxLength  = 255
 )
@@ -31,6 +31,8 @@ var (
 )
 
 // User represents a user entity used to model the data stored in the database.
+//
+// @Description User represents a user entity
 type User struct {
 	ID        uuid.UUID `json:"id,omitempty" example:"550e8400-e29b-41d4-a716-446655440000" format:"uuid"`
 	FirstName string    `json:"first_name,omitempty" example:"John" format:"string"`
@@ -79,6 +81,8 @@ func (u User) MarshalJSON() ([]byte, error) {
 }
 
 // CreateUserRequest represents the input for the CreateUser method.
+//
+// @Description CreateUserRequest represents the input for the CreateUser method
 type CreateUserRequest struct {
 	ID        uuid.UUID `json:"id" example:"550e8400-e29b-41d4-a716-446655440000" format:"uuid"`
 	FirstName string    `json:"first_name" example:"John" format:"string"`
@@ -119,6 +123,8 @@ func (req *CreateUserRequest) Validate() error {
 }
 
 // UpdateUserRequest represents the input for the UpdateUser method.
+//
+// @Description UpdateUserRequest represents the input for the UpdateUser method
 type UpdateUserRequest struct {
 	FirstName *string `json:"first_name" example:"John" format:"string"`
 	LastName  *string `json:"last_name" example:"Doe" format:"string"`
@@ -156,6 +162,8 @@ func (req *UpdateUserRequest) Validate() error {
 }
 
 // ListUsersResponse represents a list of users.
+//
+// @Description ListUsersResponse represents a list of users
 type ListUsersResponse struct {
 	Items     []*User             `json:"items"`
 	Paginator paginator.Paginator `json:"paginator"`

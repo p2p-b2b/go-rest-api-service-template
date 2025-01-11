@@ -14,23 +14,22 @@ import (
 
 const (
 	UsersFirstNameMinLength = 2
-	UsersFirstNameMaxLength = 255
+	UsersFirstNameMaxLength = 25
 	UsersLastNameMinLength  = 2
-	UsersLastNameMaxLength  = 255
+	UsersLastNameMaxLength  = 25
 	UsersEmailMinLength     = 6
-	UsersEmailMaxLength     = 255
+	UsersEmailMaxLength     = 50
 	UsersPasswordMinLength  = 6
 	UsersPasswordMaxLength  = 255
 )
 
 var (
-	ErrInvalidUserID        = errors.New("invalid user ID. Must be a valid UUID")
-	ErrInvalidUserFirstName = errors.New("invalid first name. Must be between " + fmt.Sprintf("%d and %d", UsersFirstNameMinLength, UsersFirstNameMaxLength) + " characters long")
-	ErrInvalidUserLastName  = errors.New("invalid last name. Must be between " + fmt.Sprintf("%d and %d", UsersLastNameMinLength, UsersLastNameMaxLength) + " characters long")
-	ErrInvalidUserEmail     = errors.New("invalid email. Must be between " + fmt.Sprintf("%d and %d", UsersEmailMinLength, UsersEmailMaxLength) + " characters long")
-	ErrInvalidUserPassword  = errors.New("invalid password. Must be between " + fmt.Sprintf("%d and %d", UsersPasswordMinLength, UsersPasswordMaxLength) + " characters long")
-	ErrUserNotFound         = errors.New("user not found")
-
+	ErrInvalidUserID          = errors.New("invalid user ID. Must be a valid UUID")
+	ErrInvalidUserFirstName   = errors.New("invalid first name. Must be between " + fmt.Sprintf("%d and %d", UsersFirstNameMinLength, UsersFirstNameMaxLength) + " characters long")
+	ErrInvalidUserLastName    = errors.New("invalid last name. Must be between " + fmt.Sprintf("%d and %d", UsersLastNameMinLength, UsersLastNameMaxLength) + " characters long")
+	ErrInvalidUserEmail       = errors.New("invalid email. Must be between " + fmt.Sprintf("%d and %d", UsersEmailMinLength, UsersEmailMaxLength) + " characters long")
+	ErrInvalidUserPassword    = errors.New("invalid password. Must be between " + fmt.Sprintf("%d and %d", UsersPasswordMinLength, UsersPasswordMaxLength) + " characters long")
+	ErrUserNotFound           = errors.New("user not found")
 	ErrUserIDAlreadyExists    = errors.New("user ID already exists")
 	ErrUserEmailAlreadyExists = errors.New("user email already exists")
 )

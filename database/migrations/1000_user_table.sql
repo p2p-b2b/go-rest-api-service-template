@@ -4,9 +4,9 @@
 -- table for users
 CREATE TABLE IF NOT EXISTS users (
     id uuid PRIMARY KEY NOT NULL UNIQUE DEFAULT gen_random_uuid(),
-    first_name VARCHAR(255) NOT NULL,
-    last_name VARCHAR(255) NOT NULL,
-    email VARCHAR(255) NOT NULL,
+    first_name VARCHAR(25) NOT NULL,
+    last_name VARCHAR(25) NOT NULL,
+    email VARCHAR(50) NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
     disabled BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,

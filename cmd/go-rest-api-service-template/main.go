@@ -322,7 +322,6 @@ func main() {
 
 	// Create handlers
 	versionHandler := handler.NewVersionHandler()
-	healthHandler := handler.NewHealthHandler(userService)
 	userHandler, err := handler.NewUserHandler(userHandlerConf)
 	if err != nil {
 		slog.Error("error creating user handler", "error", err)
@@ -335,7 +334,6 @@ func main() {
 	apiRouter := http.NewServeMux()
 
 	swaggerHandler.RegisterRoutes(apiRouter)
-	healthHandler.RegisterRoutes(apiRouter)
 	versionHandler.RegisterRoutes(apiRouter)
 	userHandler.RegisterRoutes(apiRouter)
 

@@ -24,15 +24,15 @@ func (h *VersionHandler) RegisterRoutes(mux *http.ServeMux) {
 //
 // @Summary Get the version of the service
 // @Description Get the version of the service
-// @Tags version
+// @Tags Version
 // @Produce json
-// @Success 200 {object} version.VersionInfo
+// @Success 200 {object} Version
 // @Failure 500 {object} respond.HTTPMessage
 // @Router /version [get]
 func (h *VersionHandler) get(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	v := version.VersionInfo{
+	v := Version{
 		Version:       version.Version,
 		BuildDate:     version.BuildDate,
 		GitCommit:     version.GitCommit,

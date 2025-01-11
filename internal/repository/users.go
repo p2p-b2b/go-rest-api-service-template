@@ -79,7 +79,7 @@ func NewUserRepository(conf UserRepositoryConfig) (*UserRepository, error) {
 		metric.WithDescription("The number of calls to the user repository"),
 	)
 	if err != nil {
-		slog.Error("repository.users.NewUserRepository", "error", err)
+		slog.Error("repository.Users.NewUserRepository", "error", err)
 		return nil, err
 	}
 
@@ -108,7 +108,7 @@ func (r *UserRepository) PingContext(ctx context.Context) error {
 	ctx, cancel := context.WithTimeout(ctx, r.maxPingTimeout)
 	defer cancel()
 
-	ctx, span := r.ot.Traces.Tracer.Start(ctx, "repository.user.PingContext")
+	ctx, span := r.ot.Traces.Tracer.Start(ctx, "repository.Users.PingContext")
 	defer span.End()
 
 	return r.db.PingContext(ctx)
@@ -119,23 +119,23 @@ func (r *UserRepository) Insert(ctx context.Context, input *InsertUserInput) err
 	ctx, cancel := context.WithTimeout(ctx, r.maxQueryTimeout)
 	defer cancel()
 
-	ctx, span := r.ot.Traces.Tracer.Start(ctx, "repository.user.Insert")
+	ctx, span := r.ot.Traces.Tracer.Start(ctx, "repository.Users.Insert")
 	defer span.End()
 
 	span.SetAttributes(
 		attribute.String("driver", r.DriverName()),
-		attribute.String("component", "repository.user.Insert"),
+		attribute.String("component", "repository.Users.Insert"),
 	)
 
 	metricCommonAttributes := []attribute.KeyValue{
 		attribute.String("driver", r.DriverName()),
-		attribute.String("component", "repository.user.Insert"),
+		attribute.String("component", "repository.Users.Insert"),
 	}
 
 	if input == nil {
 		span.SetStatus(codes.Error, ErrInputIsNil.Error())
 		span.RecordError(ErrInputIsNil)
-		slog.Error("repository.users.Insert", "error", ErrInputIsNil.Error())
+		slog.Error("repository.Users.Insert", "error", ErrInputIsNil.Error())
 		r.metrics.repositoryCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				append(metricCommonAttributes, attribute.String("successful", "false"))...,
@@ -150,18 +150,20 @@ func (r *UserRepository) Insert(ctx context.Context, input *InsertUserInput) err
 	if err := input.Validate(); err != nil {
 		span.SetStatus(codes.Error, err.Error())
 		span.RecordError(err)
-		slog.Error("repository.users.Insert", "error", err)
+		slog.Error("repository.Users.Insert", "error", err)
 		r.metrics.repositoryCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				append(metricCommonAttributes, attribute.String("successful", "false"))...,
 			),
 		)
+
 		return err
 	}
 
-	query := `INSERT INTO
-                users (id, first_name, last_name, email, password_hash, disabled)
-              VALUES ($1, $2, $3, $4, $5, $6);`
+	query := `
+        INSERT INTO users (id, first_name, last_name, email, password_hash, disabled)
+        VALUES ($1, $2, $3, $4, $5, $6);
+    `
 
 	_, err := r.db.ExecContext(ctx, query,
 		input.ID,
@@ -172,7 +174,7 @@ func (r *UserRepository) Insert(ctx context.Context, input *InsertUserInput) err
 		input.Disabled,
 	)
 	if err != nil {
-		slog.Error("repository.users.Insert", "error", err)
+		slog.Error("repository.Users.Insert", "error", err)
 		span.SetStatus(codes.Error, err.Error())
 		span.RecordError(err)
 		r.metrics.repositoryCalls.Add(ctx, 1,
@@ -199,7 +201,7 @@ func (r *UserRepository) Insert(ctx context.Context, input *InsertUserInput) err
 		return err
 	}
 
-	slog.Debug("repository.users.Insert", "user.id", input.ID)
+	slog.Debug("repository.Users.Insert", "user.id", input.ID)
 	span.SetStatus(codes.Ok, "user inserted successfully")
 	span.SetAttributes(attribute.String("user.id", input.ID.String()))
 	r.metrics.repositoryCalls.Add(ctx, 1,
@@ -216,23 +218,23 @@ func (r *UserRepository) Update(ctx context.Context, input *UpdateUserInput) err
 	ctx, cancel := context.WithTimeout(ctx, r.maxQueryTimeout)
 	defer cancel()
 
-	ctx, span := r.ot.Traces.Tracer.Start(ctx, "repository.user.Update")
+	ctx, span := r.ot.Traces.Tracer.Start(ctx, "repository.Users.Update")
 	defer span.End()
 
 	span.SetAttributes(
 		attribute.String("driver", r.DriverName()),
-		attribute.String("component", "repository.user.Update"),
+		attribute.String("component", "repository.Users.Update"),
 	)
 
 	metricCommonAttributes := []attribute.KeyValue{
 		attribute.String("driver", r.DriverName()),
-		attribute.String("component", "repository.user.Update"),
+		attribute.String("component", "repository.Users.Update"),
 	}
 
 	if input == nil {
 		span.SetStatus(codes.Error, ErrInputIsNil.Error())
 		span.RecordError(ErrInputIsNil)
-		slog.Error("repository.users.Update", "error", "user is nil")
+		slog.Error("repository.Users.Update", "error", "user is nil")
 		r.metrics.repositoryCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				append(metricCommonAttributes, attribute.String("successful", "false"))...,
@@ -245,7 +247,7 @@ func (r *UserRepository) Update(ctx context.Context, input *UpdateUserInput) err
 	span.SetAttributes(attribute.String("user.id", input.ID.String()))
 
 	if err := input.Validate(); err != nil {
-		slog.Error("repository.users.Update", "error", err)
+		slog.Error("repository.Users.Update", "error", err)
 		span.SetStatus(codes.Error, err.Error())
 		span.RecordError(err)
 		r.metrics.repositoryCalls.Add(ctx, 1,
@@ -292,19 +294,21 @@ func (r *UserRepository) Update(ctx context.Context, input *UpdateUserInput) err
 	updatedAt, _ := time.Now().In(time.FixedZone("UTC", 0)).MarshalText()
 	args = append(args, updatedAt)
 
-	query := `UPDATE users
-                SET
-                    first_name = COALESCE($2, first_name),
-                    last_name = COALESCE($3,  last_name),
-                    email = COALESCE($4, email),
-                    password_hash = COALESCE($5, password_hash),
-                    disabled = COALESCE($6, disabled),
-                    updated_at = COALESCE($7 , updated_at)
-              WHERE id = $1;`
+	query := `
+        UPDATE users
+            SET
+                first_name = COALESCE($2, first_name),
+                last_name = COALESCE($3,  last_name),
+                email = COALESCE($4, email),
+                password_hash = COALESCE($5, password_hash),
+                disabled = COALESCE($6, disabled),
+                updated_at = COALESCE($7 , updated_at)
+        WHERE id = $1;
+    `
 
 	stmt, err := r.db.PrepareContext(ctx, query)
 	if err != nil {
-		slog.Error("repository.users.Update", "error", err)
+		slog.Error("repository.Users.Update", "error", err)
 		span.SetStatus(codes.Error, "query failed")
 		span.RecordError(err)
 		r.metrics.repositoryCalls.Add(ctx, 1,
@@ -319,7 +323,7 @@ func (r *UserRepository) Update(ctx context.Context, input *UpdateUserInput) err
 
 	result, err := stmt.ExecContext(ctx, args...)
 	if err != nil {
-		slog.Error("repository.users.Update", "error", err)
+		slog.Error("repository.Users.Update", "error", err)
 		span.SetStatus(codes.Error, "query failed")
 		span.RecordError(err)
 		r.metrics.repositoryCalls.Add(ctx, 1,
@@ -333,7 +337,7 @@ func (r *UserRepository) Update(ctx context.Context, input *UpdateUserInput) err
 
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
-		slog.Error("repository.users.Update", "error", err)
+		slog.Error("repository.Users.Update", "error", err)
 		span.SetStatus(codes.Error, "query failed")
 		span.RecordError(err)
 		r.metrics.repositoryCalls.Add(ctx, 1,
@@ -348,7 +352,7 @@ func (r *UserRepository) Update(ctx context.Context, input *UpdateUserInput) err
 	if rowsAffected == 0 {
 		span.SetStatus(codes.Error, ErrUserNotFound.Error())
 		span.RecordError(ErrUserNotFound)
-		slog.Error("repository.user.Update", "error", ErrUserNotFound)
+		slog.Error("repository.Users.Update", "error", ErrUserNotFound)
 		r.metrics.repositoryCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				append(metricCommonAttributes, attribute.String("successful", "false"))...,
@@ -374,21 +378,21 @@ func (r *UserRepository) Delete(ctx context.Context, input *DeleteUserInput) err
 	ctx, cancel := context.WithTimeout(ctx, r.maxQueryTimeout)
 	defer cancel()
 
-	ctx, span := r.ot.Traces.Tracer.Start(ctx, "repository.user.Delete")
+	ctx, span := r.ot.Traces.Tracer.Start(ctx, "repository.Users.Delete")
 	defer span.End()
 
 	span.SetAttributes(
 		attribute.String("driver", r.DriverName()),
-		attribute.String("component", "repository.user.Delete"),
+		attribute.String("component", "repository.Users.Delete"),
 	)
 
 	metricCommonAttributes := []attribute.KeyValue{
 		attribute.String("driver", r.DriverName()),
-		attribute.String("component", "repository.user.Delete"),
+		attribute.String("component", "repository.Users.Delete"),
 	}
 
 	if input == nil {
-		slog.Error("repository.users.Delete", "error", "user is nil")
+		slog.Error("repository.Users.Delete", "error", "user is nil")
 		span.SetStatus(codes.Error, ErrInputIsNil.Error())
 		span.RecordError(ErrInputIsNil)
 		r.metrics.repositoryCalls.Add(ctx, 1,
@@ -403,7 +407,7 @@ func (r *UserRepository) Delete(ctx context.Context, input *DeleteUserInput) err
 	span.SetAttributes(attribute.String("user.id", input.ID.String()))
 
 	if err := input.Validate(); err != nil {
-		slog.Error("repository.users.Delete", "error", err)
+		slog.Error("repository.Users.Delete", "error", err)
 		span.SetStatus(codes.Error, err.Error())
 		span.RecordError(err)
 		r.metrics.repositoryCalls.Add(ctx, 1,
@@ -415,13 +419,16 @@ func (r *UserRepository) Delete(ctx context.Context, input *DeleteUserInput) err
 		return err
 	}
 
-	query := `DELETE FROM users WHERE id = $1`
+	query := `
+        DELETE FROM users
+        WHERE id = $1
+    `
 
 	result, err := r.db.ExecContext(ctx, query, input.ID)
 	if err != nil {
 		span.SetStatus(codes.Error, "query failed")
 		span.RecordError(err)
-		slog.Error("repository.users.Delete", "error", err)
+		slog.Error("repository.Users.Delete", "error", err)
 		r.metrics.repositoryCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				append(metricCommonAttributes, attribute.String("successful", "false"))...,
@@ -433,7 +440,7 @@ func (r *UserRepository) Delete(ctx context.Context, input *DeleteUserInput) err
 
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
-		slog.Error("repository.users.Delete", "error", err)
+		slog.Error("repository.Users.Delete", "error", err)
 		span.SetStatus(codes.Error, "query failed")
 		span.RecordError(err)
 		r.metrics.repositoryCalls.Add(ctx, 1,
@@ -448,7 +455,7 @@ func (r *UserRepository) Delete(ctx context.Context, input *DeleteUserInput) err
 	if rowsAffected == 0 {
 		span.SetStatus(codes.Error, ErrUserNotFound.Error())
 		span.RecordError(ErrUserNotFound)
-		slog.Error("repository.user.Delete", "error", ErrUserNotFound)
+		slog.Error("repository.Users.Delete", "error", ErrUserNotFound)
 		r.metrics.repositoryCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				append(metricCommonAttributes, attribute.String("successful", "false"))...,
@@ -469,27 +476,27 @@ func (r *UserRepository) Delete(ctx context.Context, input *DeleteUserInput) err
 	return nil
 }
 
-// SelectUserByID returns the user with the specified ID.
-func (r *UserRepository) SelectUserByID(ctx context.Context, id uuid.UUID) (*User, error) {
+// SelectByID returns the user with the specified ID.
+func (r *UserRepository) SelectByID(ctx context.Context, id uuid.UUID) (*User, error) {
 	ctx, cancel := context.WithTimeout(ctx, r.maxQueryTimeout)
 	defer cancel()
 
-	ctx, span := r.ot.Traces.Tracer.Start(ctx, "repository.user.SelectByID")
+	ctx, span := r.ot.Traces.Tracer.Start(ctx, "repository.Users.SelectByID")
 	defer span.End()
 
 	span.SetAttributes(
 		attribute.String("driver", r.DriverName()),
-		attribute.String("component", "repository.user.SelectByID"),
+		attribute.String("component", "repository.Users.SelectByID"),
 		attribute.String("user.id", id.String()),
 	)
 
 	metricCommonAttributes := []attribute.KeyValue{
 		attribute.String("driver", r.DriverName()),
-		attribute.String("component", "repository.user.SelectByID"),
+		attribute.String("component", "repository.Users.SelectByID"),
 	}
 
 	if id == uuid.Nil {
-		slog.Error("repository.users.SelectByID", "error", "id is nil")
+		slog.Error("repository.Users.SelectByID", "error", "id is nil")
 		span.SetStatus(codes.Error, ErrInvalidUserID.Error())
 		span.RecordError(ErrInvalidUserID)
 		r.metrics.repositoryCalls.Add(ctx, 1,
@@ -501,19 +508,21 @@ func (r *UserRepository) SelectUserByID(ctx context.Context, id uuid.UUID) (*Use
 		return nil, ErrInvalidUserID
 	}
 
-	query := `SELECT
-                id,
-                first_name,
-                last_name,
-                email,
-                password_hash,
-                disabled,
-                created_at,
-                updated_at
-              FROM users
-              WHERE id = $1;`
+	query := `
+        SELECT
+            id,
+            first_name,
+            last_name,
+            email,
+            password_hash,
+            disabled,
+            created_at,
+            updated_at
+        FROM users
+        WHERE id = $1;
+    `
 
-	// slog.Debug("repository.users.SelectByID", "query", prettyPrint(query))
+	slog.Debug("repository.Users.SelectByID", "query", prettyPrint(query))
 
 	row := r.db.QueryRowContext(ctx, query, id)
 
@@ -528,7 +537,7 @@ func (r *UserRepository) SelectUserByID(ctx context.Context, id uuid.UUID) (*Use
 		&u.CreatedAt,
 		&u.UpdatedAt,
 	); err != nil {
-		slog.Error("repository.users.SelectByID", "error", err)
+		slog.Error("repository.Users.SelectByID", "error", err)
 		span.SetStatus(codes.Error, "scan failed")
 		span.RecordError(err)
 		r.metrics.repositoryCalls.Add(ctx, 1,
@@ -550,27 +559,27 @@ func (r *UserRepository) SelectUserByID(ctx context.Context, id uuid.UUID) (*Use
 	return &u, nil
 }
 
-// SelectUserByEmail returns the user with the specified email.
-func (r *UserRepository) SelectUserByEmail(ctx context.Context, email string) (*User, error) {
+// SelectByEmail returns the user with the specified email.
+func (r *UserRepository) SelectByEmail(ctx context.Context, email string) (*User, error) {
 	ctx, cancel := context.WithTimeout(ctx, r.maxQueryTimeout)
 	defer cancel()
 
-	ctx, span := r.ot.Traces.Tracer.Start(ctx, "repository.user.SelectByEmail")
+	ctx, span := r.ot.Traces.Tracer.Start(ctx, "repository.Users.SelectByEmail")
 	defer span.End()
 
 	span.SetAttributes(
 		attribute.String("driver", r.DriverName()),
-		attribute.String("component", "repository.user.SelectByEmail"),
+		attribute.String("component", "repository.Users.SelectByEmail"),
 		attribute.String("user.email", email),
 	)
 
 	metricCommonAttributes := []attribute.KeyValue{
 		attribute.String("driver", r.DriverName()),
-		attribute.String("component", "repository.user.SelectByEmail"),
+		attribute.String("component", "repository.Users.SelectByEmail"),
 	}
 
 	if email == "" {
-		slog.Error("repository.users.SelectByEmail", "error", "email is empty")
+		slog.Error("repository.Users.SelectByEmail", "error", "email is empty")
 		span.SetStatus(codes.Error, ErrInvalidUserEmail.Error())
 		span.RecordError(ErrInvalidUserEmail)
 		r.metrics.repositoryCalls.Add(ctx, 1,
@@ -594,7 +603,7 @@ func (r *UserRepository) SelectUserByEmail(ctx context.Context, email string) (*
               FROM users
               WHERE email = $1;`
 
-	// slog.Debug("repository.users.SelectByEmail", "query", prettyPrint(query))
+	// slog.Debug("repository.Users.SelectByEmail", "query", prettyPrint(query))
 
 	row := r.db.QueryRowContext(ctx, query, email)
 
@@ -609,7 +618,7 @@ func (r *UserRepository) SelectUserByEmail(ctx context.Context, email string) (*
 		&u.CreatedAt,
 		&u.UpdatedAt,
 	); err != nil {
-		slog.Error("repository.users.SelectByEmail", "error", err)
+		slog.Error("repository.Users.SelectByEmail", "error", err)
 		span.SetStatus(codes.Error, "scan failed")
 		span.RecordError(err)
 		r.metrics.repositoryCalls.Add(ctx, 1,
@@ -640,23 +649,23 @@ func (r *UserRepository) Select(ctx context.Context, input *SelectUsersInput) (*
 	ctx, cancel := context.WithTimeout(ctx, r.maxQueryTimeout)
 	defer cancel()
 
-	ctx, span := r.ot.Traces.Tracer.Start(ctx, "repository.user.Select")
+	ctx, span := r.ot.Traces.Tracer.Start(ctx, "repository.Users.Select")
 	defer span.End()
 
 	span.SetAttributes(
 		attribute.String("driver", r.DriverName()),
-		attribute.String("component", "repository.user.Select"),
+		attribute.String("component", "repository.Users.Select"),
 	)
 
 	metricCommonAttributes := []attribute.KeyValue{
 		attribute.String("driver", r.DriverName()),
-		attribute.String("component", "repository.user.Select"),
+		attribute.String("component", "repository.Users.Select"),
 	}
 
 	if input == nil {
 		span.SetStatus(codes.Error, ErrInputIsNil.Error())
 		span.RecordError(ErrInputIsNil)
-		slog.Error("repository.users.Select", "error", ErrInputIsNil)
+		slog.Error("repository.Users.Select", "error", ErrInputIsNil)
 		r.metrics.repositoryCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				append(metricCommonAttributes, attribute.String("successful", "false"))...,
@@ -668,7 +677,7 @@ func (r *UserRepository) Select(ctx context.Context, input *SelectUsersInput) (*
 	if err := input.Validate(); err != nil {
 		span.SetStatus(codes.Error, err.Error())
 		span.RecordError(err)
-		slog.Error("repository.users.Select", "error", err)
+		slog.Error("repository.Users.Select", "error", err)
 		r.metrics.repositoryCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				append(metricCommonAttributes, attribute.String("successful", "false"))...,
@@ -706,7 +715,7 @@ func (r *UserRepository) Select(ctx context.Context, input *SelectUsersInput) (*
 		if err != nil {
 			span.SetStatus(codes.Error, err.Error())
 			span.RecordError(err)
-			slog.Error("repository.users.Select", "error", err)
+			slog.Error("repository.Users.Select", "error", err)
 			r.metrics.repositoryCalls.Add(ctx, 1,
 				metric.WithAttributes(
 					append(metricCommonAttributes, attribute.String("successful", "false"))...,
@@ -761,7 +770,7 @@ func (r *UserRepository) Select(ctx context.Context, input *SelectUsersInput) (*
 
 	// if both next and prev tokens are provided, use next token
 	if input.Paginator.NextToken != "" && input.Paginator.PrevToken != "" {
-		slog.Warn("repository.user.Select",
+		slog.Warn("repository.Users.Select",
 			"message",
 			"both next and prev tokens are provided, going to use next token")
 
@@ -774,7 +783,7 @@ func (r *UserRepository) Select(ctx context.Context, input *SelectUsersInput) (*
 		// decode the token
 		id, serial, err := paginator.DecodeToken(input.Paginator.NextToken)
 		if err != nil {
-			slog.Error("repository.user.Select", "error", err)
+			slog.Error("repository.Users.Select", "error", err)
 			span.SetStatus(codes.Error, "invalid token")
 			span.RecordError(err)
 			r.metrics.repositoryCalls.Add(ctx, 1,
@@ -806,7 +815,7 @@ func (r *UserRepository) Select(ctx context.Context, input *SelectUsersInput) (*
 		// decode the token
 		id, serial, err := paginator.DecodeToken(input.Paginator.PrevToken)
 		if err != nil {
-			slog.Error("repository.user.Select", "error", err)
+			slog.Error("repository.Users.Select", "error", err)
 			span.SetStatus(codes.Error, "invalid token")
 			span.RecordError(err)
 			r.metrics.repositoryCalls.Add(ctx, 1,
@@ -836,7 +845,7 @@ func (r *UserRepository) Select(ctx context.Context, input *SelectUsersInput) (*
 	t := template.Must(template.New("query").Parse(queryTemplate))
 	err := t.Execute(&tpl, queryValues)
 	if err != nil {
-		slog.Error("repository.user.Select", "error", err)
+		slog.Error("repository.Users.Select", "error", err)
 		span.SetStatus(codes.Error, "failed to render query template")
 		span.RecordError(err)
 		r.metrics.repositoryCalls.Add(ctx, 1,
@@ -849,12 +858,12 @@ func (r *UserRepository) Select(ctx context.Context, input *SelectUsersInput) (*
 	}
 
 	query := tpl.String()
-	slog.Debug("repository.user.Select", "query", prettyPrint(query))
+	slog.Debug("repository.Users.Select", "query", prettyPrint(query))
 
 	// execute the query
 	rows, err := r.db.QueryContext(ctx, query)
 	if err != nil {
-		slog.Error("repository.user.Select", "error", err)
+		slog.Error("repository.Users.Select", "error", err)
 		span.SetStatus(codes.Error, "failed to select all users")
 		span.RecordError(err)
 		r.metrics.repositoryCalls.Add(ctx, 1,
@@ -909,7 +918,7 @@ func (r *UserRepository) Select(ctx context.Context, input *SelectUsersInput) (*
 					scanFields = append(scanFields, &u.UpdatedAt)
 
 				default:
-					slog.Warn("repository.user.Select", "what", "field not found", "field", field)
+					slog.Warn("repository.Users.Select", "what", "field not found", "field", field)
 				}
 			}
 
@@ -923,7 +932,7 @@ func (r *UserRepository) Select(ctx context.Context, input *SelectUsersInput) (*
 		}
 
 		if err := rows.Scan(scanFields...); err != nil {
-			slog.Error("repository.user.Select", "error", err)
+			slog.Error("repository.Users.Select", "error", err)
 			span.SetStatus(codes.Error, "failed to scan user")
 			span.RecordError(err)
 			r.metrics.repositoryCalls.Add(ctx, 1,
@@ -940,15 +949,15 @@ func (r *UserRepository) Select(ctx context.Context, input *SelectUsersInput) (*
 
 	outLen := len(users)
 	if outLen == 0 {
-		slog.Warn("repository.user.Select", "what", "no users found")
+		slog.Warn("repository.Users.Select", "what", "no users found")
 		return &SelectUsersOutput{
 			Items:     make([]*User, 0),
 			Paginator: paginator.Paginator{},
 		}, nil
 	}
 
-	slog.Debug("repository.users.Select", "next_id", users[outLen-1].ID, "next_serial_id", users[outLen-1].SerialID)
-	slog.Debug("repository.users.Select", "prev_id", users[0].ID, "prev_serial_id", users[0].SerialID)
+	slog.Debug("repository.Users.Select", "next_id", users[outLen-1].ID, "next_serial_id", users[outLen-1].SerialID)
+	slog.Debug("repository.Users.Select", "prev_id", users[0].ID, "prev_serial_id", users[0].SerialID)
 
 	nextToken, prevToken := paginator.GetTokens(
 		outLen,
