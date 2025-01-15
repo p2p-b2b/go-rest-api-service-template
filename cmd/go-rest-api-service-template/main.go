@@ -131,16 +131,6 @@ func init() {
 		os.Exit(0)
 	}
 
-	// Get Configuration from Environment Variables
-	// and override the values when they are set
-	config.ParseEnvVars(LogConfig, HTTPSrvConfig, DBConfig, OTConfig)
-
-	// Validate the configuration
-	if err := config.Validate(LogConfig, HTTPSrvConfig, DBConfig, OTConfig); err != nil {
-		slog.Error("error validating configuration", "error", err)
-		os.Exit(1)
-	}
-
 	// Set the log level
 	if debug {
 		LogConfig.Level.Value = "debug"
@@ -172,6 +162,23 @@ func init() {
 	// Set the default logger
 	logger = slog.New(logHandler)
 	slog.SetDefault(logger)
+
+	// Get Configuration from Environment Variables
+	// and override the values when they are set
+	if err := config.SetEnvVarFromFile(); err != nil {
+		slog.Error("failed to set environment variables from .env file", "error", err)
+		os.Exit(1)
+	}
+
+	// Get Configuration from Environment Variables
+	// and override the values when they are set
+	config.ParseEnvVars(LogConfig, HTTPSrvConfig, DBConfig, OTConfig)
+
+	// Validate the configuration
+	if err := config.Validate(LogConfig, HTTPSrvConfig, DBConfig, OTConfig); err != nil {
+		slog.Error("error validating configuration", "error", err)
+		os.Exit(1)
+	}
 }
 
 // @tile Golang RESTful API Service Template

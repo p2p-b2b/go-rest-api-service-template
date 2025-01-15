@@ -5,6 +5,8 @@ import (
 	"strings"
 )
 
+// prettyPrint removes comments, newlines, and extra spaces from a query string.
+// It is used to make the query string more readable in the logs.
 func prettyPrint(query string) string {
 	ws := regexp.MustCompile(`\s+`)
 

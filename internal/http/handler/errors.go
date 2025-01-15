@@ -7,7 +7,7 @@ import (
 var (
 	ErrInternalServerError          = errors.New("internal server error")
 	ErrBadRequest                   = errors.New("bad request")
-	ErrInvalidUserID                = errors.New("invalid user ID, this must be a valid UUID")
+	ErrUserInvalidID                = errors.New("invalid user ID, this must be a valid UUID")
 	ErrAtLeastOneFieldMustBeUpdated = errors.New("at least one field must be updated, any of these could be empty")
 	ErrRequiredUUID                 = errors.New("required UUID")
 	ErrInvalidUUID                  = errors.New("invalid UUID")

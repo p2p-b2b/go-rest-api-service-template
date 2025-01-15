@@ -8,23 +8,12 @@ import (
 )
 
 var (
-	// ErrInvalidTraceExporter is the error for invalid exporter
-	ErrInvalidTraceExporter = errors.New("invalid trace exporter, must be one of [" + ValidTraceExporters + "]")
-
-	// ErrInvalidMetricExporter is the error for invalid exporter
-	ErrInvalidMetricExporter = errors.New("invalid metric exporter, must be one of [" + ValidMetricExporters + "]")
-
-	// ErrInvalidSampling is the error for invalid sampling
-	ErrInvalidSampling = errors.New("invalid sampling, must be between 0 and 100")
-
-	// ErrInvalidMetricInterval is the error for invalid metric interval
-	ErrInvalidMetricInterval = errors.New("invalid metric interval, must be greater than 0")
-
-	// ErrInvalidTracePort is the error for invalid trace port
-	ErrInvalidTracePort = errors.New("invalid trace port, must be between 0 and 65535")
-
-	// ErrInvalidMetricPort is the error for invalid metric port
-	ErrInvalidMetricPort = errors.New("invalid metric port, must be between 0 and 65535")
+	ErrOTInvalidTraceExporter  = errors.New("invalid trace exporter, must be one of [" + ValidTraceExporters + "]")
+	ErrOTInvalidMetricExporter = errors.New("invalid metric exporter, must be one of [" + ValidMetricExporters + "]")
+	ErrOTInvalidSampling       = errors.New("invalid sampling, must be between 0 and 100")
+	ErrOTInvalidMetricInterval = errors.New("invalid metric interval, must be greater than 0")
+	ErrOTInvalidTracePort      = errors.New("invalid trace port, must be between 0 and 65535")
+	ErrOTInvalidMetricPort     = errors.New("invalid metric port, must be between 0 and 65535")
 )
 
 const (
@@ -95,27 +84,27 @@ func (c *OpenTelemetryConfig) ParseEnvVars() {
 // Validate validates the OpenTracing configuration values
 func (c *OpenTelemetryConfig) Validate() error {
 	if !slices.Contains(strings.Split(ValidTraceExporters, "|"), c.TraceExporter.Value) {
-		return ErrInvalidTraceExporter
+		return ErrOTInvalidTraceExporter
 	}
 
 	if !slices.Contains(strings.Split(ValidMetricExporters, "|"), c.MetricExporter.Value) {
-		return ErrInvalidMetricExporter
+		return ErrOTInvalidMetricExporter
 	}
 
 	if c.TraceSampling.Value < 0 || c.TraceSampling.Value > 100 {
-		return ErrInvalidSampling
+		return ErrOTInvalidSampling
 	}
 
 	if c.MetricInterval.Value < 0 {
-		return ErrInvalidMetricInterval
+		return ErrOTInvalidMetricInterval
 	}
 
 	if c.MetricPort.Value < 1 || c.MetricPort.Value > 65535 {
-		return ErrInvalidMetricPort
+		return ErrOTInvalidMetricPort
 	}
 
 	if c.TracePort.Value < 1 || c.TracePort.Value > 65535 {
-		return ErrInvalidTracePort
+		return ErrOTInvalidTracePort
 	}
 
 	return nil

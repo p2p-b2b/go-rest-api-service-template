@@ -109,7 +109,15 @@ func parseLimitQueryParams(limit string) (int, error) {
 }
 
 // parseListQueryParams parses a list of strings into a list of UUIDs.
-func parseListQueryParams(params map[string]any, fieldsFields, filterFields, sortFields []string) (sort string, filter string, fields []string, nextToken string, prevToken string, limit int, err error) {
+func parseListQueryParams(params map[string]any, fieldsFields, filterFields, sortFields []string) (
+	sort string,
+	filter string,
+	fields []string,
+	nextToken string,
+	prevToken string,
+	limit int,
+	err error,
+) {
 	sort, err = parseSortQueryParams(params["sort"].(string), sortFields)
 	if err != nil {
 		return "", "", nil, "", "", 0, err

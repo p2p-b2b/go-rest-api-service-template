@@ -14,8 +14,8 @@ var (
 	// ErrInvalidDatabasePort is returned when an invalid database port is provided
 	ErrInvalidDatabasePort = errors.New("invalid database port, must be between 0 and 65535")
 
-	// ErrInvalidUsername is returned when an invalid username is provided
-	ErrInvalidUsername = errors.New("invalid username, must be between 2 and 32 characters")
+	// ErrUserInvalidUsername is returned when an invalid username is provided
+	ErrUserInvalidUsername = errors.New("invalid username, must be between 2 and 32 characters")
 
 	// ErrInvalidDatabaseName is returned when an invalid database name is provided
 	ErrInvalidDatabaseName = errors.New("invalid database name, must be between 2 and 32 characters")
@@ -154,7 +154,7 @@ func (c *DatabaseConfig) Validate() error {
 	}
 
 	if c.Username.Value == "" || len(c.Username.Value) < 2 || len(c.Username.Value) > 32 {
-		return ErrInvalidUsername
+		return ErrUserInvalidUsername
 	}
 
 	if c.Password.Value == "" || len(c.Password.Value) < 2 || len(c.Password.Value) > 128 {

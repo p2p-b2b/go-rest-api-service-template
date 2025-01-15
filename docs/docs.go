@@ -91,7 +91,7 @@ const docTemplate = `{
                 }
             },
             "post": {
-                "description": "Create a new user from scratch.\nIf the id is not provided, it will be generated automatically.",
+                "description": "Create a new user from scratch\nIf the id is not provided, it will be generated automatically",
                 "consumes": [
                     "application/json"
                 ],
@@ -101,7 +101,7 @@ const docTemplate = `{
                 "tags": [
                     "Users"
                 ],
-                "summary": "Create a new user.",
+                "summary": "Create a new user",
                 "parameters": [
                     {
                         "format": "json",
@@ -144,7 +144,7 @@ const docTemplate = `{
         },
         "/users/health": {
             "get": {
-                "description": "Get the health of the service",
+                "description": "This endpoint returns the health of the service\nvalidating the connection to the database",
                 "produces": [
                     "application/json"
                 ],
@@ -152,7 +152,7 @@ const docTemplate = `{
                     "Users",
                     "Health"
                 ],
-                "summary": "Get the health of the service",
+                "summary": "Retrieve the health of the service",
                 "responses": {
                     "200": {
                         "description": "OK",

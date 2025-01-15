@@ -249,8 +249,8 @@ paths:
       consumes:
       - application/json
       description: |-
-        Create a new user from scratch.
-        If the id is not provided, it will be generated automatically.
+        Create a new user from scratch
+        If the id is not provided, it will be generated automatically
       parameters:
       - description: CreateUserRequest
         format: json
@@ -278,7 +278,7 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/respond.HTTPMessage'
-      summary: Create a new user.
+      summary: Create a new user
       tags:
       - Users
   /users/{user_id}:
@@ -382,7 +382,9 @@ paths:
       - Users
   /users/health:
     get:
-      description: Get the health of the service
+      description: |-
+        This endpoint returns the health of the service
+        validating the connection to the database
       produces:
       - application/json
       responses:
@@ -394,7 +396,7 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/respond.HTTPMessage'
-      summary: Get the health of the service
+      summary: Retrieve the health of the service
       tags:
       - Users
       - Health
