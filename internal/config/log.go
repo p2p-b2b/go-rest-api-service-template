@@ -8,11 +8,8 @@ import (
 )
 
 var (
-	// ErrInvalidLogLevel is the error for invalid log level
-	ErrInvalidLogLevel = errors.New("invalid log level, must be one of [" + ValidLogLevel + "]")
-
-	// ErrInvalidLogFormat is the error for invalid log format
-	ErrInvalidLogFormat = errors.New("invalid log format, must be one of [" + ValidLogFormat + "]")
+	ErrLogInvalidLevel  = errors.New("invalid log level, must be one of [" + ValidLogLevel + "]")
+	ErrLogInvalidFormat = errors.New("invalid log format, must be one of [" + ValidLogFormat + "]")
 )
 
 const (
@@ -56,11 +53,11 @@ func (c *LogConfig) ParseEnvVars() {
 // Validate validates the logger configuration values
 func (c *LogConfig) Validate() error {
 	if !slices.Contains(strings.Split(ValidLogLevel, "|"), c.Level.Value) {
-		return ErrInvalidLogLevel
+		return ErrLogInvalidLevel
 	}
 
 	if !slices.Contains(strings.Split(ValidLogFormat, "|"), c.Format.Value) {
-		return ErrInvalidLogFormat
+		return ErrLogInvalidFormat
 	}
 
 	return nil

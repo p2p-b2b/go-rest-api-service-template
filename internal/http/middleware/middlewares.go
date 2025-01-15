@@ -19,6 +19,7 @@ const (
 	ClaimsName JWTClaimsName = "jwt_claims"
 )
 
+// Middleware is a function that wraps an http.Handler
 type Middleware func(http.Handler) http.Handler
 
 // Chain applies middlewares to an http.Handler
@@ -137,6 +138,11 @@ func RewriteStandardErrorsAsJSON(h http.Handler) http.Handler {
 	})
 }
 
+// CorsOpts represents the options for the CORS middleware.
+// If AllowedOrigins is empty, the default value is ["*"].
+// If AllowedMethods is empty, the default value is [GET, POST, PUT, DELETE, OPTIONS].
+// If AllowedHeaders is empty, the default value is [Accept, Content-Type, Content-Length, Accept-Encoding, Authorization].
+// If AllowCredentials is false, the default value is false.
 type CorsOpts struct {
 	AllowedOrigins   []string
 	AllowedMethods   []string
@@ -144,6 +150,7 @@ type CorsOpts struct {
 	AllowCredentials bool
 }
 
+// Cors is a middleware that adds CORS headers to the response.
 func Cors(opts CorsOpts) Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

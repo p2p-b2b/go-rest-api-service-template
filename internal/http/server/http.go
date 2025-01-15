@@ -36,7 +36,7 @@ func NewHTTPServer(conf HTTPServerConfig) *HTTPServer {
 
 	addr := fmt.Sprintf("%s:%d", conf.Config.Address.Value, conf.Config.Port.Value)
 
-	s := &HTTPServer{
+	server := &HTTPServer{
 		ctx: conf.Ctx,
 		httpServer: &http.Server{
 			Addr:    addr,
@@ -48,9 +48,9 @@ func NewHTTPServer(conf HTTPServerConfig) *HTTPServer {
 	}
 
 	// notify the server to listen for OS signals
-	signal.Notify(s.osSigChan, os.Interrupt, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
+	signal.Notify(server.osSigChan, os.Interrupt, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
 
-	return s
+	return server
 }
 
 func (s *HTTPServer) Start() {
@@ -95,7 +95,7 @@ func (s *HTTPServer) listenOsSignals() {
 		for {
 			select {
 			case sig := <-s.osSigChan:
-				slog.Debug("received OS signal", "signal", sig)
+				slog.Debug("http server received OS signal", "signal", sig)
 
 				// Handle the signal to shutdown the server or reload
 				switch sig {

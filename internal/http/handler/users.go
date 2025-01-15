@@ -34,7 +34,7 @@ type UserService interface {
 	List(ctx context.Context, input *service.ListUserInput) (*service.ListUsersOutput, error)
 }
 
-// UserHandler represents the handler for the user.
+// UserHandler represents the http handler for the user.
 type UserHandlerConf struct {
 	Service       UserService
 	OT            *o11y.OpenTelemetry
@@ -91,18 +91,18 @@ func NewUserHandler(conf UserHandlerConf) (*UserHandler, error) {
 // RegisterRoutes registers the routes on the mux.
 func (h *UserHandler) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /users/health", h.getHealth)
-
 	mux.HandleFunc("GET /users", h.listUsers)
-	mux.HandleFunc("POST /users", h.createUser)
 	mux.HandleFunc("GET /users/{user_id}", h.getByID)
 	mux.HandleFunc("PUT /users/{user_id}", h.updateUser)
+	mux.HandleFunc("POST /users", h.createUser)
 	mux.HandleFunc("DELETE /users/{user_id}", h.deleteUser)
 }
 
 // getHealth returns the health of the service
 //
-// @Summary Get the health of the service
-// @Description Get the health of the service
+// @Summary Retrieve the health of the service
+// @Description This endpoint returns the health of the service
+// @Description validating the connection to the database
 // @Tags Users,Health
 // @Produce json
 // @Success 200 {object} Health
@@ -246,9 +246,9 @@ func (h *UserHandler) getByID(w http.ResponseWriter, r *http.Request) {
 
 // createUser Create a new user
 //
-// @Summary Create a new user.
-// @Description Create a new user from scratch.
-// @Description If the id is not provided, it will be generated automatically.
+// @Summary Create a new user
+// @Description Create a new user from scratch
+// @Description If the id is not provided, it will be generated automatically
 // @Tags Users
 // @Accept json
 // @Produce json
@@ -468,7 +468,7 @@ func (h *UserHandler) updateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	slog.Debug("handler.Users.updateUser", "email", user.Email)
+	slog.Debug("handler.Users.updateUser", "user.email", user.Email)
 	span.SetStatus(codes.Ok, "User updated")
 	span.SetAttributes(attribute.String("user.id", user.ID.String()))
 	h.metrics.handlerCalls.Add(ctx, 1,
@@ -542,7 +542,7 @@ func (h *UserHandler) deleteUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	slog.Debug("handler.Users.deleteUser", "id", user.ID)
+	slog.Debug("handler.Users.deleteUser", "user.id", user.ID)
 	span.SetStatus(codes.Ok, "User deleted")
 	span.SetAttributes(attribute.String("user.id", id.String()))
 	h.metrics.handlerCalls.Add(ctx, 1,
@@ -677,7 +677,7 @@ func (h *UserHandler) listUsers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	slog.Debug("handler.Users.listUsers: called", "users", len(users.Items))
+	slog.Debug("handler.Users.listUsers: called", "users.count", len(users.Items))
 	span.SetStatus(codes.Ok, "list users")
 	span.SetAttributes(attribute.Int("users.count", len(users.Items)))
 	h.metrics.handlerCalls.Add(ctx, 1,

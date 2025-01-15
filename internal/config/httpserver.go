@@ -10,23 +10,12 @@ import (
 )
 
 var (
-	// ErrInvalidAddress is the error for invalid server address
-	ErrInvalidHTTPServerConfigAddress = errors.New("invalid server address, must not be empty and a valid IP Address or Hostname")
-
-	// ErrInvalidPort is the error for invalid server port
-	ErrInvalidHTTPServerConfigPort = errors.New("invalid server port, must be between 1 and 65535")
-
-	// ErrInvalidShutdownTimeout is the error for invalid server shutdown timeout
-	ErrInvalidHTTPServerConfigShutdownTimeout = errors.New("invalid server shutdown timeout, must be between 1s and 600s")
-
-	// ErrInvalidCorsAllowedOrigins is the error for invalid CORS allowed origins
-	ErrInvalidHTTPServerConfigCorsAllowedOrigins = errors.New("invalid CORS allowed origins. Must not be empty")
-
-	// ErrInvalidCorsAllowedMethods is the error for invalid CORS allowed methods
-	ErrInvalidHTTPServerConfigCorsAllowedMethods = errors.New("invalid CORS allowed methods. Must be one of [" + ValidHTTPServerCorsAllowedMethods + "]")
-
-	// ErrInvalidCorsAllowedHeaders is the error for invalid CORS allowed headers
-	ErrInvalidHTTPServerConfigCorsAllowedHeaders = errors.New("invalid CORS allowed headers. Must be at least 2 characters long")
+	ErrHTTPServerInvalidConfigAddress            = errors.New("invalid server address, must not be empty and a valid IP Address or Hostname")
+	ErrHTTPServerInvalidConfigPort               = errors.New("invalid server port, must be between 1 and 65535")
+	ErrHTTPServerInvalidConfigShutdownTimeout    = errors.New("invalid server shutdown timeout, must be between 1s and 600s")
+	ErrHTTPServerInvalidConfigCorsAllowedOrigins = errors.New("invalid CORS allowed origins. Must not be empty")
+	ErrHTTPServerInvalidConfigCorsAllowedMethods = errors.New("invalid CORS allowed methods. Must be one of [" + ValidHTTPServerCorsAllowedMethods + "]")
+	ErrHTTPServerInvalidConfigCorsAllowedHeaders = errors.New("invalid CORS allowed headers. Must be at least 2 characters long")
 )
 
 const (
@@ -137,32 +126,32 @@ func (c *HTTPServerConfig) ParseEnvVars() {
 // Validate validates the server configuration values
 func (c *HTTPServerConfig) Validate() error {
 	if c.Address.Value == "" || c.Address.Value != "localhost" && net.ParseIP(c.Address.Value) == nil {
-		return ErrInvalidHTTPServerConfigAddress
+		return ErrHTTPServerInvalidConfigAddress
 	}
 
 	// validate the if is a valid IP Address or Hostname
 
 	if c.Port.Value < 1 || c.Port.Value > 65535 {
-		return ErrInvalidHTTPServerConfigPort
+		return ErrHTTPServerInvalidConfigPort
 	}
 
 	if c.ShutdownTimeout.Value < 1*time.Second || c.ShutdownTimeout.Value > 600*time.Second {
-		return ErrInvalidHTTPServerConfigShutdownTimeout
+		return ErrHTTPServerInvalidConfigShutdownTimeout
 	}
 
 	if c.CorsEnabled.Value {
 		if c.CorsAllowedOrigins.Value == "" {
-			return ErrInvalidHTTPServerConfigCorsAllowedOrigins
+			return ErrHTTPServerInvalidConfigCorsAllowedOrigins
 		}
 
 		for _, method := range strings.Split(c.CorsAllowedMethods.Value, ",") {
 			if !slices.Contains(strings.Split(ValidHTTPServerCorsAllowedMethods, "|"), strings.Trim(method, " ")) {
-				return ErrInvalidHTTPServerConfigCorsAllowedMethods
+				return ErrHTTPServerInvalidConfigCorsAllowedMethods
 			}
 		}
 
 		if len(c.CorsAllowedHeaders.Value) < 2 {
-			return ErrInvalidHTTPServerConfigCorsAllowedHeaders
+			return ErrHTTPServerInvalidConfigCorsAllowedHeaders
 		}
 
 	}

@@ -24,10 +24,10 @@ const (
 )
 
 var (
-	ErrInvalidUserFirstName = errors.New("invalid user first name. Must be between" + fmt.Sprintf("%d and %d", UsersFirstNameMinLength, UsersFirstNameMaxLength) + "characters long")
-	ErrInvalidUserLastName  = errors.New("invalid user last name. Must be between" + fmt.Sprintf("%d and %d", UsersLastNameMinLength, UsersLastNameMaxLength) + "characters long")
-	ErrInvalidUserEmail     = errors.New("invalid user email. Must be between" + fmt.Sprintf("%d and %d", UsersEmailMinLength, UsersEmailMaxLength) + "characters long")
-	ErrInvalidUserPassword  = errors.New("invalid user password. Must be at least" + fmt.Sprintf("%d characters long", UsersPasswordMinLength) + "characters long")
+	ErrUserInvalidFirstName = errors.New("invalid user first name. Must be between" + fmt.Sprintf("%d and %d", UsersFirstNameMinLength, UsersFirstNameMaxLength) + "characters long")
+	ErrUserInvalidLastName  = errors.New("invalid user last name. Must be between" + fmt.Sprintf("%d and %d", UsersLastNameMinLength, UsersLastNameMaxLength) + "characters long")
+	ErrUserInvalidEmail     = errors.New("invalid user email. Must be between" + fmt.Sprintf("%d and %d", UsersEmailMinLength, UsersEmailMaxLength) + "characters long")
+	ErrUserInvalidPassword  = errors.New("invalid user password. Must be at least" + fmt.Sprintf("%d characters long", UsersPasswordMinLength) + "characters long")
 )
 
 // User represents a user entity used to model the data stored in the database.
@@ -94,29 +94,29 @@ type CreateUserRequest struct {
 // Validate validates the CreateUserRequest.
 func (req *CreateUserRequest) Validate() error {
 	if req.ID == uuid.Nil {
-		return ErrInvalidUserID
+		return ErrUserInvalidID
 	}
 
 	if len(req.FirstName) < UsersFirstNameMinLength || len(req.FirstName) > UsersFirstNameMaxLength {
-		return ErrInvalidUserFirstName
+		return ErrUserInvalidFirstName
 	}
 
 	if len(req.LastName) < UsersLastNameMinLength || len(req.LastName) > UsersLastNameMaxLength {
-		return ErrInvalidUserLastName
+		return ErrUserInvalidLastName
 	}
 
 	// minimal email validation
 	if len(req.Email) < UsersEmailMinLength || len(req.Email) > UsersEmailMaxLength {
-		return ErrInvalidUserEmail
+		return ErrUserInvalidEmail
 	}
 
 	_, err := mail.ParseAddress(req.Email)
 	if err != nil {
-		return ErrInvalidUserEmail
+		return ErrUserInvalidEmail
 	}
 
 	if len(req.Password) < UsersPasswordMinLength {
-		return ErrInvalidUserPassword
+		return ErrUserInvalidPassword
 	}
 
 	return nil
@@ -139,22 +139,22 @@ func (req *UpdateUserRequest) Validate() error {
 	}
 
 	if req.FirstName != nil && *req.FirstName != "" && len(*req.FirstName) < UsersFirstNameMinLength || len(*req.FirstName) > UsersFirstNameMaxLength {
-		return ErrInvalidUserFirstName
+		return ErrUserInvalidFirstName
 	}
 
 	if req.LastName != nil && *req.LastName != "" && len(*req.LastName) < UsersLastNameMinLength || len(*req.LastName) > UsersLastNameMaxLength {
-		return ErrInvalidUserLastName
+		return ErrUserInvalidLastName
 	}
 
 	// minimal email validation
 	if req.Email != nil && *req.Email != "" && len(*req.Email) < UsersEmailMinLength || len(*req.Email) > UsersEmailMaxLength {
-		return ErrInvalidUserEmail
+		return ErrUserInvalidEmail
 	}
 
 	if req.Email != nil && *req.Email != "" && len(*req.Email) >= UsersEmailMinLength && len(*req.Email) <= UsersEmailMaxLength {
 		_, err := mail.ParseAddress(*req.Email)
 		if err != nil {
-			return ErrInvalidUserEmail
+			return ErrUserInvalidEmail
 		}
 	}
 
