@@ -19,6 +19,6 @@ func NewSwaggerHandler(url string) *SwaggerHandler {
 }
 
 // RegisterRoutes registers the routes for the handler
-func (h *SwaggerHandler) RegisterRoutes(mux *http.ServeMux) {
-	mux.HandleFunc("GET /swagger/", h.hf)
+func (ref *SwaggerHandler) RegisterRoutes(mux *http.ServeMux) {
+	mux.HandleFunc("GET /swagger/", ref.hf)
 }

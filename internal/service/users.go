@@ -58,7 +58,7 @@ func NewUserService(conf UserServiceConf) (*UserService, error) {
 	}
 
 	if conf.OT == nil {
-		return nil, ErrInvalidOpenTelemetry
+		return nil, ErrUserInvalidOpenTelemetry
 	}
 
 	u := &UserService{
@@ -420,7 +420,7 @@ func (ref *UserService) Update(ctx context.Context, input *UpdateUserInput) erro
 	}
 
 	// update the password if it is provided
-	if input.Password != nil && len(*input.Password) < UsersPasswordMinLength {
+	if input.Password != nil && len(*input.Password) < UserPasswordMinLength {
 
 		hashPwd, err := hashAndSaltPassword(*input.Password)
 		if err != nil {
