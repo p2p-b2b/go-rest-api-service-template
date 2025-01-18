@@ -14,7 +14,7 @@ func NewPprofHandler() *PprofHandler {
 }
 
 // RegisterRoutes registers the routes for the handler
-func (h *PprofHandler) RegisterRoutes(mux *http.ServeMux) {
+func (ref *PprofHandler) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /debug/pprof/", pprof.Index)
 	mux.HandleFunc("GET /debug/pprof/cmdline", pprof.Cmdline)
 	mux.HandleFunc("GET /debug/pprof/profile", pprof.Profile)

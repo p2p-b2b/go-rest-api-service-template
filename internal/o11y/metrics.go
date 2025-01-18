@@ -62,41 +62,41 @@ func NewOpenTelemetryMeter(ctx context.Context, conf *OpenTelemetryMeterConfig) 
 	}
 }
 
-func (o *OpenTelemetryMeter) SetupMetrics() error {
+func (ref *OpenTelemetryMeter) SetupMetrics() error {
 	// Set up metric exporter.
-	mExp, err := o.newMetricExporter(o.ctx)
+	mExp, err := ref.newMetricExporter(ref.ctx)
 	if err != nil {
 		return err
 	}
 
 	// Set up meter provider.
-	mp, err := o.newMeterProvider(mExp)
+	mp, err := ref.newMeterProvider(mExp)
 	if err != nil {
 		return err
 	}
-	o.mp = mp
+	ref.mp = mp
 
 	// Register the meter provider with the global provider.
 	otel.SetMeterProvider(mp)
-	o.Meter = mp.Meter(o.name)
+	ref.Meter = mp.Meter(ref.name)
 
 	return nil
 }
 
-func (o *OpenTelemetryMeter) Shutdown() {
-	if o.mp != nil {
-		if err := o.mp.Shutdown(o.ctx); err != nil {
+func (ref *OpenTelemetryMeter) Shutdown() {
+	if ref.mp != nil {
+		if err := ref.mp.Shutdown(ref.ctx); err != nil {
 			slog.Error("failed to shutdown meter provider", "error", err)
 		}
 	}
 }
 
 // newMetricExporter creates a new metric exporter based on the configuration.
-func (o *OpenTelemetryMeter) newMetricExporter(ctx context.Context) (metric.Exporter, error) {
+func (ref *OpenTelemetryMeter) newMetricExporter(ctx context.Context) (metric.Exporter, error) {
 	var exporter metric.Exporter
 	var err error
 
-	switch o.metricExporter {
+	switch ref.metricExporter {
 	case "console":
 		exporter, err = stdoutmetric.New(stdoutmetric.WithPrettyPrint())
 		if err != nil {
@@ -107,8 +107,8 @@ func (o *OpenTelemetryMeter) newMetricExporter(ctx context.Context) (metric.Expo
 
 		endpointOpt := otlpmetrichttp.WithEndpointURL(
 			fmt.Sprintf("http://%s:%d/api/v1/otlp/v1/metrics",
-				o.metricEndpoint,
-				o.metricPort,
+				ref.metricEndpoint,
+				ref.metricPort,
 			),
 		)
 		exporter, err = otlpmetrichttp.New(ctx, insecureOpt, endpointOpt)
@@ -117,20 +117,20 @@ func (o *OpenTelemetryMeter) newMetricExporter(ctx context.Context) (metric.Expo
 		}
 
 	default:
-		return nil, fmt.Errorf("unknown metric exporter: %s", o.metricExporter)
+		return nil, fmt.Errorf("unknown metric exporter: %s", ref.metricExporter)
 	}
 
 	return exporter, nil
 }
 
 // newMeterProvider creates a new MeterProvider with the given exporter.
-func (o *OpenTelemetryMeter) newMeterProvider(exp metric.Exporter) (*metric.MeterProvider, error) {
+func (ref *OpenTelemetryMeter) newMeterProvider(exp metric.Exporter) (*metric.MeterProvider, error) {
 	// Create resources to set service name and service version
 
 	meterProvider := metric.NewMeterProvider(
-		metric.WithResource(o.res),
+		metric.WithResource(ref.res),
 		metric.WithReader(
-			metric.NewPeriodicReader(exp, metric.WithInterval(o.metricInterval)),
+			metric.NewPeriodicReader(exp, metric.WithInterval(ref.metricInterval)),
 		),
 	)
 
