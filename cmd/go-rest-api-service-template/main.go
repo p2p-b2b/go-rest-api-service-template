@@ -295,8 +295,8 @@ func main() {
 	}
 
 	// Create a new userRepository
-	userRepository, err := repository.NewUserRepository(
-		repository.UserRepositoryConfig{
+	userRepository, err := repository.NewUsersRepository(
+		repository.UsersRepositoryConfig{
 			DB:              db,
 			MaxPingTimeout:  DBConfig.MaxPingTimeout.Value,
 			MaxQueryTimeout: DBConfig.MaxQueryTimeout.Value,

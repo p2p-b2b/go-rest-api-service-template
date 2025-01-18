@@ -22,7 +22,7 @@ import (
 	"go.opentelemetry.io/otel/metric"
 )
 
-type UserRepositoryConfig struct {
+type UsersRepositoryConfig struct {
 	DB              *sql.DB
 	MaxPingTimeout  time.Duration
 	MaxQueryTimeout time.Duration
@@ -30,23 +30,23 @@ type UserRepositoryConfig struct {
 	MetricsPrefix   string
 }
 
-type userRepositoryMetrics struct {
+type usersRepositoryMetrics struct {
 	repositoryCalls metric.Int64Counter
 }
 
-// this implement repository.UserRepository
-// UserRepository is a PostgreSQL store.
-type UserRepository struct {
+// this implement repository.UsersRepository
+// UsersRepository is a PostgreSQL store.
+type UsersRepository struct {
 	db              *sql.DB
 	maxPingTimeout  time.Duration
 	maxQueryTimeout time.Duration
 	ot              *o11y.OpenTelemetry
 	metricsPrefix   string
-	metrics         userRepositoryMetrics
+	metrics         usersRepositoryMetrics
 }
 
-// NewUserRepository creates a new UserRepository.
-func NewUserRepository(conf UserRepositoryConfig) (*UserRepository, error) {
+// NewUsersRepository creates a new UsersRepository.
+func NewUsersRepository(conf UsersRepositoryConfig) (*UsersRepository, error) {
 	if conf.DB == nil {
 		return nil, ErrDBInvalidConfiguration
 	}
@@ -63,7 +63,7 @@ func NewUserRepository(conf UserRepositoryConfig) (*UserRepository, error) {
 		return nil, ErrOTInvalidConfiguration
 	}
 
-	repo := &UserRepository{
+	repo := &UsersRepository{
 		db:              conf.DB,
 		maxPingTimeout:  conf.MaxPingTimeout,
 		maxQueryTimeout: conf.MaxQueryTimeout,
@@ -79,7 +79,7 @@ func NewUserRepository(conf UserRepositoryConfig) (*UserRepository, error) {
 		metric.WithDescription("The number of calls to the user repository"),
 	)
 	if err != nil {
-		slog.Error("repository.Users.NewUserRepository", "error", err)
+		slog.Error("repository.Users.NewUsersRepository", "error", err)
 		return nil, err
 	}
 
@@ -89,22 +89,22 @@ func NewUserRepository(conf UserRepositoryConfig) (*UserRepository, error) {
 }
 
 // DriverName returns the name of the driver.
-func (ref *UserRepository) DriverName() string {
+func (ref *UsersRepository) DriverName() string {
 	return sql.Drivers()[0]
 }
 
 // Conn returns the connection to the repository.
-func (ref *UserRepository) Conn(ctx context.Context) (*sql.Conn, error) {
+func (ref *UsersRepository) Conn(ctx context.Context) (*sql.Conn, error) {
 	return ref.db.Conn(ctx)
 }
 
 // Close closes the repository, releasing any open resources.
-func (ref *UserRepository) Close() error {
+func (ref *UsersRepository) Close() error {
 	return ref.db.Close()
 }
 
 // PingContext verifies a connection to the repository is still alive, establishing a connection if necessary.
-func (ref *UserRepository) PingContext(ctx context.Context) error {
+func (ref *UsersRepository) PingContext(ctx context.Context) error {
 	ctx, cancel := context.WithTimeout(ctx, ref.maxPingTimeout)
 	defer cancel()
 
@@ -115,7 +115,7 @@ func (ref *UserRepository) PingContext(ctx context.Context) error {
 }
 
 // Insert a new user into the database.
-func (ref *UserRepository) Insert(ctx context.Context, input *InsertUserInput) error {
+func (ref *UsersRepository) Insert(ctx context.Context, input *InsertUserInput) error {
 	ctx, cancel := context.WithTimeout(ctx, ref.maxQueryTimeout)
 	defer cancel()
 
@@ -214,7 +214,7 @@ func (ref *UserRepository) Insert(ctx context.Context, input *InsertUserInput) e
 }
 
 // Update updates the user with the specified ID.
-func (ref *UserRepository) Update(ctx context.Context, input *UpdateUserInput) error {
+func (ref *UsersRepository) Update(ctx context.Context, input *UpdateUserInput) error {
 	ctx, cancel := context.WithTimeout(ctx, ref.maxQueryTimeout)
 	defer cancel()
 
@@ -374,7 +374,7 @@ func (ref *UserRepository) Update(ctx context.Context, input *UpdateUserInput) e
 }
 
 // Delete deletes the user with the specified ID.
-func (ref *UserRepository) Delete(ctx context.Context, input *DeleteUserInput) error {
+func (ref *UsersRepository) Delete(ctx context.Context, input *DeleteUserInput) error {
 	ctx, cancel := context.WithTimeout(ctx, ref.maxQueryTimeout)
 	defer cancel()
 
@@ -477,7 +477,7 @@ func (ref *UserRepository) Delete(ctx context.Context, input *DeleteUserInput) e
 }
 
 // SelectByID returns the user with the specified ID.
-func (ref *UserRepository) SelectByID(ctx context.Context, id uuid.UUID) (*User, error) {
+func (ref *UsersRepository) SelectByID(ctx context.Context, id uuid.UUID) (*User, error) {
 	ctx, cancel := context.WithTimeout(ctx, ref.maxQueryTimeout)
 	defer cancel()
 
@@ -560,7 +560,7 @@ func (ref *UserRepository) SelectByID(ctx context.Context, id uuid.UUID) (*User,
 }
 
 // SelectByEmail returns the user with the specified email.
-func (ref *UserRepository) SelectByEmail(ctx context.Context, email string) (*User, error) {
+func (ref *UsersRepository) SelectByEmail(ctx context.Context, email string) (*User, error) {
 	ctx, cancel := context.WithTimeout(ctx, ref.maxQueryTimeout)
 	defer cancel()
 
@@ -645,7 +645,7 @@ func (ref *UserRepository) SelectByEmail(ctx context.Context, email string) (*Us
 	return &u, nil
 }
 
-func (ref *UserRepository) Select(ctx context.Context, input *SelectUsersInput) (*SelectUsersOutput, error) {
+func (ref *UsersRepository) Select(ctx context.Context, input *SelectUsersInput) (*SelectUsersOutput, error) {
 	ctx, cancel := context.WithTimeout(ctx, ref.maxQueryTimeout)
 	defer cancel()
 

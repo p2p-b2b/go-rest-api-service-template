@@ -18,10 +18,10 @@ import (
 	"go.opentelemetry.io/otel/metric"
 )
 
-//go:generate go run go.uber.org/mock/mockgen@v0.5.0 -package=mocks -destination=../../mocks/service/users.go -source=users.go UserRepository
+//go:generate go run go.uber.org/mock/mockgen@v0.5.0 -package=mocks -destination=../../mocks/service/users.go -source=users.go UsersRepository
 
-// UserRepository is the interface for the user repository methods.
-type UserRepository interface {
+// UsersRepository is the interface for the user repository methods.
+type UsersRepository interface {
 	DriverName() string
 	Close() error
 	PingContext(ctx context.Context) error
@@ -35,7 +35,7 @@ type UserRepository interface {
 }
 
 type UserServiceConf struct {
-	Repository    UserRepository
+	Repository    UsersRepository
 	OT            *o11y.OpenTelemetry
 	MetricsPrefix string
 }
@@ -45,7 +45,7 @@ type userServiceMetrics struct {
 }
 
 type UserService struct {
-	repository    UserRepository
+	repository    UsersRepository
 	ot            *o11y.OpenTelemetry
 	metricsPrefix string
 	metrics       userServiceMetrics
@@ -534,7 +534,7 @@ func (ref *UserService) Delete(ctx context.Context, input *DeleteUserInput) erro
 }
 
 // List returns a list of users.
-func (ref *UserService) List(ctx context.Context, input *ListUserInput) (*ListUsersOutput, error) {
+func (ref *UserService) List(ctx context.Context, input *ListUsersInput) (*ListUsersOutput, error) {
 	ctx, span := ref.ot.Traces.Tracer.Start(ctx, "service.Users.List")
 	defer span.End()
 

@@ -141,23 +141,31 @@ func (req *UpdateUserRequest) Validate() error {
 		return ErrAtLeastOneFieldMustBeUpdated
 	}
 
-	if req.FirstName != nil && *req.FirstName != "" && len(*req.FirstName) < UserFirstNameMinLength || len(*req.FirstName) > UserFirstNameMaxLength {
-		return ErrUserInvalidFirstName
+	if req.FirstName != nil {
+		if len(*req.FirstName) < UserFirstNameMinLength || len(*req.FirstName) > UserFirstNameMaxLength {
+			return ErrUserInvalidFirstName
+		}
 	}
 
-	if req.LastName != nil && *req.LastName != "" && len(*req.LastName) < UserLastNameMinLength || len(*req.LastName) > UserLastNameMaxLength {
-		return ErrUserInvalidLastName
+	if req.LastName != nil {
+		if len(*req.LastName) < UserLastNameMinLength || len(*req.LastName) > UserLastNameMaxLength {
+			return ErrUserInvalidLastName
+		}
 	}
 
 	// minimal email validation
-	if req.Email != nil && *req.Email != "" && len(*req.Email) < UserEmailMinLength || len(*req.Email) > UserEmailMaxLength {
-		return ErrUserInvalidEmail
+	if req.Email != nil {
+		if len(*req.Email) < UserEmailMinLength || len(*req.Email) > UserEmailMaxLength {
+			return ErrUserInvalidEmail
+		}
 	}
 
-	if req.Email != nil && *req.Email != "" && len(*req.Email) >= UserEmailMinLength && len(*req.Email) <= UserEmailMaxLength {
-		_, err := mail.ParseAddress(*req.Email)
-		if err != nil {
-			return ErrUserInvalidEmail
+	if req.Email != nil {
+		if len(*req.Email) >= UserEmailMinLength && len(*req.Email) <= UserEmailMaxLength {
+			_, err := mail.ParseAddress(*req.Email)
+			if err != nil {
+				return ErrUserInvalidEmail
+			}
 		}
 	}
 

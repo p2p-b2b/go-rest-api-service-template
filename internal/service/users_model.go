@@ -45,8 +45,8 @@ type User struct {
 	UpdatedAt    time.Time
 }
 
-// UserInput represents the common input for the user entity.
-type UserInput struct {
+// CreateUserInput represents the common input for the user entity.
+type CreateUserInput struct {
 	ID        uuid.UUID
 	FirstName string
 	LastName  string
@@ -56,7 +56,7 @@ type UserInput struct {
 }
 
 // Validate validates the user input.
-func (ui *UserInput) Validate() error {
+func (ui *CreateUserInput) Validate() error {
 	if ui.ID == uuid.Nil {
 		return ErrUserInvalidID
 	}
@@ -86,14 +86,6 @@ func (ui *UserInput) Validate() error {
 	return nil
 }
 
-// CreateUserInput represents the input for the CreateUser method.
-type CreateUserInput UserInput
-
-// Validate validates the CreateUserInput.
-func (ui *CreateUserInput) Validate() error {
-	return (*UserInput)(ui).Validate()
-}
-
 // UpdateUserInput represents the input for the UpdateUser method.
 type UpdateUserInput struct {
 	ID        uuid.UUID
@@ -113,22 +105,30 @@ func (ui *UpdateUserInput) Validate() error {
 	if ui.ID == uuid.Nil {
 		return ErrUserInvalidID
 	}
-	if ui.FirstName != nil && len(*ui.FirstName) < UserFirstNameMinLength || len(*ui.FirstName) > UserFirstNameMaxLength {
-		return ErrUserInvalidFirstName
+	if ui.FirstName != nil {
+		if len(*ui.FirstName) < UserFirstNameMinLength || len(*ui.FirstName) > UserFirstNameMaxLength {
+			return ErrUserInvalidFirstName
+		}
 	}
 
-	if ui.LastName != nil && len(*ui.LastName) < UserLastNameMinLength || len(*ui.LastName) > UserLastNameMaxLength {
-		return ErrUserInvalidLastName
+	if ui.LastName != nil {
+		if len(*ui.LastName) < UserLastNameMinLength || len(*ui.LastName) > UserLastNameMaxLength {
+			return ErrUserInvalidLastName
+		}
 	}
 
-	if ui.Email != nil && *ui.Email != "" && len(*ui.Email) < UserEmailMinLength || len(*ui.Email) > UserEmailMaxLength {
-		return ErrUserInvalidEmail
-	}
-
-	if ui.Email != nil && *ui.Email != "" && len(*ui.Email) >= UserEmailMinLength && len(*ui.Email) <= UserEmailMaxLength {
-		_, err := mail.ParseAddress(*ui.Email)
-		if err != nil {
+	if ui.Email != nil {
+		if len(*ui.Email) < UserEmailMinLength || len(*ui.Email) > UserEmailMaxLength {
 			return ErrUserInvalidEmail
+		}
+	}
+
+	if ui.Email != nil {
+		if len(*ui.Email) >= UserEmailMinLength && len(*ui.Email) <= UserEmailMaxLength {
+			_, err := mail.ParseAddress(*ui.Email)
+			if err != nil {
+				return ErrUserInvalidEmail
+			}
 		}
 	}
 
@@ -152,8 +152,8 @@ func (ui *DeleteUserInput) Validate() error {
 	return nil
 }
 
-// ListUserInput represents the input for the ListUser method.
-type ListUserInput struct {
+// ListUsersInput represents the input for the ListUser method.
+type ListUsersInput struct {
 	Sort      string
 	Filter    string
 	Fields    []string

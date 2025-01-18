@@ -179,16 +179,16 @@ func (ui *DeleteUserInput) Validate() error {
 	return nil
 }
 
-// ListUserInput represents the common input for the list user method.
-type ListUserInput struct {
+// SelectUsersInput represents the common input for the list user method.
+type SelectUsersInput struct {
 	Sort      string
 	Filter    string
 	Fields    []string
 	Paginator paginator.Paginator
 }
 
-// Validate validates the ListUserInput.
-func (ui *ListUserInput) Validate() error {
+// Validate validates the SelectUsersInput.
+func (ui *SelectUsersInput) Validate() error {
 	if ui.Paginator.Limit < 1 {
 		return ErrInvalidLimit
 	}
@@ -208,14 +208,6 @@ func (ui *ListUserInput) Validate() error {
 	}
 
 	return nil
-}
-
-// SelectUsersInput represents the common input for the select user method.
-type SelectUsersInput ListUserInput
-
-// Validate validates the SelectUsersInput.
-func (ui *SelectUsersInput) Validate() error {
-	return (*ListUserInput)(ui).Validate()
 }
 
 // SelectUsersOutput represents the output for the list user method.

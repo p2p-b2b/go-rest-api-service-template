@@ -116,7 +116,7 @@ func (mr *MockUserServiceMockRecorder) HealthCheck(ctx any) *gomock.Call {
 }
 
 // List mocks base method.
-func (m *MockUserService) List(ctx context.Context, input *service.ListUserInput) (*service.ListUsersOutput, error) {
+func (m *MockUserService) List(ctx context.Context, input *service.ListUsersInput) (*service.ListUsersOutput, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "List", ctx, input)
 	ret0, _ := ret[0].(*service.ListUsersOutput)
