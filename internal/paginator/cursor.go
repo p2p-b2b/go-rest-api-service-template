@@ -37,41 +37,41 @@ type Paginator struct {
 }
 
 // String returns the string representation of the paginator.
-func (p *Paginator) String() string {
-	limit := fmt.Sprintf("%d", p.Limit)
+func (ref *Paginator) String() string {
+	limit := fmt.Sprintf("%d", ref.Limit)
 
 	return fmt.Sprintf("Paginator{next: %s, next_token: %s, prev: %s, prev_token: %s, size: %d, limit: %s}",
-		p.NextPage,
-		p.NextToken,
-		p.PrevPage,
-		p.PrevToken,
-		p.Size,
+		ref.NextPage,
+		ref.NextToken,
+		ref.PrevPage,
+		ref.PrevToken,
+		ref.Size,
 		limit,
 	)
 }
 
 // GenerateToken generates a token for the given id and date.
-func (p *Paginator) GenerateToken(id uuid.UUID, serial int64) string {
+func (ref *Paginator) GenerateToken(id uuid.UUID, serial int64) string {
 	return EncodeToken(id, serial)
 }
 
 // Validate validates the paginator.
-func (p *Paginator) Validate() error {
-	if p.Limit <= 0 {
+func (ref *Paginator) Validate() error {
+	if ref.Limit <= 0 {
 		return ErrMustBeOneOrGreater
 	}
 
 	// next should be a base64 encoded string
-	if p.NextToken != "" {
-		_, _, err := DecodeToken(p.NextToken)
+	if ref.NextToken != "" {
+		_, _, err := DecodeToken(ref.NextToken)
 		if err != nil {
 			return ErrInvalidCursor
 		}
 	}
 
 	// previous should be a base64 encoded string
-	if p.PrevToken != "" {
-		_, _, err := DecodeToken(p.PrevToken)
+	if ref.PrevToken != "" {
+		_, _, err := DecodeToken(ref.PrevToken)
 		if err != nil {
 			return ErrInvalidCursor
 		}
@@ -81,12 +81,12 @@ func (p *Paginator) Validate() error {
 }
 
 // GeneratePages generates the next and previous pages.
-func (p *Paginator) GeneratePages(url string) {
-	if p.NextToken != "" {
-		p.NextPage = url + "?next_token=" + p.NextToken + "&limit=" + strconv.Itoa(p.Limit)
+func (ref *Paginator) GeneratePages(url string) {
+	if ref.NextToken != "" {
+		ref.NextPage = url + "?next_token=" + ref.NextToken + "&limit=" + strconv.Itoa(ref.Limit)
 	}
-	if p.PrevToken != "" {
-		p.PrevPage = url + "?prev_token=" + p.PrevToken + "&limit=" + strconv.Itoa(p.Limit)
+	if ref.PrevToken != "" {
+		ref.PrevPage = url + "?prev_token=" + ref.PrevToken + "&limit=" + strconv.Itoa(ref.Limit)
 	}
 }
 

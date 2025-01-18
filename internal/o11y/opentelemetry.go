@@ -52,19 +52,19 @@ func New(ctx context.Context, conf *config.OpenTelemetryConfig) (*OpenTelemetry,
 	return op, nil
 }
 
-func (o *OpenTelemetry) Start() error {
-	if err := o.Traces.SetupTraces(); err != nil {
+func (ref *OpenTelemetry) Start() error {
+	if err := ref.Traces.SetupTraces(); err != nil {
 		return err
 	}
 
-	if err := o.Metrics.SetupMetrics(); err != nil {
+	if err := ref.Metrics.SetupMetrics(); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (o *OpenTelemetry) Shutdown() {
-	o.Traces.Shutdown()
-	o.Metrics.Shutdown()
+func (ref *OpenTelemetry) Shutdown() {
+	ref.Traces.Shutdown()
+	ref.Metrics.Shutdown()
 }

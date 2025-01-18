@@ -63,33 +63,33 @@ func NewOpenTelemetryTracer(ctx context.Context, conf *OpenTelemetryTracerConfig
 	}
 }
 
-func (o *OpenTelemetryTracer) SetupTraces() error {
+func (ref *OpenTelemetryTracer) SetupTraces() error {
 	// Set up propagator.
 	prop := newPropagator()
 	otel.SetTextMapPropagator(prop)
 
 	// Set up trace exporter.
-	tExp, err := o.newTraceExporter(o.ctx)
+	tExp, err := ref.newTraceExporter(ref.ctx)
 	if err != nil {
 		return err
 	}
 
 	// Set up trace provider.
-	tp, err := o.newTraceProvider(tExp)
+	tp, err := ref.newTraceProvider(tExp)
 	if err != nil {
 		return err
 	}
-	o.tp = tp
+	ref.tp = tp
 
 	otel.SetTracerProvider(tp)
-	o.Tracer = tp.Tracer(o.name)
+	ref.Tracer = tp.Tracer(ref.name)
 
 	return nil
 }
 
-func (o *OpenTelemetryTracer) Shutdown() {
-	if o.Tracer != nil {
-		if err := o.tp.Shutdown(o.ctx); err != nil {
+func (ref *OpenTelemetryTracer) Shutdown() {
+	if ref.Tracer != nil {
+		if err := ref.tp.Shutdown(ref.ctx); err != nil {
 			slog.Error("failed to shutdown OpenTelemetry tracer", "error", err)
 		}
 	}
@@ -102,11 +102,11 @@ func newPropagator() propagation.TextMapPropagator {
 	)
 }
 
-func (o *OpenTelemetryTracer) newTraceExporter(ctx context.Context) (trace.SpanExporter, error) {
+func (ref *OpenTelemetryTracer) newTraceExporter(ctx context.Context) (trace.SpanExporter, error) {
 	var exporter trace.SpanExporter
 	var err error
 
-	switch o.traceExporter {
+	switch ref.traceExporter {
 	case "console":
 		exporter, err = stdouttrace.New(stdouttrace.WithPrettyPrint())
 		if err != nil {
@@ -115,26 +115,26 @@ func (o *OpenTelemetryTracer) newTraceExporter(ctx context.Context) (trace.SpanE
 	case "otlp-http":
 		insecureOpt := otlptracehttp.WithInsecure()
 
-		endpointOpt := otlptracehttp.WithEndpoint(fmt.Sprintf("%s:%d", o.traceEndpoint, o.tracePort))
+		endpointOpt := otlptracehttp.WithEndpoint(fmt.Sprintf("%s:%d", ref.traceEndpoint, ref.tracePort))
 		exporter, err = otlptracehttp.New(ctx, insecureOpt, endpointOpt)
 		if err != nil {
 			return nil, err
 		}
 	default:
-		return nil, fmt.Errorf("unknown trace exporter: %s", o.traceExporter)
+		return nil, fmt.Errorf("unknown trace exporter: %s", ref.traceExporter)
 	}
 
 	return exporter, nil
 }
 
-func (o *OpenTelemetryTracer) newTraceProvider(exp trace.SpanExporter) (*trace.TracerProvider, error) {
+func (ref *OpenTelemetryTracer) newTraceProvider(exp trace.SpanExporter) (*trace.TracerProvider, error) {
 	sampler := trace.TraceIDRatioBased(0.5)
 
 	p := trace.NewTracerProvider(
-		trace.WithResource(o.res),
+		trace.WithResource(ref.res),
 		trace.WithBatcher(
 			exp,
-			trace.WithBatchTimeout(o.traceExporterBatchTimeout),
+			trace.WithBatchTimeout(ref.traceExporterBatchTimeout),
 		),
 		trace.WithSampler(sampler),
 	)

@@ -193,18 +193,6 @@ func (ui *ListUserInput) Validate() error {
 		return ErrInvalidLimit
 	}
 
-	if ui.Paginator.NextToken != "" {
-		if _, err := uuid.Parse(ui.Paginator.NextToken); err != nil {
-			return ErrInvalidNextToken
-		}
-	}
-
-	if ui.Paginator.PrevToken != "" {
-		if _, err := uuid.Parse(ui.Paginator.PrevToken); err != nil {
-			return ErrInvalidPrevToken
-		}
-	}
-
 	if ui.Sort != "" && !query.IsValidSort(UserSortFields, ui.Sort) {
 		return ErrInvalidSort
 	}
