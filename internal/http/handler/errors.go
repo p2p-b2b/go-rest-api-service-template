@@ -6,8 +6,6 @@ import (
 
 var (
 	ErrInternalServerError          = errors.New("internal server error")
-	ErrBadRequest                   = errors.New("bad request")
-	ErrUserInvalidID                = errors.New("invalid user ID, this must be a valid UUID")
 	ErrAtLeastOneFieldMustBeUpdated = errors.New("at least one field must be updated, any of these could be empty")
 	ErrRequiredUUID                 = errors.New("required UUID")
 	ErrInvalidUUID                  = errors.New("invalid UUID")
@@ -18,6 +16,4 @@ var (
 	ErrInvalidLimit                 = errors.New("invalid limit field")
 	ErrInvalidNextToken             = errors.New("invalid nextToken field")
 	ErrInvalidPrevToken             = errors.New("invalid prevToken field")
-	ErrInvalidService               = errors.New("invalid service")
-	ErrInvalidOpenTelemetry         = errors.New("invalid open telemetry")
 )

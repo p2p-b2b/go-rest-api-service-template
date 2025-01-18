@@ -48,19 +48,19 @@ type UserRepository struct {
 // NewUserRepository creates a new UserRepository.
 func NewUserRepository(conf UserRepositoryConfig) (*UserRepository, error) {
 	if conf.DB == nil {
-		return nil, ErrInvalidDBConfiguration
+		return nil, ErrDBInvalidConfiguration
 	}
 
 	if conf.MaxPingTimeout < 10*time.Millisecond {
-		return nil, ErrInvalidMaxPingTimeout
+		return nil, ErrDBInvalidMaxPingTimeout
 	}
 
 	if conf.MaxQueryTimeout < 10*time.Millisecond {
-		return nil, ErrInvalidMaxQueryTimeout
+		return nil, ErrDBInvalidMaxQueryTimeout
 	}
 
 	if conf.OT == nil {
-		return nil, ErrInvalidOTConfiguration
+		return nil, ErrOTInvalidConfiguration
 	}
 
 	repo := &UserRepository{

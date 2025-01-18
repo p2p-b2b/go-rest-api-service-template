@@ -35,11 +35,11 @@ var (
 	// ErrInvalidMaxOpenConns is returned when an invalid max open connections is provided
 	ErrInvalidMaxOpenConns = errors.New("invalid max open connections, must be between 0 and 100")
 
-	// ErrInvalidMaxPingTimeout is returned when an invalid max ping timeout is provided
-	ErrInvalidMaxPingTimeout = errors.New("invalid max ping timeout, must be between 1s and 30s")
+	// ErrDBInvalidMaxPingTimeout is returned when an invalid max ping timeout is provided
+	ErrDBInvalidMaxPingTimeout = errors.New("invalid max ping timeout, must be between 1s and 30s")
 
-	// ErrInvalidMaxQueryTimeout is returned when an invalid max query timeout is provided
-	ErrInvalidMaxQueryTimeout = errors.New("invalid max query timeout, must be between 1s and 30s")
+	// ErrDBInvalidMaxQueryTimeout is returned when an invalid max query timeout is provided
+	ErrDBInvalidMaxQueryTimeout = errors.New("invalid max query timeout, must be between 1s and 30s")
 
 	// ErrInvalidConnMaxIdleTime is returned when an invalid connection max idle time is provided
 	ErrInvalidConnMaxIdleTime = errors.New("invalid connection max idle time, must be between 1s and 60m")
@@ -182,11 +182,11 @@ func (c *DatabaseConfig) Validate() error {
 	}
 
 	if c.MaxPingTimeout.Value < 1*time.Second || c.MaxPingTimeout.Value > 30*time.Second {
-		return ErrInvalidMaxPingTimeout
+		return ErrDBInvalidMaxPingTimeout
 	}
 
 	if c.MaxQueryTimeout.Value < 1*time.Second || c.MaxQueryTimeout.Value > 30*time.Second {
-		return ErrInvalidMaxQueryTimeout
+		return ErrDBInvalidMaxQueryTimeout
 	}
 
 	if c.ConnMaxIdleTime.Value < 1*time.Second || c.ConnMaxIdleTime.Value > 600*time.Minute {
