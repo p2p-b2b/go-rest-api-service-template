@@ -48,7 +48,7 @@ type User struct {
 
 // MarshalJSON marshals the user into JSON.
 // this is needed to omit zero values from the JSON output.
-func (u User) MarshalJSON() ([]byte, error) {
+func (ref User) MarshalJSON() ([]byte, error) {
 	type Alias User
 
 	// Define an empty struct to hold omitted fields
@@ -60,25 +60,25 @@ func (u User) MarshalJSON() ([]byte, error) {
 	}
 
 	// Check for zero values and set them in the omitted struct
-	if u.ID == uuid.Nil {
+	if ref.ID == uuid.Nil {
 		omitted.ID = ""
 	} else {
-		omitted.ID = u.ID.String()
+		omitted.ID = ref.ID.String()
 	}
 
-	if u.CreatedAt.IsZero() {
+	if ref.CreatedAt.IsZero() {
 		omitted.CreatedAt = ""
 	} else {
-		omitted.CreatedAt = u.CreatedAt.Format(time.RFC3339)
+		omitted.CreatedAt = ref.CreatedAt.Format(time.RFC3339)
 	}
 
-	if u.UpdatedAt.IsZero() {
+	if ref.UpdatedAt.IsZero() {
 		omitted.UpdatedAt = ""
 	} else {
-		omitted.UpdatedAt = u.UpdatedAt.Format(time.RFC3339)
+		omitted.UpdatedAt = ref.UpdatedAt.Format(time.RFC3339)
 	}
 
-	omitted.Alias = (Alias)(u)
+	omitted.Alias = (Alias)(ref)
 
 	return json.Marshal(omitted)
 }

@@ -34,8 +34,6 @@ type usersRepositoryMetrics struct {
 	repositoryCalls metric.Int64Counter
 }
 
-// this implement repository.UsersRepository
-// UsersRepository is a PostgreSQL store.
 type UsersRepository struct {
 	db              *sql.DB
 	maxPingTimeout  time.Duration
@@ -45,7 +43,6 @@ type UsersRepository struct {
 	metrics         usersRepositoryMetrics
 }
 
-// NewUsersRepository creates a new UsersRepository.
 func NewUsersRepository(conf UsersRepositoryConfig) (*UsersRepository, error) {
 	if conf.DB == nil {
 		return nil, ErrDBInvalidConfiguration
@@ -88,22 +85,18 @@ func NewUsersRepository(conf UsersRepositoryConfig) (*UsersRepository, error) {
 	return repo, nil
 }
 
-// DriverName returns the name of the driver.
 func (ref *UsersRepository) DriverName() string {
 	return sql.Drivers()[0]
 }
 
-// Conn returns the connection to the repository.
 func (ref *UsersRepository) Conn(ctx context.Context) (*sql.Conn, error) {
 	return ref.db.Conn(ctx)
 }
 
-// Close closes the repository, releasing any open resources.
 func (ref *UsersRepository) Close() error {
 	return ref.db.Close()
 }
 
-// PingContext verifies a connection to the repository is still alive, establishing a connection if necessary.
 func (ref *UsersRepository) PingContext(ctx context.Context) error {
 	ctx, cancel := context.WithTimeout(ctx, ref.maxPingTimeout)
 	defer cancel()
@@ -114,7 +107,6 @@ func (ref *UsersRepository) PingContext(ctx context.Context) error {
 	return ref.db.PingContext(ctx)
 }
 
-// Insert a new user into the database.
 func (ref *UsersRepository) Insert(ctx context.Context, input *InsertUserInput) error {
 	ctx, cancel := context.WithTimeout(ctx, ref.maxQueryTimeout)
 	defer cancel()
@@ -213,7 +205,6 @@ func (ref *UsersRepository) Insert(ctx context.Context, input *InsertUserInput) 
 	return nil
 }
 
-// Update updates the user with the specified ID.
 func (ref *UsersRepository) Update(ctx context.Context, input *UpdateUserInput) error {
 	ctx, cancel := context.WithTimeout(ctx, ref.maxQueryTimeout)
 	defer cancel()
@@ -295,14 +286,13 @@ func (ref *UsersRepository) Update(ctx context.Context, input *UpdateUserInput) 
 	args = append(args, updatedAt)
 
 	query := `
-        UPDATE users
-            SET
-                first_name = COALESCE($2, first_name),
-                last_name = COALESCE($3,  last_name),
-                email = COALESCE($4, email),
-                password_hash = COALESCE($5, password_hash),
-                disabled = COALESCE($6, disabled),
-                updated_at = COALESCE($7 , updated_at)
+        UPDATE users SET
+            first_name = COALESCE($2, first_name),
+            last_name = COALESCE($3,  last_name),
+            email = COALESCE($4, email),
+            password_hash = COALESCE($5, password_hash),
+            disabled = COALESCE($6, disabled),
+            updated_at = COALESCE($7 , updated_at)
         WHERE id = $1;
     `
 
@@ -373,7 +363,6 @@ func (ref *UsersRepository) Update(ctx context.Context, input *UpdateUserInput) 
 	return nil
 }
 
-// Delete deletes the user with the specified ID.
 func (ref *UsersRepository) Delete(ctx context.Context, input *DeleteUserInput) error {
 	ctx, cancel := context.WithTimeout(ctx, ref.maxQueryTimeout)
 	defer cancel()
@@ -476,7 +465,6 @@ func (ref *UsersRepository) Delete(ctx context.Context, input *DeleteUserInput) 
 	return nil
 }
 
-// SelectByID returns the user with the specified ID.
 func (ref *UsersRepository) SelectByID(ctx context.Context, id uuid.UUID) (*User, error) {
 	ctx, cancel := context.WithTimeout(ctx, ref.maxQueryTimeout)
 	defer cancel()
@@ -526,16 +514,16 @@ func (ref *UsersRepository) SelectByID(ctx context.Context, id uuid.UUID) (*User
 
 	row := ref.db.QueryRowContext(ctx, query, id)
 
-	var u User
+	var item User
 	if err := row.Scan(
-		&u.ID,
-		&u.FirstName,
-		&u.LastName,
-		&u.Email,
-		&u.PasswordHash,
-		&u.Disabled,
-		&u.CreatedAt,
-		&u.UpdatedAt,
+		&item.ID,
+		&item.FirstName,
+		&item.LastName,
+		&item.Email,
+		&item.PasswordHash,
+		&item.Disabled,
+		&item.CreatedAt,
+		&item.UpdatedAt,
 	); err != nil {
 		slog.Error("repository.Users.SelectByID", "error", err)
 		span.SetStatus(codes.Error, "scan failed")
@@ -556,10 +544,9 @@ func (ref *UsersRepository) SelectByID(ctx context.Context, id uuid.UUID) (*User
 			append(metricCommonAttributes, attribute.String("successful", "true"))...,
 		),
 	)
-	return &u, nil
+	return &item, nil
 }
 
-// SelectByEmail returns the user with the specified email.
 func (ref *UsersRepository) SelectByEmail(ctx context.Context, email string) (*User, error) {
 	ctx, cancel := context.WithTimeout(ctx, ref.maxQueryTimeout)
 	defer cancel()
@@ -591,32 +578,34 @@ func (ref *UsersRepository) SelectByEmail(ctx context.Context, email string) (*U
 		return nil, ErrUserInvalidEmail
 	}
 
-	query := `SELECT
-                id,
-                first_name,
-                last_name,
-                email,
-                password_hash,
-                disabled,
-                created_at,
-                updated_at
-              FROM users
-              WHERE email = $1;`
+	query := `
+        SELECT
+            id,
+            first_name,
+            last_name,
+            email,
+            password_hash,
+            disabled,
+            created_at,
+            updated_at
+        FROM users
+        WHERE email = $1;
+    `
 
 	slog.Debug("repository.Users.SelectByEmail", "query", prettyPrint(query))
 
 	row := ref.db.QueryRowContext(ctx, query, email)
 
-	var u User
+	var item User
 	if err := row.Scan(
-		&u.ID,
-		&u.FirstName,
-		&u.LastName,
-		&u.Email,
-		&u.PasswordHash,
-		&u.Disabled,
-		&u.CreatedAt,
-		&u.UpdatedAt,
+		&item.ID,
+		&item.FirstName,
+		&item.LastName,
+		&item.Email,
+		&item.PasswordHash,
+		&item.Disabled,
+		&item.CreatedAt,
+		&item.UpdatedAt,
 	); err != nil {
 		slog.Error("repository.Users.SelectByEmail", "error", err)
 		span.SetStatus(codes.Error, "scan failed")
@@ -642,7 +631,7 @@ func (ref *UsersRepository) SelectByEmail(ctx context.Context, email string) (*U
 		),
 	)
 
-	return &u, nil
+	return &item, nil
 }
 
 func (ref *UsersRepository) Select(ctx context.Context, input *SelectUsersInput) (*SelectUsersOutput, error) {
@@ -735,7 +724,6 @@ func (ref *UsersRepository) Select(ctx context.Context, input *SelectUsersInput)
 		sortQuery = input.Sort
 	}
 
-	// query template
 	var queryTemplate string = `
         WITH usrs AS (
             SELECT
@@ -747,7 +735,6 @@ func (ref *UsersRepository) Select(ctx context.Context, input *SelectUsersInput)
         ) SELECT * FROM usrs ORDER BY {{.QueryExternalSort}}
     `
 
-	// struct to hold the query values
 	var queryValues struct {
 		QueryColumns      string
 		QueryWhere        template.HTML
@@ -756,7 +743,6 @@ func (ref *UsersRepository) Select(ctx context.Context, input *SelectUsersInput)
 		QueryExternalSort string
 	}
 
-	// default values
 	queryValues.QueryColumns = fieldsStr
 	queryValues.QueryWhere = template.HTML(filterQuery)
 	queryValues.QueryLimit = input.Paginator.Limit
@@ -876,23 +862,23 @@ func (ref *UsersRepository) Select(ctx context.Context, input *SelectUsersInput)
 	}
 	defer rows.Close()
 
-	var users []*User
+	var items []*User
 	for rows.Next() {
-		var u User
+		var item User
 
 		scanFields := make([]interface{}, 0)
 
 		if input.Fields[0] == "" {
 			scanFields = []interface{}{
-				&u.ID,
-				&u.FirstName,
-				&u.LastName,
-				&u.Email,
-				&u.PasswordHash,
-				&u.Disabled,
-				&u.CreatedAt,
-				&u.UpdatedAt,
-				&u.SerialID,
+				&item.ID,
+				&item.FirstName,
+				&item.LastName,
+				&item.Email,
+				&item.PasswordHash,
+				&item.Disabled,
+				&item.CreatedAt,
+				&item.UpdatedAt,
+				&item.SerialID,
 			}
 		} else {
 			var idFound bool
@@ -900,22 +886,22 @@ func (ref *UsersRepository) Select(ctx context.Context, input *SelectUsersInput)
 			for _, field := range input.Fields {
 				switch field {
 				case "id":
-					scanFields = append(scanFields, &u.ID)
+					scanFields = append(scanFields, &item.ID)
 					idFound = true
 				case "first_name":
-					scanFields = append(scanFields, &u.FirstName)
+					scanFields = append(scanFields, &item.FirstName)
 				case "last_name":
-					scanFields = append(scanFields, &u.LastName)
+					scanFields = append(scanFields, &item.LastName)
 				case "email":
-					scanFields = append(scanFields, &u.Email)
+					scanFields = append(scanFields, &item.Email)
 				case "password_hash":
-					scanFields = append(scanFields, &u.PasswordHash)
+					scanFields = append(scanFields, &item.PasswordHash)
 				case "disabled":
-					scanFields = append(scanFields, &u.Disabled)
+					scanFields = append(scanFields, &item.Disabled)
 				case "created_at":
-					scanFields = append(scanFields, &u.CreatedAt)
+					scanFields = append(scanFields, &item.CreatedAt)
 				case "updated_at":
-					scanFields = append(scanFields, &u.UpdatedAt)
+					scanFields = append(scanFields, &item.UpdatedAt)
 
 				default:
 					slog.Warn("repository.Users.Select", "what", "field not found", "field", field)
@@ -925,10 +911,10 @@ func (ref *UsersRepository) Select(ctx context.Context, input *SelectUsersInput)
 			// always select id and serial_id for pagination
 			// if id is not selected, it will be added to the scanFields
 			if !idFound {
-				scanFields = append(scanFields, &u.ID)
+				scanFields = append(scanFields, &item.ID)
 			}
 
-			scanFields = append(scanFields, &u.SerialID)
+			scanFields = append(scanFields, &item.SerialID)
 		}
 
 		if err := rows.Scan(scanFields...); err != nil {
@@ -944,10 +930,10 @@ func (ref *UsersRepository) Select(ctx context.Context, input *SelectUsersInput)
 			return nil, err
 		}
 
-		users = append(users, &u)
+		items = append(items, &item)
 	}
 
-	outLen := len(users)
+	outLen := len(items)
 	if outLen == 0 {
 		slog.Warn("repository.Users.Select", "what", "no users found")
 		return &SelectUsersOutput{
@@ -956,20 +942,20 @@ func (ref *UsersRepository) Select(ctx context.Context, input *SelectUsersInput)
 		}, nil
 	}
 
-	slog.Debug("repository.Users.Select", "next_id", users[outLen-1].ID, "next_serial_id", users[outLen-1].SerialID)
-	slog.Debug("repository.Users.Select", "prev_id", users[0].ID, "prev_serial_id", users[0].SerialID)
+	slog.Debug("repository.Users.Select", "next_id", items[outLen-1].ID, "next_serial_id", items[outLen-1].SerialID)
+	slog.Debug("repository.Users.Select", "prev_id", items[0].ID, "prev_serial_id", items[0].SerialID)
 
 	nextToken, prevToken := paginator.GetTokens(
 		outLen,
 		input.Paginator.Limit,
-		users[0].ID,
-		users[0].SerialID,
-		users[outLen-1].ID,
-		users[outLen-1].SerialID,
+		items[0].ID,
+		items[0].SerialID,
+		items[outLen-1].ID,
+		items[outLen-1].SerialID,
 	)
 
 	ret := &SelectUsersOutput{
-		Items: users,
+		Items: items,
 		Paginator: paginator.Paginator{
 			Size:      outLen,
 			Limit:     input.Paginator.Limit,

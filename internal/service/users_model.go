@@ -33,7 +33,6 @@ var (
 	ErrUserEmailAlreadyExists = errors.New("user email already exists")
 )
 
-// User represents a user entity used to model the data stored in the database.
 type User struct {
 	ID           uuid.UUID
 	FirstName    string
@@ -45,7 +44,6 @@ type User struct {
 	UpdatedAt    time.Time
 }
 
-// CreateUserInput represents the common input for the user entity.
 type CreateUserInput struct {
 	ID        uuid.UUID
 	FirstName string
@@ -55,38 +53,36 @@ type CreateUserInput struct {
 	Disabled  bool
 }
 
-// Validate validates the user input.
-func (ui *CreateUserInput) Validate() error {
-	if ui.ID == uuid.Nil {
+func (ref *CreateUserInput) Validate() error {
+	if ref.ID == uuid.Nil {
 		return ErrUserInvalidID
 	}
 
-	if len(ui.FirstName) < UserFirstNameMinLength || len(ui.FirstName) > UserFirstNameMaxLength {
+	if len(ref.FirstName) < UserFirstNameMinLength || len(ref.FirstName) > UserFirstNameMaxLength {
 		return ErrUserInvalidFirstName
 	}
 
-	if len(ui.LastName) < UserLastNameMinLength || len(ui.LastName) > UserLastNameMaxLength {
+	if len(ref.LastName) < UserLastNameMinLength || len(ref.LastName) > UserLastNameMaxLength {
 		return ErrUserInvalidLastName
 	}
 
 	// minimal email validation
-	if len(ui.Email) < UserEmailMinLength || len(ui.Email) > UserEmailMaxLength {
+	if len(ref.Email) < UserEmailMinLength || len(ref.Email) > UserEmailMaxLength {
 		return ErrUserInvalidEmail
 	}
 
-	_, err := mail.ParseAddress(ui.Email)
+	_, err := mail.ParseAddress(ref.Email)
 	if err != nil {
 		return ErrUserInvalidEmail
 	}
 
-	if len(ui.Password) < UserPasswordMinLength {
+	if len(ref.Password) < UserPasswordMinLength {
 		return ErrUserInvalidPassword
 	}
 
 	return nil
 }
 
-// UpdateUserInput represents the input for the UpdateUser method.
 type UpdateUserInput struct {
 	ID        uuid.UUID
 	FirstName *string
@@ -96,63 +92,59 @@ type UpdateUserInput struct {
 	Disabled  *bool
 }
 
-// Validate validates the UpdateUserInput.
-func (ui *UpdateUserInput) Validate() error {
-	if reflect.DeepEqual(ui, &UpdateUserInput{}) {
+func (ref *UpdateUserInput) Validate() error {
+	if reflect.DeepEqual(ref, &UpdateUserInput{}) {
 		return ErrAtLeastOneFieldMustBeUpdated
 	}
 
-	if ui.ID == uuid.Nil {
+	if ref.ID == uuid.Nil {
 		return ErrUserInvalidID
 	}
-	if ui.FirstName != nil {
-		if len(*ui.FirstName) < UserFirstNameMinLength || len(*ui.FirstName) > UserFirstNameMaxLength {
+	if ref.FirstName != nil {
+		if len(*ref.FirstName) < UserFirstNameMinLength || len(*ref.FirstName) > UserFirstNameMaxLength {
 			return ErrUserInvalidFirstName
 		}
 	}
 
-	if ui.LastName != nil {
-		if len(*ui.LastName) < UserLastNameMinLength || len(*ui.LastName) > UserLastNameMaxLength {
+	if ref.LastName != nil {
+		if len(*ref.LastName) < UserLastNameMinLength || len(*ref.LastName) > UserLastNameMaxLength {
 			return ErrUserInvalidLastName
 		}
 	}
 
-	if ui.Email != nil {
-		if len(*ui.Email) < UserEmailMinLength || len(*ui.Email) > UserEmailMaxLength {
+	if ref.Email != nil {
+		if len(*ref.Email) < UserEmailMinLength || len(*ref.Email) > UserEmailMaxLength {
 			return ErrUserInvalidEmail
 		}
 	}
 
-	if ui.Email != nil {
-		if len(*ui.Email) >= UserEmailMinLength && len(*ui.Email) <= UserEmailMaxLength {
-			_, err := mail.ParseAddress(*ui.Email)
+	if ref.Email != nil {
+		if len(*ref.Email) >= UserEmailMinLength && len(*ref.Email) <= UserEmailMaxLength {
+			_, err := mail.ParseAddress(*ref.Email)
 			if err != nil {
 				return ErrUserInvalidEmail
 			}
 		}
 	}
 
-	if ui.Password != nil && len(*ui.Password) < UserPasswordMinLength {
+	if ref.Password != nil && len(*ref.Password) < UserPasswordMinLength {
 		return ErrUserInvalidPassword
 	}
 
 	return nil
 }
 
-// DeleteUserInput represents the input for the DeleteUser method.
 type DeleteUserInput struct {
 	ID uuid.UUID
 }
 
-// Validate validates the DeleteUserInput.
-func (ui *DeleteUserInput) Validate() error {
-	if ui.ID == uuid.Nil {
+func (ref *DeleteUserInput) Validate() error {
+	if ref.ID == uuid.Nil {
 		return ErrUserInvalidID
 	}
 	return nil
 }
 
-// ListUsersInput represents the input for the ListUser method.
 type ListUsersInput struct {
 	Sort      string
 	Filter    string
@@ -160,7 +152,6 @@ type ListUsersInput struct {
 	Paginator paginator.Paginator
 }
 
-// ListUsersOutput represents the output for the ListUser method.
 type ListUsersOutput struct {
 	Items     []*User
 	Paginator paginator.Paginator
