@@ -21,10 +21,10 @@ import (
 	"go.opentelemetry.io/otel/metric"
 )
 
-//go:generate go run go.uber.org/mock/mockgen@v0.5.0 -package=mocks -destination=../../../mocks/handler/users.go -source=users.go UserService
+//go:generate go run go.uber.org/mock/mockgen@v0.5.0 -package=mocks -destination=../../../mocks/handler/users.go -source=users.go UsersService
 
-// UserService represents the service for the user.
-type UserService interface {
+// UsersService represents the service for the user.
+type UsersService interface {
 	HealthCheck(ctx context.Context) (service.Health, error)
 	GetByID(ctx context.Context, id uuid.UUID) (*service.User, error)
 	GetByEmail(ctx context.Context, email string) (*service.User, error)
@@ -34,27 +34,27 @@ type UserService interface {
 	List(ctx context.Context, input *service.ListUsersInput) (*service.ListUsersOutput, error)
 }
 
-// UserHandler represents the http handler for the user.
-type UserHandlerConf struct {
-	Service       UserService
+// UsersHandler represents the http handler for the user.
+type UsersHandlerConf struct {
+	Service       UsersService
 	OT            *o11y.OpenTelemetry
 	MetricsPrefix string
 }
 
-type userHandlerMetrics struct {
+type usersHandlerMetrics struct {
 	handlerCalls metric.Int64Counter
 }
 
-// UserHandler represents the handler for the user.
-type UserHandler struct {
-	service       UserService
+// UsersHandler represents the handler for the user.
+type UsersHandler struct {
+	service       UsersService
 	ot            *o11y.OpenTelemetry
 	metricsPrefix string
-	metrics       userHandlerMetrics
+	metrics       usersHandlerMetrics
 }
 
-// NewUserHandler creates a new UserHandler.
-func NewUserHandler(conf UserHandlerConf) (*UserHandler, error) {
+// NewUsersHandler creates a new UsersHandler.
+func NewUsersHandler(conf UsersHandlerConf) (*UsersHandler, error) {
 	if conf.Service == nil {
 		slog.Error("service is required")
 		return nil, ErrUserInvalidService
@@ -65,7 +65,7 @@ func NewUserHandler(conf UserHandlerConf) (*UserHandler, error) {
 		return nil, ErrUserInvalidOpenTelemetry
 	}
 
-	uh := &UserHandler{
+	uh := &UsersHandler{
 		service: conf.Service,
 		ot:      conf.OT,
 	}
@@ -89,7 +89,7 @@ func NewUserHandler(conf UserHandlerConf) (*UserHandler, error) {
 }
 
 // RegisterRoutes registers the routes on the mux.
-func (ref *UserHandler) RegisterRoutes(mux *http.ServeMux) {
+func (ref *UsersHandler) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /users/health", ref.getHealth)
 	mux.HandleFunc("GET /users", ref.listUsers)
 	mux.HandleFunc("GET /users/{user_id}", ref.getByID)
@@ -108,7 +108,7 @@ func (ref *UserHandler) RegisterRoutes(mux *http.ServeMux) {
 // @Success 200 {object} Health
 // @Failure 500 {object} respond.HTTPMessage
 // @Router /users/health [get]
-func (ref *UserHandler) getHealth(w http.ResponseWriter, r *http.Request) {
+func (ref *UsersHandler) getHealth(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
 	defer cancel()
 	sHealth, err := ref.service.HealthCheck(ctx)
@@ -151,7 +151,7 @@ func (ref *UserHandler) getHealth(w http.ResponseWriter, r *http.Request) {
 // @Failure 404 {object} respond.HTTPMessage
 // @Failure 500 {object} respond.HTTPMessage
 // @Router /users/{user_id} [get]
-func (ref *UserHandler) getByID(w http.ResponseWriter, r *http.Request) {
+func (ref *UsersHandler) getByID(w http.ResponseWriter, r *http.Request) {
 	ctx, span := ref.ot.Traces.Tracer.Start(r.Context(), "handler.Users.getByID")
 	defer span.End()
 
@@ -258,7 +258,7 @@ func (ref *UserHandler) getByID(w http.ResponseWriter, r *http.Request) {
 // @Failure 409 {object} respond.HTTPMessage
 // @Failure 500 {object} respond.HTTPMessage
 // @Router /users [post]
-func (ref *UserHandler) createUser(w http.ResponseWriter, r *http.Request) {
+func (ref *UsersHandler) createUser(w http.ResponseWriter, r *http.Request) {
 	ctx, span := ref.ot.Traces.Tracer.Start(r.Context(), "handler.Users.createUser")
 	defer span.End()
 
@@ -371,7 +371,7 @@ func (ref *UserHandler) createUser(w http.ResponseWriter, r *http.Request) {
 // @Failure 409 {object} respond.HTTPMessage
 // @Failure 500 {object} respond.HTTPMessage
 // @Router /users/{user_id} [put]
-func (ref *UserHandler) updateUser(w http.ResponseWriter, r *http.Request) {
+func (ref *UsersHandler) updateUser(w http.ResponseWriter, r *http.Request) {
 	ctx, span := ref.ot.Traces.Tracer.Start(r.Context(), "handler.Users.updateUser")
 	defer span.End()
 
@@ -493,7 +493,7 @@ func (ref *UserHandler) updateUser(w http.ResponseWriter, r *http.Request) {
 // @Failure 400 {object} respond.HTTPMessage
 // @Failure 500 {object} respond.HTTPMessage
 // @Router /users/{user_id} [delete]
-func (ref *UserHandler) deleteUser(w http.ResponseWriter, r *http.Request) {
+func (ref *UsersHandler) deleteUser(w http.ResponseWriter, r *http.Request) {
 	ctx, span := ref.ot.Traces.Tracer.Start(r.Context(), "handler.Users.deleteUser")
 	defer span.End()
 
@@ -570,7 +570,7 @@ func (ref *UserHandler) deleteUser(w http.ResponseWriter, r *http.Request) {
 // @Failure 400 {object} respond.HTTPMessage
 // @Failure 500 {object} respond.HTTPMessage
 // @Router /users [get]
-func (ref *UserHandler) listUsers(w http.ResponseWriter, r *http.Request) {
+func (ref *UsersHandler) listUsers(w http.ResponseWriter, r *http.Request) {
 	ctx, span := ref.ot.Traces.Tracer.Start(r.Context(), "handler.Users.listUsers")
 	defer span.End()
 

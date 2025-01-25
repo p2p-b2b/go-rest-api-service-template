@@ -34,25 +34,25 @@ type UsersRepository interface {
 	Select(ctx context.Context, input *repository.SelectUsersInput) (*repository.SelectUsersOutput, error)
 }
 
-type UserServiceConf struct {
+type UsersServiceConf struct {
 	Repository    UsersRepository
 	OT            *o11y.OpenTelemetry
 	MetricsPrefix string
 }
 
-type userServiceMetrics struct {
+type usersServiceMetrics struct {
 	serviceCalls metric.Int64Counter
 }
 
-type UserService struct {
+type UsersService struct {
 	repository    UsersRepository
 	ot            *o11y.OpenTelemetry
 	metricsPrefix string
-	metrics       userServiceMetrics
+	metrics       usersServiceMetrics
 }
 
-// NewUserService creates a new UserService.
-func NewUserService(conf UserServiceConf) (*UserService, error) {
+// NewUsersService creates a new UsersService.
+func NewUsersService(conf UsersServiceConf) (*UsersService, error) {
 	if conf.Repository == nil {
 		return nil, ErrInvalidRepository
 	}
@@ -61,7 +61,7 @@ func NewUserService(conf UserServiceConf) (*UserService, error) {
 		return nil, ErrUserInvalidOpenTelemetry
 	}
 
-	u := &UserService{
+	u := &UsersService{
 		repository: conf.Repository,
 		ot:         conf.OT,
 	}
@@ -75,7 +75,7 @@ func NewUserService(conf UserServiceConf) (*UserService, error) {
 		metric.WithDescription("The number of calls to the user service"),
 	)
 	if err != nil {
-		slog.Error("service.Users.NewUserService", "error", err)
+		slog.Error("service.Users.NewUsersService", "error", err)
 		return nil, err
 	}
 	u.metrics.serviceCalls = serviceCalls
@@ -84,7 +84,7 @@ func NewUserService(conf UserServiceConf) (*UserService, error) {
 }
 
 // HealthCheck verifies a connection to the repository is still alive.
-func (ref *UserService) HealthCheck(ctx context.Context) (Health, error) {
+func (ref *UsersService) HealthCheck(ctx context.Context) (Health, error) {
 	// database
 	dbStatus := StatusUp
 	err := ref.repository.PingContext(ctx)
@@ -131,7 +131,7 @@ func (ref *UserService) HealthCheck(ctx context.Context) (Health, error) {
 }
 
 // GetByID returns the user with the specified ID.
-func (ref *UserService) GetByID(ctx context.Context, id uuid.UUID) (*User, error) {
+func (ref *UsersService) GetByID(ctx context.Context, id uuid.UUID) (*User, error) {
 	ctx, span := ref.ot.Traces.Tracer.Start(ctx, "service.Users.GetByID")
 	defer span.End()
 
@@ -199,7 +199,7 @@ func (ref *UserService) GetByID(ctx context.Context, id uuid.UUID) (*User, error
 }
 
 // GetByEmail returns the user with the specified email.
-func (ref *UserService) GetByEmail(ctx context.Context, email string) (*User, error) {
+func (ref *UsersService) GetByEmail(ctx context.Context, email string) (*User, error) {
 	ctx, span := ref.ot.Traces.Tracer.Start(ctx, "service.Users.GetByEmail")
 	defer span.End()
 
@@ -268,7 +268,7 @@ func (ref *UserService) GetByEmail(ctx context.Context, email string) (*User, er
 }
 
 // Create inserts a new user into the database.
-func (ref *UserService) Create(ctx context.Context, input *CreateUserInput) error {
+func (ref *UsersService) Create(ctx context.Context, input *CreateUserInput) error {
 	ctx, span := ref.ot.Traces.Tracer.Start(ctx, "service.Users.Create")
 	defer span.End()
 
@@ -370,7 +370,7 @@ func (ref *UserService) Create(ctx context.Context, input *CreateUserInput) erro
 }
 
 // Update updates the user with the specified ID.
-func (ref *UserService) Update(ctx context.Context, input *UpdateUserInput) error {
+func (ref *UsersService) Update(ctx context.Context, input *UpdateUserInput) error {
 	ctx, span := ref.ot.Traces.Tracer.Start(ctx, "service.Users.Update")
 	defer span.End()
 
@@ -474,7 +474,7 @@ func (ref *UserService) Update(ctx context.Context, input *UpdateUserInput) erro
 }
 
 // Delete deletes the user with the specified ID.
-func (ref *UserService) Delete(ctx context.Context, input *DeleteUserInput) error {
+func (ref *UsersService) Delete(ctx context.Context, input *DeleteUserInput) error {
 	ctx, span := ref.ot.Traces.Tracer.Start(ctx, "service.Users.Delete")
 	defer span.End()
 
@@ -534,7 +534,7 @@ func (ref *UserService) Delete(ctx context.Context, input *DeleteUserInput) erro
 }
 
 // List returns a list of users.
-func (ref *UserService) List(ctx context.Context, input *ListUsersInput) (*ListUsersOutput, error) {
+func (ref *UsersService) List(ctx context.Context, input *ListUsersInput) (*ListUsersOutput, error) {
 	ctx, span := ref.ot.Traces.Tracer.Start(ctx, "service.Users.List")
 	defer span.End()
 

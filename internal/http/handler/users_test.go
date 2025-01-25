@@ -31,7 +31,7 @@ func startsWith(value int, start int) bool {
 func TestUser_GetByID(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockService := mocksService.NewMockUserService(ctrl)
+	mockService := mocksService.NewMockUsersService(ctrl)
 	ctx := context.TODO()
 
 	otConfig := config.NewOpenTelemetryConfig("test", "1.0.0")
@@ -179,14 +179,14 @@ func TestUser_GetByID(t *testing.T) {
 				}
 
 				// Create handler config
-				userHandlerConf := UserHandlerConf{
+				userHandlerConf := UsersHandlerConf{
 					Service: mockService,
 					OT:      telemetry,
 				}
 
 				// When
 				mux := http.NewServeMux()
-				h, err := NewUserHandler(userHandlerConf)
+				h, err := NewUsersHandler(userHandlerConf)
 				if err != nil {
 					t.Fatalf("could not create user handler: %v", err)
 				}

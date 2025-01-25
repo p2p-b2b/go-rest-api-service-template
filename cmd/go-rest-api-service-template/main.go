@@ -309,27 +309,27 @@ func main() {
 	}
 
 	// Create user Service config
-	userServiceConf := service.UserServiceConf{
+	userServiceConf := service.UsersServiceConf{
 		Repository: userRepository,
 		OT:         telemetry,
 	}
 
 	// Create user Services
-	userService, err := service.NewUserService(userServiceConf)
+	userService, err := service.NewUsersService(userServiceConf)
 	if err != nil {
 		slog.Error("error creating user service", "error", err)
 		os.Exit(1)
 	}
 
 	// Create handler config
-	userHandlerConf := handler.UserHandlerConf{
+	userHandlerConf := handler.UsersHandlerConf{
 		Service: userService,
 		OT:      telemetry,
 	}
 
 	// Create handlers
 	versionHandler := handler.NewVersionHandler()
-	userHandler, err := handler.NewUserHandler(userHandlerConf)
+	userHandler, err := handler.NewUsersHandler(userHandlerConf)
 	if err != nil {
 		slog.Error("error creating user handler", "error", err)
 		os.Exit(1)
