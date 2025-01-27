@@ -195,6 +195,7 @@ paths:
   /users:
     get:
       description: List all users
+      operationId: 1213ffb2-b9f3-4134-923e-13bb777da62b
       parameters:
       - description: 'Comma-separated list of fields to sort by. Example: first_name
           ASC, created_at DESC'
@@ -251,6 +252,7 @@ paths:
       description: |-
         Create a new user from scratch
         If the id is not provided, it will be generated automatically
+      operationId: f71e14db-fc77-4fb3-a21d-292eade431df
       parameters:
       - description: CreateUserRequest
         format: json
@@ -284,6 +286,7 @@ paths:
   /users/{user_id}:
     delete:
       description: Delete a user
+      operationId: 48e60e0a-ea1c-46d4-8729-c47dd82a4e93
       parameters:
       - description: The user ID in UUID format
         format: uuid
@@ -311,6 +314,7 @@ paths:
       - Users
     get:
       description: Get a user by ID
+      operationId: b823ba3c-3b83-4eaa-bdf7-ce1b05237f23
       parameters:
       - description: The user ID in UUID format
         format: uuid
@@ -344,6 +348,7 @@ paths:
       consumes:
       - application/json
       description: Update a user
+      operationId: 75165751-045b-465d-ba93-c88a27b6a42e
       parameters:
       - description: The user ID in UUID format
         format: uuid
@@ -385,6 +390,7 @@ paths:
       description: |-
         This endpoint returns the health of the service
         validating the connection to the database
+      operationId: 4c3b1fb4-1639-42ea-b6ca-8389b33ce5d4
       produces:
       - application/json
       responses:
@@ -403,6 +409,7 @@ paths:
   /version:
     get:
       description: Get the version of the service
+      operationId: d85b4a3f-b032-4dd1-b3ab-bc9a00f95eb5
       produces:
       - application/json
       responses:

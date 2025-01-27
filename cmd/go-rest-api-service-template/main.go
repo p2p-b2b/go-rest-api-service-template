@@ -181,15 +181,15 @@ func init() {
 	}
 }
 
-// @tile Golang RESTful API Service Template
-// @description This is a service template for building RESTful APIs in Go.
-// @description It uses a PostgreSQL database to store user information.
-// @description The service provides:
-// @description - CRUD operations for users.
-// @description - Health and version endpoints.
-// @description - Configuration using environment variables or command line arguments.
-// @description - Debug mode to enable debug logging.
-// @description - TLS enabled to secure the communication.
+//	@tile			Golang RESTful API Service Template
+//	@description	This is a service template for building RESTful APIs in Go.
+//	@description	It uses a PostgreSQL database to store user information.
+//	@description	The service provides:
+//	@description	- CRUD operations for users.
+//	@description	- Health and version endpoints.
+//	@description	- Configuration using environment variables or command line arguments.
+//	@description	- Debug mode to enable debug logging.
+//	@description	- TLS enabled to secure the communication.
 func main() {
 	// Default context
 	ctx := context.Background()

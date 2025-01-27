@@ -25,6 +25,7 @@ const docTemplate = `{
                     "Users"
                 ],
                 "summary": "List all users",
+                "operationId": "1213ffb2-b9f3-4134-923e-13bb777da62b",
                 "parameters": [
                     {
                         "type": "string",
@@ -102,6 +103,7 @@ const docTemplate = `{
                     "Users"
                 ],
                 "summary": "Create a new user",
+                "operationId": "f71e14db-fc77-4fb3-a21d-292eade431df",
                 "parameters": [
                     {
                         "format": "json",
@@ -153,6 +155,7 @@ const docTemplate = `{
                     "Health"
                 ],
                 "summary": "Retrieve the health of the service",
+                "operationId": "4c3b1fb4-1639-42ea-b6ca-8389b33ce5d4",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -179,6 +182,7 @@ const docTemplate = `{
                     "Users"
                 ],
                 "summary": "Get a user by ID",
+                "operationId": "b823ba3c-3b83-4eaa-bdf7-ce1b05237f23",
                 "parameters": [
                     {
                         "type": "string",
@@ -228,6 +232,7 @@ const docTemplate = `{
                     "Users"
                 ],
                 "summary": "Update a user",
+                "operationId": "75165751-045b-465d-ba93-c88a27b6a42e",
                 "parameters": [
                     {
                         "type": "string",
@@ -284,6 +289,7 @@ const docTemplate = `{
                     "Users"
                 ],
                 "summary": "Delete a user",
+                "operationId": "48e60e0a-ea1c-46d4-8729-c47dd82a4e93",
                 "parameters": [
                     {
                         "type": "string",
@@ -326,6 +332,7 @@ const docTemplate = `{
                     "Version"
                 ],
                 "summary": "Get the version of the service",
+                "operationId": "d85b4a3f-b032-4dd1-b3ab-bc9a00f95eb5",
                 "responses": {
                     "200": {
                         "description": "OK",

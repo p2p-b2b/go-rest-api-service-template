@@ -212,13 +212,16 @@ build-dist-zip: ## Build the application for all platforms defined in GO_OS and 
 	)
 
 ###############################################################################
-##@ Doocs commands
+##@ Docs commands
 # this is necessary to avoid a comma in the call function
 COMMA_SIGN := ,
 .PHONY: docs-swagger
 docs-swagger: ## Generate swagger documentation
 	@printf "👉 Generating swagger documentation...\n"
 	$(foreach proj_mod, $(PROJECT_MODULES_NAME), \
+		$(call exec_cmd, swag fmt \
+			--dir ./cmd/$(proj_mod)$(COMMA_SIGN)./internal \
+		) \
 		$(call exec_cmd, swag init \
 			--dir ./cmd/$(proj_mod)$(COMMA_SIGN)./internal/http/handler \
 			--output ./docs \

@@ -100,14 +100,15 @@ func (ref *UsersHandler) RegisterRoutes(mux *http.ServeMux) {
 
 // getHealth returns the health of the service
 //
-// @Summary Retrieve the health of the service
-// @Description This endpoint returns the health of the service
-// @Description validating the connection to the database
-// @Tags Users,Health
-// @Produce json
-// @Success 200 {object} Health
-// @Failure 500 {object} respond.HTTPMessage
-// @Router /users/health [get]
+//	@Id				4c3b1fb4-1639-42ea-b6ca-8389b33ce5d4
+//	@Summary		Retrieve the health of the service
+//	@Description	This endpoint returns the health of the service
+//	@Description	validating the connection to the database
+//	@Tags			Users,Health
+//	@Produce		json
+//	@Success		200	{object}	Health
+//	@Failure		500	{object}	respond.HTTPMessage
+//	@Router			/users/health [get]
 func (ref *UsersHandler) getHealth(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
 	defer cancel()
@@ -141,16 +142,17 @@ func (ref *UsersHandler) getHealth(w http.ResponseWriter, r *http.Request) {
 
 // getByID Get a user by ID
 //
-// @Summary Get a user by ID
-// @Description Get a user by ID
-// @Tags Users
-// @Produce json
-// @Param user_id path string true "The user ID in UUID format" Format(uuid)
-// @Success 200 {object} User
-// @Failure 400 {object} respond.HTTPMessage
-// @Failure 404 {object} respond.HTTPMessage
-// @Failure 500 {object} respond.HTTPMessage
-// @Router /users/{user_id} [get]
+//	@Id				b823ba3c-3b83-4eaa-bdf7-ce1b05237f23
+//	@Summary		Get a user by ID
+//	@Description	Get a user by ID
+//	@Tags			Users
+//	@Produce		json
+//	@Param			user_id	path		string	true	"The user ID in UUID format"	Format(uuid)
+//	@Success		200		{object}	User
+//	@Failure		400		{object}	respond.HTTPMessage
+//	@Failure		404		{object}	respond.HTTPMessage
+//	@Failure		500		{object}	respond.HTTPMessage
+//	@Router			/users/{user_id} [get]
 func (ref *UsersHandler) getByID(w http.ResponseWriter, r *http.Request) {
 	ctx, span := ref.ot.Traces.Tracer.Start(r.Context(), "handler.Users.getByID")
 	defer span.End()
@@ -246,18 +248,19 @@ func (ref *UsersHandler) getByID(w http.ResponseWriter, r *http.Request) {
 
 // createUser Create a new user
 //
-// @Summary Create a new user
-// @Description Create a new user from scratch
-// @Description If the id is not provided, it will be generated automatically
-// @Tags Users
-// @Accept json
-// @Produce json
-// @Param user body CreateUserRequest true "CreateUserRequest" Format(json)
-// @Success 201 {object} respond.HTTPMessage
-// @Failure 400 {object} respond.HTTPMessage
-// @Failure 409 {object} respond.HTTPMessage
-// @Failure 500 {object} respond.HTTPMessage
-// @Router /users [post]
+//	@Id				f71e14db-fc77-4fb3-a21d-292eade431df
+//	@Summary		Create a new user
+//	@Description	Create a new user from scratch
+//	@Description	If the id is not provided, it will be generated automatically
+//	@Tags			Users
+//	@Accept			json
+//	@Produce		json
+//	@Param			user	body		CreateUserRequest	true	"CreateUserRequest"	Format(json)
+//	@Success		201		{object}	respond.HTTPMessage
+//	@Failure		400		{object}	respond.HTTPMessage
+//	@Failure		409		{object}	respond.HTTPMessage
+//	@Failure		500		{object}	respond.HTTPMessage
+//	@Router			/users [post]
 func (ref *UsersHandler) createUser(w http.ResponseWriter, r *http.Request) {
 	ctx, span := ref.ot.Traces.Tracer.Start(r.Context(), "handler.Users.createUser")
 	defer span.End()
@@ -359,18 +362,19 @@ func (ref *UsersHandler) createUser(w http.ResponseWriter, r *http.Request) {
 
 // updateUser Update a user
 //
-// @Summary Update a user
-// @Description Update a user
-// @Tags Users
-// @Accept json
-// @Produce json
-// @Param user_id path string true "The user ID in UUID format" Format(uuid)
-// @Param user body UpdateUserRequest true "User" Format(json)
-// @Success 200 {object} respond.HTTPMessage
-// @Failure 400 {object} respond.HTTPMessage
-// @Failure 409 {object} respond.HTTPMessage
-// @Failure 500 {object} respond.HTTPMessage
-// @Router /users/{user_id} [put]
+//	@Id				75165751-045b-465d-ba93-c88a27b6a42e
+//	@Summary		Update a user
+//	@Description	Update a user
+//	@Tags			Users
+//	@Accept			json
+//	@Produce		json
+//	@Param			user_id	path		string				true	"The user ID in UUID format"	Format(uuid)
+//	@Param			user	body		UpdateUserRequest	true	"User"							Format(json)
+//	@Success		200		{object}	respond.HTTPMessage
+//	@Failure		400		{object}	respond.HTTPMessage
+//	@Failure		409		{object}	respond.HTTPMessage
+//	@Failure		500		{object}	respond.HTTPMessage
+//	@Router			/users/{user_id} [put]
 func (ref *UsersHandler) updateUser(w http.ResponseWriter, r *http.Request) {
 	ctx, span := ref.ot.Traces.Tracer.Start(r.Context(), "handler.Users.updateUser")
 	defer span.End()
@@ -484,15 +488,16 @@ func (ref *UsersHandler) updateUser(w http.ResponseWriter, r *http.Request) {
 
 // deleteUser Delete a user
 //
-// @Summary Delete a user
-// @Description Delete a user
-// @Tags Users
-// @Param user_id path string true "The user ID in UUID format" Format(uuid)
-// @Produce json
-// @Success 204 {object} respond.HTTPMessage
-// @Failure 400 {object} respond.HTTPMessage
-// @Failure 500 {object} respond.HTTPMessage
-// @Router /users/{user_id} [delete]
+//	@Id				48e60e0a-ea1c-46d4-8729-c47dd82a4e93
+//	@Summary		Delete a user
+//	@Description	Delete a user
+//	@Tags			Users
+//	@Param			user_id	path	string	true	"The user ID in UUID format"	Format(uuid)
+//	@Produce		json
+//	@Success		204	{object}	respond.HTTPMessage
+//	@Failure		400	{object}	respond.HTTPMessage
+//	@Failure		500	{object}	respond.HTTPMessage
+//	@Router			/users/{user_id} [delete]
 func (ref *UsersHandler) deleteUser(w http.ResponseWriter, r *http.Request) {
 	ctx, span := ref.ot.Traces.Tracer.Start(r.Context(), "handler.Users.deleteUser")
 	defer span.End()
@@ -556,20 +561,21 @@ func (ref *UsersHandler) deleteUser(w http.ResponseWriter, r *http.Request) {
 
 // listUsers Return a paginated list of users
 //
-// @Summary List all users
-// @Description List all users
-// @Tags Users
-// @Produce json
-// @Param sort query string false "Comma-separated list of fields to sort by. Example: first_name ASC, created_at DESC" Format(string)
-// @Param filter query string false "Filter field. Example: id=1 AND first_name='John'" Format(string)
-// @Param fields query string false "Fields to return. Example: id,first_name,last_name" Format(string)
-// @Param next_token query string false "Next cursor" Format(string)
-// @Param prev_token query string false "Previous cursor" Format(string)
-// @Param limit query int false "Limit" Format(int)
-// @Success 200 {object} ListUsersResponse
-// @Failure 400 {object} respond.HTTPMessage
-// @Failure 500 {object} respond.HTTPMessage
-// @Router /users [get]
+//	@Id				1213ffb2-b9f3-4134-923e-13bb777da62b
+//	@Summary		List all users
+//	@Description	List all users
+//	@Tags			Users
+//	@Produce		json
+//	@Param			sort		query		string	false	"Comma-separated list of fields to sort by. Example: first_name ASC, created_at DESC"	Format(string)
+//	@Param			filter		query		string	false	"Filter field. Example: id=1 AND first_name='John'"										Format(string)
+//	@Param			fields		query		string	false	"Fields to return. Example: id,first_name,last_name"									Format(string)
+//	@Param			next_token	query		string	false	"Next cursor"																			Format(string)
+//	@Param			prev_token	query		string	false	"Previous cursor"																		Format(string)
+//	@Param			limit		query		int		false	"Limit"																					Format(int)
+//	@Success		200			{object}	ListUsersResponse
+//	@Failure		400			{object}	respond.HTTPMessage
+//	@Failure		500			{object}	respond.HTTPMessage
+//	@Router			/users [get]
 func (ref *UsersHandler) listUsers(w http.ResponseWriter, r *http.Request) {
 	ctx, span := ref.ot.Traces.Tracer.Start(r.Context(), "handler.Users.listUsers")
 	defer span.End()

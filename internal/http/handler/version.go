@@ -22,13 +22,14 @@ func (ref *VersionHandler) RegisterRoutes(mux *http.ServeMux) {
 
 // get returns the version of the service
 //
-// @Summary Get the version of the service
-// @Description Get the version of the service
-// @Tags Version
-// @Produce json
-// @Success 200 {object} Version
-// @Failure 500 {object} respond.HTTPMessage
-// @Router /version [get]
+//	@Id				d85b4a3f-b032-4dd1-b3ab-bc9a00f95eb5
+//	@Summary		Get the version of the service
+//	@Description	Get the version of the service
+//	@Tags			Version
+//	@Produce		json
+//	@Success		200	{object}	Version
+//	@Failure		500	{object}	respond.HTTPMessage
+//	@Router			/version [get]
 func (ref *VersionHandler) get(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
