@@ -181,15 +181,15 @@ func init() {
 	}
 }
 
-//	@tile			Golang RESTful API Service Template
-//	@description	This is a service template for building RESTful APIs in Go.
-//	@description	It uses a PostgreSQL database to store user information.
-//	@description	The service provides:
-//	@description	- CRUD operations for users.
-//	@description	- Health and version endpoints.
-//	@description	- Configuration using environment variables or command line arguments.
-//	@description	- Debug mode to enable debug logging.
-//	@description	- TLS enabled to secure the communication.
+// @tile			Golang RESTful API Service Template
+// @description	This is a service template for building RESTful APIs in Go.
+// @description	It uses a PostgreSQL database to store user information.
+// @description	The service provides:
+// @description	- CRUD operations for users.
+// @description	- Health and version endpoints.
+// @description	- Configuration using environment variables or command line arguments.
+// @description	- Debug mode to enable debug logging.
+// @description	- TLS enabled to secure the communication.
 func main() {
 	// Default context
 	ctx := context.Background()
@@ -294,8 +294,20 @@ func main() {
 		}
 	}
 
-	// Create a new userRepository
-	userRepository, err := repository.NewUsersRepository(
+	// Create a new usersRepository
+	healthRepository, err := repository.NewHealthRepository(
+		repository.HealthRepositoryConfig{
+			DB:             db,
+			MaxPingTimeout: DBConfig.MaxPingTimeout.Value,
+			OT:             telemetry,
+		},
+	)
+	if err != nil {
+		slog.Error("error creating health repository", "error", err)
+		os.Exit(1)
+	}
+
+	usersRepository, err := repository.NewUsersRepository(
 		repository.UsersRepositoryConfig{
 			DB:              db,
 			MaxPingTimeout:  DBConfig.MaxPingTimeout.Value,
@@ -309,31 +321,53 @@ func main() {
 	}
 
 	// Create user Service config
-	userServiceConf := service.UsersServiceConf{
-		Repository: userRepository,
+	healthServiceConf := service.HealthServiceConf{
+		Repository: healthRepository,
+		OT:         telemetry,
+	}
+
+	healthService, err := service.NewHealthService(healthServiceConf)
+	if err != nil {
+		slog.Error("error creating health service", "error", err)
+		os.Exit(1)
+	}
+
+	usersServiceConf := service.UsersServiceConf{
+		Repository: usersRepository,
 		OT:         telemetry,
 	}
 
 	// Create user Services
-	userService, err := service.NewUsersService(userServiceConf)
+	usersService, err := service.NewUsersService(usersServiceConf)
 	if err != nil {
 		slog.Error("error creating user service", "error", err)
 		os.Exit(1)
 	}
 
-	// Create handler config
-	userHandlerConf := handler.UsersHandlerConf{
-		Service: userService,
+	// Create handlers
+	healthHandlerConf := handler.HealthHandlerConf{
+		Service: healthService,
 		OT:      telemetry,
 	}
 
-	// Create handlers
-	versionHandler := handler.NewVersionHandler()
-	userHandler, err := handler.NewUsersHandler(userHandlerConf)
+	healthHandler, err := handler.NewHealthHandler(healthHandlerConf)
+	if err != nil {
+		slog.Error("could not create health handler", "error", err)
+		os.Exit(1)
+	}
+
+	usersHandlerConf := handler.UsersHandlerConf{
+		Service: usersService,
+		OT:      telemetry,
+	}
+
+	usersHandler, err := handler.NewUsersHandler(usersHandlerConf)
 	if err != nil {
 		slog.Error("error creating user handler", "error", err)
 		os.Exit(1)
 	}
+
+	versionHandler := handler.NewVersionHandler()
 	swaggerHandler := handler.NewSwaggerHandler(swaggerURLDocs)
 	pprofHandler := handler.NewPprofHandler()
 
@@ -342,13 +376,14 @@ func main() {
 
 	swaggerHandler.RegisterRoutes(apiRouter)
 	versionHandler.RegisterRoutes(apiRouter)
-	userHandler.RegisterRoutes(apiRouter)
+	usersHandler.RegisterRoutes(apiRouter)
+	healthHandler.RegisterRoutes(apiRouter)
 
 	if HTTPSrvConfig.PprofEnabled.Value {
 		pprofHandler.RegisterRoutes(apiRouter)
 	}
 
-	mdws := []middleware.Middleware{
+	apiCommonMdws := []middleware.Middleware{
 		middleware.RewriteStandardErrorsAsJSON,
 		middleware.Logging,
 		middleware.HeaderAPIVersion(apiPrefix),
@@ -370,16 +405,16 @@ func main() {
 			AllowCredentials: HTTPSrvConfig.CorsAllowCredentials.Value,
 		}
 
-		mdws = append(mdws, middleware.Cors(corsOpts))
+		apiCommonMdws = append(apiCommonMdws, middleware.Cors(corsOpts))
 	}
 
 	// middleware chain
-	apiMiddlewares := middleware.Chain(
-		mdws...,
+	apiCommonMiddlewares := middleware.Chain(
+		apiCommonMdws...,
 	)
 
 	mainRouter := http.NewServeMux()
-	mainRouter.Handle(fmt.Sprintf("/%s/", apiPrefix), http.StripPrefix(fmt.Sprintf("/%s", apiPrefix), apiMiddlewares(apiRouter)))
+	mainRouter.Handle(fmt.Sprintf("/%s/", apiPrefix), http.StripPrefix(fmt.Sprintf("/%s", apiPrefix), apiCommonMiddlewares(apiRouter)))
 
 	httpServer := server.NewHTTPServer(
 		server.HTTPServerConfig{

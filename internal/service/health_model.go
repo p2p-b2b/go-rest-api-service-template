@@ -1,5 +1,9 @@
 package service
 
+import "fmt"
+
+var ErrInvalidOpenTelemetry = fmt.Errorf("invalid OpenTelemetry. It must not be nil")
+
 // ------------------------------------------------------------
 // Status is an enumeration of health statuses.
 type Status bool

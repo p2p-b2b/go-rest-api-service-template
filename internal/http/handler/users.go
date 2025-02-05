@@ -8,7 +8,6 @@ import (
 	"log/slog"
 	"net/http"
 	"strings"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/http/respond"
@@ -25,7 +24,6 @@ import (
 
 // UsersService represents the service for the user.
 type UsersService interface {
-	HealthCheck(ctx context.Context) (service.Health, error)
 	GetByID(ctx context.Context, id uuid.UUID) (*service.User, error)
 	GetByEmail(ctx context.Context, email string) (*service.User, error)
 	Create(ctx context.Context, input *service.CreateUserInput) error
@@ -90,54 +88,11 @@ func NewUsersHandler(conf UsersHandlerConf) (*UsersHandler, error) {
 
 // RegisterRoutes registers the routes on the mux.
 func (ref *UsersHandler) RegisterRoutes(mux *http.ServeMux) {
-	mux.HandleFunc("GET /users/health", ref.getHealth)
 	mux.HandleFunc("GET /users", ref.listUsers)
 	mux.HandleFunc("GET /users/{user_id}", ref.getByID)
 	mux.HandleFunc("PUT /users/{user_id}", ref.updateUser)
 	mux.HandleFunc("POST /users", ref.createUser)
 	mux.HandleFunc("DELETE /users/{user_id}", ref.deleteUser)
-}
-
-// getHealth returns the health of the service
-//
-//	@Id				4c3b1fb4-1639-42ea-b6ca-8389b33ce5d4
-//	@Summary		Retrieve the health of the service
-//	@Description	This endpoint returns the health of the service
-//	@Description	validating the connection to the database
-//	@Tags			Users,Health
-//	@Produce		json
-//	@Success		200	{object}	Health
-//	@Failure		500	{object}	respond.HTTPMessage
-//	@Router			/users/health [get]
-func (ref *UsersHandler) getHealth(w http.ResponseWriter, r *http.Request) {
-	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
-	defer cancel()
-	sHealth, err := ref.service.HealthCheck(ctx)
-	if err != nil {
-		respond.WriteJSONMessage(w, r, http.StatusInternalServerError, ErrInternalServerError.Error())
-		return
-	}
-
-	health := &Health{
-		Status: sHealth.Status.String(),
-		Checks: make([]Check, len(sHealth.Checks)),
-	}
-
-	for i, sCheck := range sHealth.Checks {
-		health.Checks[i] = Check{
-			Name:   sCheck.Name,
-			Kind:   sCheck.Kind,
-			Status: sCheck.Status.String(),
-			Data:   sCheck.Data,
-		}
-	}
-
-	if err := respond.WriteJSONData(w, http.StatusOK, health); err != nil {
-		respond.WriteJSONMessage(w, r, http.StatusInternalServerError, ErrInternalServerError.Error())
-		return
-	}
-
-	slog.Debug("handler.Users.getHealth: called")
 }
 
 // getByID Get a user by ID

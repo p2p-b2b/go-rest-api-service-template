@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"runtime"
 	"strings"
 
 	"github.com/google/uuid"
@@ -81,53 +80,6 @@ func NewUsersService(conf UsersServiceConf) (*UsersService, error) {
 	u.metrics.serviceCalls = serviceCalls
 
 	return u, nil
-}
-
-// HealthCheck verifies a connection to the repository is still alive.
-func (ref *UsersService) HealthCheck(ctx context.Context) (Health, error) {
-	// database
-	dbStatus := StatusUp
-	err := ref.repository.PingContext(ctx)
-	if err != nil {
-		slog.Error("service.Users.HealthCheck", "error", err)
-		dbStatus = StatusDown
-	}
-
-	database := Check{
-		Name:   "database",
-		Kind:   ref.repository.DriverName(),
-		Status: dbStatus,
-	}
-
-	// runtime
-	rtStatus := StatusUp
-	mem := &runtime.MemStats{}
-	runtime.ReadMemStats(mem)
-	rt := Check{
-		Name:   "runtime",
-		Kind:   "go",
-		Status: rtStatus,
-		Data: map[string]interface{}{
-			"version":      runtime.Version(),
-			"numCPU":       runtime.NumCPU(),
-			"numGoroutine": runtime.NumGoroutine(),
-			"numCgoCall":   runtime.NumCgoCall(),
-			"memStats":     mem,
-		},
-	}
-
-	// and operator
-	allStatus := dbStatus && rtStatus
-
-	health := Health{
-		Status: allStatus,
-		Checks: []Check{
-			database,
-			rt,
-		},
-	}
-
-	return health, err
 }
 
 // GetByID returns the user with the specified ID.
