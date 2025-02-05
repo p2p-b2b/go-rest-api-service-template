@@ -15,6 +15,33 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/health/status": {
+            "get": {
+                "description": "Check health status of the service pinging the database and go metrics",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Health"
+                ],
+                "summary": "Check health status",
+                "operationId": "0986a6ff-aa83-4b06-9a16-7e338eaa50d1",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handler.Health"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/respond.HTTPMessage"
+                        }
+                    }
+                }
+            }
+        },
         "/users": {
             "get": {
                 "description": "List all users",
@@ -133,34 +160,6 @@ const docTemplate = `{
                         "description": "Conflict",
                         "schema": {
                             "$ref": "#/definitions/respond.HTTPMessage"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/respond.HTTPMessage"
-                        }
-                    }
-                }
-            }
-        },
-        "/users/health": {
-            "get": {
-                "description": "This endpoint returns the health of the service\nvalidating the connection to the database",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Users",
-                    "Health"
-                ],
-                "summary": "Retrieve the health of the service",
-                "operationId": "4c3b1fb4-1639-42ea-b6ca-8389b33ce5d4",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/handler.Health"
                         }
                     },
                     "500": {

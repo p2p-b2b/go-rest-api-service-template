@@ -192,6 +192,25 @@ info:
     - Debug mode to enable debug logging.
     - TLS enabled to secure the communication.
 paths:
+  /health/status:
+    get:
+      description: Check health status of the service pinging the database and go
+        metrics
+      operationId: 0986a6ff-aa83-4b06-9a16-7e338eaa50d1
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.Health'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/respond.HTTPMessage'
+      summary: Check health status
+      tags:
+      - Health
   /users:
     get:
       description: List all users
@@ -385,27 +404,6 @@ paths:
       summary: Update a user
       tags:
       - Users
-  /users/health:
-    get:
-      description: |-
-        This endpoint returns the health of the service
-        validating the connection to the database
-      operationId: 4c3b1fb4-1639-42ea-b6ca-8389b33ce5d4
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/handler.Health'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/respond.HTTPMessage'
-      summary: Retrieve the health of the service
-      tags:
-      - Users
-      - Health
   /version:
     get:
       description: Get the version of the service
