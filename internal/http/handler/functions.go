@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"fmt"
 	"strconv"
 
 	"github.com/google/uuid"
@@ -15,16 +14,16 @@ import (
 // If the input is a nil UUID, it returns an error.
 func parseUUIDQueryParams(input string) (uuid.UUID, error) {
 	if input == "" {
-		return uuid.Nil, fmt.Errorf("%w: %s", ErrRequiredUUID, input)
+		return uuid.Nil, ErrRequiredUUID
 	}
 
 	id, err := uuid.Parse(input)
 	if err != nil {
-		return uuid.Nil, fmt.Errorf("%w: %s", ErrInvalidUUID, input)
+		return uuid.Nil, ErrInvalidUUID
 	}
 
 	if id == uuid.Nil {
-		return uuid.Nil, fmt.Errorf("%w: %s", ErrUUIDCannotBeNil, input)
+		return uuid.Nil, ErrUUIDCannotBeNil
 	}
 
 	return id, nil

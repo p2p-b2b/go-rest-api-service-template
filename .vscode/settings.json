@@ -38,6 +38,7 @@
     "stdlib",
     "stdoutmetric",
     "stdouttrace",
+    "stretchr",
     "swaggo",
     "threadcreate",
     "uber",

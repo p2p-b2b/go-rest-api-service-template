@@ -20,11 +20,17 @@ const (
 )
 
 // Middleware is a function that wraps an http.Handler
+// to provide additional functionality
 type Middleware func(http.Handler) http.Handler
 
 // ThenFunc wraps an http.HandlerFunc with a middleware
 func (m Middleware) ThenFunc(h http.HandlerFunc) http.Handler {
 	return m(http.HandlerFunc(h))
+}
+
+// Apply applies the middleware to an http.Handler
+func (mws Middleware) Apply(h http.Handler) http.Handler {
+	return mws(h)
 }
 
 // Chain applies middlewares to an http.Handler

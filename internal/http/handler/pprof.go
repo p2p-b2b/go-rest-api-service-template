@@ -3,6 +3,8 @@ package handler
 import (
 	"net/http"
 	"net/http/pprof"
+
+	"github.com/p2p-b2b/go-rest-api-service-template/internal/http/middleware"
 )
 
 // PprofHandler handles the pprof routes
@@ -14,16 +16,18 @@ func NewPprofHandler() *PprofHandler {
 }
 
 // RegisterRoutes registers the routes for the handler
-func (ref *PprofHandler) RegisterRoutes(mux *http.ServeMux) {
-	mux.HandleFunc("GET /debug/pprof/", pprof.Index)
-	mux.HandleFunc("GET /debug/pprof/cmdline", pprof.Cmdline)
-	mux.HandleFunc("GET /debug/pprof/profile", pprof.Profile)
-	mux.HandleFunc("GET /debug/pprof/symbol", pprof.Symbol)
-	mux.HandleFunc("GET /debug/pprof/trace", pprof.Trace)
-	mux.HandleFunc("GET /debug/pprof/allocs", pprof.Handler("allocs").ServeHTTP)
-	mux.HandleFunc("GET /debug/pprof/block", pprof.Handler("block").ServeHTTP)
-	mux.HandleFunc("GET /debug/pprof/goroutine", pprof.Handler("goroutine").ServeHTTP)
-	mux.HandleFunc("GET /debug/pprof/heap", pprof.Handler("heap").ServeHTTP)
-	mux.HandleFunc("GET /debug/pprof/mutex", pprof.Handler("mutex").ServeHTTP)
-	mux.HandleFunc("GET /debug/pprof/threadcreate", pprof.Handler("threadcreate").ServeHTTP)
+func (ref *PprofHandler) RegisterRoutes(mux *http.ServeMux, middlewares ...middleware.Middleware) {
+	mdw := middleware.Chain(middlewares...)
+
+	mux.Handle("GET /debug/pprof/", mdw.ThenFunc(pprof.Index))
+	mux.Handle("GET /debug/pprof/cmdline", mdw.ThenFunc(pprof.Cmdline))
+	mux.Handle("GET /debug/pprof/profile", mdw.ThenFunc(pprof.Profile))
+	mux.Handle("GET /debug/pprof/symbol", mdw.ThenFunc(pprof.Symbol))
+	mux.Handle("GET /debug/pprof/trace", mdw.ThenFunc(pprof.Trace))
+	mux.Handle("GET /debug/pprof/allocs", mdw.ThenFunc(pprof.Handler("allocs").ServeHTTP))
+	mux.Handle("GET /debug/pprof/block", mdw.ThenFunc(pprof.Handler("block").ServeHTTP))
+	mux.Handle("GET /debug/pprof/goroutine", mdw.ThenFunc(pprof.Handler("goroutine").ServeHTTP))
+	mux.Handle("GET /debug/pprof/heap", mdw.ThenFunc(pprof.Handler("heap").ServeHTTP))
+	mux.Handle("GET /debug/pprof/mutex", mdw.ThenFunc(pprof.Handler("mutex").ServeHTTP))
+	mux.Handle("GET /debug/pprof/threadcreate", mdw.ThenFunc(pprof.Handler("threadcreate").ServeHTTP))
 }

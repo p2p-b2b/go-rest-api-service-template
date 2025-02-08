@@ -1,0 +1,176 @@
+package handler
+
+import (
+	"testing"
+
+	"github.com/google/uuid"
+	"github.com/p2p-b2b/go-rest-api-service-template/internal/paginator"
+	"github.com/stretchr/testify/assert"
+)
+
+func TestParseUUIDQueryParams(t *testing.T) {
+	testID := uuid.New()
+
+	tests := []struct {
+		input    string
+		expected uuid.UUID
+		err      error
+	}{
+		{"", uuid.Nil, ErrRequiredUUID},
+		{"invalid-uuid", uuid.Nil, ErrInvalidUUID},
+		{uuid.Nil.String(), uuid.Nil, ErrUUIDCannotBeNil},
+		{testID.String(), testID, nil},
+	}
+
+	for _, test := range tests {
+		result, err := parseUUIDQueryParams(test.input)
+		assert.Equal(t, test.expected, result)
+		assert.Equal(t, test.err, err)
+	}
+}
+
+func TestParseSortQueryParams(t *testing.T) {
+	allowedFields := []string{"name", "age"}
+
+	tests := []struct {
+		sort     string
+		expected string
+		err      error
+	}{
+		{"name ASC", "name ASC", nil},
+		{"age ASC, name DESC", "age ASC, name DESC", nil},
+		{"invalid", "", ErrInvalidSort},
+	}
+
+	for _, test := range tests {
+		result, err := parseSortQueryParams(test.sort, allowedFields)
+		assert.Equal(t, test.expected, result)
+		assert.Equal(t, test.err, err)
+	}
+}
+
+func TestParseFilterQueryParams(t *testing.T) {
+	allowedFields := []string{"status", "type"}
+
+	tests := []struct {
+		filter   string
+		expected string
+		err      error
+	}{
+		{"status='active'", "status='active'", nil},
+		{"status='active' AND type=1", "status='active' AND type=1", nil},
+		{"invalid", "", ErrInvalidFilter},
+	}
+
+	for _, test := range tests {
+		result, err := parseFilterQueryParams(test.filter, allowedFields)
+		assert.Equal(t, test.expected, result)
+		assert.Equal(t, test.err, err)
+	}
+}
+
+func TestParseFieldsQueryParams(t *testing.T) {
+	allowedFields := []string{"id", "name"}
+
+	tests := []struct {
+		fields   string
+		expected []string
+		err      error
+	}{
+		{"id,name", []string{"id", "name"}, nil},
+		{"invalid", nil, ErrInvalidFields},
+	}
+
+	for _, test := range tests {
+		result, err := parseFieldsQueryParams(test.fields, allowedFields)
+		assert.Equal(t, test.expected, result)
+		assert.Equal(t, test.err, err)
+	}
+}
+
+func TestParseNextTokenQueryParams(t *testing.T) {
+	testID := uuid.New()
+
+	tests := []struct {
+		nextToken string
+		expected  string
+		err       error
+	}{
+		{"", "", nil},
+		{"invalid", "", ErrInvalidNextToken},
+		{paginator.EncodeToken(testID, 10), paginator.EncodeToken(testID, 10), nil},
+	}
+
+	for _, test := range tests {
+		result, err := parseNextTokenQueryParams(test.nextToken)
+		assert.Equal(t, test.expected, result)
+		assert.Equal(t, test.err, err)
+	}
+}
+
+func TestParsePrevTokenQueryParams(t *testing.T) {
+	testID := uuid.New()
+
+	tests := []struct {
+		prevToken string
+		expected  string
+		err       error
+	}{
+		{"", "", nil},
+		{"invalid", "", ErrInvalidPrevToken},
+		{paginator.EncodeToken(testID, 10), paginator.EncodeToken(testID, 10), nil},
+	}
+
+	for _, test := range tests {
+		result, err := parsePrevTokenQueryParams(test.prevToken)
+		assert.Equal(t, test.expected, result)
+		assert.Equal(t, test.err, err)
+	}
+}
+
+func TestParseLimitQueryParams(t *testing.T) {
+	tests := []struct {
+		limit    string
+		expected int
+		err      error
+	}{
+		{"", paginator.DefaultLimit, nil},
+		{"invalid", 0, ErrInvalidLimit},
+		{"0", paginator.DefaultLimit, nil},
+		{"5", 5, nil},
+		{"-1", 0, ErrInvalidLimit},
+		{"1000", paginator.MaxLimit, nil},
+	}
+
+	for _, test := range tests {
+		result, err := parseLimitQueryParams(test.limit)
+		assert.Equal(t, test.expected, result)
+		assert.Equal(t, test.err, err)
+	}
+}
+
+func TestParseListQueryParams(t *testing.T) {
+	testID := uuid.New()
+
+	params := map[string]any{
+		"sort":      "name ASC",
+		"filter":    "status='active'",
+		"fields":    "id,name",
+		"nextToken": paginator.EncodeToken(testID, 10),
+		"prevToken": paginator.EncodeToken(testID, 10),
+		"limit":     "5",
+	}
+
+	sortFields := []string{"name", "age"}
+	filterFields := []string{"status", "type"}
+	fieldsFields := []string{"id", "name"}
+
+	sort, filter, fields, nextToken, prevToken, limit, err := parseListQueryParams(params, fieldsFields, filterFields, sortFields)
+	assert.NoError(t, err)
+	assert.Equal(t, "name ASC", sort)
+	assert.Equal(t, "status='active'", filter)
+	assert.Equal(t, []string{"id", "name"}, fields)
+	assert.Equal(t, paginator.EncodeToken(testID, 10), nextToken)
+	assert.Equal(t, paginator.EncodeToken(testID, 10), prevToken)
+	assert.Equal(t, 5, limit)
+}

@@ -3,6 +3,7 @@ package handler
 import (
 	"net/http"
 
+	"github.com/p2p-b2b/go-rest-api-service-template/internal/http/middleware"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/http/respond"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/version"
 )
@@ -16,8 +17,10 @@ func NewVersionHandler() *VersionHandler {
 }
 
 // RegisterRoutes registers the routes for the version of the service.
-func (ref *VersionHandler) RegisterRoutes(mux *http.ServeMux) {
-	mux.HandleFunc("GET /version", ref.get)
+func (ref *VersionHandler) RegisterRoutes(mux *http.ServeMux, middlewares ...middleware.Middleware) {
+	mdw := middleware.Chain(middlewares...)
+
+	mux.Handle("GET /version", mdw.ThenFunc(ref.get))
 }
 
 // get returns the version of the service
