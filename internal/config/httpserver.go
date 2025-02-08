@@ -5,34 +5,32 @@ import (
 	"net"
 	"os"
 	"slices"
+	"strconv"
 	"strings"
 	"time"
 )
 
 var (
-	ErrHTTPServerInvalidConfigAddress            = errors.New("invalid server address, must not be empty and a valid IP Address or Hostname")
-	ErrHTTPServerInvalidConfigPort               = errors.New("invalid server port, must be between 1 and 65535")
-	ErrHTTPServerInvalidConfigShutdownTimeout    = errors.New("invalid server shutdown timeout, must be between 1s and 600s")
-	ErrHTTPServerInvalidConfigCorsAllowedOrigins = errors.New("invalid CORS allowed origins. Must not be empty")
-	ErrHTTPServerInvalidConfigCorsAllowedMethods = errors.New("invalid CORS allowed methods. Must be one of [" + ValidHTTPServerCorsAllowedMethods + "]")
-	ErrHTTPServerInvalidConfigCorsAllowedHeaders = errors.New("invalid CORS allowed headers. Must be at least 2 characters long")
+	ErrHTTPServerInvalidAddress            = errors.New("invalid server address, must not be empty and a valid IP Address or Hostname")
+	ErrHTTPServerInvalidPort               = errors.New("invalid server port, must be between [" + strconv.Itoa(ValidHTTPServerMinPort) + "] and [" + strconv.Itoa(ValidHTTPServerMaxPort) + "]")
+	ErrHTTPServerInvalidShutdownTimeout    = errors.New("invalid server shutdown timeout, must be between [" + ValidHTTPServerMinShutdownTimeout.String() + "] and [" + ValidHTTPServerMaxShutdownTimeout.String() + "]")
+	ErrHTTPServerInvalidCorsAllowedOrigins = errors.New("invalid CORS allowed origins. Must not be empty")
+	ErrHTTPServerInvalidCorsAllowedMethods = errors.New("invalid CORS allowed methods. Must be one of [" + ValidHTTPServerCorsAllowedMethods + "]")
+	ErrHTTPServerInvalidCorsAllowedHeaders = errors.New("invalid CORS allowed headers. Must be at least [" + strconv.Itoa(ValidHTTPServerCorsAllowedHeaders) + "]")
 )
 
 const (
-	// DefaultHTTPServerShutdownTimeout is the default time to wait for the server to shutdown
+	ValidHTTPServerMaxPort            = 65535
+	ValidHTTPServerMinPort            = 0
+	ValidHTTPServerMaxShutdownTimeout = 600 * time.Second
+	ValidHTTPServerMinShutdownTimeout = 1 * time.Second
+	ValidHTTPServerCorsAllowedHeaders = 2
+
 	DefaultHTTPServerShutdownTimeout = 5 * time.Second
-
-	// DefaultHTTPServerAddress is the default address for the server
-	DefaultHTTPServerAddress = "localhost"
-
-	// DefaultHTTPServerPort is the default port for the server
-	DefaultHTTPServerPort = 8080
-
-	// DefaultHTTPServerTLSEnabled is the default value for enabling TLS
-	DefaultHTTPServerTLSEnabled = false
-
-	// DefaultHTTPServerPprofEnabled is the default value for enabling pprof
-	DefaultHTTPServerPprofEnabled = false
+	DefaultHTTPServerAddress         = "localhost"
+	DefaultHTTPServerPort            = 8080
+	DefaultHTTPServerTLSEnabled      = false
+	DefaultHTTPServerPprofEnabled    = false
 
 	// DefaultHTTPServerCorsEnabled is the default value for enabling CORS
 	// If enabled, the server will use the following values for CORS
@@ -40,19 +38,14 @@ const (
 	// - AllowedMethods: "GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD"
 	// - AllowedHeaders: "Accept, Content-Type, Content-Length, Accept-Encoding, Authorization, X-CSRF-Token, X-Requested-With, X-Api-Version"
 	// Remember to change the values if you need to restrict the allowed origins, methods or headers
-	DefaultHTTPServerCorsEnabled = false
-
-	// DefaultHTTPServerCorsAllowCredentials is the default value for allowing credentials
+	DefaultHTTPServerCorsEnabled          = false
 	DefaultHTTPServerCorsAllowCredentials = true
 
 	// DefaultHTTPServerCorsAllowedOrigins is the default value for allowed origins
 	// Could be a comma separated list of origins. Example: "http://localhost:3000, http://localhost:8080"
 	DefaultHTTPServerCorsAllowedOrigins = "*" // allow all origins
 
-	// DefaultHTTPServerCorsAllowedMethods is the default value for allowed methods
 	DefaultHTTPServerCorsAllowedMethods = "GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD"
-
-	// DefaultHTTPServerCorsAllowedHeaders is the default value for allowed headers
 	DefaultHTTPServerCorsAllowedHeaders = "Accept, Content-Type, Content-Length, Accept-Encoding, Authorization, X-CSRF-Token, X-Requested-With, X-Api-Version, Access-Control-Allow-Headers"
 )
 
@@ -125,33 +118,33 @@ func (c *HTTPServerConfig) ParseEnvVars() {
 
 // Validate validates the server configuration values
 func (c *HTTPServerConfig) Validate() error {
-	if c.Address.Value == "" || c.Address.Value != "localhost" && net.ParseIP(c.Address.Value) == nil {
-		return ErrHTTPServerInvalidConfigAddress
+	if c.Address.Value == "" || (c.Address.Value != "localhost" && net.ParseIP(c.Address.Value) == nil) {
+		return ErrHTTPServerInvalidAddress
 	}
 
 	// validate the if is a valid IP Address or Hostname
 
-	if c.Port.Value < 1 || c.Port.Value > 65535 {
-		return ErrHTTPServerInvalidConfigPort
+	if c.Port.Value < ValidHTTPServerMinPort || c.Port.Value > ValidHTTPServerMaxPort {
+		return ErrHTTPServerInvalidPort
 	}
 
-	if c.ShutdownTimeout.Value < 1*time.Second || c.ShutdownTimeout.Value > 600*time.Second {
-		return ErrHTTPServerInvalidConfigShutdownTimeout
+	if c.ShutdownTimeout.Value < ValidHTTPServerMinShutdownTimeout || c.ShutdownTimeout.Value > ValidHTTPServerMaxShutdownTimeout {
+		return ErrHTTPServerInvalidShutdownTimeout
 	}
 
 	if c.CorsEnabled.Value {
 		if c.CorsAllowedOrigins.Value == "" {
-			return ErrHTTPServerInvalidConfigCorsAllowedOrigins
+			return ErrHTTPServerInvalidCorsAllowedOrigins
 		}
 
 		for _, method := range strings.Split(c.CorsAllowedMethods.Value, ",") {
 			if !slices.Contains(strings.Split(ValidHTTPServerCorsAllowedMethods, "|"), strings.Trim(method, " ")) {
-				return ErrHTTPServerInvalidConfigCorsAllowedMethods
+				return ErrHTTPServerInvalidCorsAllowedMethods
 			}
 		}
 
-		if len(c.CorsAllowedHeaders.Value) < 2 {
-			return ErrHTTPServerInvalidConfigCorsAllowedHeaders
+		if len(c.CorsAllowedHeaders.Value) < ValidHTTPServerCorsAllowedHeaders {
+			return ErrHTTPServerInvalidCorsAllowedHeaders
 		}
 
 	}

@@ -3,22 +3,30 @@ package config
 import (
 	"errors"
 	"slices"
+	"strconv"
 	"strings"
 	"time"
 )
 
 var (
-	ErrOTInvalidTraceExporter  = errors.New("invalid trace exporter, must be one of [" + ValidTraceExporters + "]")
-	ErrOTInvalidMetricExporter = errors.New("invalid metric exporter, must be one of [" + ValidMetricExporters + "]")
-	ErrOTInvalidSampling       = errors.New("invalid sampling, must be between 0 and 100")
-	ErrOTInvalidMetricInterval = errors.New("invalid metric interval, must be greater than 0")
-	ErrOTInvalidTracePort      = errors.New("invalid trace port, must be between 0 and 65535")
-	ErrOTInvalidMetricPort     = errors.New("invalid metric port, must be between 0 and 65535")
+	ErrInvalidTraceExporter  = errors.New("invalid trace exporter, must be one of [" + ValidTraceExporters + "]")
+	ErrInvalidMetricExporter = errors.New("invalid metric exporter, must be one of [" + ValidMetricExporters + "]")
+	ErrInvalidSampling       = errors.New("invalid sampling, must be between [" + strconv.Itoa(ValidTaceSamplingMin) + "] and [" + strconv.Itoa(ValidTaceSamplingMax) + "]")
+	ErrInvalidMetricInterval = errors.New("invalid metric interval, must be greater than [" + ValidMetricMinInterval.String() + "]")
+	ErrInvalidTracePort      = errors.New("invalid trace port, must be between [" + strconv.Itoa(ValidTraceMinPort) + "] and [" + strconv.Itoa(ValidTraceMaxPort) + "]")
+	ErrInvalidMetricPort     = errors.New("invalid metric port, must be between [" + strconv.Itoa(ValidMetricMinPort) + "] and [" + strconv.Itoa(ValidMetricMaxPort) + "]")
 )
 
 const (
-	ValidTraceExporters  = "console|otlp-http"
-	ValidMetricExporters = "console|otlp-http|prometheus"
+	ValidTraceExporters    = "console|otlp-http"
+	ValidMetricExporters   = "console|otlp-http|prometheus"
+	ValidTaceSamplingMin   = 0
+	ValidTaceSamplingMax   = 100
+	ValidMetricMinInterval = 1 * time.Second
+	ValidMetricMinPort     = 1
+	ValidMetricMaxPort     = 65535
+	ValidTraceMinPort      = 1
+	ValidTraceMaxPort      = 65535
 
 	DefaultTraceEndpoint             = "localhost"
 	DefaultTracePort                 = 4318
@@ -84,27 +92,27 @@ func (c *OpenTelemetryConfig) ParseEnvVars() {
 // Validate validates the OpenTracing configuration values
 func (c *OpenTelemetryConfig) Validate() error {
 	if !slices.Contains(strings.Split(ValidTraceExporters, "|"), c.TraceExporter.Value) {
-		return ErrOTInvalidTraceExporter
+		return ErrInvalidTraceExporter
 	}
 
 	if !slices.Contains(strings.Split(ValidMetricExporters, "|"), c.MetricExporter.Value) {
-		return ErrOTInvalidMetricExporter
+		return ErrInvalidMetricExporter
 	}
 
-	if c.TraceSampling.Value < 0 || c.TraceSampling.Value > 100 {
-		return ErrOTInvalidSampling
+	if c.TraceSampling.Value < ValidTaceSamplingMin || c.TraceSampling.Value > ValidTaceSamplingMax {
+		return ErrInvalidSampling
 	}
 
-	if c.MetricInterval.Value < 0 {
-		return ErrOTInvalidMetricInterval
+	if c.MetricInterval.Value < ValidMetricMinInterval {
+		return ErrInvalidMetricInterval
 	}
 
-	if c.MetricPort.Value < 1 || c.MetricPort.Value > 65535 {
-		return ErrOTInvalidMetricPort
+	if c.MetricPort.Value < ValidMetricMinPort || c.MetricPort.Value > ValidMetricMaxPort {
+		return ErrInvalidMetricPort
 	}
 
-	if c.TracePort.Value < 1 || c.TracePort.Value > 65535 {
-		return ErrOTInvalidTracePort
+	if c.TracePort.Value < ValidTraceMinPort || c.TracePort.Value > ValidTraceMaxPort {
+		return ErrInvalidTracePort
 	}
 
 	return nil
