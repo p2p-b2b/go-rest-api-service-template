@@ -168,6 +168,11 @@ test: $(PROJECT_COVERAGE_FILE) go-generate go-mod-tidy go-fmt go-vet ## Run test
 		./... \
 	)
 
+.PHONY: test-coverage
+test-coverage: install-go-test-coverage ## Run tests and show coverage
+	@printf "👉 Running tests and showing coverage...\n"
+	$(call exec_cmd, go-test-coverage --config=./.testcoverage.yml )
+
 ###############################################################################
 ##@ Build commands
 .PHONY: build
@@ -246,6 +251,11 @@ install-swag: ## Install swag for swagger documentation (https://github.com/swag
 install-goose: ## Install goose for database migrations (
 	@printf "👉 Installing goose...\n"
 	$(call exec_cmd, go install github.com/pressly/goose/v3/cmd/goose@latest )
+
+.PHONY: install-go-test-coverage
+install-go-test-coverage: ## Install got tool for test coverage (https://github.com/vladopajic/go-test-coverage)
+	@printf "👉 Installing got tool for test coverage...\n"
+	$(call exec_cmd, go install github.com/vladopajic/go-test-coverage/v2@latest )
 
 ###############################################################################
 ##@ Development commands
