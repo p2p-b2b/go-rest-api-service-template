@@ -100,12 +100,12 @@ all: clean test build-all ## Clean, test and build the application.  Execute by 
 .PHONY: go-fmt
 go-fmt: ## Format go code
 	@printf "👉 Formatting go code...\n"
-	$(call exec_cmd, go fmt $(GO_FILES) )
+	$(call exec_cmd, go fmt ./... )
 
 .PHONY: go-vet
 go-vet: ## Vet go code
 	@printf "👉 Vet go code...\n"
-	$(call exec_cmd, go vet  $(GO_FILES) )
+	$(call exec_cmd, go vet  ./... )
 
 .PHONY: go-generate
 go-generate: ## Generate go code
@@ -216,7 +216,7 @@ build-dist-zip: ## Build the application for all platforms defined in GO_OS and 
 # this is necessary to avoid a comma in the call function
 COMMA_SIGN := ,
 .PHONY: docs-swagger
-docs-swagger: ## Generate swagger documentation
+docs-swagger: install-swag ## Generate swagger documentation
 	@printf "👉 Generating swagger documentation...\n"
 	$(foreach proj_mod, $(PROJECT_MODULES_NAME), \
 		$(call exec_cmd, swag fmt \
