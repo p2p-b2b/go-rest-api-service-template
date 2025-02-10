@@ -1,4 +1,4 @@
-name: Pull Request CI
+name: Pull Request
 
 on:
   pull_request:
@@ -12,7 +12,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Set up Go
         uses: actions/setup-go@v5
@@ -58,48 +59,30 @@ jobs:
           echo "Go version: $go_version"
           echo "**Go Version:** $go_version" >> $GITHUB_STEP_SUMMARY
 
-      #  should be refined to show only the files that have been changed
-      # - name: Files changed
-      #   run: |
-      #     echo "## Files changed" >> $GITHUB_STEP_SUMMARY
-      #     changed_files=$(git diff --name-only --diff-filter=ACMRT | xargs)
-
-      #     # print to the console
-      #     echo "$changed_files"
-
-      #     # print to the summary
-      #     files=$(echo "$changed_files" | wc -l)
-      #     echo "**Changed Files:** $files" >> $GITHUB_STEP_SUMMARY
-
-      #     # echo '```bash' >> $GITHUB_STEP_SUMMARY
-
-      #     for f in $changed_files; do
-      #       echo "$f" >> $GITHUB_STEP_SUMMARY
-      #     done
-
-      #     # echo '```' >> $GITHUB_STEP_SUMMARY
-
-      # - name: Dump GitHub context
-      #   env:
-      #     GITHUB_CONTEXT: ${{ toJSON(github) }}
-      #   run: echo "$GITHUB_CONTEXT"
-
-      # - name: Dump GitHub pull_request context
-      #   env:
-      #     GITHUB_CONTEXT_PR: ${{ toJSON(github.event.pull_request) }}
-      #   run: echo "$GITHUB_CONTEXT_PR"
-
-      - name: make install-swag
+      - name: Lines of code
         run: |
-          echo "## Make install-swag" >> $GITHUB_STEP_SUMMARY
-          make install-swag | tee -a $GITHUB_STEP_SUMMARY
+          echo "## Lines of code" >> $GITHUB_STEP_SUMMARY
+
+          go install github.com/boyter/scc/v3@latest
+          scc --format html-table . | tee -a $GITHUB_STEP_SUMMARY
+
+      - name: Make build
+        run: |
+          echo "## Make build" >> $GITHUB_STEP_SUMMARY
+          make build | tee -a $GITHUB_STEP_SUMMARY
 
       - name: Make tests
         run: |
           echo "## Make tests" >> $GITHUB_STEP_SUMMARY
           make test | tee -a $GITHUB_STEP_SUMMARY
 
-      - name: Make build-all
+      - name: Make test-coverage
         run: |
-          echo "## Make build" >> $GITHUB_STEP_SUMMARY
-          make build-all | tee -a $GITHUB_STEP_SUMMARY
+          echo "## Make test-coverage" >> $GITHUB_STEP_SUMMARY
+
+          make test-coverage | tee -a $GITHUB_STEP_SUMMARY
+
+          # execute again to get the summary
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Coverage report" >> $GITHUB_STEP_SUMMARY
+          go-test-coverage --config=./.testcoverage.yml | sed 's/PASS/PASS  ✅/g' | sed 's/FAIL/FAIL  ❌/g' | tee -a $GITHUB_STEP_SUMMARY

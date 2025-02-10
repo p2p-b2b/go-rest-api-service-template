@@ -100,12 +100,12 @@ all: clean test build-all ## Clean, test and build the application.  Execute by 
 .PHONY: go-fmt
 go-fmt: ## Format go code
 	@printf "👉 Formatting go code...\n"
-	$(call exec_cmd, go fmt $(GO_FILES) )
+	$(call exec_cmd, go fmt ./... )
 
 .PHONY: go-vet
 go-vet: ## Vet go code
 	@printf "👉 Vet go code...\n"
-	$(call exec_cmd, go vet  $(GO_FILES) )
+	$(call exec_cmd, go vet  ./... )
 
 .PHONY: go-generate
 go-generate: ## Generate go code
@@ -168,6 +168,11 @@ test: $(PROJECT_COVERAGE_FILE) go-generate go-mod-tidy go-fmt go-vet ## Run test
 		./... \
 	)
 
+.PHONY: test-coverage
+test-coverage: install-go-test-coverage ## Run tests and show coverage
+	@printf "👉 Running tests and showing coverage...\n"
+	$(call exec_cmd, go-test-coverage --config=./.testcoverage.yml )
+
 ###############################################################################
 ##@ Build commands
 .PHONY: build
@@ -216,7 +221,7 @@ build-dist-zip: ## Build the application for all platforms defined in GO_OS and 
 # this is necessary to avoid a comma in the call function
 COMMA_SIGN := ,
 .PHONY: docs-swagger
-docs-swagger: ## Generate swagger documentation
+docs-swagger: install-swag ## Generate swagger documentation
 	@printf "👉 Generating swagger documentation...\n"
 	$(foreach proj_mod, $(PROJECT_MODULES_NAME), \
 		$(call exec_cmd, swag fmt \
@@ -246,6 +251,11 @@ install-swag: ## Install swag for swagger documentation (https://github.com/swag
 install-goose: ## Install goose for database migrations (
 	@printf "👉 Installing goose...\n"
 	$(call exec_cmd, go install github.com/pressly/goose/v3/cmd/goose@latest )
+
+.PHONY: install-go-test-coverage
+install-go-test-coverage: ## Install got tool for test coverage (https://github.com/vladopajic/go-test-coverage)
+	@printf "👉 Installing got tool for test coverage...\n"
+	$(call exec_cmd, go install github.com/vladopajic/go-test-coverage/v2@latest )
 
 ###############################################################################
 ##@ Development commands

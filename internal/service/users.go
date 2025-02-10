@@ -372,7 +372,7 @@ func (ref *UsersService) Update(ctx context.Context, input *UpdateUserInput) err
 	}
 
 	// update the password if it is provided
-	if input.Password != nil && len(*input.Password) < UserPasswordMinLength {
+	if input.Password != nil && len(*input.Password) < ValidUserPasswordMinLength {
 
 		hashPwd, err := hashAndSaltPassword(*input.Password)
 		if err != nil {

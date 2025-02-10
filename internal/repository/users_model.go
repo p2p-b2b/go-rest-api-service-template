@@ -13,22 +13,22 @@ import (
 )
 
 const (
-	UserFirstNameMinLength = 2
-	UserFirstNameMaxLength = 25
-	UserLastNameMinLength  = 2
-	UserLastNameMaxLength  = 25
-	UserEmailMinLength     = 6
-	UserEmailMaxLength     = 50
-	UserPasswordMinLength  = 6
-	UserPasswordMaxLength  = 255
+	ValidValidUserFirstNameMinLength = 2
+	ValidValidUserFirstNameMaxLength = 25
+	ValidValidUserLastNameMinLength  = 2
+	ValidUserLastNameMaxLength       = 25
+	ValidUserEmailMinLength          = 6
+	ValidUserEmailMaxLength          = 50
+	ValidUserPasswordMinLength       = 6
+	ValidUserPasswordMaxLength       = 255
 )
 
 var (
 	ErrUserInvalidID          = errors.New("invalid user ID. Must be a valid UUID")
-	ErrUserInvalidFirstName   = errors.New("invalid first name. Must be between " + fmt.Sprintf("%d and %d", UserFirstNameMinLength, UserFirstNameMaxLength) + " characters long")
-	ErrUserInvalidLastName    = errors.New("invalid last name. Must be between " + fmt.Sprintf("%d and %d", UserLastNameMinLength, UserLastNameMaxLength) + " characters long")
-	ErrUserInvalidEmail       = errors.New("invalid email. Must be between " + fmt.Sprintf("%d and %d", UserEmailMinLength, UserEmailMaxLength) + " characters long")
-	ErrUserInvalidPassword    = errors.New("invalid password. Must be between " + fmt.Sprintf("%d and %d", UserPasswordMinLength, UserPasswordMaxLength) + " characters long")
+	ErrUserInvalidFirstName   = errors.New("invalid first name. Must be between " + fmt.Sprintf("%d and %d", ValidValidUserFirstNameMinLength, ValidValidUserFirstNameMaxLength) + " characters long")
+	ErrUserInvalidLastName    = errors.New("invalid last name. Must be between " + fmt.Sprintf("%d and %d", ValidValidUserLastNameMinLength, ValidUserLastNameMaxLength) + " characters long")
+	ErrUserInvalidEmail       = errors.New("invalid email. Must be between " + fmt.Sprintf("%d and %d", ValidUserEmailMinLength, ValidUserEmailMaxLength) + " characters long")
+	ErrUserInvalidPassword    = errors.New("invalid password. Must be between " + fmt.Sprintf("%d and %d", ValidUserPasswordMinLength, ValidUserPasswordMaxLength) + " characters long")
 	ErrUserNotFound           = errors.New("user not found")
 	ErrUserIDAlreadyExists    = errors.New("user ID already exists")
 	ErrUserEmailAlreadyExists = errors.New("user email already exists")
@@ -71,15 +71,15 @@ func (ref *InsertUserInput) Validate() error {
 		return ErrUserInvalidID
 	}
 
-	if len(ref.FirstName) < UserFirstNameMinLength || len(ref.FirstName) > UserFirstNameMaxLength {
+	if len(ref.FirstName) < ValidValidUserFirstNameMinLength || len(ref.FirstName) > ValidValidUserFirstNameMaxLength {
 		return ErrUserInvalidFirstName
 	}
 
-	if len(ref.LastName) < UserLastNameMinLength || len(ref.LastName) > UserLastNameMaxLength {
+	if len(ref.LastName) < ValidValidUserLastNameMinLength || len(ref.LastName) > ValidUserLastNameMaxLength {
 		return ErrUserInvalidLastName
 	}
 
-	if len(ref.Email) < UserEmailMinLength || len(ref.Email) > UserEmailMaxLength {
+	if len(ref.Email) < ValidUserEmailMinLength || len(ref.Email) > ValidUserEmailMaxLength {
 		return ErrUserInvalidEmail
 	}
 
@@ -88,7 +88,7 @@ func (ref *InsertUserInput) Validate() error {
 		return ErrUserInvalidEmail
 	}
 
-	if len(ref.PasswordHash) < UserPasswordMinLength || len(ref.PasswordHash) > UserPasswordMaxLength {
+	if len(ref.PasswordHash) < ValidUserPasswordMinLength || len(ref.PasswordHash) > ValidUserPasswordMaxLength {
 		return ErrUserInvalidPassword
 	}
 
@@ -115,31 +115,31 @@ func (ref *UpdateUserInput) Validate() error {
 	}
 
 	if ref.FirstName != nil {
-		if len(*ref.FirstName) < UserFirstNameMinLength || len(*ref.FirstName) > UserFirstNameMaxLength {
+		if len(*ref.FirstName) < ValidValidUserFirstNameMinLength || len(*ref.FirstName) > ValidValidUserFirstNameMaxLength {
 			return ErrUserInvalidFirstName
 		}
 	}
 
 	if ref.LastName != nil {
-		if len(*ref.LastName) < UserLastNameMinLength || len(*ref.LastName) > UserLastNameMaxLength {
+		if len(*ref.LastName) < ValidValidUserLastNameMinLength || len(*ref.LastName) > ValidUserLastNameMaxLength {
 			return ErrUserInvalidLastName
 		}
 	}
 
 	if ref.Email != nil {
-		if len(*ref.Email) < UserEmailMinLength || len(*ref.Email) > UserEmailMaxLength {
+		if len(*ref.Email) < ValidUserEmailMinLength || len(*ref.Email) > ValidUserEmailMaxLength {
 			return ErrUserInvalidEmail
 		}
 	}
 
 	if ref.Email != nil {
-		if len(*ref.Email) < UserEmailMinLength || len(*ref.Email) > UserEmailMaxLength {
+		if len(*ref.Email) < ValidUserEmailMinLength || len(*ref.Email) > ValidUserEmailMaxLength {
 			return ErrUserInvalidEmail
 		}
 	}
 
 	if ref.PasswordHash != nil {
-		if len(*ref.PasswordHash) >= UserPasswordMinLength || len(*ref.PasswordHash) <= UserPasswordMaxLength {
+		if len(*ref.PasswordHash) >= ValidUserPasswordMinLength || len(*ref.PasswordHash) <= ValidUserPasswordMaxLength {
 			_, err := mail.ParseAddress(*ref.Email)
 			if err != nil {
 				return ErrUserInvalidEmail
@@ -148,7 +148,7 @@ func (ref *UpdateUserInput) Validate() error {
 	}
 
 	if ref.PasswordHash != nil {
-		if len(*ref.PasswordHash) < UserPasswordMinLength || len(*ref.PasswordHash) > UserPasswordMaxLength {
+		if len(*ref.PasswordHash) < ValidUserPasswordMinLength || len(*ref.PasswordHash) > ValidUserPasswordMaxLength {
 			return ErrUserInvalidPassword
 		}
 	}

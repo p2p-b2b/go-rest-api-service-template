@@ -13,22 +13,22 @@ import (
 )
 
 const (
-	UserFirstNameMinLength = 2
-	UserFirstNameMaxLength = 25
-	UserLastNameMinLength  = 2
-	UserLastNameMaxLength  = 25
-	UserEmailMinLength     = 6
-	UserEmailMaxLength     = 50
-	UserPasswordMinLength  = 6
-	UserPasswordMaxLength  = 255
+	ValidUserFirstNameMinLength = 2
+	ValidUserFirstNameMaxLength = 25
+	ValidUserLastNameMinLength  = 2
+	ValidUserLastNameMaxLength  = 25
+	ValidUserEmailMinLength     = 6
+	ValidUserEmailMaxLength     = 50
+	ValidUserPasswordMinLength  = 6
+	ValidUserPasswordMaxLength  = 255
 )
 
 var (
 	ErrUserInvalidID            = errors.New("invalid user ID, this must be a valid UUID")
-	ErrUserInvalidFirstName     = errors.New("invalid user first name. Must be between" + fmt.Sprintf("%d and %d", UserFirstNameMinLength, UserFirstNameMaxLength) + "characters long")
-	ErrUserInvalidLastName      = errors.New("invalid user last name. Must be between" + fmt.Sprintf("%d and %d", UserLastNameMinLength, UserLastNameMaxLength) + "characters long")
-	ErrUserInvalidEmail         = errors.New("invalid user email. Must be between" + fmt.Sprintf("%d and %d", UserEmailMinLength, UserEmailMaxLength) + "characters long")
-	ErrUserInvalidPassword      = errors.New("invalid user password. Must be at least" + fmt.Sprintf("%d characters long", UserPasswordMinLength) + "characters long")
+	ErrUserInvalidFirstName     = errors.New("invalid user first name. Must be between" + fmt.Sprintf("%d and %d", ValidUserFirstNameMinLength, ValidUserFirstNameMaxLength) + "characters long")
+	ErrUserInvalidLastName      = errors.New("invalid user last name. Must be between" + fmt.Sprintf("%d and %d", ValidUserLastNameMinLength, ValidUserLastNameMaxLength) + "characters long")
+	ErrUserInvalidEmail         = errors.New("invalid user email. Must be between" + fmt.Sprintf("%d and %d", ValidUserEmailMinLength, ValidUserEmailMaxLength) + "characters long")
+	ErrUserInvalidPassword      = errors.New("invalid user password. Must be at least" + fmt.Sprintf("%d characters long", ValidUserPasswordMinLength) + "characters long")
 	ErrUserInvalidService       = errors.New("invalid service")
 	ErrUserInvalidOpenTelemetry = errors.New("invalid open telemetry")
 )
@@ -100,16 +100,16 @@ func (req *CreateUserRequest) Validate() error {
 		return ErrUserInvalidID
 	}
 
-	if len(req.FirstName) < UserFirstNameMinLength || len(req.FirstName) > UserFirstNameMaxLength {
+	if len(req.FirstName) < ValidUserFirstNameMinLength || len(req.FirstName) > ValidUserFirstNameMaxLength {
 		return ErrUserInvalidFirstName
 	}
 
-	if len(req.LastName) < UserLastNameMinLength || len(req.LastName) > UserLastNameMaxLength {
+	if len(req.LastName) < ValidUserLastNameMinLength || len(req.LastName) > ValidUserLastNameMaxLength {
 		return ErrUserInvalidLastName
 	}
 
 	// minimal email validation
-	if len(req.Email) < UserEmailMinLength || len(req.Email) > UserEmailMaxLength {
+	if len(req.Email) < ValidUserEmailMinLength || len(req.Email) > ValidUserEmailMaxLength {
 		return ErrUserInvalidEmail
 	}
 
@@ -118,7 +118,7 @@ func (req *CreateUserRequest) Validate() error {
 		return ErrUserInvalidEmail
 	}
 
-	if len(req.Password) < UserPasswordMinLength {
+	if len(req.Password) < ValidUserPasswordMinLength {
 		return ErrUserInvalidPassword
 	}
 
@@ -142,26 +142,26 @@ func (req *UpdateUserRequest) Validate() error {
 	}
 
 	if req.FirstName != nil {
-		if len(*req.FirstName) < UserFirstNameMinLength || len(*req.FirstName) > UserFirstNameMaxLength {
+		if len(*req.FirstName) < ValidUserFirstNameMinLength || len(*req.FirstName) > ValidUserFirstNameMaxLength {
 			return ErrUserInvalidFirstName
 		}
 	}
 
 	if req.LastName != nil {
-		if len(*req.LastName) < UserLastNameMinLength || len(*req.LastName) > UserLastNameMaxLength {
+		if len(*req.LastName) < ValidUserLastNameMinLength || len(*req.LastName) > ValidUserLastNameMaxLength {
 			return ErrUserInvalidLastName
 		}
 	}
 
 	// minimal email validation
 	if req.Email != nil {
-		if len(*req.Email) < UserEmailMinLength || len(*req.Email) > UserEmailMaxLength {
+		if len(*req.Email) < ValidUserEmailMinLength || len(*req.Email) > ValidUserEmailMaxLength {
 			return ErrUserInvalidEmail
 		}
 	}
 
 	if req.Email != nil {
-		if len(*req.Email) >= UserEmailMinLength && len(*req.Email) <= UserEmailMaxLength {
+		if len(*req.Email) >= ValidUserEmailMinLength && len(*req.Email) <= ValidUserEmailMaxLength {
 			_, err := mail.ParseAddress(*req.Email)
 			if err != nil {
 				return ErrUserInvalidEmail

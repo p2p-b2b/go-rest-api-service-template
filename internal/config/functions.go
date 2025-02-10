@@ -11,13 +11,23 @@ import (
 	"time"
 )
 
-// Validator is satisfied by any configuration struct
-// that implements a Validate method
+// Validator is an interface for validating configuration values
+// Implement this interface for configuration structs
+// and add the validation logic in the Validate method
 type Validator interface {
 	Validate() error
 }
 
-// Validate validates the configuration values of any configuration struct
+// EnvVarsParser is an interface for parsing configuration values from environment variables
+// Implement this interface for configuration structs
+// and add the parsing logic in the ParseEnvVars method
+type EnvVarsParser interface {
+	ParseEnvVars()
+}
+
+// Validate validates the configuration values
+// by calling the Validate method of each configuration struct
+// and returns the first error encountered
 func Validate(configs ...Validator) error {
 	for _, config := range configs {
 		if err := config.Validate(); err != nil {
@@ -28,18 +38,39 @@ func Validate(configs ...Validator) error {
 	return nil
 }
 
-// EnvVarsParser is satisfied by any configuration struct
-// that implements a ParseEnvVars method
-type EnvVarsParser interface {
-	ParseEnvVars()
-}
-
 // ParseEnvVars reads the configuration from environment variables
 // and sets the values in the configuration
+// by calling the ParseEnvVars method of each configuration struct
 func ParseEnvVars(configs ...EnvVarsParser) {
 	for _, config := range configs {
 		config.ParseEnvVars()
 	}
+}
+
+// SliceStringVar is a custom flag type for string slices
+// This should implement the Value interface of the flag package
+// Reference: https://pkg.go.dev/gg-scm.io/tool/internal/flag#FlagSet.Var
+type SliceStringVar []string
+
+// String presents the current value as a string.
+func (s *SliceStringVar) String() string {
+	return strings.Join(*s, ", ")
+}
+
+// Set is called once, in command line order, for each flag present.
+func (s *SliceStringVar) Set(value string) error {
+	*s = append(*s, value)
+	return nil
+}
+
+// Get returns the contents of the Value.
+func (s *SliceStringVar) Get() interface{} {
+	return *s
+}
+
+// IsBoolFlag returns true if the flag is a boolean flag
+func (s *SliceStringVar) IsBoolFlag() bool {
+	return false
 }
 
 // FileVar is a custom flag type for files
@@ -50,7 +81,7 @@ type FileVar struct {
 
 	// flag is the flag to open the file with
 	// os.O_APPEND|os.O_CREATE|os.O_WRONLY
-	flag int
+	Flag int
 }
 
 // String presents the current value as a string.
@@ -64,13 +95,12 @@ func (f *FileVar) String() string {
 
 // Set is called once, in command line order, for each flag present.
 func (f *FileVar) Set(value string) error {
-	file, err := os.OpenFile(value, f.flag, 0o644)
+	file, err := os.OpenFile(value, f.Flag, 0o644)
 	if err != nil {
 		return err
 	}
 
 	f.File = file
-
 	return nil
 }
 
@@ -154,7 +184,7 @@ func GetEnv[T any](key string, defaultValue T) T {
 			if err != nil {
 				return defaultValue
 			}
-			return any(FileVar{File: file, flag: os.O_APPEND | os.O_CREATE | os.O_WRONLY}).(T)
+			return any(FileVar{File: file, Flag: os.O_APPEND | os.O_CREATE | os.O_WRONLY}).(T)
 
 		default:
 			return defaultValue
@@ -167,7 +197,6 @@ func GetEnv[T any](key string, defaultValue T) T {
 // SetEnvVarFromFile loads all .env files in the current current working directory and sets the key-value pairs in the environment
 // if there are multiple .env files, it returns an error
 func SetEnvVarFromFile() error {
-	slog.Warn("loading environment variables from .env file")
 	// Get the current working directory
 	execDir, err := os.Getwd()
 	if err != nil {
@@ -196,9 +225,12 @@ func SetEnvVarFromFile() error {
 		for scanner.Scan() {
 			line := scanner.Text()
 			// Skip comments and empty lines
-			if strings.HasPrefix(line, "#") || strings.TrimSpace(line) == "" {
+			if strings.HasPrefix(line, "#") || strings.HasPrefix(line, "//") || strings.TrimSpace(line) == "" {
 				continue
 			}
+
+			// trim leading and trailing whitespace
+			line = strings.TrimSpace(line)
 
 			// Split the line into key and value
 			parts := strings.SplitN(line, "=", 2)

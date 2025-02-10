@@ -3,54 +3,52 @@ package config
 import (
 	"errors"
 	"slices"
+	"strconv"
 	"strings"
 	"time"
 )
 
 var (
-	// ErrInvalidDatabaseKind is returned when an invalid database kind is provided
-	ErrInvalidDatabaseKind = errors.New("invalid database kind, must be one of [" + ValidDatabaseKind + "]")
-
-	// ErrInvalidDatabasePort is returned when an invalid database port is provided
-	ErrInvalidDatabasePort = errors.New("invalid database port, must be between 0 and 65535")
-
-	// ErrUserInvalidUsername is returned when an invalid username is provided
-	ErrUserInvalidUsername = errors.New("invalid username, must be between 2 and 32 characters")
-
-	// ErrInvalidDatabaseName is returned when an invalid database name is provided
-	ErrInvalidDatabaseName = errors.New("invalid database name, must be between 2 and 32 characters")
-
-	// ErrInvalidSSLMode is returned when an invalid SSL mode is provided
-	ErrInvalidSSLMode = errors.New("invalid SSL mode, must be one of [" + ValidSSLModes + "]")
-
-	// ErrInvalidTimeZone is returned when an invalid timezone is provided
-	ErrInvalidTimeZone = errors.New("invalid timezone, must be between 2 and 32 characters")
-
-	// ErrInvalidPassword is returned when an invalid password is provided
-	ErrInvalidPassword = errors.New("invalid password, must be between 2 and 128 characters")
-
-	// ErrInvalidMaxIdleConns is returned when an invalid max idle connections is provided
-	ErrInvalidMaxIdleConns = errors.New("invalid max idle connections, must be between 0 and 100")
-
-	// ErrInvalidMaxOpenConns is returned when an invalid max open connections is provided
-	ErrInvalidMaxOpenConns = errors.New("invalid max open connections, must be between 0 and 100")
-
-	// ErrDBInvalidMaxPingTimeout is returned when an invalid max ping timeout is provided
-	ErrDBInvalidMaxPingTimeout = errors.New("invalid max ping timeout, must be between 1s and 30s")
-
-	// ErrDBInvalidMaxQueryTimeout is returned when an invalid max query timeout is provided
-	ErrDBInvalidMaxQueryTimeout = errors.New("invalid max query timeout, must be between 1s and 30s")
-
-	// ErrInvalidConnMaxIdleTime is returned when an invalid connection max idle time is provided
-	ErrInvalidConnMaxIdleTime = errors.New("invalid connection max idle time, must be between 1s and 60m")
-
-	// ErrInvalidConnMaxLifetime is returned when an invalid connection max lifetime is provided
-	ErrInvalidConnMaxLifetime = errors.New("invalid connection max lifetime, must be between 1s and 600s")
+	ErrDatabaseInvalidKind            = errors.New("invalid database kind, must be one of [" + ValidDatabaseKind + "]")
+	ErrDatabaseInvalidPort            = errors.New("invalid database port, must be between [" + strconv.Itoa(ValidDatabaseMinPort) + "] and [" + strconv.Itoa(ValidDatabaseMaxPort) + "]")
+	ErrDatabaseInvalidUsername        = errors.New("invalid username, must be between [" + strconv.Itoa(ValidDatabaseUsernameMinLen) + "] and [" + strconv.Itoa(ValidDatabaseUsernameMaxLen) + "] characters")
+	ErrDatabaseInvalidDatabaseName    = errors.New("invalid database name, must be between [" + strconv.Itoa(ValidDatabaseNameMinLen) + "] and [" + strconv.Itoa(ValidDatabaseNameMaxLen) + "] characters")
+	ErrDatabaseInvalidSSLMode         = errors.New("invalid SSL mode, must be one of [" + ValidDatabaseSSLModes + "]")
+	ErrDatabaseInvalidTimeZone        = errors.New("invalid timezone, must be between [" + strconv.Itoa(ValidDatabaseTimeZoneMinLen) + "] and [" + strconv.Itoa(ValidDatabaseTimeZoneMaxLen) + "] characters")
+	ErrDatabaseInvalidPassword        = errors.New("invalid password, must be between [" + strconv.Itoa(ValidDatabasePasswordMinLen) + "] and [" + strconv.Itoa(ValidDatabasePasswordMaxLen) + "] characters")
+	ErrDatabaseInvalidMaxIdleConns    = errors.New("invalid max idle connections, must be between [" + strconv.Itoa(ValidDatabaseMinIdleConns) + "] and [" + strconv.Itoa(ValidDatabaseMaxIdleConns) + "]")
+	ErrDatabaseInvalidMaxOpenConns    = errors.New("invalid max open connections, must be between [" + strconv.Itoa(ValidDatabaseMinOpenConns) + "] and [" + strconv.Itoa(ValidDatabaseMaxOpenConns) + "]")
+	ErrDatabaseInvalidMaxPingTimeout  = errors.New("invalid max ping timeout, must be between [" + ValidDatabaseMinPingTimeout.String() + "] and [" + ValidDatabaseMaxPingTimeout.String() + "]")
+	ErrDatabaseInvalidMaxQueryTimeout = errors.New("invalid max query timeout, must be between [" + ValidDatabaseMinQueryTimeout.String() + "] and [" + ValidDatabaseMaxQueryTimeout.String() + "]")
+	ErrDatabaseInvalidConnMaxIdleTime = errors.New("invalid connection max idle time, must be between [" + ValidDatabaseConnMinIdleTime.String() + "] and [" + ValidDatabaseConnMaxIdleTime.String() + "]")
+	ErrDatabaseInvalidConnMaxLifetime = errors.New("invalid connection max lifetime, must be between [" + ValidDatabaseConnMinLifetime.String() + "] and [" + ValidDatabaseConnMaxLifetime.String() + "]")
 )
 
 const (
-	ValidDatabaseKind = "pgx|postgres"
-	ValidSSLModes     = "disable|allow|prefer|require|verify-ca|verify-full"
+	ValidDatabaseKind            = "pgx|postgres"
+	ValidDatabaseSSLModes        = "disable|allow|prefer|require|verify-ca|verify-full"
+	ValidDatabaseMaxPort         = 65535
+	ValidDatabaseMinPort         = 0
+	ValidDatabaseUsernameMaxLen  = 32
+	ValidDatabaseUsernameMinLen  = 2
+	ValidDatabasePasswordMaxLen  = 128
+	ValidDatabasePasswordMinLen  = 2
+	ValidDatabaseNameMaxLen      = 32
+	ValidDatabaseNameMinLen      = 2
+	ValidDatabaseTimeZoneMaxLen  = 32
+	ValidDatabaseTimeZoneMinLen  = 2
+	ValidDatabaseMaxIdleConns    = 100
+	ValidDatabaseMinIdleConns    = 0
+	ValidDatabaseMaxOpenConns    = 100
+	ValidDatabaseMinOpenConns    = 0
+	ValidDatabaseMaxPingTimeout  = 30 * time.Second
+	ValidDatabaseMinPingTimeout  = 1 * time.Second
+	ValidDatabaseMaxQueryTimeout = 30 * time.Second
+	ValidDatabaseMinQueryTimeout = 1 * time.Second
+	ValidDatabaseConnMaxIdleTime = 600 * time.Minute
+	ValidDatabaseConnMinIdleTime = 1 * time.Second
+	ValidDatabaseConnMaxLifetime = 600 * time.Second
+	ValidDatabaseConnMinLifetime = 1 * time.Second
 
 	DefaultDatabaseKind     = "pgx"
 	DefaultDatabaseAddress  = "localhost"
@@ -103,7 +101,7 @@ func NewDatabaseConfig() *DatabaseConfig {
 		Username: NewField("database.username", "DATABASE_USERNAME", "Database Username", DefaultDatabaseUsername),
 		Password: NewField("database.password", "DATABASE_PASSWORD", "Database Password", DefaultDatabasePassword),
 		Name:     NewField("database.name", "DATABASE_NAME", "Database Name", DefaultDatabaseName),
-		SSLMode:  NewField("database.ssl.mode", "DATABASE_SSL_MODE", "Database SSL Mode. Possible values ["+ValidSSLModes+"]", DefaultDatabaseSSLMode),
+		SSLMode:  NewField("database.ssl.mode", "DATABASE_SSL_MODE", "Database SSL Mode. Possible values ["+ValidDatabaseSSLModes+"]", DefaultDatabaseSSLMode),
 		TimeZone: NewField("database.time.zone", "DATABASE_TIME_ZONE", "Database Time Zone", DefaultDatabaseTimeZone),
 
 		MaxPingTimeout:  NewField("database.max.ping.timeout", "DATABASE_MAX_PING_TIMEOUT", "Database Max Ping Timeout", DefaultDatabaseMaxPingTimeout),
@@ -146,55 +144,55 @@ func (c *DatabaseConfig) ParseEnvVars() {
 // Validate validates the database configuration values
 func (c *DatabaseConfig) Validate() error {
 	if !slices.Contains(strings.Split(ValidDatabaseKind, "|"), c.Kind.Value) {
-		return ErrInvalidDatabaseKind
+		return ErrDatabaseInvalidKind
 	}
 
-	if c.Port.Value <= 0 || c.Port.Value >= 65535 {
-		return ErrInvalidDatabasePort
+	if c.Port.Value <= ValidDatabaseMinPort || c.Port.Value >= ValidDatabaseMaxPort {
+		return ErrDatabaseInvalidPort
 	}
 
-	if c.Username.Value == "" || len(c.Username.Value) < 2 || len(c.Username.Value) > 32 {
-		return ErrUserInvalidUsername
+	if c.Username.Value == "" || len(c.Username.Value) < ValidDatabaseUsernameMinLen || len(c.Username.Value) > ValidDatabaseUsernameMaxLen {
+		return ErrDatabaseInvalidUsername
 	}
 
-	if c.Password.Value == "" || len(c.Password.Value) < 2 || len(c.Password.Value) > 128 {
-		return ErrInvalidPassword
+	if c.Password.Value == "" || len(c.Password.Value) < ValidDatabasePasswordMinLen || len(c.Password.Value) > ValidDatabasePasswordMaxLen {
+		return ErrDatabaseInvalidPassword
 	}
 
-	if c.Name.Value == "" || len(c.Name.Value) < 2 || len(c.Name.Value) > 32 {
-		return ErrInvalidDatabaseName
+	if c.Name.Value == "" || len(c.Name.Value) < ValidDatabaseNameMinLen || len(c.Name.Value) > ValidDatabaseNameMaxLen {
+		return ErrDatabaseInvalidDatabaseName
 	}
 
-	if !slices.Contains(strings.Split(ValidSSLModes, "|"), c.SSLMode.Value) {
-		return ErrInvalidSSLMode
+	if !slices.Contains(strings.Split(ValidDatabaseSSLModes, "|"), c.SSLMode.Value) {
+		return ErrDatabaseInvalidSSLMode
 	}
 
-	if c.TimeZone.Value == "" || len(c.TimeZone.Value) < 2 || len(c.TimeZone.Value) > 32 {
-		return ErrInvalidTimeZone
+	if c.TimeZone.Value == "" || len(c.TimeZone.Value) < ValidDatabaseTimeZoneMinLen || len(c.TimeZone.Value) > ValidDatabaseTimeZoneMaxLen {
+		return ErrDatabaseInvalidTimeZone
 	}
 
-	if c.MaxIdleConns.Value < 0 || c.MaxIdleConns.Value > 100 {
-		return ErrInvalidMaxIdleConns
+	if c.MaxIdleConns.Value < ValidDatabaseMinIdleConns || c.MaxIdleConns.Value > ValidDatabaseMaxIdleConns {
+		return ErrDatabaseInvalidMaxIdleConns
 	}
 
-	if c.MaxOpenConns.Value < 0 || c.MaxOpenConns.Value > 100 {
-		return ErrInvalidMaxOpenConns
+	if c.MaxOpenConns.Value < ValidDatabaseMinOpenConns || c.MaxOpenConns.Value > ValidDatabaseMaxOpenConns {
+		return ErrDatabaseInvalidMaxOpenConns
 	}
 
-	if c.MaxPingTimeout.Value < 1*time.Second || c.MaxPingTimeout.Value > 30*time.Second {
-		return ErrDBInvalidMaxPingTimeout
+	if c.MaxPingTimeout.Value < ValidDatabaseMinPingTimeout || c.MaxPingTimeout.Value > ValidDatabaseMaxPingTimeout {
+		return ErrDatabaseInvalidMaxPingTimeout
 	}
 
-	if c.MaxQueryTimeout.Value < 1*time.Second || c.MaxQueryTimeout.Value > 30*time.Second {
-		return ErrDBInvalidMaxQueryTimeout
+	if c.MaxQueryTimeout.Value < ValidDatabaseMinQueryTimeout || c.MaxQueryTimeout.Value > ValidDatabaseMaxQueryTimeout {
+		return ErrDatabaseInvalidMaxQueryTimeout
 	}
 
-	if c.ConnMaxIdleTime.Value < 1*time.Second || c.ConnMaxIdleTime.Value > 600*time.Minute {
-		return ErrInvalidConnMaxIdleTime
+	if c.ConnMaxIdleTime.Value < ValidDatabaseConnMinIdleTime || c.ConnMaxIdleTime.Value > ValidDatabaseConnMaxIdleTime {
+		return ErrDatabaseInvalidConnMaxIdleTime
 	}
 
-	if c.ConnMaxLifetime.Value < 1*time.Second || c.ConnMaxLifetime.Value > 600*time.Second {
-		return ErrInvalidConnMaxLifetime
+	if c.ConnMaxLifetime.Value < ValidDatabaseConnMinLifetime || c.ConnMaxLifetime.Value > ValidDatabaseConnMaxLifetime {
+		return ErrDatabaseInvalidConnMaxLifetime
 	}
 
 	return nil
