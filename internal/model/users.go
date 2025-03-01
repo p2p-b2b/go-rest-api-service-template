@@ -104,12 +104,16 @@ func (ref *InsertUserInput) Validate() error {
 		return ErrUserInvalidEmail
 	}
 
-	if len(ref.PasswordHash) < ValidUserPasswordMinLength || len(ref.PasswordHash) > ValidUserPasswordMaxLength {
-		return ErrUserInvalidPassword
+	if ref.PasswordHash != "" {
+		if len(ref.PasswordHash) < ValidUserPasswordMinLength || len(ref.PasswordHash) > ValidUserPasswordMaxLength {
+			return ErrUserInvalidPassword
+		}
 	}
 
-	if len(ref.Password) < ValidUserPasswordMinLength {
-		return ErrUserInvalidPassword
+	if ref.Password != "" {
+		if len(ref.Password) < ValidUserPasswordMinLength || len(ref.Password) > ValidUserPasswordMaxLength {
+			return ErrUserInvalidPassword
+		}
 	}
 
 	return nil
@@ -270,7 +274,7 @@ func (req *CreateUserRequest) Validate() error {
 		return ErrUserInvalidEmail
 	}
 
-	if len(req.Password) < ValidUserPasswordMinLength {
+	if len(req.Password) < ValidUserPasswordMinLength || len(req.Password) > ValidUserPasswordMaxLength {
 		return ErrUserInvalidPassword
 	}
 

@@ -21,10 +21,6 @@ import (
 
 // UsersRepository is the interface for the user repository methods.
 type UsersRepository interface {
-	DriverName() string
-	Close() error
-	PingContext(ctx context.Context) error
-	Conn(ctx context.Context) (*sql.Conn, error)
 	Insert(ctx context.Context, input *model.InsertUserInput) error
 	Update(ctx context.Context, input *model.UpdateUserInput) error
 	Delete(ctx context.Context, input *model.DeleteUserInput) error

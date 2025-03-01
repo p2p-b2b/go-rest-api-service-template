@@ -451,7 +451,7 @@ func (ref *UsersHandler) update(w http.ResponseWriter, r *http.Request) {
 //	@Tags			Users
 //	@Param			user_id	path	string	true	"The user ID in UUID format"	Format(uuid)
 //	@Produce		json
-//	@Success		204	{object}	respond.HTTPMessage
+//	@Success		200	{object}	respond.HTTPMessage
 //	@Failure		400	{object}	respond.HTTPMessage
 //	@Failure		500	{object}	respond.HTTPMessage
 //	@Router			/users/{user_id} [delete]
@@ -513,7 +513,7 @@ func (ref *UsersHandler) delete(w http.ResponseWriter, r *http.Request) {
 		),
 	)
 
-	respond.WriteJSONMessage(w, r, http.StatusNoContent, "User deleted")
+	respond.WriteJSONMessage(w, r, http.StatusOK, "User deleted")
 }
 
 // list Return a paginated list of users
