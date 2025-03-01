@@ -11,8 +11,8 @@ import (
 
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/http/middleware"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/http/respond"
+	"github.com/p2p-b2b/go-rest-api-service-template/internal/model"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/o11y"
-	"github.com/p2p-b2b/go-rest-api-service-template/internal/service"
 	"go.opentelemetry.io/otel/metric"
 )
 
@@ -25,7 +25,7 @@ var (
 
 // HealthService represents the service for the health.
 type HealthService interface {
-	HealthCheck(ctx context.Context) (service.Health, error)
+	HealthCheck(ctx context.Context) (model.Health, error)
 }
 
 // HealthHandler represents the handler for the health.
@@ -96,30 +96,16 @@ func (ref *HealthHandler) RegisterRoutes(mux *http.ServeMux, middlewares ...midd
 //	@Description	Check health status of the service pinging the database and go metrics
 //	@Tags			Health
 //	@Produce		json
-//	@Success		200	{object}	Health
+//	@Success		200	{object}	model.Health
 //	@Failure		500	{object}	respond.HTTPMessage
 //	@Router			/health/status [get]
 func (ref *HealthHandler) getStatus(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
 	defer cancel()
-	sHealth, err := ref.service.HealthCheck(ctx)
+	health, err := ref.service.HealthCheck(ctx)
 	if err != nil {
 		respond.WriteJSONMessage(w, r, http.StatusInternalServerError, ErrInternalServerError.Error())
 		return
-	}
-
-	health := &Health{
-		Status: sHealth.Status.String(),
-		Checks: make([]Check, len(sHealth.Checks)),
-	}
-
-	for i, sCheck := range sHealth.Checks {
-		health.Checks[i] = Check{
-			Name:   sCheck.Name,
-			Kind:   sCheck.Kind,
-			Status: sCheck.Status.String(),
-			Data:   sCheck.Data,
-		}
 	}
 
 	if err := respond.WriteJSONData(w, http.StatusOK, health); err != nil {

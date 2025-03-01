@@ -14,7 +14,7 @@ import (
 	reflect "reflect"
 
 	uuid "github.com/google/uuid"
-	service "github.com/p2p-b2b/go-rest-api-service-template/internal/service"
+	model "github.com/p2p-b2b/go-rest-api-service-template/internal/model"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -43,7 +43,7 @@ func (m *MockUsersService) EXPECT() *MockUsersServiceMockRecorder {
 }
 
 // Create mocks base method.
-func (m *MockUsersService) Create(ctx context.Context, input *service.CreateUserInput) error {
+func (m *MockUsersService) Create(ctx context.Context, input *model.CreateUserInput) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Create", ctx, input)
 	ret0, _ := ret[0].(error)
@@ -57,7 +57,7 @@ func (mr *MockUsersServiceMockRecorder) Create(ctx, input any) *gomock.Call {
 }
 
 // Delete mocks base method.
-func (m *MockUsersService) Delete(ctx context.Context, input *service.DeleteUserInput) error {
+func (m *MockUsersService) Delete(ctx context.Context, input *model.DeleteUserInput) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Delete", ctx, input)
 	ret0, _ := ret[0].(error)
@@ -71,10 +71,10 @@ func (mr *MockUsersServiceMockRecorder) Delete(ctx, input any) *gomock.Call {
 }
 
 // GetByEmail mocks base method.
-func (m *MockUsersService) GetByEmail(ctx context.Context, email string) (*service.User, error) {
+func (m *MockUsersService) GetByEmail(ctx context.Context, email string) (*model.User, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetByEmail", ctx, email)
-	ret0, _ := ret[0].(*service.User)
+	ret0, _ := ret[0].(*model.User)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -86,10 +86,10 @@ func (mr *MockUsersServiceMockRecorder) GetByEmail(ctx, email any) *gomock.Call 
 }
 
 // GetByID mocks base method.
-func (m *MockUsersService) GetByID(ctx context.Context, id uuid.UUID) (*service.User, error) {
+func (m *MockUsersService) GetByID(ctx context.Context, id uuid.UUID) (*model.User, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetByID", ctx, id)
-	ret0, _ := ret[0].(*service.User)
+	ret0, _ := ret[0].(*model.User)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -101,10 +101,10 @@ func (mr *MockUsersServiceMockRecorder) GetByID(ctx, id any) *gomock.Call {
 }
 
 // List mocks base method.
-func (m *MockUsersService) List(ctx context.Context, input *service.ListUsersInput) (*service.ListUsersOutput, error) {
+func (m *MockUsersService) List(ctx context.Context, input *model.ListUsersInput) (*model.ListUsersOutput, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "List", ctx, input)
-	ret0, _ := ret[0].(*service.ListUsersOutput)
+	ret0, _ := ret[0].(*model.ListUsersOutput)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -116,7 +116,7 @@ func (mr *MockUsersServiceMockRecorder) List(ctx, input any) *gomock.Call {
 }
 
 // Update mocks base method.
-func (m *MockUsersService) Update(ctx context.Context, input *service.UpdateUserInput) error {
+func (m *MockUsersService) Update(ctx context.Context, input *model.UpdateUserInput) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Update", ctx, input)
 	ret0, _ := ret[0].(error)

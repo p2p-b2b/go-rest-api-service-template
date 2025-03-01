@@ -15,7 +15,7 @@ import (
 	reflect "reflect"
 
 	uuid "github.com/google/uuid"
-	repository "github.com/p2p-b2b/go-rest-api-service-template/internal/repository"
+	model "github.com/p2p-b2b/go-rest-api-service-template/internal/model"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -73,7 +73,7 @@ func (mr *MockUsersRepositoryMockRecorder) Conn(ctx any) *gomock.Call {
 }
 
 // Delete mocks base method.
-func (m *MockUsersRepository) Delete(ctx context.Context, input *repository.DeleteUserInput) error {
+func (m *MockUsersRepository) Delete(ctx context.Context, input *model.DeleteUserInput) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Delete", ctx, input)
 	ret0, _ := ret[0].(error)
@@ -101,7 +101,7 @@ func (mr *MockUsersRepositoryMockRecorder) DriverName() *gomock.Call {
 }
 
 // Insert mocks base method.
-func (m *MockUsersRepository) Insert(ctx context.Context, input *repository.InsertUserInput) error {
+func (m *MockUsersRepository) Insert(ctx context.Context, input *model.InsertUserInput) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Insert", ctx, input)
 	ret0, _ := ret[0].(error)
@@ -129,10 +129,10 @@ func (mr *MockUsersRepositoryMockRecorder) PingContext(ctx any) *gomock.Call {
 }
 
 // Select mocks base method.
-func (m *MockUsersRepository) Select(ctx context.Context, input *repository.SelectUsersInput) (*repository.SelectUsersOutput, error) {
+func (m *MockUsersRepository) Select(ctx context.Context, input *model.SelectUsersInput) (*model.SelectUsersOutput, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Select", ctx, input)
-	ret0, _ := ret[0].(*repository.SelectUsersOutput)
+	ret0, _ := ret[0].(*model.SelectUsersOutput)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -144,10 +144,10 @@ func (mr *MockUsersRepositoryMockRecorder) Select(ctx, input any) *gomock.Call {
 }
 
 // SelectByEmail mocks base method.
-func (m *MockUsersRepository) SelectByEmail(ctx context.Context, email string) (*repository.User, error) {
+func (m *MockUsersRepository) SelectByEmail(ctx context.Context, email string) (*model.User, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SelectByEmail", ctx, email)
-	ret0, _ := ret[0].(*repository.User)
+	ret0, _ := ret[0].(*model.User)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -159,10 +159,10 @@ func (mr *MockUsersRepositoryMockRecorder) SelectByEmail(ctx, email any) *gomock
 }
 
 // SelectByID mocks base method.
-func (m *MockUsersRepository) SelectByID(ctx context.Context, id uuid.UUID) (*repository.User, error) {
+func (m *MockUsersRepository) SelectByID(ctx context.Context, id uuid.UUID) (*model.User, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SelectByID", ctx, id)
-	ret0, _ := ret[0].(*repository.User)
+	ret0, _ := ret[0].(*model.User)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -174,7 +174,7 @@ func (mr *MockUsersRepositoryMockRecorder) SelectByID(ctx, id any) *gomock.Call 
 }
 
 // Update mocks base method.
-func (m *MockUsersRepository) Update(ctx context.Context, input *repository.UpdateUserInput) error {
+func (m *MockUsersRepository) Update(ctx context.Context, input *model.UpdateUserInput) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Update", ctx, input)
 	ret0, _ := ret[0].(error)

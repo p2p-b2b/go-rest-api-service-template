@@ -12,10 +12,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/http/middleware"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/http/respond"
+	"github.com/p2p-b2b/go-rest-api-service-template/internal/model"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/o11y"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/paginator"
-	"github.com/p2p-b2b/go-rest-api-service-template/internal/repository"
-	"github.com/p2p-b2b/go-rest-api-service-template/internal/service"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/metric"
@@ -25,12 +24,12 @@ import (
 
 // UsersService represents the service for the user.
 type UsersService interface {
-	GetByID(ctx context.Context, id uuid.UUID) (*service.User, error)
-	GetByEmail(ctx context.Context, email string) (*service.User, error)
-	Create(ctx context.Context, input *service.CreateUserInput) error
-	Update(ctx context.Context, input *service.UpdateUserInput) error
-	Delete(ctx context.Context, input *service.DeleteUserInput) error
-	List(ctx context.Context, input *service.ListUsersInput) (*service.ListUsersOutput, error)
+	GetByID(ctx context.Context, id uuid.UUID) (*model.User, error)
+	GetByEmail(ctx context.Context, email string) (*model.User, error)
+	Create(ctx context.Context, input *model.CreateUserInput) error
+	Update(ctx context.Context, input *model.UpdateUserInput) error
+	Delete(ctx context.Context, input *model.DeleteUserInput) error
+	List(ctx context.Context, input *model.ListUsersInput) (*model.ListUsersOutput, error)
 }
 
 // UsersHandler represents the http handler for the user.
@@ -56,12 +55,12 @@ type UsersHandler struct {
 func NewUsersHandler(conf UsersHandlerConf) (*UsersHandler, error) {
 	if conf.Service == nil {
 		slog.Error("service is required")
-		return nil, ErrUserInvalidService
+		return nil, ErrModelServiceRequired
 	}
 
 	if conf.OT == nil {
 		slog.Error("open telemetry is required")
-		return nil, ErrUserInvalidOpenTelemetry
+		return nil, ErrOpenTelemetryRequired
 	}
 
 	uh := &UsersHandler{
@@ -106,7 +105,7 @@ func (ref *UsersHandler) RegisterRoutes(mux *http.ServeMux, middlewares ...middl
 //	@Tags			Users
 //	@Produce		json
 //	@Param			user_id	path		string	true	"The user ID in UUID format"	Format(uuid)
-//	@Success		200		{object}	User
+//	@Success		200		{object}	model.User
 //	@Failure		400		{object}	respond.HTTPMessage
 //	@Failure		404		{object}	respond.HTTPMessage
 //	@Failure		500		{object}	respond.HTTPMessage
@@ -148,7 +147,7 @@ func (ref *UsersHandler) getByID(w http.ResponseWriter, r *http.Request) {
 		span.RecordError(err)
 		slog.Error("handler.Users.getByID", "error", err.Error())
 
-		if errors.Is(err, service.ErrUserNotFound) {
+		if errors.Is(err, model.ErrUserNotFound) {
 			ref.metrics.handlerCalls.Add(ctx, 1,
 				metric.WithAttributes(
 					attribute.String("code", fmt.Sprintf("%d", http.StatusNotFound)),
@@ -170,7 +169,7 @@ func (ref *UsersHandler) getByID(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// create user from service.User
-	user := &User{
+	user := &model.User{
 		ID:        sUser.ID,
 		FirstName: sUser.FirstName,
 		LastName:  sUser.LastName,
@@ -213,7 +212,7 @@ func (ref *UsersHandler) getByID(w http.ResponseWriter, r *http.Request) {
 //	@Tags			Users
 //	@Accept			json
 //	@Produce		json
-//	@Param			user	body		CreateUserRequest	true	"CreateUserRequest"	Format(json)
+//	@Param			user	body		model.CreateUserRequest	true	"CreateUserRequest"	Format(json)
 //	@Success		201		{object}	respond.HTTPMessage
 //	@Failure		400		{object}	respond.HTTPMessage
 //	@Failure		409		{object}	respond.HTTPMessage
@@ -235,7 +234,7 @@ func (ref *UsersHandler) create(w http.ResponseWriter, r *http.Request) {
 		attribute.String("http.path", r.URL.Path[:strings.LastIndex(r.URL.Path, "/")]),
 	}
 
-	var req CreateUserRequest
+	var req model.CreateUserRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		slog.Error("handler.Users.create", "error", err.Error())
 		span.SetStatus(codes.Error, err.Error())
@@ -268,7 +267,7 @@ func (ref *UsersHandler) create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user := &service.CreateUserInput{
+	user := &model.CreateUserInput{
 		ID:        req.ID,
 		FirstName: req.FirstName,
 		LastName:  req.LastName,
@@ -281,8 +280,8 @@ func (ref *UsersHandler) create(w http.ResponseWriter, r *http.Request) {
 		span.SetStatus(codes.Error, err.Error())
 		span.RecordError(err)
 
-		if errors.Is(err, service.ErrUserIDAlreadyExists) ||
-			errors.Is(err, service.ErrUserEmailAlreadyExists) {
+		if errors.Is(err, model.ErrUserIDAlreadyExists) ||
+			errors.Is(err, model.ErrUserEmailAlreadyExists) {
 
 			ref.metrics.handlerCalls.Add(ctx, 1,
 				metric.WithAttributes(
@@ -326,8 +325,8 @@ func (ref *UsersHandler) create(w http.ResponseWriter, r *http.Request) {
 //	@Tags			Users
 //	@Accept			json
 //	@Produce		json
-//	@Param			user_id	path		string				true	"The user ID in UUID format"	Format(uuid)
-//	@Param			user	body		UpdateUserRequest	true	"User"							Format(json)
+//	@Param			user_id	path		string					true	"The user ID in UUID format"	Format(uuid)
+//	@Param			user	body		model.UpdateUserRequest	true	"User"							Format(json)
 //	@Success		200		{object}	respond.HTTPMessage
 //	@Failure		400		{object}	respond.HTTPMessage
 //	@Failure		409		{object}	respond.HTTPMessage
@@ -364,7 +363,7 @@ func (ref *UsersHandler) update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var req UpdateUserRequest
+	var req model.UpdateUserRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		span.SetStatus(codes.Error, err.Error())
 		span.RecordError(err)
@@ -394,7 +393,7 @@ func (ref *UsersHandler) update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user := service.UpdateUserInput{
+	user := model.UpdateUserInput{
 		ID:        id,
 		FirstName: req.FirstName,
 		LastName:  req.LastName,
@@ -408,8 +407,8 @@ func (ref *UsersHandler) update(w http.ResponseWriter, r *http.Request) {
 		span.RecordError(ErrInternalServerError)
 		slog.Error("handler.Users.update", "error", ErrInternalServerError.Error())
 
-		if errors.Is(err, service.ErrUserEmailAlreadyExists) ||
-			errors.Is(err, service.ErrUserNotFound) {
+		if errors.Is(err, model.ErrUserEmailAlreadyExists) ||
+			errors.Is(err, model.ErrUserNotFound) {
 			ref.metrics.handlerCalls.Add(ctx, 1,
 				metric.WithAttributes(
 					append(metricCommonAttributes, attribute.String("code", fmt.Sprintf("%d", http.StatusConflict)))...,
@@ -487,7 +486,7 @@ func (ref *UsersHandler) delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user := service.DeleteUserInput{
+	user := model.DeleteUserInput{
 		ID: id,
 	}
 
@@ -530,7 +529,7 @@ func (ref *UsersHandler) delete(w http.ResponseWriter, r *http.Request) {
 //	@Param			next_token	query		string	false	"Next cursor"																			Format(string)
 //	@Param			prev_token	query		string	false	"Previous cursor"																		Format(string)
 //	@Param			limit		query		int		false	"Limit"																					Format(int)
-//	@Success		200			{object}	ListUsersResponse
+//	@Success		200			{object}	model.ListUsersResponse
 //	@Failure		400			{object}	respond.HTTPMessage
 //	@Failure		500			{object}	respond.HTTPMessage
 //	@Router			/users [get]
@@ -562,9 +561,9 @@ func (ref *UsersHandler) list(w http.ResponseWriter, r *http.Request) {
 
 	sort, filter, fields, nextToken, prevToken, limit, err := parseListQueryParams(
 		params,
-		repository.UserPartialFields,
-		repository.UserFilterFields,
-		repository.UserSortFields,
+		model.UserPartialFields,
+		model.UserFilterFields,
+		model.UserSortFields,
 	)
 	if err != nil {
 		span.SetStatus(codes.Error, err.Error())
@@ -580,7 +579,7 @@ func (ref *UsersHandler) list(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sParams := &service.ListUsersInput{
+	sParams := &model.ListUsersInput{
 		Sort:   sort,
 		Filter: filter,
 		Fields: fields,
@@ -606,13 +605,13 @@ func (ref *UsersHandler) list(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	users := &ListUsersResponse{
-		Items:     make([]*User, len(sUsers.Items)),
+	users := &model.ListUsersResponse{
+		Items:     make([]*model.User, len(sUsers.Items)),
 		Paginator: sUsers.Paginator,
 	}
 
 	for i, sUser := range sUsers.Items {
-		users.Items[i] = &User{
+		users.Items[i] = &model.User{
 			ID:        sUser.ID,
 			FirstName: sUser.FirstName,
 			LastName:  sUser.LastName,

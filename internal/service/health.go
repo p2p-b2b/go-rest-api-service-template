@@ -7,6 +7,7 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/p2p-b2b/go-rest-api-service-template/internal/model"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/o11y"
 	"go.opentelemetry.io/otel/metric"
 )
@@ -39,11 +40,11 @@ type HealthService struct {
 // NewHealthService creates a new HealthService.
 func NewHealthService(conf HealthServiceConf) (*HealthService, error) {
 	if conf.Repository == nil {
-		return nil, ErrInvalidRepository
+		return nil, ErrRepositoryRequired
 	}
 
 	if conf.OT == nil {
-		return nil, ErrInvalidOpenTelemetry
+		return nil, ErrOpenTelemetryRequired
 	}
 
 	service := &HealthService{
@@ -69,26 +70,26 @@ func NewHealthService(conf HealthServiceConf) (*HealthService, error) {
 }
 
 // HealthCheck verifies a connection to the repository is still alive.
-func (ref *HealthService) HealthCheck(ctx context.Context) (Health, error) {
+func (ref *HealthService) HealthCheck(ctx context.Context) (model.Health, error) {
 	// database
-	dbStatus := StatusUp
+	dbStatus := model.StatusUp
 	err := ref.repository.PingContext(ctx)
 	if err != nil {
 		slog.Error("service.Health.HealthCheck", "error", err)
-		dbStatus = StatusDown
+		dbStatus = model.StatusDown
 	}
 
-	database := Check{
+	database := model.Check{
 		Name:   "database",
 		Kind:   ref.repository.DriverName(),
 		Status: dbStatus,
 	}
 
 	// runtime
-	rtStatus := StatusUp
+	rtStatus := model.StatusUp
 	mem := &runtime.MemStats{}
 	runtime.ReadMemStats(mem)
-	rt := Check{
+	rt := model.Check{
 		Name:   "runtime",
 		Kind:   "go",
 		Status: rtStatus,
@@ -104,9 +105,9 @@ func (ref *HealthService) HealthCheck(ctx context.Context) (Health, error) {
 	// and operator
 	allStatus := dbStatus && rtStatus
 
-	health := Health{
+	health := model.Health{
 		Status: allStatus,
-		Checks: []Check{
+		Checks: []model.Check{
 			database,
 			rt,
 		},

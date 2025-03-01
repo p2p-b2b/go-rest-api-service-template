@@ -1,5 +1,22 @@
 definitions:
-  handler.Check:
+  handler.Version:
+    properties:
+      build_date:
+        type: string
+      git_branch:
+        type: string
+      git_commit:
+        type: string
+      go_version:
+        type: string
+      go_version_arch:
+        type: string
+      go_version_os:
+        type: string
+      version:
+        type: string
+    type: object
+  model.Check:
     description: Health check of the service
     properties:
       data:
@@ -15,11 +32,11 @@ definitions:
         format: string
         type: string
       status:
-        example: "true"
+        example: true
         format: boolean
-        type: string
+        type: boolean
     type: object
-  handler.CreateUserRequest:
+  model.CreateUserRequest:
     description: CreateUserRequest represents the input for the CreateUser method
     properties:
       email:
@@ -43,30 +60,30 @@ definitions:
         format: string
         type: string
     type: object
-  handler.Health:
+  model.Health:
     description: Health check of the service
     properties:
       checks:
         items:
-          $ref: '#/definitions/handler.Check'
+          $ref: '#/definitions/model.Check'
           format: array
         type: array
       status:
-        example: "true"
+        example: true
         format: boolean
-        type: string
+        type: boolean
     type: object
-  handler.ListUsersResponse:
+  model.ListUsersResponse:
     description: ListUsersResponse represents a list of users
     properties:
       items:
         items:
-          $ref: '#/definitions/handler.User'
+          $ref: '#/definitions/model.User'
         type: array
       paginator:
         $ref: '#/definitions/paginator.Paginator'
     type: object
-  handler.UpdateUserRequest:
+  model.UpdateUserRequest:
     description: UpdateUserRequest represents the input for the UpdateUser method
     properties:
       disabled:
@@ -90,7 +107,7 @@ definitions:
         format: string
         type: string
     type: object
-  handler.User:
+  model.User:
     description: User represents a user entity
     properties:
       created_at:
@@ -120,23 +137,6 @@ definitions:
       updated_at:
         example: "2021-01-01T00:00:00Z"
         format: date-time
-        type: string
-    type: object
-  handler.Version:
-    properties:
-      build_date:
-        type: string
-      git_branch:
-        type: string
-      git_commit:
-        type: string
-      go_version:
-        type: string
-      go_version_arch:
-        type: string
-      go_version_os:
-        type: string
-      version:
         type: string
     type: object
   paginator.Paginator:
@@ -203,7 +203,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/handler.Health'
+            $ref: '#/definitions/model.Health'
         "500":
           description: Internal Server Error
           schema:
@@ -253,7 +253,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/handler.ListUsersResponse'
+            $ref: '#/definitions/model.ListUsersResponse'
         "400":
           description: Bad Request
           schema:
@@ -279,7 +279,7 @@ paths:
         name: user
         required: true
         schema:
-          $ref: '#/definitions/handler.CreateUserRequest'
+          $ref: '#/definitions/model.CreateUserRequest'
       produces:
       - application/json
       responses:
@@ -347,7 +347,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/handler.User'
+            $ref: '#/definitions/model.User'
         "400":
           description: Bad Request
           schema:
@@ -381,7 +381,7 @@ paths:
         name: user
         required: true
         schema:
-          $ref: '#/definitions/handler.UpdateUserRequest'
+          $ref: '#/definitions/model.UpdateUserRequest'
       produces:
       - application/json
       responses:

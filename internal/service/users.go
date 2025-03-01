@@ -10,8 +10,8 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
+	"github.com/p2p-b2b/go-rest-api-service-template/internal/model"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/o11y"
-	"github.com/p2p-b2b/go-rest-api-service-template/internal/repository"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/metric"
@@ -25,12 +25,12 @@ type UsersRepository interface {
 	Close() error
 	PingContext(ctx context.Context) error
 	Conn(ctx context.Context) (*sql.Conn, error)
-	Insert(ctx context.Context, input *repository.InsertUserInput) error
-	Update(ctx context.Context, input *repository.UpdateUserInput) error
-	Delete(ctx context.Context, input *repository.DeleteUserInput) error
-	SelectByID(ctx context.Context, id uuid.UUID) (*repository.User, error)
-	SelectByEmail(ctx context.Context, email string) (*repository.User, error)
-	Select(ctx context.Context, input *repository.SelectUsersInput) (*repository.SelectUsersOutput, error)
+	Insert(ctx context.Context, input *model.InsertUserInput) error
+	Update(ctx context.Context, input *model.UpdateUserInput) error
+	Delete(ctx context.Context, input *model.DeleteUserInput) error
+	SelectByID(ctx context.Context, id uuid.UUID) (*model.User, error)
+	SelectByEmail(ctx context.Context, email string) (*model.User, error)
+	Select(ctx context.Context, input *model.SelectUsersInput) (*model.SelectUsersOutput, error)
 }
 
 type UsersServiceConf struct {
@@ -53,11 +53,11 @@ type UsersService struct {
 // NewUsersService creates a new UsersService.
 func NewUsersService(conf UsersServiceConf) (*UsersService, error) {
 	if conf.Repository == nil {
-		return nil, ErrInvalidRepository
+		return nil, ErrRepositoryRequired
 	}
 
 	if conf.OT == nil {
-		return nil, ErrUserInvalidOpenTelemetry
+		return nil, ErrOpenTelemetryRequired
 	}
 
 	u := &UsersService{
@@ -83,7 +83,7 @@ func NewUsersService(conf UsersServiceConf) (*UsersService, error) {
 }
 
 // GetByID returns the user with the specified ID.
-func (ref *UsersService) GetByID(ctx context.Context, id uuid.UUID) (*User, error) {
+func (ref *UsersService) GetByID(ctx context.Context, id uuid.UUID) (*model.User, error) {
 	ctx, span := ref.ot.Traces.Tracer.Start(ctx, "service.Users.GetByID")
 	defer span.End()
 
@@ -97,20 +97,20 @@ func (ref *UsersService) GetByID(ctx context.Context, id uuid.UUID) (*User, erro
 	}
 
 	if id == uuid.Nil {
-		slog.Error("service.Users.GetByID", "error", ErrUserInvalidID)
-		span.SetStatus(codes.Error, ErrUserInvalidID.Error())
-		span.RecordError(ErrUserInvalidID)
+		slog.Error("service.Users.GetByID", "error", model.ErrUserInvalidID)
+		span.SetStatus(codes.Error, model.ErrUserInvalidID.Error())
+		span.RecordError(model.ErrUserInvalidID)
 		ref.metrics.serviceCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				append(metricCommonAttributes, attribute.String("successful", "false"))...,
 			),
 		)
 
-		return nil, ErrUserInvalidID
+		return nil, model.ErrUserInvalidID
 	}
 
 	slog.Debug("service.Users.GetByID", "user.id", id)
-	repOut, err := ref.repository.SelectByID(ctx, id)
+	out, err := ref.repository.SelectByID(ctx, id)
 	if err != nil {
 		span.SetStatus(codes.Error, err.Error())
 		span.RecordError(err)
@@ -121,37 +121,27 @@ func (ref *UsersService) GetByID(ctx context.Context, id uuid.UUID) (*User, erro
 			),
 		)
 
-		if errors.Is(err, sql.ErrNoRows) || errors.Is(err, repository.ErrUserNotFound) {
-			return nil, ErrUserNotFound
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, model.ErrUserNotFound
 		}
 
 		return nil, err
 	}
 
-	user := &User{
-		ID:        repOut.ID,
-		FirstName: repOut.FirstName,
-		LastName:  repOut.LastName,
-		Email:     repOut.Email,
-		Disabled:  repOut.Disabled,
-		CreatedAt: repOut.CreatedAt,
-		UpdatedAt: repOut.UpdatedAt,
-	}
-
-	slog.Debug("service.Users.GetByID", "user.email", user.Email)
+	slog.Debug("service.Users.GetByID", "user.email", out.Email)
 	span.SetStatus(codes.Ok, "user found")
-	span.SetAttributes(attribute.String("user.email", user.Email))
+	span.SetAttributes(attribute.String("user.email", out.Email))
 	ref.metrics.serviceCalls.Add(ctx, 1,
 		metric.WithAttributes(
 			append(metricCommonAttributes, attribute.String("successful", "true"))...,
 		),
 	)
 
-	return user, nil
+	return out, nil
 }
 
 // GetByEmail returns the user with the specified email.
-func (ref *UsersService) GetByEmail(ctx context.Context, email string) (*User, error) {
+func (ref *UsersService) GetByEmail(ctx context.Context, email string) (*model.User, error) {
 	ctx, span := ref.ot.Traces.Tracer.Start(ctx, "service.Users.GetByEmail")
 	defer span.End()
 
@@ -165,20 +155,20 @@ func (ref *UsersService) GetByEmail(ctx context.Context, email string) (*User, e
 	}
 
 	if email == "" {
-		slog.Error("service.Users.GetByEmail", "error", ErrUserInvalidEmail)
-		span.SetStatus(codes.Error, ErrUserInvalidEmail.Error())
-		span.RecordError(ErrUserInvalidEmail)
+		slog.Error("service.Users.GetByEmail", "error", model.ErrUserInvalidEmail)
+		span.SetStatus(codes.Error, model.ErrUserInvalidEmail.Error())
+		span.RecordError(model.ErrUserInvalidEmail)
 		ref.metrics.serviceCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				append(metricCommonAttributes, attribute.String("successful", "false"))...,
 			),
 		)
 
-		return nil, ErrUserInvalidEmail
+		return nil, model.ErrUserInvalidEmail
 	}
 
 	slog.Debug("service.Users.GetByEmail", "user.email", email)
-	repOut, err := ref.repository.SelectByEmail(ctx, email)
+	out, err := ref.repository.SelectByEmail(ctx, email)
 	if err != nil {
 		span.SetStatus(codes.Error, err.Error())
 		span.RecordError(err)
@@ -190,37 +180,27 @@ func (ref *UsersService) GetByEmail(ctx context.Context, email string) (*User, e
 		)
 
 		if errors.Is(err, sql.ErrNoRows) ||
-			errors.Is(err, repository.ErrUserNotFound) {
-			return nil, ErrUserNotFound
+			errors.Is(err, model.ErrUserNotFound) {
+			return nil, model.ErrUserNotFound
 		}
 
 		return nil, err
 	}
 
-	user := &User{
-		ID:        repOut.ID,
-		FirstName: repOut.FirstName,
-		LastName:  repOut.LastName,
-		Email:     repOut.Email,
-		Disabled:  repOut.Disabled,
-		CreatedAt: repOut.CreatedAt,
-		UpdatedAt: repOut.UpdatedAt,
-	}
-
-	slog.Debug("service.Users.GetByEmail", "user.email", user.Email)
+	slog.Debug("service.Users.GetByEmail", "user.email", out.Email)
 	span.SetStatus(codes.Ok, "user found")
-	span.SetAttributes(attribute.String("user.email", user.Email))
+	span.SetAttributes(attribute.String("user.email", out.Email))
 	ref.metrics.serviceCalls.Add(ctx, 1,
 		metric.WithAttributes(
 			append(metricCommonAttributes, attribute.String("successful", "true"))...,
 		),
 	)
 
-	return user, nil
+	return out, nil
 }
 
 // Create inserts a new user into the database.
-func (ref *UsersService) Create(ctx context.Context, input *CreateUserInput) error {
+func (ref *UsersService) Create(ctx context.Context, input *model.CreateUserInput) error {
 	ctx, span := ref.ot.Traces.Tracer.Start(ctx, "service.Users.Create")
 	defer span.End()
 
@@ -280,7 +260,7 @@ func (ref *UsersService) Create(ctx context.Context, input *CreateUserInput) err
 		return err
 	}
 
-	rParams := &repository.InsertUserInput{
+	rParams := &model.InsertUserInput{
 		ID:           input.ID,
 		FirstName:    input.FirstName,
 		LastName:     input.LastName,
@@ -299,14 +279,6 @@ func (ref *UsersService) Create(ctx context.Context, input *CreateUserInput) err
 			),
 		)
 
-		if errors.Is(err, repository.ErrUserEmailAlreadyExists) {
-			return ErrUserEmailAlreadyExists
-		}
-
-		if errors.Is(err, repository.ErrUserIDAlreadyExists) {
-			return ErrUserIDAlreadyExists
-		}
-
 		return err
 	}
 
@@ -318,11 +290,12 @@ func (ref *UsersService) Create(ctx context.Context, input *CreateUserInput) err
 			append(metricCommonAttributes, attribute.String("successful", "true"))...,
 		),
 	)
+
 	return nil
 }
 
 // Update updates the user with the specified ID.
-func (ref *UsersService) Update(ctx context.Context, input *UpdateUserInput) error {
+func (ref *UsersService) Update(ctx context.Context, input *model.UpdateUserInput) error {
 	ctx, span := ref.ot.Traces.Tracer.Start(ctx, "service.Users.Update")
 	defer span.End()
 
@@ -363,7 +336,7 @@ func (ref *UsersService) Update(ctx context.Context, input *UpdateUserInput) err
 		return err
 	}
 
-	rParams := &repository.UpdateUserInput{
+	rParams := &model.UpdateUserInput{
 		ID:        input.ID,
 		FirstName: input.FirstName,
 		LastName:  input.LastName,
@@ -372,7 +345,7 @@ func (ref *UsersService) Update(ctx context.Context, input *UpdateUserInput) err
 	}
 
 	// update the password if it is provided
-	if input.Password != nil && len(*input.Password) < ValidUserPasswordMinLength {
+	if input.Password != nil && len(*input.Password) < model.ValidUserPasswordMinLength {
 
 		hashPwd, err := hashAndSaltPassword(*input.Password)
 		if err != nil {
@@ -402,14 +375,6 @@ func (ref *UsersService) Update(ctx context.Context, input *UpdateUserInput) err
 			),
 		)
 
-		if errors.Is(err, repository.ErrUserNotFound) {
-			return ErrUserNotFound
-		}
-
-		if errors.Is(err, repository.ErrUserEmailAlreadyExists) {
-			return ErrUserEmailAlreadyExists
-		}
-
 		return err
 	}
 
@@ -426,7 +391,7 @@ func (ref *UsersService) Update(ctx context.Context, input *UpdateUserInput) err
 }
 
 // Delete deletes the user with the specified ID.
-func (ref *UsersService) Delete(ctx context.Context, input *DeleteUserInput) error {
+func (ref *UsersService) Delete(ctx context.Context, input *model.DeleteUserInput) error {
 	ctx, span := ref.ot.Traces.Tracer.Start(ctx, "service.Users.Delete")
 	defer span.End()
 
@@ -451,7 +416,7 @@ func (ref *UsersService) Delete(ctx context.Context, input *DeleteUserInput) err
 		return ErrInputIsNil
 	}
 
-	rParams := &repository.DeleteUserInput{
+	rParams := &model.DeleteUserInput{
 		ID: input.ID,
 	}
 
@@ -466,10 +431,6 @@ func (ref *UsersService) Delete(ctx context.Context, input *DeleteUserInput) err
 				append(metricCommonAttributes, attribute.String("successful", "false"))...,
 			),
 		)
-
-		if errors.Is(err, repository.ErrUserNotFound) {
-			return ErrUserNotFound
-		}
 
 		return err
 	}
@@ -486,7 +447,7 @@ func (ref *UsersService) Delete(ctx context.Context, input *DeleteUserInput) err
 }
 
 // List returns a list of users.
-func (ref *UsersService) List(ctx context.Context, input *ListUsersInput) (*ListUsersOutput, error) {
+func (ref *UsersService) List(ctx context.Context, input *model.ListUsersInput) (*model.ListUsersOutput, error) {
 	ctx, span := ref.ot.Traces.Tracer.Start(ctx, "service.Users.List")
 	defer span.End()
 
@@ -502,7 +463,7 @@ func (ref *UsersService) List(ctx context.Context, input *ListUsersInput) (*List
 		attribute.String("component", "service.Users.List"),
 	}
 
-	rParams := &repository.SelectUsersInput{
+	rParams := &model.SelectUsersInput{
 		Sort:      input.Sort,
 		Filter:    input.Filter,
 		Fields:    input.Fields,
@@ -511,7 +472,7 @@ func (ref *UsersService) List(ctx context.Context, input *ListUsersInput) (*List
 
 	slog.Debug("service.Users.List", "qParams", rParams)
 
-	repOut, err := ref.repository.Select(ctx, rParams)
+	out, err := ref.repository.Select(ctx, rParams)
 	if err != nil {
 		span.SetStatus(codes.Error, err.Error())
 		span.RecordError(err)
@@ -525,20 +486,7 @@ func (ref *UsersService) List(ctx context.Context, input *ListUsersInput) (*List
 		return nil, err
 	}
 
-	items := make([]*User, len(repOut.Items))
-	for i, item := range repOut.Items {
-		items[i] = &User{
-			ID:        item.ID,
-			FirstName: item.FirstName,
-			LastName:  item.LastName,
-			Email:     item.Email,
-			Disabled:  item.Disabled,
-			CreatedAt: item.CreatedAt,
-			UpdatedAt: item.UpdatedAt,
-		}
-	}
-
-	slog.Debug("service.Users.List", "users.count", len(items))
+	slog.Debug("service.Users.List", "users.count", len(out.Items))
 	span.SetStatus(codes.Ok, "Users found")
 	ref.metrics.serviceCalls.Add(ctx, 1,
 		metric.WithAttributes(
@@ -546,8 +494,8 @@ func (ref *UsersService) List(ctx context.Context, input *ListUsersInput) (*List
 		),
 	)
 
-	return &ListUsersOutput{
-		Items:     items,
-		Paginator: repOut.Paginator,
+	return &model.ListUsersOutput{
+		Items:     out.Items,
+		Paginator: out.Paginator,
 	}, nil
 }
