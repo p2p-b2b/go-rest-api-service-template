@@ -5,6 +5,9 @@ import (
 )
 
 var (
+	ErrModelServiceRequired  = errors.New("model service required")
+	ErrOpenTelemetryRequired = errors.New("open telemetry required")
+
 	ErrInternalServerError          = errors.New("internal server error")
 	ErrAtLeastOneFieldMustBeUpdated = errors.New("at least one field must be updated, any of these could be empty")
 	ErrRequiredUUID                 = errors.New("required UUID")

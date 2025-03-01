@@ -15,8 +15,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/config"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/http/respond"
+	"github.com/p2p-b2b/go-rest-api-service-template/internal/model"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/o11y"
-	"github.com/p2p-b2b/go-rest-api-service-template/internal/service"
 	mocksService "github.com/p2p-b2b/go-rest-api-service-template/mocks/handler"
 	gomock "go.uber.org/mock/gomock"
 )
@@ -54,7 +54,7 @@ func TestUser_GetByID(t *testing.T) {
 			pathPattern  string
 			pathValue    string
 			apiError     respond.HTTPMessage
-			apiResponse  User
+			apiResponse  model.User
 			plainMessage string
 			plainCode    int
 			mockCall     *gomock.Call
@@ -134,7 +134,7 @@ func TestUser_GetByID(t *testing.T) {
 				method:      http.MethodGet,
 				pathPattern: "/users/{user_id}",
 				pathValue:   "/users/e1cdf461-87c7-465f-a374-dc6bc7e962b9",
-				apiResponse: User{
+				apiResponse: model.User{
 					ID:        uuid.Must(uuid.Parse("e1cdf461-87c7-465f-a374-dc6bc7e962b9")),
 					FirstName: "John",
 					LastName:  "Doe",
@@ -149,7 +149,7 @@ func TestUser_GetByID(t *testing.T) {
 						uuid.Must(uuid.Parse("e1cdf461-87c7-465f-a374-dc6bc7e962b9")),
 					).
 					Return(
-						&service.User{
+						&model.User{
 							ID:        uuid.Must(uuid.Parse("e1cdf461-87c7-465f-a374-dc6bc7e962b9")),
 							FirstName: "John",
 							LastName:  "Doe",
@@ -247,7 +247,7 @@ func TestUser_GetByID(t *testing.T) {
 						t.Errorf("expected status code %d, got %d", http.StatusOK, w.Code)
 					}
 
-					var user User
+					var user model.User
 					if err := json.Unmarshal(w.Body.Bytes(), &user); err != nil {
 						t.Fatalf("could not decode response: %v", err)
 					}

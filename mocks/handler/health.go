@@ -13,7 +13,7 @@ import (
 	context "context"
 	reflect "reflect"
 
-	service "github.com/p2p-b2b/go-rest-api-service-template/internal/service"
+	model "github.com/p2p-b2b/go-rest-api-service-template/internal/model"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -42,10 +42,10 @@ func (m *MockHealthService) EXPECT() *MockHealthServiceMockRecorder {
 }
 
 // HealthCheck mocks base method.
-func (m *MockHealthService) HealthCheck(ctx context.Context) (service.Health, error) {
+func (m *MockHealthService) HealthCheck(ctx context.Context) (model.Health, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "HealthCheck", ctx)
-	ret0, _ := ret[0].(service.Health)
+	ret0, _ := ret[0].(model.Health)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

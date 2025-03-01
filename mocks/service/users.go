@@ -11,11 +11,10 @@ package mocks
 
 import (
 	context "context"
-	sql "database/sql"
 	reflect "reflect"
 
 	uuid "github.com/google/uuid"
-	repository "github.com/p2p-b2b/go-rest-api-service-template/internal/repository"
+	model "github.com/p2p-b2b/go-rest-api-service-template/internal/model"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -43,37 +42,8 @@ func (m *MockUsersRepository) EXPECT() *MockUsersRepositoryMockRecorder {
 	return m.recorder
 }
 
-// Close mocks base method.
-func (m *MockUsersRepository) Close() error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Close")
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// Close indicates an expected call of Close.
-func (mr *MockUsersRepositoryMockRecorder) Close() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockUsersRepository)(nil).Close))
-}
-
-// Conn mocks base method.
-func (m *MockUsersRepository) Conn(ctx context.Context) (*sql.Conn, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Conn", ctx)
-	ret0, _ := ret[0].(*sql.Conn)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// Conn indicates an expected call of Conn.
-func (mr *MockUsersRepositoryMockRecorder) Conn(ctx any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Conn", reflect.TypeOf((*MockUsersRepository)(nil).Conn), ctx)
-}
-
 // Delete mocks base method.
-func (m *MockUsersRepository) Delete(ctx context.Context, input *repository.DeleteUserInput) error {
+func (m *MockUsersRepository) Delete(ctx context.Context, input *model.DeleteUserInput) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Delete", ctx, input)
 	ret0, _ := ret[0].(error)
@@ -86,22 +56,8 @@ func (mr *MockUsersRepositoryMockRecorder) Delete(ctx, input any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockUsersRepository)(nil).Delete), ctx, input)
 }
 
-// DriverName mocks base method.
-func (m *MockUsersRepository) DriverName() string {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DriverName")
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// DriverName indicates an expected call of DriverName.
-func (mr *MockUsersRepositoryMockRecorder) DriverName() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DriverName", reflect.TypeOf((*MockUsersRepository)(nil).DriverName))
-}
-
 // Insert mocks base method.
-func (m *MockUsersRepository) Insert(ctx context.Context, input *repository.InsertUserInput) error {
+func (m *MockUsersRepository) Insert(ctx context.Context, input *model.InsertUserInput) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Insert", ctx, input)
 	ret0, _ := ret[0].(error)
@@ -114,25 +70,11 @@ func (mr *MockUsersRepositoryMockRecorder) Insert(ctx, input any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Insert", reflect.TypeOf((*MockUsersRepository)(nil).Insert), ctx, input)
 }
 
-// PingContext mocks base method.
-func (m *MockUsersRepository) PingContext(ctx context.Context) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "PingContext", ctx)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// PingContext indicates an expected call of PingContext.
-func (mr *MockUsersRepositoryMockRecorder) PingContext(ctx any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PingContext", reflect.TypeOf((*MockUsersRepository)(nil).PingContext), ctx)
-}
-
 // Select mocks base method.
-func (m *MockUsersRepository) Select(ctx context.Context, input *repository.SelectUsersInput) (*repository.SelectUsersOutput, error) {
+func (m *MockUsersRepository) Select(ctx context.Context, input *model.SelectUsersInput) (*model.SelectUsersOutput, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Select", ctx, input)
-	ret0, _ := ret[0].(*repository.SelectUsersOutput)
+	ret0, _ := ret[0].(*model.SelectUsersOutput)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -144,10 +86,10 @@ func (mr *MockUsersRepositoryMockRecorder) Select(ctx, input any) *gomock.Call {
 }
 
 // SelectByEmail mocks base method.
-func (m *MockUsersRepository) SelectByEmail(ctx context.Context, email string) (*repository.User, error) {
+func (m *MockUsersRepository) SelectByEmail(ctx context.Context, email string) (*model.User, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SelectByEmail", ctx, email)
-	ret0, _ := ret[0].(*repository.User)
+	ret0, _ := ret[0].(*model.User)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -159,10 +101,10 @@ func (mr *MockUsersRepositoryMockRecorder) SelectByEmail(ctx, email any) *gomock
 }
 
 // SelectByID mocks base method.
-func (m *MockUsersRepository) SelectByID(ctx context.Context, id uuid.UUID) (*repository.User, error) {
+func (m *MockUsersRepository) SelectByID(ctx context.Context, id uuid.UUID) (*model.User, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SelectByID", ctx, id)
-	ret0, _ := ret[0].(*repository.User)
+	ret0, _ := ret[0].(*model.User)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -174,7 +116,7 @@ func (mr *MockUsersRepositoryMockRecorder) SelectByID(ctx, id any) *gomock.Call 
 }
 
 // Update mocks base method.
-func (m *MockUsersRepository) Update(ctx context.Context, input *repository.UpdateUserInput) error {
+func (m *MockUsersRepository) Update(ctx context.Context, input *model.UpdateUserInput) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Update", ctx, input)
 	ret0, _ := ret[0].(error)

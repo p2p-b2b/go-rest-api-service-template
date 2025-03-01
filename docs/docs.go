@@ -30,7 +30,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handler.Health"
+                            "$ref": "#/definitions/model.Health"
                         }
                     },
                     "500": {
@@ -101,7 +101,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handler.ListUsersResponse"
+                            "$ref": "#/definitions/model.ListUsersResponse"
                         }
                     },
                     "400": {
@@ -139,7 +139,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handler.CreateUserRequest"
+                            "$ref": "#/definitions/model.CreateUserRequest"
                         }
                     }
                 ],
@@ -196,7 +196,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handler.User"
+                            "$ref": "#/definitions/model.User"
                         }
                     },
                     "400": {
@@ -248,7 +248,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handler.UpdateUserRequest"
+                            "$ref": "#/definitions/model.UpdateUserRequest"
                         }
                     }
                 ],
@@ -300,8 +300,8 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {
-                    "204": {
-                        "description": "No Content",
+                    "200": {
+                        "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/respond.HTTPMessage"
                         }
@@ -350,7 +350,33 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "handler.Check": {
+        "handler.Version": {
+            "type": "object",
+            "properties": {
+                "build_date": {
+                    "type": "string"
+                },
+                "git_branch": {
+                    "type": "string"
+                },
+                "git_commit": {
+                    "type": "string"
+                },
+                "go_version": {
+                    "type": "string"
+                },
+                "go_version_arch": {
+                    "type": "string"
+                },
+                "go_version_os": {
+                    "type": "string"
+                },
+                "version": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.Check": {
             "description": "Health check of the service",
             "type": "object",
             "properties": {
@@ -370,13 +396,13 @@ const docTemplate = `{
                     "example": "database"
                 },
                 "status": {
-                    "type": "string",
+                    "type": "boolean",
                     "format": "boolean",
-                    "example": "true"
+                    "example": true
                 }
             }
         },
-        "handler.CreateUserRequest": {
+        "model.CreateUserRequest": {
             "description": "CreateUserRequest represents the input for the CreateUser method",
             "type": "object",
             "properties": {
@@ -407,7 +433,7 @@ const docTemplate = `{
                 }
             }
         },
-        "handler.Health": {
+        "model.Health": {
             "description": "Health check of the service",
             "type": "object",
             "properties": {
@@ -415,24 +441,24 @@ const docTemplate = `{
                     "type": "array",
                     "items": {
                         "format": "array",
-                        "$ref": "#/definitions/handler.Check"
+                        "$ref": "#/definitions/model.Check"
                     }
                 },
                 "status": {
-                    "type": "string",
+                    "type": "boolean",
                     "format": "boolean",
-                    "example": "true"
+                    "example": true
                 }
             }
         },
-        "handler.ListUsersResponse": {
+        "model.ListUsersResponse": {
             "description": "ListUsersResponse represents a list of users",
             "type": "object",
             "properties": {
                 "items": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/handler.User"
+                        "$ref": "#/definitions/model.User"
                     }
                 },
                 "paginator": {
@@ -440,7 +466,7 @@ const docTemplate = `{
                 }
             }
         },
-        "handler.UpdateUserRequest": {
+        "model.UpdateUserRequest": {
             "description": "UpdateUserRequest represents the input for the UpdateUser method",
             "type": "object",
             "properties": {
@@ -471,7 +497,7 @@ const docTemplate = `{
                 }
             }
         },
-        "handler.User": {
+        "model.User": {
             "description": "User represents a user entity",
             "type": "object",
             "properties": {
@@ -509,32 +535,6 @@ const docTemplate = `{
                     "type": "string",
                     "format": "date-time",
                     "example": "2021-01-01T00:00:00Z"
-                }
-            }
-        },
-        "handler.Version": {
-            "type": "object",
-            "properties": {
-                "build_date": {
-                    "type": "string"
-                },
-                "git_branch": {
-                    "type": "string"
-                },
-                "git_commit": {
-                    "type": "string"
-                },
-                "go_version": {
-                    "type": "string"
-                },
-                "go_version_arch": {
-                    "type": "string"
-                },
-                "go_version_os": {
-                    "type": "string"
-                },
-                "version": {
-                    "type": "string"
                 }
             }
         },

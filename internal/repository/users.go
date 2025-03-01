@@ -13,6 +13,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/p2p-b2b/go-rest-api-service-template/internal/model"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/o11y"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/paginator"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/query"
@@ -107,7 +108,7 @@ func (ref *UsersRepository) PingContext(ctx context.Context) error {
 	return ref.db.PingContext(ctx)
 }
 
-func (ref *UsersRepository) Insert(ctx context.Context, input *InsertUserInput) error {
+func (ref *UsersRepository) Insert(ctx context.Context, input *model.InsertUserInput) error {
 	ctx, cancel := context.WithTimeout(ctx, ref.maxQueryTimeout)
 	defer cancel()
 
@@ -125,16 +126,16 @@ func (ref *UsersRepository) Insert(ctx context.Context, input *InsertUserInput) 
 	}
 
 	if input == nil {
-		span.SetStatus(codes.Error, ErrInputIsNil.Error())
-		span.RecordError(ErrInputIsNil)
-		slog.Error("repository.Users.Insert", "error", ErrInputIsNil.Error())
+		span.SetStatus(codes.Error, model.ErrInputIsNil.Error())
+		span.RecordError(model.ErrInputIsNil)
+		slog.Error("repository.Users.Insert", "error", model.ErrInputIsNil.Error())
 		ref.metrics.repositoryCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				append(metricCommonAttributes, attribute.String("successful", "false"))...,
 			),
 		)
 
-		return ErrInputIsNil
+		return model.ErrInputIsNil
 	}
 
 	span.SetAttributes(attribute.String("user.id", input.ID.String()))
@@ -179,11 +180,11 @@ func (ref *UsersRepository) Insert(ctx context.Context, input *InsertUserInput) 
 		if errors.As(err, &pgErr) {
 			if pgErr.Code == "23505" {
 				if strings.Contains(pgErr.Message, "_pkey") {
-					return ErrUserIDAlreadyExists
+					return model.ErrUserIDAlreadyExists
 				}
 
 				if strings.Contains(pgErr.Message, "_email") {
-					return ErrUserEmailAlreadyExists
+					return model.ErrUserEmailAlreadyExists
 				}
 
 				return err
@@ -205,7 +206,7 @@ func (ref *UsersRepository) Insert(ctx context.Context, input *InsertUserInput) 
 	return nil
 }
 
-func (ref *UsersRepository) Update(ctx context.Context, input *UpdateUserInput) error {
+func (ref *UsersRepository) Update(ctx context.Context, input *model.UpdateUserInput) error {
 	ctx, cancel := context.WithTimeout(ctx, ref.maxQueryTimeout)
 	defer cancel()
 
@@ -223,8 +224,8 @@ func (ref *UsersRepository) Update(ctx context.Context, input *UpdateUserInput) 
 	}
 
 	if input == nil {
-		span.SetStatus(codes.Error, ErrInputIsNil.Error())
-		span.RecordError(ErrInputIsNil)
+		span.SetStatus(codes.Error, model.ErrInputIsNil.Error())
+		span.RecordError(model.ErrInputIsNil)
 		slog.Error("repository.Users.Update", "error", "user is nil")
 		ref.metrics.repositoryCalls.Add(ctx, 1,
 			metric.WithAttributes(
@@ -232,7 +233,7 @@ func (ref *UsersRepository) Update(ctx context.Context, input *UpdateUserInput) 
 			),
 		)
 
-		return ErrInputIsNil
+		return model.ErrInputIsNil
 	}
 
 	span.SetAttributes(attribute.String("user.id", input.ID.String()))
@@ -340,16 +341,16 @@ func (ref *UsersRepository) Update(ctx context.Context, input *UpdateUserInput) 
 	}
 
 	if rowsAffected == 0 {
-		span.SetStatus(codes.Error, ErrUserNotFound.Error())
-		span.RecordError(ErrUserNotFound)
-		slog.Error("repository.Users.Update", "error", ErrUserNotFound)
+		span.SetStatus(codes.Error, model.ErrUserNotFound.Error())
+		span.RecordError(model.ErrUserNotFound)
+		slog.Error("repository.Users.Update", "error", model.ErrUserNotFound)
 		ref.metrics.repositoryCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				append(metricCommonAttributes, attribute.String("successful", "false"))...,
 			),
 		)
 
-		return ErrUserNotFound
+		return model.ErrUserNotFound
 	}
 
 	span.SetStatus(codes.Ok, "user updated successfully")
@@ -363,7 +364,7 @@ func (ref *UsersRepository) Update(ctx context.Context, input *UpdateUserInput) 
 	return nil
 }
 
-func (ref *UsersRepository) Delete(ctx context.Context, input *DeleteUserInput) error {
+func (ref *UsersRepository) Delete(ctx context.Context, input *model.DeleteUserInput) error {
 	ctx, cancel := context.WithTimeout(ctx, ref.maxQueryTimeout)
 	defer cancel()
 
@@ -382,15 +383,15 @@ func (ref *UsersRepository) Delete(ctx context.Context, input *DeleteUserInput) 
 
 	if input == nil {
 		slog.Error("repository.Users.Delete", "error", "user is nil")
-		span.SetStatus(codes.Error, ErrInputIsNil.Error())
-		span.RecordError(ErrInputIsNil)
+		span.SetStatus(codes.Error, model.ErrInputIsNil.Error())
+		span.RecordError(model.ErrInputIsNil)
 		ref.metrics.repositoryCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				append(metricCommonAttributes, attribute.String("successful", "false"))...,
 			),
 		)
 
-		return ErrInputIsNil
+		return model.ErrInputIsNil
 	}
 
 	span.SetAttributes(attribute.String("user.id", input.ID.String()))
@@ -442,16 +443,16 @@ func (ref *UsersRepository) Delete(ctx context.Context, input *DeleteUserInput) 
 	}
 
 	if rowsAffected == 0 {
-		span.SetStatus(codes.Error, ErrUserNotFound.Error())
-		span.RecordError(ErrUserNotFound)
-		slog.Error("repository.Users.Delete", "error", ErrUserNotFound)
+		span.SetStatus(codes.Error, model.ErrUserNotFound.Error())
+		span.RecordError(model.ErrUserNotFound)
+		slog.Error("repository.Users.Delete", "error", model.ErrUserNotFound)
 		ref.metrics.repositoryCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				append(metricCommonAttributes, attribute.String("successful", "false"))...,
 			),
 		)
 
-		return ErrUserNotFound
+		return model.ErrUserNotFound
 	}
 
 	span.SetStatus(codes.Ok, "user deleted successfully")
@@ -465,7 +466,7 @@ func (ref *UsersRepository) Delete(ctx context.Context, input *DeleteUserInput) 
 	return nil
 }
 
-func (ref *UsersRepository) SelectByID(ctx context.Context, id uuid.UUID) (*User, error) {
+func (ref *UsersRepository) SelectByID(ctx context.Context, id uuid.UUID) (*model.User, error) {
 	ctx, cancel := context.WithTimeout(ctx, ref.maxQueryTimeout)
 	defer cancel()
 
@@ -485,15 +486,15 @@ func (ref *UsersRepository) SelectByID(ctx context.Context, id uuid.UUID) (*User
 
 	if id == uuid.Nil {
 		slog.Error("repository.Users.SelectByID", "error", "id is nil")
-		span.SetStatus(codes.Error, ErrUserInvalidID.Error())
-		span.RecordError(ErrUserInvalidID)
+		span.SetStatus(codes.Error, model.ErrUserInvalidID.Error())
+		span.RecordError(model.ErrUserInvalidID)
 		ref.metrics.repositoryCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				append(metricCommonAttributes, attribute.String("successful", "false"))...,
 			),
 		)
 
-		return nil, ErrUserInvalidID
+		return nil, model.ErrUserInvalidID
 	}
 
 	query := `
@@ -514,7 +515,7 @@ func (ref *UsersRepository) SelectByID(ctx context.Context, id uuid.UUID) (*User
 
 	row := ref.db.QueryRowContext(ctx, query, id)
 
-	var item User
+	var item model.User
 	if err := row.Scan(
 		&item.ID,
 		&item.FirstName,
@@ -547,7 +548,7 @@ func (ref *UsersRepository) SelectByID(ctx context.Context, id uuid.UUID) (*User
 	return &item, nil
 }
 
-func (ref *UsersRepository) SelectByEmail(ctx context.Context, email string) (*User, error) {
+func (ref *UsersRepository) SelectByEmail(ctx context.Context, email string) (*model.User, error) {
 	ctx, cancel := context.WithTimeout(ctx, ref.maxQueryTimeout)
 	defer cancel()
 
@@ -567,15 +568,15 @@ func (ref *UsersRepository) SelectByEmail(ctx context.Context, email string) (*U
 
 	if email == "" {
 		slog.Error("repository.Users.SelectByEmail", "error", "email is empty")
-		span.SetStatus(codes.Error, ErrUserInvalidEmail.Error())
-		span.RecordError(ErrUserInvalidEmail)
+		span.SetStatus(codes.Error, model.ErrUserInvalidEmail.Error())
+		span.RecordError(model.ErrUserInvalidEmail)
 		ref.metrics.repositoryCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				append(metricCommonAttributes, attribute.String("successful", "false"))...,
 			),
 		)
 
-		return nil, ErrUserInvalidEmail
+		return nil, model.ErrUserInvalidEmail
 	}
 
 	query := `
@@ -596,7 +597,7 @@ func (ref *UsersRepository) SelectByEmail(ctx context.Context, email string) (*U
 
 	row := ref.db.QueryRowContext(ctx, query, email)
 
-	var item User
+	var item model.User
 	if err := row.Scan(
 		&item.ID,
 		&item.FirstName,
@@ -617,7 +618,7 @@ func (ref *UsersRepository) SelectByEmail(ctx context.Context, email string) (*U
 		)
 
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, ErrUserNotFound
+			return nil, model.ErrUserNotFound
 		}
 
 		return nil, err
@@ -634,7 +635,7 @@ func (ref *UsersRepository) SelectByEmail(ctx context.Context, email string) (*U
 	return &item, nil
 }
 
-func (ref *UsersRepository) Select(ctx context.Context, input *SelectUsersInput) (*SelectUsersOutput, error) {
+func (ref *UsersRepository) Select(ctx context.Context, input *model.SelectUsersInput) (*model.SelectUsersOutput, error) {
 	ctx, cancel := context.WithTimeout(ctx, ref.maxQueryTimeout)
 	defer cancel()
 
@@ -652,15 +653,15 @@ func (ref *UsersRepository) Select(ctx context.Context, input *SelectUsersInput)
 	}
 
 	if input == nil {
-		span.SetStatus(codes.Error, ErrInputIsNil.Error())
-		span.RecordError(ErrInputIsNil)
-		slog.Error("repository.Users.Select", "error", ErrInputIsNil)
+		span.SetStatus(codes.Error, model.ErrInputIsNil.Error())
+		span.RecordError(model.ErrInputIsNil)
+		slog.Error("repository.Users.Select", "error", model.ErrInputIsNil)
 		ref.metrics.repositoryCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				append(metricCommonAttributes, attribute.String("successful", "false"))...,
 			),
 		)
-		return nil, ErrInputIsNil
+		return nil, model.ErrInputIsNil
 	}
 
 	if err := input.Validate(); err != nil {
@@ -862,9 +863,9 @@ func (ref *UsersRepository) Select(ctx context.Context, input *SelectUsersInput)
 	}
 	defer rows.Close()
 
-	var items []*User
+	var items []*model.User
 	for rows.Next() {
-		var item User
+		var item model.User
 
 		scanFields := make([]interface{}, 0)
 
@@ -936,8 +937,8 @@ func (ref *UsersRepository) Select(ctx context.Context, input *SelectUsersInput)
 	outLen := len(items)
 	if outLen == 0 {
 		slog.Warn("repository.Users.Select", "what", "no users found")
-		return &SelectUsersOutput{
-			Items:     make([]*User, 0),
+		return &model.SelectUsersOutput{
+			Items:     make([]*model.User, 0),
 			Paginator: paginator.Paginator{},
 		}, nil
 	}
@@ -954,7 +955,7 @@ func (ref *UsersRepository) Select(ctx context.Context, input *SelectUsersInput)
 		items[outLen-1].SerialID,
 	)
 
-	ret := &SelectUsersOutput{
+	ret := &model.SelectUsersOutput{
 		Items: items,
 		Paginator: paginator.Paginator{
 			Size:      outLen,
