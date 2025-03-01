@@ -21,7 +21,7 @@ var (
 	ErrInvalidOpenTelemetry = errors.New("invalid open telemetry")
 )
 
-//go:generate go run go.uber.org/mock/mockgen@v0.5.0 -package=mocks -destination=../../../mocks/handler/health.go -source=health.go HealthService
+//go:generate go tool mockgen -package=mocks -destination=../../../mocks/handler/health.go -source=health.go HealthService
 
 // HealthService represents the service for the health.
 type HealthService interface {

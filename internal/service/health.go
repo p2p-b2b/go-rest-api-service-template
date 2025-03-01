@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/otel/metric"
 )
 
-//go:generate go run go.uber.org/mock/mockgen@v0.5.0 -package=mocks -destination=../../mocks/service/health.go -source=health.go HealthRepository
+//go:generate go tool mockgen -package=mocks -destination=../../mocks/service/health.go -source=health.go HealthRepository
 
 // HealthRepository is the interface for the model repository methods.
 type HealthRepository interface {

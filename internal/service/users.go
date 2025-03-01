@@ -17,7 +17,7 @@ import (
 	"go.opentelemetry.io/otel/metric"
 )
 
-//go:generate go run go.uber.org/mock/mockgen@v0.5.0 -package=mocks -destination=../../mocks/service/users.go -source=users.go UsersRepository
+//go:generate go tool mockgen -package=mocks -destination=../../mocks/service/users.go -source=users.go UsersRepository
 
 // UsersRepository is the interface for the user repository methods.
 type UsersRepository interface {

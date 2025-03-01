@@ -20,7 +20,7 @@ import (
 	"go.opentelemetry.io/otel/metric"
 )
 
-//go:generate go run go.uber.org/mock/mockgen@v0.5.0 -package=mocks -destination=../../../mocks/handler/users.go -source=users.go UsersService
+//go:generate go tool mockgen -package=mocks -destination=../../../mocks/handler/users.go -source=users.go UsersService
 
 // UsersService represents the service for the user.
 type UsersService interface {
