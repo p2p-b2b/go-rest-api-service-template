@@ -2,15 +2,16 @@ package main
 
 import (
 	"context"
-	"database/sql"
 	"flag"
 	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
 	"strings"
+	"sync"
 
-	_ "github.com/jackc/pgx/v5/stdlib" // load the PostgreSQL driver for pgx
+	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/jackc/pgx/v5/stdlib"
 
 	"github.com/p2p-b2b/go-rest-api-service-template/database"
 	"github.com/p2p-b2b/go-rest-api-service-template/docs"
@@ -29,10 +30,12 @@ var (
 	apiVersion = "v1"
 	apiPrefix  = fmt.Sprintf("api/%s", apiVersion)
 
-	LogConfig     = config.NewLogConfig()
-	HTTPSrvConfig = config.NewHTTPServerConfig()
-	DBConfig      = config.NewDatabaseConfig()
-	OTConfig      = config.NewOpenTelemetryConfig(appName, version.Version)
+	pgOnce sync.Once
+
+	logConfig     = config.NewLogConfig()
+	httpSrvConfig = config.NewHTTPServerConfig()
+	dbConfig      = config.NewDatabaseConfig()
+	otConfig      = config.NewOpenTelemetryConfig(appName, version.Version)
 
 	logHandler        slog.Handler
 	logHandlerOptions *slog.HandlerOptions
@@ -52,50 +55,50 @@ func init() {
 	flag.BoolVar(&showHelp, "help", false, "Show this help message")
 
 	// Log configuration values
-	flag.StringVar(&LogConfig.Level.Value, LogConfig.Level.FlagName, config.DefaultLogLevel, LogConfig.Level.FlagDescription)
-	flag.StringVar(&LogConfig.Format.Value, LogConfig.Format.FlagName, config.DefaultLogFormat, LogConfig.Format.FlagDescription)
-	flag.Var(&LogConfig.Output.Value, LogConfig.Output.FlagName, LogConfig.Output.FlagDescription)
+	flag.StringVar(&logConfig.Level.Value, logConfig.Level.FlagName, config.DefaultLogLevel, logConfig.Level.FlagDescription)
+	flag.StringVar(&logConfig.Format.Value, logConfig.Format.FlagName, config.DefaultLogFormat, logConfig.Format.FlagDescription)
+	flag.Var(&logConfig.Output.Value, logConfig.Output.FlagName, logConfig.Output.FlagDescription)
 
 	// HTTP Server configuration values
-	flag.StringVar(&HTTPSrvConfig.Address.Value, HTTPSrvConfig.Address.FlagName, config.DefaultHTTPServerAddress, HTTPSrvConfig.Address.FlagDescription)
-	flag.IntVar(&HTTPSrvConfig.Port.Value, HTTPSrvConfig.Port.FlagName, config.DefaultHTTPServerPort, HTTPSrvConfig.Port.FlagDescription)
-	flag.DurationVar(&HTTPSrvConfig.ShutdownTimeout.Value, HTTPSrvConfig.ShutdownTimeout.FlagName, config.DefaultHTTPServerShutdownTimeout, HTTPSrvConfig.ShutdownTimeout.FlagDescription)
-	flag.Var(&HTTPSrvConfig.PrivateKeyFile.Value, HTTPSrvConfig.PrivateKeyFile.FlagName, HTTPSrvConfig.PrivateKeyFile.FlagDescription)
-	flag.Var(&HTTPSrvConfig.CertificateFile.Value, HTTPSrvConfig.CertificateFile.FlagName, HTTPSrvConfig.CertificateFile.FlagDescription)
-	flag.BoolVar(&HTTPSrvConfig.TLSEnabled.Value, HTTPSrvConfig.TLSEnabled.FlagName, config.DefaultHTTPServerTLSEnabled, HTTPSrvConfig.TLSEnabled.FlagDescription)
-	flag.BoolVar(&HTTPSrvConfig.PprofEnabled.Value, HTTPSrvConfig.PprofEnabled.FlagName, config.DefaultHTTPServerPprofEnabled, HTTPSrvConfig.PprofEnabled.FlagDescription)
-	flag.BoolVar(&HTTPSrvConfig.CorsEnabled.Value, HTTPSrvConfig.CorsEnabled.FlagName, config.DefaultHTTPServerCorsEnabled, HTTPSrvConfig.CorsEnabled.FlagDescription)
-	flag.BoolVar(&HTTPSrvConfig.CorsAllowCredentials.Value, HTTPSrvConfig.CorsAllowCredentials.FlagName, config.DefaultHTTPServerCorsAllowCredentials, HTTPSrvConfig.CorsAllowCredentials.FlagDescription)
-	flag.StringVar(&HTTPSrvConfig.CorsAllowedOrigins.Value, HTTPSrvConfig.CorsAllowedOrigins.FlagName, config.DefaultHTTPServerCorsAllowedOrigins, HTTPSrvConfig.CorsAllowedOrigins.FlagDescription)
-	flag.StringVar(&HTTPSrvConfig.CorsAllowedMethods.Value, HTTPSrvConfig.CorsAllowedMethods.FlagName, config.DefaultHTTPServerCorsAllowedMethods, HTTPSrvConfig.CorsAllowedMethods.FlagDescription)
-	flag.StringVar(&HTTPSrvConfig.CorsAllowedHeaders.Value, HTTPSrvConfig.CorsAllowedHeaders.FlagName, config.DefaultHTTPServerCorsAllowedHeaders, HTTPSrvConfig.CorsAllowedHeaders.FlagDescription)
+	flag.StringVar(&httpSrvConfig.Address.Value, httpSrvConfig.Address.FlagName, config.DefaultHTTPServerAddress, httpSrvConfig.Address.FlagDescription)
+	flag.IntVar(&httpSrvConfig.Port.Value, httpSrvConfig.Port.FlagName, config.DefaultHTTPServerPort, httpSrvConfig.Port.FlagDescription)
+	flag.DurationVar(&httpSrvConfig.ShutdownTimeout.Value, httpSrvConfig.ShutdownTimeout.FlagName, config.DefaultHTTPServerShutdownTimeout, httpSrvConfig.ShutdownTimeout.FlagDescription)
+	flag.Var(&httpSrvConfig.PrivateKeyFile.Value, httpSrvConfig.PrivateKeyFile.FlagName, httpSrvConfig.PrivateKeyFile.FlagDescription)
+	flag.Var(&httpSrvConfig.CertificateFile.Value, httpSrvConfig.CertificateFile.FlagName, httpSrvConfig.CertificateFile.FlagDescription)
+	flag.BoolVar(&httpSrvConfig.TLSEnabled.Value, httpSrvConfig.TLSEnabled.FlagName, config.DefaultHTTPServerTLSEnabled, httpSrvConfig.TLSEnabled.FlagDescription)
+	flag.BoolVar(&httpSrvConfig.PprofEnabled.Value, httpSrvConfig.PprofEnabled.FlagName, config.DefaultHTTPServerPprofEnabled, httpSrvConfig.PprofEnabled.FlagDescription)
+	flag.BoolVar(&httpSrvConfig.CorsEnabled.Value, httpSrvConfig.CorsEnabled.FlagName, config.DefaultHTTPServerCorsEnabled, httpSrvConfig.CorsEnabled.FlagDescription)
+	flag.BoolVar(&httpSrvConfig.CorsAllowCredentials.Value, httpSrvConfig.CorsAllowCredentials.FlagName, config.DefaultHTTPServerCorsAllowCredentials, httpSrvConfig.CorsAllowCredentials.FlagDescription)
+	flag.StringVar(&httpSrvConfig.CorsAllowedOrigins.Value, httpSrvConfig.CorsAllowedOrigins.FlagName, config.DefaultHTTPServerCorsAllowedOrigins, httpSrvConfig.CorsAllowedOrigins.FlagDescription)
+	flag.StringVar(&httpSrvConfig.CorsAllowedMethods.Value, httpSrvConfig.CorsAllowedMethods.FlagName, config.DefaultHTTPServerCorsAllowedMethods, httpSrvConfig.CorsAllowedMethods.FlagDescription)
+	flag.StringVar(&httpSrvConfig.CorsAllowedHeaders.Value, httpSrvConfig.CorsAllowedHeaders.FlagName, config.DefaultHTTPServerCorsAllowedHeaders, httpSrvConfig.CorsAllowedHeaders.FlagDescription)
 
 	// Database configuration values
-	flag.StringVar(&DBConfig.Kind.Value, DBConfig.Kind.FlagName, config.DefaultDatabaseKind, DBConfig.Kind.FlagDescription)
-	flag.StringVar(&DBConfig.Address.Value, DBConfig.Address.FlagName, config.DefaultDatabaseAddress, DBConfig.Address.FlagDescription)
-	flag.IntVar(&DBConfig.Port.Value, DBConfig.Port.FlagName, config.DefaultDatabasePort, DBConfig.Port.FlagDescription)
-	flag.StringVar(&DBConfig.Username.Value, DBConfig.Username.FlagName, config.DefaultDatabaseUsername, DBConfig.Username.FlagDescription)
-	flag.StringVar(&DBConfig.Password.Value, DBConfig.Password.FlagName, config.DefaultDatabasePassword, DBConfig.Password.FlagDescription)
-	flag.StringVar(&DBConfig.Name.Value, DBConfig.Name.FlagName, config.DefaultDatabaseName, DBConfig.Name.FlagDescription)
-	flag.StringVar(&DBConfig.SSLMode.Value, DBConfig.SSLMode.FlagName, config.DefaultDatabaseSSLMode, DBConfig.SSLMode.FlagDescription)
-	flag.StringVar(&DBConfig.TimeZone.Value, DBConfig.TimeZone.FlagName, config.DefaultDatabaseTimeZone, DBConfig.TimeZone.FlagDescription)
-	flag.DurationVar(&DBConfig.MaxPingTimeout.Value, DBConfig.MaxPingTimeout.FlagName, config.DefaultDatabaseMaxPingTimeout, DBConfig.MaxPingTimeout.FlagDescription)
-	flag.DurationVar(&DBConfig.MaxQueryTimeout.Value, DBConfig.MaxQueryTimeout.FlagName, config.DefaultDatabaseMaxQueryTimeout, DBConfig.MaxQueryTimeout.FlagDescription)
-	flag.DurationVar(&DBConfig.ConnMaxLifetime.Value, DBConfig.ConnMaxLifetime.FlagName, config.DefaultDatabaseConnMaxLifetime, DBConfig.ConnMaxLifetime.FlagDescription)
-	flag.IntVar(&DBConfig.MaxIdleConns.Value, DBConfig.MaxIdleConns.FlagName, config.DefaultDatabaseMaxIdleConns, DBConfig.MaxIdleConns.FlagDescription)
-	flag.IntVar(&DBConfig.MaxOpenConns.Value, DBConfig.MaxOpenConns.FlagName, config.DefaultDatabaseMaxOpenConns, DBConfig.MaxOpenConns.FlagDescription)
-	flag.BoolVar(&DBConfig.MigrationEnable.Value, DBConfig.MigrationEnable.FlagName, config.DefaultDatabaseMigrationEnable, DBConfig.MigrationEnable.FlagDescription)
+	flag.StringVar(&dbConfig.Kind.Value, dbConfig.Kind.FlagName, config.DefaultDatabaseKind, dbConfig.Kind.FlagDescription)
+	flag.StringVar(&dbConfig.Address.Value, dbConfig.Address.FlagName, config.DefaultDatabaseAddress, dbConfig.Address.FlagDescription)
+	flag.IntVar(&dbConfig.Port.Value, dbConfig.Port.FlagName, config.DefaultDatabasePort, dbConfig.Port.FlagDescription)
+	flag.StringVar(&dbConfig.Username.Value, dbConfig.Username.FlagName, config.DefaultDatabaseUsername, dbConfig.Username.FlagDescription)
+	flag.StringVar(&dbConfig.Password.Value, dbConfig.Password.FlagName, config.DefaultDatabasePassword, dbConfig.Password.FlagDescription)
+	flag.StringVar(&dbConfig.Name.Value, dbConfig.Name.FlagName, config.DefaultDatabaseName, dbConfig.Name.FlagDescription)
+	flag.StringVar(&dbConfig.SSLMode.Value, dbConfig.SSLMode.FlagName, config.DefaultDatabaseSSLMode, dbConfig.SSLMode.FlagDescription)
+	flag.StringVar(&dbConfig.TimeZone.Value, dbConfig.TimeZone.FlagName, config.DefaultDatabaseTimeZone, dbConfig.TimeZone.FlagDescription)
+	flag.DurationVar(&dbConfig.MaxPingTimeout.Value, dbConfig.MaxPingTimeout.FlagName, config.DefaultDatabaseMaxPingTimeout, dbConfig.MaxPingTimeout.FlagDescription)
+	flag.DurationVar(&dbConfig.MaxQueryTimeout.Value, dbConfig.MaxQueryTimeout.FlagName, config.DefaultDatabaseMaxQueryTimeout, dbConfig.MaxQueryTimeout.FlagDescription)
+	flag.DurationVar(&dbConfig.ConnMaxLifetime.Value, dbConfig.ConnMaxLifetime.FlagName, config.DefaultDatabaseConnMaxLifetime, dbConfig.ConnMaxLifetime.FlagDescription)
+	flag.IntVar(&dbConfig.MaxConns.Value, dbConfig.MaxConns.FlagName, config.DefaultDatabaseMaxConns, dbConfig.MaxConns.FlagDescription)
+	flag.IntVar(&dbConfig.MinConns.Value, dbConfig.MinConns.FlagName, config.DefaultDatabaseMinConns, dbConfig.MinConns.FlagDescription)
+	flag.BoolVar(&dbConfig.MigrationEnable.Value, dbConfig.MigrationEnable.FlagName, config.DefaultDatabaseMigrationEnable, dbConfig.MigrationEnable.FlagDescription)
 
 	// OpenTelemetry configuration values
-	flag.StringVar(&OTConfig.TraceEndpoint.Value, OTConfig.TraceEndpoint.FlagName, config.DefaultTraceEndpoint, OTConfig.TraceEndpoint.FlagDescription)
-	flag.IntVar(&OTConfig.TracePort.Value, OTConfig.TracePort.FlagName, config.DefaultTracePort, OTConfig.TracePort.FlagDescription)
-	flag.StringVar(&OTConfig.TraceExporter.Value, OTConfig.TraceExporter.FlagName, config.DefaultTraceExporter, OTConfig.TraceExporter.FlagDescription)
-	flag.DurationVar(&OTConfig.TraceExporterBatchTimeout.Value, OTConfig.TraceExporterBatchTimeout.FlagName, config.DefaultTraceExporterBatchTimeout, OTConfig.TraceExporterBatchTimeout.FlagDescription)
-	flag.IntVar(&OTConfig.TraceSampling.Value, OTConfig.TraceSampling.FlagName, config.DefaultTraceSampling, OTConfig.TraceSampling.FlagDescription)
-	flag.StringVar(&OTConfig.MetricEndpoint.Value, OTConfig.MetricEndpoint.FlagName, config.DefaultMetricEndpoint, OTConfig.TraceEndpoint.FlagDescription)
-	flag.IntVar(&OTConfig.MetricPort.Value, OTConfig.MetricPort.FlagName, config.DefaultMetricPort, OTConfig.MetricPort.FlagDescription)
-	flag.StringVar(&OTConfig.MetricExporter.Value, OTConfig.MetricExporter.FlagName, config.DefaultMetricExporter, OTConfig.MetricExporter.FlagDescription)
-	flag.DurationVar(&OTConfig.MetricInterval.Value, OTConfig.MetricInterval.FlagName, config.DefaultMetricInterval, OTConfig.MetricInterval.FlagDescription)
+	flag.StringVar(&otConfig.TraceEndpoint.Value, otConfig.TraceEndpoint.FlagName, config.DefaultTraceEndpoint, otConfig.TraceEndpoint.FlagDescription)
+	flag.IntVar(&otConfig.TracePort.Value, otConfig.TracePort.FlagName, config.DefaultTracePort, otConfig.TracePort.FlagDescription)
+	flag.StringVar(&otConfig.TraceExporter.Value, otConfig.TraceExporter.FlagName, config.DefaultTraceExporter, otConfig.TraceExporter.FlagDescription)
+	flag.DurationVar(&otConfig.TraceExporterBatchTimeout.Value, otConfig.TraceExporterBatchTimeout.FlagName, config.DefaultTraceExporterBatchTimeout, otConfig.TraceExporterBatchTimeout.FlagDescription)
+	flag.IntVar(&otConfig.TraceSampling.Value, otConfig.TraceSampling.FlagName, config.DefaultTraceSampling, otConfig.TraceSampling.FlagDescription)
+	flag.StringVar(&otConfig.MetricEndpoint.Value, otConfig.MetricEndpoint.FlagName, config.DefaultMetricEndpoint, otConfig.TraceEndpoint.FlagDescription)
+	flag.IntVar(&otConfig.MetricPort.Value, otConfig.MetricPort.FlagName, config.DefaultMetricPort, otConfig.MetricPort.FlagDescription)
+	flag.StringVar(&otConfig.MetricExporter.Value, otConfig.MetricExporter.FlagName, config.DefaultMetricExporter, otConfig.MetricExporter.FlagDescription)
+	flag.DurationVar(&otConfig.MetricInterval.Value, otConfig.MetricInterval.FlagName, config.DefaultMetricInterval, otConfig.MetricInterval.FlagDescription)
 
 	// Parse the command line arguments
 	flag.Parse()
@@ -133,10 +136,10 @@ func init() {
 
 	// Set the log level
 	if debug {
-		LogConfig.Level.Value = "debug"
+		logConfig.Level.Value = "debug"
 	}
 
-	switch strings.ToLower(LogConfig.Level.Value) {
+	switch strings.ToLower(logConfig.Level.Value) {
 	case "debug":
 		logHandlerOptions = &slog.HandlerOptions{Level: slog.LevelDebug, AddSource: true}
 	case "info":
@@ -146,17 +149,17 @@ func init() {
 	case "error":
 		logHandlerOptions = &slog.HandlerOptions{Level: slog.LevelError, AddSource: true}
 	default:
-		slog.Error("invalid log level", "level", LogConfig.Level.Value)
+		slog.Error("invalid log level", "level", logConfig.Level.Value)
 	}
 
 	// Set the log format and output
-	switch strings.ToLower(LogConfig.Format.Value) {
+	switch strings.ToLower(logConfig.Format.Value) {
 	case "text":
-		logHandler = slog.NewTextHandler(LogConfig.Output.Value.File, logHandlerOptions)
+		logHandler = slog.NewTextHandler(logConfig.Output.Value.File, logHandlerOptions)
 	case "json":
-		logHandler = slog.NewJSONHandler(LogConfig.Output.Value.File, logHandlerOptions)
+		logHandler = slog.NewJSONHandler(logConfig.Output.Value.File, logHandlerOptions)
 	default:
-		slog.Error("invalid log format", "format", LogConfig.Format.Value)
+		slog.Error("invalid log format", "format", logConfig.Format.Value)
 	}
 
 	// Set the default logger
@@ -172,10 +175,10 @@ func init() {
 
 	// Get Configuration from Environment Variables
 	// and override the values when they are set
-	config.ParseEnvVars(LogConfig, HTTPSrvConfig, DBConfig, OTConfig)
+	config.ParseEnvVars(logConfig, httpSrvConfig, dbConfig, otConfig)
 
 	// Validate the configuration
-	if err := config.Validate(LogConfig, HTTPSrvConfig, DBConfig, OTConfig); err != nil {
+	if err := config.Validate(logConfig, httpSrvConfig, dbConfig, otConfig); err != nil {
 		slog.Error("error validating configuration", "error", err)
 		os.Exit(1)
 	}
@@ -195,7 +198,7 @@ func main() {
 	ctx := context.Background()
 
 	// create OpenTelemetry
-	telemetry, err := o11y.New(ctx, OTConfig)
+	telemetry, err := o11y.New(ctx, otConfig)
 	if err != nil {
 		slog.Error("error creating OpenTelemetry", "error", err)
 		os.Exit(1)
@@ -208,12 +211,12 @@ func main() {
 
 	// Configure server URL information
 	serverProtocol := "http"
-	if HTTPSrvConfig.TLSEnabled.Value {
+	if httpSrvConfig.TLSEnabled.Value {
 		serverProtocol = "https"
 	}
-	serverURL := fmt.Sprintf("%s://%s:%d/%s", serverProtocol, HTTPSrvConfig.Address.Value, HTTPSrvConfig.Port.Value, apiPrefix)
+	serverURL := fmt.Sprintf("%s://%s:%d/%s", serverProtocol, httpSrvConfig.Address.Value, httpSrvConfig.Port.Value, apiPrefix)
 	statusURL := fmt.Sprintf("%s/status", serverURL)
-	serverHost := fmt.Sprintf("%s:%d", HTTPSrvConfig.Address.Value, HTTPSrvConfig.Port.Value)
+	serverHost := fmt.Sprintf("%s:%d", httpSrvConfig.Address.Value, httpSrvConfig.Port.Value)
 	swaggerURLIndex := fmt.Sprintf("%s/swagger/index.html", serverURL)
 	swaggerURLDocs := fmt.Sprintf("%s/swagger/doc.json", serverURL)
 
@@ -231,64 +234,75 @@ func main() {
 
 	// Create PGSQLUserStore
 	dbDSN := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=%s TimeZone=%s",
-		DBConfig.Address.Value,
-		DBConfig.Port.Value,
-		DBConfig.Username.Value,
-		DBConfig.Password.Value,
-		DBConfig.Name.Value,
-		DBConfig.SSLMode.Value,
-		DBConfig.TimeZone.Value,
+		dbConfig.Address.Value,
+		dbConfig.Port.Value,
+		dbConfig.Username.Value,
+		dbConfig.Password.Value,
+		dbConfig.Name.Value,
+		dbConfig.SSLMode.Value,
+		dbConfig.TimeZone.Value,
 	)
 
-	db, err := sql.Open(DBConfig.Kind.Value, dbDSN)
+	dbCfg, err := pgxpool.ParseConfig(dbDSN)
 	if err != nil {
-		slog.Error("database connection error", "error", err)
+		slog.Error("error parsing pgx pool config", "error", err)
 		os.Exit(1)
 	}
-	defer db.Close()
+	dbCfg.MaxConns = int32(dbConfig.MaxConns.Value)
+	dbCfg.MinConns = int32(dbConfig.MinConns.Value)
+	dbCfg.MaxConnLifetime = dbConfig.ConnMaxLifetime.Value
+	dbCfg.MaxConnIdleTime = dbConfig.ConnMaxIdleTime.Value
 
-	db.SetMaxIdleConns(DBConfig.MaxIdleConns.Value)
-	db.SetMaxOpenConns(DBConfig.MaxOpenConns.Value)
-	db.SetConnMaxLifetime(DBConfig.ConnMaxLifetime.Value)
-	db.SetConnMaxIdleTime(DBConfig.ConnMaxIdleTime.Value)
+	// Ensure singleton instance of the pool
+	var dbpool *pgxpool.Pool
+	pgOnce.Do(func() {
+		dbpool, err = pgxpool.NewWithConfig(ctx, dbCfg)
+		if err != nil {
+			slog.Error("database connection error", "error", err)
+			os.Exit(1)
+		}
+		// defer dbpool.Close()
+	})
 
 	slog.Debug("database connection",
 		"dsn", dbDSN,
-		"kind", DBConfig.Kind.Value,
-		"address", DBConfig.Address.Value,
-		"port", DBConfig.Port.Value,
-		"username", DBConfig.Username.Value,
-		"name", DBConfig.Name.Value,
-		"ssl_mode", DBConfig.SSLMode.Value,
-		"max_idle_conns", DBConfig.MaxIdleConns.Value,
-		"max_open_conns", DBConfig.MaxOpenConns.Value,
-		"conn_max_lifetime", DBConfig.ConnMaxLifetime.Value,
-		"conn_max_idle_time", DBConfig.ConnMaxIdleTime.Value,
+		"kind", dbConfig.Kind.Value,
+		"address", dbConfig.Address.Value,
+		"port", dbConfig.Port.Value,
+		"username", dbConfig.Username.Value,
+		"name", dbConfig.Name.Value,
+		"ssl_mode", dbConfig.SSLMode.Value,
+		"max_conns", dbConfig.MaxConns.Value,
+		"min_conns", dbConfig.MinConns.Value,
+		"conn_max_lifetime", dbConfig.ConnMaxLifetime.Value,
+		"conn_max_idle_time", dbConfig.ConnMaxIdleTime.Value,
 	)
 
 	// Test database connection
-	ctx, cancel := context.WithTimeout(ctx, DBConfig.MaxPingTimeout.Value)
+	dbPingCtx, cancel := context.WithTimeout(ctx, dbConfig.MaxPingTimeout.Value)
 	defer cancel()
 
-	if err := db.PingContext(ctx); err != nil {
+	if err := dbpool.Ping(dbPingCtx); err != nil {
 		slog.Error("database ping error",
-			"kind", DBConfig.Kind.Value,
-			"address", DBConfig.Address.Value,
-			"port", DBConfig.Port.Value,
-			"username", DBConfig.Username.Value,
-			"ssl_mode", DBConfig.SSLMode.Value,
-			"max_idle_conns", DBConfig.MaxIdleConns.Value,
-			"max_open_conns", DBConfig.MaxOpenConns.Value,
-			"conn_max_lifetime", DBConfig.ConnMaxLifetime.Value,
-			"conn_max_idle_time", DBConfig.ConnMaxIdleTime.Value,
+			"kind", dbConfig.Kind.Value,
+			"address", dbConfig.Address.Value,
+			"port", dbConfig.Port.Value,
+			"username", dbConfig.Username.Value,
+			"ssl_mode", dbConfig.SSLMode.Value,
+			"max_idle_conns", dbConfig.MaxConns.Value,
+			"max_open_conns", dbConfig.MinConns.Value,
+			"conn_max_lifetime", dbConfig.ConnMaxLifetime.Value,
+			"conn_max_idle_time", dbConfig.ConnMaxIdleTime.Value,
 			"error", err)
 		os.Exit(1)
 	}
 
 	// Run the database migrations
-	if DBConfig.MigrationEnable.Value {
+	if dbConfig.MigrationEnable.Value {
 		slog.Info("running database migrations")
-		if err := database.Migrate(ctx, DBConfig.Kind.Value, db); err != nil {
+
+		db := stdlib.OpenDBFromPool(dbpool)
+		if err := database.Migrate(ctx, "pgx", db); err != nil {
 			slog.Error("database migration error", "error", err)
 			os.Exit(1)
 		}
@@ -297,8 +311,8 @@ func main() {
 	// Create a new usersRepository
 	healthRepository, err := repository.NewHealthRepository(
 		repository.HealthRepositoryConfig{
-			DB:             db,
-			MaxPingTimeout: DBConfig.MaxPingTimeout.Value,
+			DB:             dbpool,
+			MaxPingTimeout: dbConfig.MaxPingTimeout.Value,
 			OT:             telemetry,
 		},
 	)
@@ -309,9 +323,9 @@ func main() {
 
 	usersRepository, err := repository.NewUsersRepository(
 		repository.UsersRepositoryConfig{
-			DB:              db,
-			MaxPingTimeout:  DBConfig.MaxPingTimeout.Value,
-			MaxQueryTimeout: DBConfig.MaxQueryTimeout.Value,
+			DB:              dbpool,
+			MaxPingTimeout:  dbConfig.MaxPingTimeout.Value,
+			MaxQueryTimeout: dbConfig.MaxQueryTimeout.Value,
 			OT:              telemetry,
 		},
 	)
@@ -379,7 +393,7 @@ func main() {
 	usersHandler.RegisterRoutes(apiRouter)
 	healthHandler.RegisterRoutes(apiRouter)
 
-	if HTTPSrvConfig.PprofEnabled.Value {
+	if httpSrvConfig.PprofEnabled.Value {
 		pprofHandler.RegisterRoutes(apiRouter)
 	}
 
@@ -390,19 +404,19 @@ func main() {
 		middleware.OtelTextMapPropagation,
 	}
 
-	if HTTPSrvConfig.CorsEnabled.Value {
+	if httpSrvConfig.CorsEnabled.Value {
 		slog.Warn("CORS enabled",
-			"allowed_origins", HTTPSrvConfig.CorsAllowedOrigins.Value,
-			"allowed_methods", HTTPSrvConfig.CorsAllowedMethods.Value,
-			"allowed_headers", HTTPSrvConfig.CorsAllowedHeaders.Value,
-			"allow_credentials", HTTPSrvConfig.CorsAllowCredentials.Value,
+			"allowed_origins", httpSrvConfig.CorsAllowedOrigins.Value,
+			"allowed_methods", httpSrvConfig.CorsAllowedMethods.Value,
+			"allowed_headers", httpSrvConfig.CorsAllowedHeaders.Value,
+			"allow_credentials", httpSrvConfig.CorsAllowCredentials.Value,
 		)
 
 		corsOpts := middleware.CorsOpts{
-			AllowedOrigins:   strings.Split(strings.Trim(HTTPSrvConfig.CorsAllowedOrigins.Value, " "), ","),
-			AllowedMethods:   strings.Split(strings.Trim(HTTPSrvConfig.CorsAllowedMethods.Value, " "), ","),
-			AllowedHeaders:   strings.Split(strings.Trim(HTTPSrvConfig.CorsAllowedHeaders.Value, " "), ","),
-			AllowCredentials: HTTPSrvConfig.CorsAllowCredentials.Value,
+			AllowedOrigins:   strings.Split(strings.Trim(httpSrvConfig.CorsAllowedOrigins.Value, " "), ","),
+			AllowedMethods:   strings.Split(strings.Trim(httpSrvConfig.CorsAllowedMethods.Value, " "), ","),
+			AllowedHeaders:   strings.Split(strings.Trim(httpSrvConfig.CorsAllowedHeaders.Value, " "), ","),
+			AllowCredentials: httpSrvConfig.CorsAllowCredentials.Value,
 		}
 
 		apiCommonMdws = append(apiCommonMdws, middleware.Cors(corsOpts))
@@ -420,7 +434,7 @@ func main() {
 		server.HTTPServerConfig{
 			Ctx:         ctx,
 			HttpHandler: mainRouter,
-			Config:      HTTPSrvConfig,
+			Config:      httpSrvConfig,
 		},
 	)
 
@@ -429,6 +443,10 @@ func main() {
 
 	// Wait for stopChan to close
 	<-httpServer.Wait()
+
+	// close db connection
+	slog.Info("closing database connection")
+	dbpool.Close()
 
 	// Shutdown OpenTelemetry
 	slog.Info("shutting down OpenTelemetry")
