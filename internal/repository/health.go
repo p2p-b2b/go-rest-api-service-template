@@ -8,12 +8,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/o11y"
 	"go.opentelemetry.io/otel/metric"
 )
 
 type HealthRepositoryConfig struct {
-	DB             *sql.DB
+	DB             *pgxpool.Pool
 	MaxPingTimeout time.Duration
 	OT             *o11y.OpenTelemetry
 	MetricsPrefix  string
@@ -26,7 +27,7 @@ type healthRepositoryMetrics struct {
 // this implement repository.HealthRepository
 // HealthRepository is a PostgreSQL store.
 type HealthRepository struct {
-	db             *sql.DB
+	db             *pgxpool.Pool
 	maxPingTimeout time.Duration
 	ot             *o11y.OpenTelemetry
 	metricsPrefix  string
@@ -85,5 +86,5 @@ func (ref *HealthRepository) PingContext(ctx context.Context) error {
 	ctx, span := ref.ot.Traces.Tracer.Start(ctx, "repository.Health.PingContext")
 	defer span.End()
 
-	return ref.db.PingContext(ctx)
+	return ref.db.Ping(ctx)
 }

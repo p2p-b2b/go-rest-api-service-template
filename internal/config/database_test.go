@@ -148,21 +148,21 @@ func TestValidate_database(t *testing.T) {
 	}
 	config.TimeZone.Value = DefaultDatabaseTimeZone
 
-	// Test invalid MaxIdleConns
-	config.MaxIdleConns.Value = -1
+	// Test invalid MaxConns
+	config.MaxConns.Value = -1
 	err = config.Validate()
-	if err != ErrDatabaseInvalidMaxIdleConns {
-		t.Errorf("Expected error %v, got %v", ErrDatabaseInvalidMaxIdleConns, err)
+	if err != ErrDatabaseInvalidMaxConns {
+		t.Errorf("Expected error %v, got %v", ErrDatabaseInvalidMaxConns, err)
 	}
-	config.MaxIdleConns.Value = DefaultDatabaseMaxIdleConns
+	config.MaxConns.Value = DefaultDatabaseMaxConns
 
-	// Test invalid MaxOpenConns
-	config.MaxOpenConns.Value = -1
+	// Test invalid MinConns
+	config.MinConns.Value = -1
 	err = config.Validate()
-	if err != ErrDatabaseInvalidMaxOpenConns {
-		t.Errorf("Expected error %v, got %v", ErrDatabaseInvalidMaxOpenConns, err)
+	if err != ErrDatabaseInvalidMinConns {
+		t.Errorf("Expected error %v, got %v", ErrDatabaseInvalidMinConns, err)
 	}
-	config.MaxOpenConns.Value = DefaultDatabaseMaxOpenConns
+	config.MinConns.Value = DefaultDatabaseMinConns
 
 	// Test invalid MaxPingTimeout
 	config.MaxPingTimeout.Value = 0

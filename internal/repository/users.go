@@ -13,6 +13,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/model"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/o11y"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/paginator"
@@ -24,7 +25,7 @@ import (
 )
 
 type UsersRepositoryConfig struct {
-	DB              *sql.DB
+	DB              *pgxpool.Pool
 	MaxPingTimeout  time.Duration
 	MaxQueryTimeout time.Duration
 	OT              *o11y.OpenTelemetry
@@ -36,7 +37,7 @@ type usersRepositoryMetrics struct {
 }
 
 type UsersRepository struct {
-	db              *sql.DB
+	db              *pgxpool.Pool
 	maxPingTimeout  time.Duration
 	maxQueryTimeout time.Duration
 	ot              *o11y.OpenTelemetry
@@ -90,14 +91,6 @@ func (ref *UsersRepository) DriverName() string {
 	return sql.Drivers()[0]
 }
 
-func (ref *UsersRepository) Conn(ctx context.Context) (*sql.Conn, error) {
-	return ref.db.Conn(ctx)
-}
-
-func (ref *UsersRepository) Close() error {
-	return ref.db.Close()
-}
-
 func (ref *UsersRepository) PingContext(ctx context.Context) error {
 	ctx, cancel := context.WithTimeout(ctx, ref.maxPingTimeout)
 	defer cancel()
@@ -105,7 +98,7 @@ func (ref *UsersRepository) PingContext(ctx context.Context) error {
 	ctx, span := ref.ot.Traces.Tracer.Start(ctx, "repository.Users.PingContext")
 	defer span.End()
 
-	return ref.db.PingContext(ctx)
+	return ref.db.Ping(ctx)
 }
 
 func (ref *UsersRepository) Insert(ctx context.Context, input *model.InsertUserInput) error {
@@ -158,7 +151,7 @@ func (ref *UsersRepository) Insert(ctx context.Context, input *model.InsertUserI
         VALUES ($1, $2, $3, $4, $5, $6);
     `
 
-	_, err := ref.db.ExecContext(ctx, query,
+	_, err := ref.db.Exec(ctx, query,
 		input.ID,
 		input.FirstName,
 		input.LastName,
@@ -297,22 +290,7 @@ func (ref *UsersRepository) Update(ctx context.Context, input *model.UpdateUserI
         WHERE id = $1;
     `
 
-	stmt, err := ref.db.PrepareContext(ctx, query)
-	if err != nil {
-		slog.Error("repository.Users.Update", "error", err)
-		span.SetStatus(codes.Error, "query failed")
-		span.RecordError(err)
-		ref.metrics.repositoryCalls.Add(ctx, 1,
-			metric.WithAttributes(
-				append(metricCommonAttributes, attribute.String("successful", "false"))...,
-			),
-		)
-
-		return err
-	}
-	defer stmt.Close()
-
-	result, err := stmt.ExecContext(ctx, args...)
+	result, err := ref.db.Exec(ctx, query, args...)
 	if err != nil {
 		slog.Error("repository.Users.Update", "error", err)
 		span.SetStatus(codes.Error, "query failed")
@@ -326,21 +304,7 @@ func (ref *UsersRepository) Update(ctx context.Context, input *model.UpdateUserI
 		return err
 	}
 
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		slog.Error("repository.Users.Update", "error", err)
-		span.SetStatus(codes.Error, "query failed")
-		span.RecordError(err)
-		ref.metrics.repositoryCalls.Add(ctx, 1,
-			metric.WithAttributes(
-				append(metricCommonAttributes, attribute.String("successful", "false"))...,
-			),
-		)
-
-		return err
-	}
-
-	if rowsAffected == 0 {
+	if result.RowsAffected() == 0 {
 		span.SetStatus(codes.Error, model.ErrUserNotFound.Error())
 		span.RecordError(model.ErrUserNotFound)
 		slog.Error("repository.Users.Update", "error", model.ErrUserNotFound)
@@ -414,7 +378,7 @@ func (ref *UsersRepository) Delete(ctx context.Context, input *model.DeleteUserI
         WHERE id = $1
     `
 
-	result, err := ref.db.ExecContext(ctx, query, input.ID)
+	result, err := ref.db.Exec(ctx, query, input.ID)
 	if err != nil {
 		span.SetStatus(codes.Error, "query failed")
 		span.RecordError(err)
@@ -428,21 +392,7 @@ func (ref *UsersRepository) Delete(ctx context.Context, input *model.DeleteUserI
 		return err
 	}
 
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		slog.Error("repository.Users.Delete", "error", err)
-		span.SetStatus(codes.Error, "query failed")
-		span.RecordError(err)
-		ref.metrics.repositoryCalls.Add(ctx, 1,
-			metric.WithAttributes(
-				append(metricCommonAttributes, attribute.String("successful", "false"))...,
-			),
-		)
-
-		return err
-	}
-
-	if rowsAffected == 0 {
+	if result.RowsAffected() == 0 {
 		span.SetStatus(codes.Error, model.ErrUserNotFound.Error())
 		span.RecordError(model.ErrUserNotFound)
 		slog.Error("repository.Users.Delete", "error", model.ErrUserNotFound)
@@ -513,7 +463,7 @@ func (ref *UsersRepository) SelectByID(ctx context.Context, id uuid.UUID) (*mode
 
 	slog.Debug("repository.Users.SelectByID", "query", prettyPrint(query))
 
-	row := ref.db.QueryRowContext(ctx, query, id)
+	row := ref.db.QueryRow(ctx, query, id)
 
 	var item model.User
 	if err := row.Scan(
@@ -595,7 +545,7 @@ func (ref *UsersRepository) SelectByEmail(ctx context.Context, email string) (*m
 
 	slog.Debug("repository.Users.SelectByEmail", "query", prettyPrint(query))
 
-	row := ref.db.QueryRowContext(ctx, query, email)
+	row := ref.db.QueryRow(ctx, query, email)
 
 	var item model.User
 	if err := row.Scan(
@@ -848,7 +798,7 @@ func (ref *UsersRepository) Select(ctx context.Context, input *model.SelectUsers
 	slog.Debug("repository.Users.Select", "query", prettyPrint(query))
 
 	// execute the query
-	rows, err := ref.db.QueryContext(ctx, query)
+	rows, err := ref.db.Query(ctx, query)
 	if err != nil {
 		slog.Error("repository.Users.Select", "error", err)
 		span.SetStatus(codes.Error, "failed to select all users")

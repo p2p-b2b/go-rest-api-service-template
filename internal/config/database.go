@@ -16,8 +16,8 @@ var (
 	ErrDatabaseInvalidSSLMode         = errors.New("invalid SSL mode, must be one of [" + ValidDatabaseSSLModes + "]")
 	ErrDatabaseInvalidTimeZone        = errors.New("invalid timezone, must be between [" + strconv.Itoa(ValidDatabaseTimeZoneMinLen) + "] and [" + strconv.Itoa(ValidDatabaseTimeZoneMaxLen) + "] characters")
 	ErrDatabaseInvalidPassword        = errors.New("invalid password, must be between [" + strconv.Itoa(ValidDatabasePasswordMinLen) + "] and [" + strconv.Itoa(ValidDatabasePasswordMaxLen) + "] characters")
-	ErrDatabaseInvalidMaxIdleConns    = errors.New("invalid max idle connections, must be between [" + strconv.Itoa(ValidDatabaseMinIdleConns) + "] and [" + strconv.Itoa(ValidDatabaseMaxIdleConns) + "]")
-	ErrDatabaseInvalidMaxOpenConns    = errors.New("invalid max open connections, must be between [" + strconv.Itoa(ValidDatabaseMinOpenConns) + "] and [" + strconv.Itoa(ValidDatabaseMaxOpenConns) + "]")
+	ErrDatabaseInvalidMaxConns        = errors.New("invalid max connections, must be between [" + strconv.Itoa(ValidDatabaseMaxMinConns) + "] and [" + strconv.Itoa(ValidDatabaseMaxMaxConns) + "]")
+	ErrDatabaseInvalidMinConns        = errors.New("invalid min connections, must be between [" + strconv.Itoa(ValidDatabaseMinMinConns) + "] and [" + strconv.Itoa(ValidDatabaseMaxMinConns) + "]")
 	ErrDatabaseInvalidMaxPingTimeout  = errors.New("invalid max ping timeout, must be between [" + ValidDatabaseMinPingTimeout.String() + "] and [" + ValidDatabaseMaxPingTimeout.String() + "]")
 	ErrDatabaseInvalidMaxQueryTimeout = errors.New("invalid max query timeout, must be between [" + ValidDatabaseMinQueryTimeout.String() + "] and [" + ValidDatabaseMaxQueryTimeout.String() + "]")
 	ErrDatabaseInvalidConnMaxIdleTime = errors.New("invalid connection max idle time, must be between [" + ValidDatabaseConnMinIdleTime.String() + "] and [" + ValidDatabaseConnMaxIdleTime.String() + "]")
@@ -25,32 +25,37 @@ var (
 )
 
 const (
-	ValidDatabaseKind            = "pgx|postgres"
-	ValidDatabaseSSLModes        = "disable|allow|prefer|require|verify-ca|verify-full"
-	ValidDatabaseMaxPort         = 65535
-	ValidDatabaseMinPort         = 0
-	ValidDatabaseUsernameMaxLen  = 32
-	ValidDatabaseUsernameMinLen  = 2
-	ValidDatabasePasswordMaxLen  = 128
-	ValidDatabasePasswordMinLen  = 2
-	ValidDatabaseNameMaxLen      = 32
-	ValidDatabaseNameMinLen      = 2
-	ValidDatabaseTimeZoneMaxLen  = 32
-	ValidDatabaseTimeZoneMinLen  = 2
-	ValidDatabaseMaxIdleConns    = 100
-	ValidDatabaseMinIdleConns    = 0
-	ValidDatabaseMaxOpenConns    = 100
-	ValidDatabaseMinOpenConns    = 0
-	ValidDatabaseMaxPingTimeout  = 30 * time.Second
-	ValidDatabaseMinPingTimeout  = 1 * time.Second
+	ValidDatabaseKind           = "pgxpool"
+	ValidDatabaseSSLModes       = "disable|allow|prefer|require|verify-ca|verify-full"
+	ValidDatabaseMaxPort        = 65535
+	ValidDatabaseMinPort        = 0
+	ValidDatabaseUsernameMaxLen = 32
+	ValidDatabaseUsernameMinLen = 2
+	ValidDatabasePasswordMaxLen = 128
+	ValidDatabasePasswordMinLen = 2
+	ValidDatabaseNameMaxLen     = 32
+	ValidDatabaseNameMinLen     = 2
+	ValidDatabaseTimeZoneMaxLen = 32
+	ValidDatabaseTimeZoneMinLen = 2
+
+	ValidDatabaseMaxMaxConns = 200
+	ValidDatabaseMinMaxConns = 10
+	ValidDatabaseMaxMinConns = 10
+	ValidDatabaseMinMinConns = 0
+
+	ValidDatabaseMaxPingTimeout = 30 * time.Second
+	ValidDatabaseMinPingTimeout = 1 * time.Second
+
 	ValidDatabaseMaxQueryTimeout = 30 * time.Second
 	ValidDatabaseMinQueryTimeout = 1 * time.Second
-	ValidDatabaseConnMaxIdleTime = 600 * time.Minute
-	ValidDatabaseConnMinIdleTime = 1 * time.Second
-	ValidDatabaseConnMaxLifetime = 600 * time.Second
-	ValidDatabaseConnMinLifetime = 1 * time.Second
 
-	DefaultDatabaseKind     = "pgx"
+	ValidDatabaseConnMaxIdleTime = 8 * time.Hour
+	ValidDatabaseConnMinIdleTime = 1 * time.Minute
+
+	ValidDatabaseConnMaxLifetime = 8 * time.Hour
+	ValidDatabaseConnMinLifetime = 1 * time.Minute
+
+	DefaultDatabaseKind     = "pgxpool"
 	DefaultDatabaseAddress  = "localhost"
 	DefaultDatabasePort     = 5432
 	DefaultDatabaseUsername = "username"
@@ -62,13 +67,13 @@ const (
 	DefaultDatabaseMaxPingTimeout  = 5 * time.Second
 	DefaultDatabaseMaxQueryTimeout = 5 * time.Second
 
-	DefaultDatabaseMaxIdleConns = 10
-	DefaultDatabaseMaxOpenConns = 100
+	DefaultDatabaseMaxConns = 20
+	DefaultDatabaseMinConns = 5
 
 	DefaultDatabaseConnMaxIdleTime = 30 * time.Minute
-	DefaultDatabaseConnMaxLifetime = 15 * time.Second
+	DefaultDatabaseConnMaxLifetime = 2 * time.Minute
 
-	DefaultDatabaseMigrationEnable = false
+	DefaultDatabaseMigrationEnable = true
 )
 
 type DatabaseConfig struct {
@@ -81,8 +86,8 @@ type DatabaseConfig struct {
 	Port     Field[int]
 	TimeZone Field[string]
 
-	MaxIdleConns Field[int]
-	MaxOpenConns Field[int]
+	MaxConns Field[int]
+	MinConns Field[int]
 
 	MaxQueryTimeout Field[time.Duration]
 	MaxPingTimeout  Field[time.Duration]
@@ -107,8 +112,8 @@ func NewDatabaseConfig() *DatabaseConfig {
 		MaxPingTimeout:  NewField("database.max.ping.timeout", "DATABASE_MAX_PING_TIMEOUT", "Database Max Ping Timeout", DefaultDatabaseMaxPingTimeout),
 		MaxQueryTimeout: NewField("database.max.query.timeout", "DATABASE_MAX_QUERY_TIMEOUT", "Database Max Query Timeout", DefaultDatabaseMaxQueryTimeout),
 
-		MaxIdleConns: NewField("database.max.idle.conns", "DATABASE_MAX_IDLE_CONNS", "Database Max Idle Connections", DefaultDatabaseMaxIdleConns),
-		MaxOpenConns: NewField("database.max.open.conns", "DATABASE_MAX_OPEN_CONNS", "Database Max Open Connections", DefaultDatabaseMaxOpenConns),
+		MaxConns: NewField("database.max.conns", "DATABASE_MAX_CONNS", "Database Max Idle Connections", DefaultDatabaseMaxConns),
+		MinConns: NewField("database.min.conns", "DATABASE_MIN_CONNS", "Database Max Open Connections", DefaultDatabaseMinConns),
 
 		ConnMaxIdleTime: NewField("database.conn.max.idle.time", "DATABASE_CONN_MAX_IDLE_TIME", "Database Connection Max Idle Time", DefaultDatabaseConnMaxIdleTime),
 		ConnMaxLifetime: NewField("database.conn.max.lifetime", "DATABASE_CONN_MAX_LIFETIME", "Database Connection Max Lifetime", DefaultDatabaseConnMaxLifetime),
@@ -132,8 +137,8 @@ func (c *DatabaseConfig) ParseEnvVars() {
 	c.MaxPingTimeout.Value = GetEnv(c.MaxPingTimeout.EnVarName, c.MaxPingTimeout.Value)
 	c.MaxQueryTimeout.Value = GetEnv(c.MaxQueryTimeout.EnVarName, c.MaxQueryTimeout.Value)
 
-	c.MaxIdleConns.Value = GetEnv(c.MaxIdleConns.EnVarName, c.MaxIdleConns.Value)
-	c.MaxOpenConns.Value = GetEnv(c.MaxOpenConns.EnVarName, c.MaxOpenConns.Value)
+	c.MaxConns.Value = GetEnv(c.MaxConns.EnVarName, c.MaxConns.Value)
+	c.MinConns.Value = GetEnv(c.MinConns.EnVarName, c.MinConns.Value)
 
 	c.ConnMaxIdleTime.Value = GetEnv(c.ConnMaxIdleTime.EnVarName, c.ConnMaxIdleTime.Value)
 	c.ConnMaxLifetime.Value = GetEnv(c.ConnMaxLifetime.EnVarName, c.ConnMaxLifetime.Value)
@@ -171,12 +176,12 @@ func (c *DatabaseConfig) Validate() error {
 		return ErrDatabaseInvalidTimeZone
 	}
 
-	if c.MaxIdleConns.Value < ValidDatabaseMinIdleConns || c.MaxIdleConns.Value > ValidDatabaseMaxIdleConns {
-		return ErrDatabaseInvalidMaxIdleConns
+	if c.MaxConns.Value < ValidDatabaseMinMaxConns || c.MaxConns.Value > ValidDatabaseMaxMaxConns {
+		return ErrDatabaseInvalidMaxConns
 	}
 
-	if c.MaxOpenConns.Value < ValidDatabaseMinOpenConns || c.MaxOpenConns.Value > ValidDatabaseMaxOpenConns {
-		return ErrDatabaseInvalidMaxOpenConns
+	if c.MinConns.Value < ValidDatabaseMinMinConns || c.MinConns.Value > ValidDatabaseMaxMinConns {
+		return ErrDatabaseInvalidMinConns
 	}
 
 	if c.MaxPingTimeout.Value < ValidDatabaseMinPingTimeout || c.MaxPingTimeout.Value > ValidDatabaseMaxPingTimeout {
