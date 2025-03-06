@@ -884,6 +884,19 @@ func (ref *UsersRepository) Select(ctx context.Context, input *model.SelectUsers
 		items = append(items, &item)
 	}
 
+	if rows.Err() != nil {
+		slog.Error("repository.Users.Select", "error", rows.Err())
+		span.SetStatus(codes.Error, "failed to scan user")
+		span.RecordError(rows.Err())
+		ref.metrics.repositoryCalls.Add(ctx, 1,
+			metric.WithAttributes(
+				append(metricCommonAttributes, attribute.String("successful", "false"))...,
+			),
+		)
+
+		return nil, rows.Err()
+	}
+
 	outLen := len(items)
 	if outLen == 0 {
 		slog.Warn("repository.Users.Select", "what", "no users found")
