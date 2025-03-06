@@ -883,8 +883,9 @@ func (ref *UsersRepository) Select(ctx context.Context, input *model.SelectUsers
 
 		items = append(items, &item)
 	}
+	defer rows.Close()
 
-	if rows.Err() != nil {
+	if err := rows.Err(); err != nil {
 		slog.Error("repository.Users.Select", "error", rows.Err())
 		span.SetStatus(codes.Error, "failed to scan user")
 		span.RecordError(rows.Err())
