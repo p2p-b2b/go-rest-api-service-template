@@ -60,6 +60,21 @@ definitions:
         format: string
         type: string
     type: object
+  model.HTTPMessage:
+    description: HTTPMessage represents a message to be sent to the client though
+      the HTTP REST API.
+    properties:
+      message:
+        type: string
+      method:
+        type: string
+      path:
+        type: string
+      status_code:
+        type: integer
+      timestamp:
+        type: string
+    type: object
   model.Health:
     description: Health check of the service
     properties:
@@ -167,19 +182,6 @@ definitions:
         format: date-time
         type: string
     type: object
-  respond.HTTPMessage:
-    properties:
-      message:
-        type: string
-      method:
-        type: string
-      path:
-        type: string
-      status_code:
-        type: integer
-      timestamp:
-        type: string
-    type: object
 info:
   contact: {}
   description: |-
@@ -207,7 +209,7 @@ paths:
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/respond.HTTPMessage'
+            $ref: '#/definitions/model.HTTPMessage'
       summary: Check health status
       tags:
       - Health
@@ -257,11 +259,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/respond.HTTPMessage'
+            $ref: '#/definitions/model.HTTPMessage'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/respond.HTTPMessage'
+            $ref: '#/definitions/model.HTTPMessage'
       summary: List all users
       tags:
       - Users
@@ -286,19 +288,19 @@ paths:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/respond.HTTPMessage'
+            $ref: '#/definitions/model.HTTPMessage'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/respond.HTTPMessage'
+            $ref: '#/definitions/model.HTTPMessage'
         "409":
           description: Conflict
           schema:
-            $ref: '#/definitions/respond.HTTPMessage'
+            $ref: '#/definitions/model.HTTPMessage'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/respond.HTTPMessage'
+            $ref: '#/definitions/model.HTTPMessage'
       summary: Create a new user
       tags:
       - Users
@@ -319,15 +321,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/respond.HTTPMessage'
+            $ref: '#/definitions/model.HTTPMessage'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/respond.HTTPMessage'
+            $ref: '#/definitions/model.HTTPMessage'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/respond.HTTPMessage'
+            $ref: '#/definitions/model.HTTPMessage'
       summary: Delete a user
       tags:
       - Users
@@ -351,15 +353,15 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/respond.HTTPMessage'
+            $ref: '#/definitions/model.HTTPMessage'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/respond.HTTPMessage'
+            $ref: '#/definitions/model.HTTPMessage'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/respond.HTTPMessage'
+            $ref: '#/definitions/model.HTTPMessage'
       summary: Get a user by ID
       tags:
       - Users
@@ -388,19 +390,19 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/respond.HTTPMessage'
+            $ref: '#/definitions/model.HTTPMessage'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/respond.HTTPMessage'
+            $ref: '#/definitions/model.HTTPMessage'
         "409":
           description: Conflict
           schema:
-            $ref: '#/definitions/respond.HTTPMessage'
+            $ref: '#/definitions/model.HTTPMessage'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/respond.HTTPMessage'
+            $ref: '#/definitions/model.HTTPMessage'
       summary: Update a user
       tags:
       - Users
@@ -418,7 +420,7 @@ paths:
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/respond.HTTPMessage'
+            $ref: '#/definitions/model.HTTPMessage'
       summary: Get the version of the service
       tags:
       - Version

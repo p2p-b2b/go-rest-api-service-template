@@ -36,7 +36,7 @@ const docTemplate = `{
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/respond.HTTPMessage"
+                            "$ref": "#/definitions/model.HTTPMessage"
                         }
                     }
                 }
@@ -107,13 +107,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/respond.HTTPMessage"
+                            "$ref": "#/definitions/model.HTTPMessage"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/respond.HTTPMessage"
+                            "$ref": "#/definitions/model.HTTPMessage"
                         }
                     }
                 }
@@ -147,25 +147,25 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/respond.HTTPMessage"
+                            "$ref": "#/definitions/model.HTTPMessage"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/respond.HTTPMessage"
+                            "$ref": "#/definitions/model.HTTPMessage"
                         }
                     },
                     "409": {
                         "description": "Conflict",
                         "schema": {
-                            "$ref": "#/definitions/respond.HTTPMessage"
+                            "$ref": "#/definitions/model.HTTPMessage"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/respond.HTTPMessage"
+                            "$ref": "#/definitions/model.HTTPMessage"
                         }
                     }
                 }
@@ -202,19 +202,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/respond.HTTPMessage"
+                            "$ref": "#/definitions/model.HTTPMessage"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/respond.HTTPMessage"
+                            "$ref": "#/definitions/model.HTTPMessage"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/respond.HTTPMessage"
+                            "$ref": "#/definitions/model.HTTPMessage"
                         }
                     }
                 }
@@ -256,25 +256,25 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/respond.HTTPMessage"
+                            "$ref": "#/definitions/model.HTTPMessage"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/respond.HTTPMessage"
+                            "$ref": "#/definitions/model.HTTPMessage"
                         }
                     },
                     "409": {
                         "description": "Conflict",
                         "schema": {
-                            "$ref": "#/definitions/respond.HTTPMessage"
+                            "$ref": "#/definitions/model.HTTPMessage"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/respond.HTTPMessage"
+                            "$ref": "#/definitions/model.HTTPMessage"
                         }
                     }
                 }
@@ -303,19 +303,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/respond.HTTPMessage"
+                            "$ref": "#/definitions/model.HTTPMessage"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/respond.HTTPMessage"
+                            "$ref": "#/definitions/model.HTTPMessage"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/respond.HTTPMessage"
+                            "$ref": "#/definitions/model.HTTPMessage"
                         }
                     }
                 }
@@ -342,7 +342,7 @@ const docTemplate = `{
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/respond.HTTPMessage"
+                            "$ref": "#/definitions/model.HTTPMessage"
                         }
                     }
                 }
@@ -430,6 +430,27 @@ const docTemplate = `{
                     "type": "string",
                     "format": "string",
                     "example": "ThisIs4Passw0rd"
+                }
+            }
+        },
+        "model.HTTPMessage": {
+            "description": "HTTPMessage represents a message to be sent to the client though the HTTP REST API.",
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                },
+                "method": {
+                    "type": "string"
+                },
+                "path": {
+                    "type": "string"
+                },
+                "status_code": {
+                    "type": "integer"
+                },
+                "timestamp": {
+                    "type": "string"
                 }
             }
         },
@@ -571,26 +592,6 @@ const docTemplate = `{
                     "type": "string",
                     "format": "date-time",
                     "example": "2021-01-01T00:00:00Z"
-                }
-            }
-        },
-        "respond.HTTPMessage": {
-            "type": "object",
-            "properties": {
-                "message": {
-                    "type": "string"
-                },
-                "method": {
-                    "type": "string"
-                },
-                "path": {
-                    "type": "string"
-                },
-                "status_code": {
-                    "type": "integer"
-                },
-                "timestamp": {
-                    "type": "string"
                 }
             }
         }

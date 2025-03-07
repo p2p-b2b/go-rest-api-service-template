@@ -105,9 +105,9 @@ func (ref *UsersHandler) RegisterRoutes(mux *http.ServeMux, middlewares ...middl
 //	@Produce		json
 //	@Param			user_id	path		string	true	"The user ID in UUID format"	Format(uuid)
 //	@Success		200		{object}	model.User
-//	@Failure		400		{object}	respond.HTTPMessage
-//	@Failure		404		{object}	respond.HTTPMessage
-//	@Failure		500		{object}	respond.HTTPMessage
+//	@Failure		400		{object}	model.HTTPMessage
+//	@Failure		404		{object}	model.HTTPMessage
+//	@Failure		500		{object}	model.HTTPMessage
 //	@Router			/users/{user_id} [get]
 func (ref *UsersHandler) getByID(w http.ResponseWriter, r *http.Request) {
 	ctx, span := ref.ot.Traces.Tracer.Start(r.Context(), "handler.Users.getByID")
@@ -212,10 +212,10 @@ func (ref *UsersHandler) getByID(w http.ResponseWriter, r *http.Request) {
 //	@Accept			json
 //	@Produce		json
 //	@Param			user	body		model.CreateUserRequest	true	"CreateUserRequest"	Format(json)
-//	@Success		201		{object}	respond.HTTPMessage
-//	@Failure		400		{object}	respond.HTTPMessage
-//	@Failure		409		{object}	respond.HTTPMessage
-//	@Failure		500		{object}	respond.HTTPMessage
+//	@Success		201		{object}	model.HTTPMessage
+//	@Failure		400		{object}	model.HTTPMessage
+//	@Failure		409		{object}	model.HTTPMessage
+//	@Failure		500		{object}	model.HTTPMessage
 //	@Router			/users [post]
 func (ref *UsersHandler) create(w http.ResponseWriter, r *http.Request) {
 	ctx, span := ref.ot.Traces.Tracer.Start(r.Context(), "handler.Users.create")
@@ -326,10 +326,10 @@ func (ref *UsersHandler) create(w http.ResponseWriter, r *http.Request) {
 //	@Produce		json
 //	@Param			user_id	path		string					true	"The user ID in UUID format"	Format(uuid)
 //	@Param			user	body		model.UpdateUserRequest	true	"User"							Format(json)
-//	@Success		200		{object}	respond.HTTPMessage
-//	@Failure		400		{object}	respond.HTTPMessage
-//	@Failure		409		{object}	respond.HTTPMessage
-//	@Failure		500		{object}	respond.HTTPMessage
+//	@Success		200		{object}	model.HTTPMessage
+//	@Failure		400		{object}	model.HTTPMessage
+//	@Failure		409		{object}	model.HTTPMessage
+//	@Failure		500		{object}	model.HTTPMessage
 //	@Router			/users/{user_id} [put]
 func (ref *UsersHandler) update(w http.ResponseWriter, r *http.Request) {
 	ctx, span := ref.ot.Traces.Tracer.Start(r.Context(), "handler.Users.update")
@@ -450,9 +450,9 @@ func (ref *UsersHandler) update(w http.ResponseWriter, r *http.Request) {
 //	@Tags			Users
 //	@Param			user_id	path	string	true	"The user ID in UUID format"	Format(uuid)
 //	@Produce		json
-//	@Success		200	{object}	respond.HTTPMessage
-//	@Failure		400	{object}	respond.HTTPMessage
-//	@Failure		500	{object}	respond.HTTPMessage
+//	@Success		200	{object}	model.HTTPMessage
+//	@Failure		400	{object}	model.HTTPMessage
+//	@Failure		500	{object}	model.HTTPMessage
 //	@Router			/users/{user_id} [delete]
 func (ref *UsersHandler) delete(w http.ResponseWriter, r *http.Request) {
 	ctx, span := ref.ot.Traces.Tracer.Start(r.Context(), "handler.Users.delete")
@@ -529,8 +529,8 @@ func (ref *UsersHandler) delete(w http.ResponseWriter, r *http.Request) {
 //	@Param			prev_token	query		string	false	"Previous cursor"																		Format(string)
 //	@Param			limit		query		int		false	"Limit"																					Format(int)
 //	@Success		200			{object}	model.ListUsersResponse
-//	@Failure		400			{object}	respond.HTTPMessage
-//	@Failure		500			{object}	respond.HTTPMessage
+//	@Failure		400			{object}	model.HTTPMessage
+//	@Failure		500			{object}	model.HTTPMessage
 //	@Router			/users [get]
 func (ref *UsersHandler) list(w http.ResponseWriter, r *http.Request) {
 	ctx, span := ref.ot.Traces.Tracer.Start(r.Context(), "handler.Users.list")
