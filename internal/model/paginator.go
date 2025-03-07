@@ -1,4 +1,4 @@
-package paginator
+package model
 
 import (
 	"encoding/base64"
@@ -24,7 +24,7 @@ var (
 	ErrMustBeOneOrGreater = errors.New("limit must be one or greater")
 )
 
-// Paginator represents a paginator.
+// Paginator represents a model.
 //
 // @Description Paginator represents a paginator
 type Paginator struct {
@@ -36,7 +36,7 @@ type Paginator struct {
 	Limit     int    `json:"limit" example:"10" format:"int"`
 }
 
-// String returns the string representation of the paginator.
+// String returns the string representation of the model.
 func (ref *Paginator) String() string {
 	limit := fmt.Sprintf("%d", ref.Limit)
 
@@ -55,7 +55,7 @@ func (ref *Paginator) GenerateToken(id uuid.UUID, serial int64) string {
 	return EncodeToken(id, serial)
 }
 
-// Validate validates the paginator.
+// Validate validates the model.
 func (ref *Paginator) Validate() error {
 	if ref.Limit <= 0 {
 		return ErrMustBeOneOrGreater

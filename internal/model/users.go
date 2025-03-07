@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/p2p-b2b/go-rest-api-service-template/internal/paginator"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/query"
 )
 
@@ -205,7 +204,7 @@ type SelectUsersInput struct {
 	Sort      string
 	Filter    string
 	Fields    []string
-	Paginator paginator.Paginator
+	Paginator Paginator
 }
 
 func (ref *SelectUsersInput) Validate() error {
@@ -234,7 +233,7 @@ type ListUsersInput = SelectUsersInput
 
 type SelectUsersOutput struct {
 	Items     []*User
-	Paginator paginator.Paginator
+	Paginator Paginator
 }
 
 type ListUsersOutput = SelectUsersOutput
@@ -332,6 +331,6 @@ func (req *UpdateUserRequest) Validate() error {
 //
 // @Description ListUsersResponse represents a list of users
 type ListUsersResponse struct {
-	Items     []*User             `json:"items"`
-	Paginator paginator.Paginator `json:"paginator"`
+	Items     []*User   `json:"items"`
+	Paginator Paginator `json:"paginator"`
 }

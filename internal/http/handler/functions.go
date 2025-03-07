@@ -4,7 +4,7 @@ import (
 	"strconv"
 
 	"github.com/google/uuid"
-	"github.com/p2p-b2b/go-rest-api-service-template/internal/paginator"
+	"github.com/p2p-b2b/go-rest-api-service-template/internal/model"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/query"
 )
 
@@ -59,7 +59,7 @@ func parseFieldsQueryParams(fields string, allowedFields []string) ([]string, er
 // parseNextTokenQueryParams parses a string into a nextToken field.
 func parseNextTokenQueryParams(nextToken string) (string, error) {
 	if nextToken != "" {
-		_, _, err := paginator.DecodeToken(nextToken)
+		_, _, err := model.DecodeToken(nextToken)
 		if err != nil {
 			return "", ErrInvalidNextToken
 		}
@@ -71,7 +71,7 @@ func parseNextTokenQueryParams(nextToken string) (string, error) {
 // parsePrevTokenQueryParams parses a string into a prevToken field.
 func parsePrevTokenQueryParams(prevToken string) (string, error) {
 	if prevToken != "" {
-		_, _, err := paginator.DecodeToken(prevToken)
+		_, _, err := model.DecodeToken(prevToken)
 		if err != nil {
 			return "", ErrInvalidPrevToken
 		}
@@ -86,7 +86,7 @@ func parseLimitQueryParams(limit string) (int, error) {
 	var err error
 
 	if limit == "" {
-		return paginator.DefaultLimit, nil
+		return model.DefaultLimit, nil
 	}
 
 	// check if this is a valid integer
@@ -95,13 +95,13 @@ func parseLimitQueryParams(limit string) (int, error) {
 	}
 
 	if limitInt == 0 {
-		limitInt = paginator.DefaultLimit
+		limitInt = model.DefaultLimit
 	}
 
-	if limitInt < paginator.MinLimit {
+	if limitInt < model.MinLimit {
 		return 0, ErrInvalidLimit
-	} else if limitInt > paginator.MaxLimit {
-		limitInt = paginator.MaxLimit
+	} else if limitInt > model.MaxLimit {
+		limitInt = model.MaxLimit
 	}
 
 	return limitInt, nil
