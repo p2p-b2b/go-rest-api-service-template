@@ -97,7 +97,7 @@ func (ref *HealthHandler) RegisterRoutes(mux *http.ServeMux, middlewares ...midd
 //	@Tags			Health
 //	@Produce		json
 //	@Success		200	{object}	model.Health
-//	@Failure		500	{object}	respond.HTTPMessage
+//	@Failure		500	{object}	model.HTTPMessage
 //	@Router			/health/status [get]
 func (ref *HealthHandler) getStatus(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)

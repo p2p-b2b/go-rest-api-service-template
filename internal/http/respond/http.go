@@ -5,23 +5,9 @@ import (
 	"log/slog"
 	"net/http"
 	"time"
+
+	"github.com/p2p-b2b/go-rest-api-service-template/internal/model"
 )
-
-type HTTPMessage struct {
-	Timestamp  time.Time `json:"timestamp"`
-	StatusCode int       `json:"status_code"`
-	Message    string    `json:"message"`
-	Method     string    `json:"method"`
-	Path       string    `json:"path"`
-}
-
-func (e *HTTPMessage) String() string {
-	return e.Message
-}
-
-func (e *HTTPMessage) Error() string {
-	return e.Message
-}
 
 // WriteJSONData writes the given data to the client as a JSON response.
 func WriteJSONData(w http.ResponseWriter, statusCode int, data interface{}) error {
@@ -40,7 +26,7 @@ func WriteJSONMessage(w http.ResponseWriter, r *http.Request, statusCode int, me
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
 
-	var success HTTPMessage
+	var success model.HTTPMessage
 	success.Timestamp = time.Now()
 	success.StatusCode = statusCode
 	success.Message = message

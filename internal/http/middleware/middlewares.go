@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/p2p-b2b/go-rest-api-service-template/internal/http/respond"
+	"github.com/p2p-b2b/go-rest-api-service-template/internal/model"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/propagation"
 )
@@ -97,13 +97,13 @@ type customResponseWriter struct {
 
 // Write writes the response data.
 func (w *customResponseWriter) Write(data []byte) (n int, err error) {
-	var apiResponse respond.HTTPMessage
+	var apiResponse model.HTTPMessage
 
 	switch w.status {
 	case http.StatusNotFound:
 		if err := json.Unmarshal(data, &apiResponse); err != nil {
 			data, err = json.Marshal(
-				respond.HTTPMessage{
+				model.HTTPMessage{
 					Timestamp:  time.Now().UTC(),
 					StatusCode: http.StatusNotFound,
 					Message:    "Not Found",
@@ -119,7 +119,7 @@ func (w *customResponseWriter) Write(data []byte) (n int, err error) {
 	case http.StatusMethodNotAllowed:
 		if err := json.Unmarshal(data, &apiResponse); err != nil {
 			data, err = json.Marshal(
-				respond.HTTPMessage{
+				model.HTTPMessage{
 					Timestamp:  time.Now().UTC(),
 					StatusCode: http.StatusMethodNotAllowed,
 					Message:    "Method Not Allowed",

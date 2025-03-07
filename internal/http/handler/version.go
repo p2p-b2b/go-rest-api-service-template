@@ -31,7 +31,7 @@ func (ref *VersionHandler) RegisterRoutes(mux *http.ServeMux, middlewares ...mid
 //	@Tags			Version
 //	@Produce		json
 //	@Success		200	{object}	Version
-//	@Failure		500	{object}	respond.HTTPMessage
+//	@Failure		500	{object}	model.HTTPMessage
 //	@Router			/version [get]
 func (ref *VersionHandler) get(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
