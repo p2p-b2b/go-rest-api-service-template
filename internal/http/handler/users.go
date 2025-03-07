@@ -14,7 +14,6 @@ import (
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/http/respond"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/model"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/o11y"
-	"github.com/p2p-b2b/go-rest-api-service-template/internal/paginator"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/metric"
@@ -583,7 +582,7 @@ func (ref *UsersHandler) list(w http.ResponseWriter, r *http.Request) {
 		Sort:   sort,
 		Filter: filter,
 		Fields: fields,
-		Paginator: paginator.Paginator{
+		Paginator: model.Paginator{
 			NextToken: nextToken,
 			PrevToken: prevToken,
 			Limit:     limit,

@@ -16,7 +16,6 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/model"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/o11y"
-	"github.com/p2p-b2b/go-rest-api-service-template/internal/paginator"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/query"
 
 	"go.opentelemetry.io/otel/attribute"
@@ -718,7 +717,7 @@ func (ref *UsersRepository) Select(ctx context.Context, input *model.SelectUsers
 	// if next token is provided
 	if input.Paginator.NextToken != "" {
 		// decode the token
-		id, serial, err := paginator.DecodeToken(input.Paginator.NextToken)
+		id, serial, err := model.DecodeToken(input.Paginator.NextToken)
 		if err != nil {
 			slog.Error("repository.Users.Select", "error", err)
 			span.SetStatus(codes.Error, "invalid token")
@@ -750,7 +749,7 @@ func (ref *UsersRepository) Select(ctx context.Context, input *model.SelectUsers
 	// if prev token is provided
 	if input.Paginator.PrevToken != "" {
 		// decode the token
-		id, serial, err := paginator.DecodeToken(input.Paginator.PrevToken)
+		id, serial, err := model.DecodeToken(input.Paginator.PrevToken)
 		if err != nil {
 			slog.Error("repository.Users.Select", "error", err)
 			span.SetStatus(codes.Error, "invalid token")
@@ -903,14 +902,14 @@ func (ref *UsersRepository) Select(ctx context.Context, input *model.SelectUsers
 		slog.Warn("repository.Users.Select", "what", "no users found")
 		return &model.SelectUsersOutput{
 			Items:     make([]*model.User, 0),
-			Paginator: paginator.Paginator{},
+			Paginator: model.Paginator{},
 		}, nil
 	}
 
 	slog.Debug("repository.Users.Select", "next_id", items[outLen-1].ID, "next_serial_id", items[outLen-1].SerialID)
 	slog.Debug("repository.Users.Select", "prev_id", items[0].ID, "prev_serial_id", items[0].SerialID)
 
-	nextToken, prevToken := paginator.GetTokens(
+	nextToken, prevToken := model.GetTokens(
 		outLen,
 		input.Paginator.Limit,
 		items[0].ID,
@@ -921,7 +920,7 @@ func (ref *UsersRepository) Select(ctx context.Context, input *model.SelectUsers
 
 	ret := &model.SelectUsersOutput{
 		Items: items,
-		Paginator: paginator.Paginator{
+		Paginator: model.Paginator{
 			Size:      outLen,
 			Limit:     input.Paginator.Limit,
 			NextToken: nextToken,

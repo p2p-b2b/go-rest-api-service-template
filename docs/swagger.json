@@ -452,7 +452,43 @@
                     }
                 },
                 "paginator": {
-                    "$ref": "#/definitions/paginator.Paginator"
+                    "$ref": "#/definitions/model.Paginator"
+                }
+            }
+        },
+        "model.Paginator": {
+            "description": "Paginator represents a paginator",
+            "type": "object",
+            "properties": {
+                "limit": {
+                    "type": "integer",
+                    "format": "int",
+                    "example": 10
+                },
+                "next_page": {
+                    "type": "string",
+                    "format": "string",
+                    "example": "http://localhost:8080/users?next_token=ZmZmZmZmZmYtZmZmZi0tZmZmZmZmZmY=\u0026limit=10"
+                },
+                "next_token": {
+                    "type": "string",
+                    "format": "string",
+                    "example": "ZmZmZmZmZmYtZmZmZi0tZmZmZmZmZmY="
+                },
+                "prev_page": {
+                    "type": "string",
+                    "format": "string",
+                    "example": "http://localhost:8080/users?prev_token=ZmZmZmZmZmYtZmZmZi0tZmZmZmZmZmY=\u0026limit=10"
+                },
+                "prev_token": {
+                    "type": "string",
+                    "format": "string",
+                    "example": "ZmZmZmZmZmYtZmZmZi0tZmZmZmZmZmY="
+                },
+                "size": {
+                    "type": "integer",
+                    "format": "int",
+                    "example": 10
                 }
             }
         },
@@ -525,42 +561,6 @@
                     "type": "string",
                     "format": "date-time",
                     "example": "2021-01-01T00:00:00Z"
-                }
-            }
-        },
-        "paginator.Paginator": {
-            "description": "Paginator represents a paginator",
-            "type": "object",
-            "properties": {
-                "limit": {
-                    "type": "integer",
-                    "format": "int",
-                    "example": 10
-                },
-                "next_page": {
-                    "type": "string",
-                    "format": "string",
-                    "example": "http://localhost:8080/users?next_token=ZmZmZmZmZmYtZmZmZi0tZmZmZmZmZmY=\u0026limit=10"
-                },
-                "next_token": {
-                    "type": "string",
-                    "format": "string",
-                    "example": "ZmZmZmZmZmYtZmZmZi0tZmZmZmZmZmY="
-                },
-                "prev_page": {
-                    "type": "string",
-                    "format": "string",
-                    "example": "http://localhost:8080/users?prev_token=ZmZmZmZmZmYtZmZmZi0tZmZmZmZmZmY=\u0026limit=10"
-                },
-                "prev_token": {
-                    "type": "string",
-                    "format": "string",
-                    "example": "ZmZmZmZmZmYtZmZmZi0tZmZmZmZmZmY="
-                },
-                "size": {
-                    "type": "integer",
-                    "format": "int",
-                    "example": 10
                 }
             }
         },

@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
-	"github.com/p2p-b2b/go-rest-api-service-template/internal/paginator"
+	"github.com/p2p-b2b/go-rest-api-service-template/internal/model"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -98,7 +98,7 @@ func TestParseNextTokenQueryParams(t *testing.T) {
 	}{
 		{"", "", nil},
 		{"invalid", "", ErrInvalidNextToken},
-		{paginator.EncodeToken(testID, 10), paginator.EncodeToken(testID, 10), nil},
+		{model.EncodeToken(testID, 10), model.EncodeToken(testID, 10), nil},
 	}
 
 	for _, test := range tests {
@@ -118,7 +118,7 @@ func TestParsePrevTokenQueryParams(t *testing.T) {
 	}{
 		{"", "", nil},
 		{"invalid", "", ErrInvalidPrevToken},
-		{paginator.EncodeToken(testID, 10), paginator.EncodeToken(testID, 10), nil},
+		{model.EncodeToken(testID, 10), model.EncodeToken(testID, 10), nil},
 	}
 
 	for _, test := range tests {
@@ -134,12 +134,12 @@ func TestParseLimitQueryParams(t *testing.T) {
 		expected int
 		err      error
 	}{
-		{"", paginator.DefaultLimit, nil},
+		{"", model.DefaultLimit, nil},
 		{"invalid", 0, ErrInvalidLimit},
-		{"0", paginator.DefaultLimit, nil},
+		{"0", model.DefaultLimit, nil},
 		{"5", 5, nil},
 		{"-1", 0, ErrInvalidLimit},
-		{"1000", paginator.MaxLimit, nil},
+		{"1000", model.MaxLimit, nil},
 	}
 
 	for _, test := range tests {
@@ -156,8 +156,8 @@ func TestParseListQueryParams(t *testing.T) {
 		"sort":      "name ASC",
 		"filter":    "status='active'",
 		"fields":    "id,name",
-		"nextToken": paginator.EncodeToken(testID, 10),
-		"prevToken": paginator.EncodeToken(testID, 10),
+		"nextToken": model.EncodeToken(testID, 10),
+		"prevToken": model.EncodeToken(testID, 10),
 		"limit":     "5",
 	}
 
@@ -170,7 +170,7 @@ func TestParseListQueryParams(t *testing.T) {
 	assert.Equal(t, "name ASC", sort)
 	assert.Equal(t, "status='active'", filter)
 	assert.Equal(t, []string{"id", "name"}, fields)
-	assert.Equal(t, paginator.EncodeToken(testID, 10), nextToken)
-	assert.Equal(t, paginator.EncodeToken(testID, 10), prevToken)
+	assert.Equal(t, model.EncodeToken(testID, 10), nextToken)
+	assert.Equal(t, model.EncodeToken(testID, 10), prevToken)
 	assert.Equal(t, 5, limit)
 }
