@@ -232,7 +232,7 @@ func (ref *SelectUsersInput) Validate() error {
 type ListUsersInput = SelectUsersInput
 
 type SelectUsersOutput struct {
-	Items     []*User
+	Items     []User
 	Paginator Paginator
 }
 
@@ -331,6 +331,6 @@ func (req *UpdateUserRequest) Validate() error {
 //
 // @Description ListUsersResponse represents a list of users
 type ListUsersResponse struct {
-	Items     []*User   `json:"items"`
+	Items     []User    `json:"items"`
 	Paginator Paginator `json:"paginator"`
 }

@@ -6,11 +6,11 @@ import "time"
 //
 // @Description HTTPMessage represents a message to be sent to the client though the HTTP REST API.
 type HTTPMessage struct {
-	Timestamp  time.Time `json:"timestamp"`
-	StatusCode int       `json:"status_code"`
-	Message    string    `json:"message"`
-	Method     string    `json:"method"`
-	Path       string    `json:"path"`
+	Timestamp  time.Time `json:"timestamp" example:"2021-01-01T00:00:00Z" format:"date-time"`
+	StatusCode int       `json:"status_code" example:"200" format:"int32"`
+	Message    string    `json:"message" example:"Hello, World!" format:"string"`
+	Method     string    `json:"method" example:"GET" format:"string"`
+	Path       string    `json:"path" example:"/api/v1/hello" format:"string"`
 }
 
 func (e *HTTPMessage) String() string {

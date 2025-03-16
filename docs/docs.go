@@ -9,7 +9,11 @@ const docTemplate = `{
     "info": {
         "description": "{{escape .Description}}",
         "title": "{{.Title}}",
-        "contact": {},
+        "contact": {
+            "name": "API Support",
+            "url": "https://qu3ry.me",
+            "email": "info@qu3ry.me"
+        },
         "version": "{{.Version}}"
     },
     "host": "{{.Host}}",
@@ -44,15 +48,15 @@ const docTemplate = `{
         },
         "/users": {
             "get": {
-                "description": "List all users",
+                "description": "List users with pagination and filtering",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Users"
                 ],
-                "summary": "List all users",
-                "operationId": "1213ffb2-b9f3-4134-923e-13bb777da62b",
+                "summary": "List users",
+                "operationId": "b51b8ab6-4bb4-4b37-af5c-9825ba7e71e5",
                 "parameters": [
                     {
                         "type": "string",
@@ -119,7 +123,7 @@ const docTemplate = `{
                 }
             },
             "post": {
-                "description": "Create a new user from scratch\nIf the id is not provided, it will be generated automatically",
+                "description": "Create new user from scratch.\nIf the id is not provided, it will be generated automatically.",
                 "consumes": [
                     "application/json"
                 ],
@@ -129,13 +133,12 @@ const docTemplate = `{
                 "tags": [
                     "Users"
                 ],
-                "summary": "Create a new user",
-                "operationId": "f71e14db-fc77-4fb3-a21d-292eade431df",
+                "summary": "Create user",
+                "operationId": "8a1488b0-2d2c-42a0-a57a-6560aaf3ec76",
                 "parameters": [
                     {
-                        "format": "json",
-                        "description": "CreateUserRequest",
-                        "name": "user",
+                        "description": "Create user request",
+                        "name": "body",
                         "in": "body",
                         "required": true,
                         "schema": {
@@ -231,7 +234,7 @@ const docTemplate = `{
                     "Users"
                 ],
                 "summary": "Update a user",
-                "operationId": "75165751-045b-465d-ba93-c88a27b6a42e",
+                "operationId": "a7979074-e16c-4aec-86e0-e5a154bbfc51",
                 "parameters": [
                     {
                         "type": "string",
@@ -242,9 +245,8 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "format": "json",
-                        "description": "User",
-                        "name": "user",
+                        "description": "User update request",
+                        "name": "body",
                         "in": "body",
                         "required": true,
                         "schema": {
@@ -438,19 +440,29 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "message": {
-                    "type": "string"
+                    "type": "string",
+                    "format": "string",
+                    "example": "Hello, World!"
                 },
                 "method": {
-                    "type": "string"
+                    "type": "string",
+                    "format": "string",
+                    "example": "GET"
                 },
                 "path": {
-                    "type": "string"
+                    "type": "string",
+                    "format": "string",
+                    "example": "/api/v1/hello"
                 },
                 "status_code": {
-                    "type": "integer"
+                    "type": "integer",
+                    "format": "int32",
+                    "example": 200
                 },
                 "timestamp": {
-                    "type": "string"
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2021-01-01T00:00:00Z"
                 }
             }
         },
@@ -600,11 +612,11 @@ const docTemplate = `{
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "",
+	Version:          "v1",
 	Host:             "",
 	BasePath:         "",
 	Schemes:          []string{},
-	Title:            "",
+	Title:            "Go REST API Service Template",
 	Description:      "This is a service template for building RESTful APIs in Go.\nIt uses a PostgreSQL database to store user information.\nThe service provides:\n- CRUD operations for users.\n- Health and version endpoints.\n- Configuration using environment variables or command line arguments.\n- Debug mode to enable debug logging.\n- TLS enabled to secure the communication.",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,

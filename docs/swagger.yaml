@@ -65,14 +65,24 @@ definitions:
       the HTTP REST API.
     properties:
       message:
+        example: Hello, World!
+        format: string
         type: string
       method:
+        example: GET
+        format: string
         type: string
       path:
+        example: /api/v1/hello
+        format: string
         type: string
       status_code:
+        example: 200
+        format: int32
         type: integer
       timestamp:
+        example: "2021-01-01T00:00:00Z"
+        format: date-time
         type: string
     type: object
   model.Health:
@@ -183,7 +193,10 @@ definitions:
         type: string
     type: object
 info:
-  contact: {}
+  contact:
+    email: info@qu3ry.me
+    name: API Support
+    url: https://qu3ry.me
   description: |-
     This is a service template for building RESTful APIs in Go.
     It uses a PostgreSQL database to store user information.
@@ -193,6 +206,8 @@ info:
     - Configuration using environment variables or command line arguments.
     - Debug mode to enable debug logging.
     - TLS enabled to secure the communication.
+  title: Go REST API Service Template
+  version: v1
 paths:
   /health/status:
     get:
@@ -215,8 +230,8 @@ paths:
       - Health
   /users:
     get:
-      description: List all users
-      operationId: 1213ffb2-b9f3-4134-923e-13bb777da62b
+      description: List users with pagination and filtering
+      operationId: b51b8ab6-4bb4-4b37-af5c-9825ba7e71e5
       parameters:
       - description: 'Comma-separated list of fields to sort by. Example: first_name
           ASC, created_at DESC'
@@ -264,21 +279,20 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/model.HTTPMessage'
-      summary: List all users
+      summary: List users
       tags:
       - Users
     post:
       consumes:
       - application/json
       description: |-
-        Create a new user from scratch
-        If the id is not provided, it will be generated automatically
-      operationId: f71e14db-fc77-4fb3-a21d-292eade431df
+        Create new user from scratch.
+        If the id is not provided, it will be generated automatically.
+      operationId: 8a1488b0-2d2c-42a0-a57a-6560aaf3ec76
       parameters:
-      - description: CreateUserRequest
-        format: json
+      - description: Create user request
         in: body
-        name: user
+        name: body
         required: true
         schema:
           $ref: '#/definitions/model.CreateUserRequest'
@@ -301,7 +315,7 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/model.HTTPMessage'
-      summary: Create a new user
+      summary: Create user
       tags:
       - Users
   /users/{user_id}:
@@ -369,7 +383,7 @@ paths:
       consumes:
       - application/json
       description: Update a user
-      operationId: 75165751-045b-465d-ba93-c88a27b6a42e
+      operationId: a7979074-e16c-4aec-86e0-e5a154bbfc51
       parameters:
       - description: The user ID in UUID format
         format: uuid
@@ -377,10 +391,9 @@ paths:
         name: user_id
         required: true
         type: string
-      - description: User
-        format: json
+      - description: User update request
         in: body
-        name: user
+        name: body
         required: true
         schema:
           $ref: '#/definitions/model.UpdateUserRequest'

@@ -15,7 +15,7 @@ func hashAndSaltPassword(password string) (string, error) {
 }
 
 // comparePasswords compares the hashed password and the plain password.
-func comparePasswords(hashedPwd string, plainPwd string) bool {
-	err := bcrypt.CompareHashAndPassword([]byte(hashedPwd), []byte(plainPwd))
-	return err == nil
-}
+// func comparePasswords(hashedPwd string, plainPwd string) bool {
+// 	err := bcrypt.CompareHashAndPassword([]byte(hashedPwd), []byte(plainPwd))
+// 	return err == nil
+// }

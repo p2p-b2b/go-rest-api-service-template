@@ -812,7 +812,7 @@ func (ref *UsersRepository) Select(ctx context.Context, input *model.SelectUsers
 	}
 	defer rows.Close()
 
-	var items []*model.User
+	var items []model.User
 	for rows.Next() {
 		var item model.User
 
@@ -880,7 +880,7 @@ func (ref *UsersRepository) Select(ctx context.Context, input *model.SelectUsers
 			return nil, err
 		}
 
-		items = append(items, &item)
+		items = append(items, item)
 	}
 	defer rows.Close()
 
@@ -901,7 +901,7 @@ func (ref *UsersRepository) Select(ctx context.Context, input *model.SelectUsers
 	if outLen == 0 {
 		slog.Warn("repository.Users.Select", "what", "no users found")
 		return &model.SelectUsersOutput{
-			Items:     make([]*model.User, 0),
+			Items:     make([]model.User, 0),
 			Paginator: model.Paginator{},
 		}, nil
 	}

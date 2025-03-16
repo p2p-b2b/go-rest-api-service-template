@@ -176,7 +176,7 @@ test-coverage: install-go-test-coverage ## Run tests and show coverage
 ###############################################################################
 ##@ Build commands
 .PHONY: build
-build: go-generate docs-swagger ## Build the application
+build: go-generate docs-swagger lint vulncheck ## Build the application
 	@printf "👉 Building...\n"
 	$(foreach proj_mod, $(PROJECT_MODULES_NAME), \
 		$(call exec_cmd, CGO_ENABLED=$(GO_CGO_ENABLED) go build $(GO_LDFLAGS) $(GO_OPTS) -o $(BUILD_DIR)/$(proj_mod) ./cmd/$(proj_mod)/ ) \
@@ -184,7 +184,7 @@ build: go-generate docs-swagger ## Build the application
 	)
 
 .PHONY: build-all
-build-all: go-generate go-fmt go-vet docs-swagger ## Build the application and execute go generate, go fmt and go vet
+build-all: lint vulncheck go-generate go-fmt go-vet docs-swagger ## Build the application and execute go generate, go fmt and go vet
 	@printf "👉 Building and lintering...\n"
 	$(foreach proj_mod, $(PROJECT_MODULES_NAME), \
 		$(call exec_cmd, CGO_ENABLED=$(GO_CGO_ENABLED) go build $(GO_LDFLAGS) $(GO_OPTS) -o $(BUILD_DIR)/$(proj_mod) ./cmd/$(proj_mod)/ ) \
@@ -206,33 +206,49 @@ build-dist: ## Build the application for all platforms defined in GO_OS and GO_A
 .PHONY: build-dist-zip
 build-dist-zip: ## Build the application for all platforms defined in GO_OS and GO_ARCH in this Makefile and create a zip file for each binary. Requires make build-dist
 	@printf "👉 Creating zip files for distribution...\n"
-	$(call exec_cmd, mkdir -p $(DIST_ASSEST_DIR))
+	$(call exec_cmd, mkdir -p $(DIST_ASSETS_DIR))
 	$(foreach GOOS, $(GO_OS), \
 		$(foreach GOARCH, $(GO_ARCH), \
 			$(foreach proj_mod, $(PROJECT_MODULES_NAME), \
-				$(call exec_cmd, zip --junk-paths -r $(DIST_ASSEST_DIR)/$(proj_mod)-$(GOOS)-$(GOARCH).zip $(DIST_DIR)/$(proj_mod)-$(GOOS)-$(GOARCH) ) \
-				$(call exec_cmd, shasum -a 256 $(DIST_ASSEST_DIR)/$(proj_mod)-$(GOOS)-$(GOARCH).zip | cut -d ' ' -f 1 > $(DIST_ASSEST_DIR)/$(proj_mod)-$(GOOS)-$(GOARCH).sha256 ) \
+				$(call exec_cmd, zip --junk-paths -r $(DIST_ASSETS_DIR)/$(proj_mod)-$(GOOS)-$(GOARCH).zip $(DIST_DIR)/$(proj_mod)-$(GOOS)-$(GOARCH) ) \
+				$(call exec_cmd, shasum -a 256 $(DIST_ASSETS_DIR)/$(proj_mod)-$(GOOS)-$(GOARCH).zip | cut -d ' ' -f 1 > $(DIST_ASSETS_DIR)/$(proj_mod)-$(GOOS)-$(GOARCH).sha256 ) \
 			) \
 		) \
 	)
+
+###############################################################################
+##@ Check commands
+.PHONY: lint
+lint: install-golangci-lint ## Run linters
+	@printf "👉 Running linters...\n"
+	$(call exec_cmd, golangci-lint run ./...)
+
+.PHONY: vulncheck
+vulncheck: install-govulncheck ## Check vulnerabilities
+	@printf "👉 Checking vulnerabilities...\n"
+	$(call exec_cmd, govulncheck ./...)
 
 ###############################################################################
 ##@ Docs commands
 # this is necessary to avoid a comma in the call function
 COMMA_SIGN := ,
 .PHONY: docs-swagger
-docs-swagger: install-swag ## Generate swagger documentation
+docs-swagger: install-swag install-go-swagger ## Generate swagger documentation
 	@printf "👉 Generating swagger documentation...\n"
 	$(foreach proj_mod, $(PROJECT_MODULES_NAME), \
-		$(call exec_cmd, swag fmt \
-			--dir ./cmd/$(proj_mod)$(COMMA_SIGN)./internal \
-		) \
-		$(call exec_cmd, swag init \
-			--dir ./cmd/$(proj_mod)$(COMMA_SIGN)./internal/http/handler \
-			--output ./docs \
-			--parseDependency true \
-			--parseInternal true \
-		) \
+			$(call exec_cmd, swag fmt \
+				--dir ./cmd/$(proj_mod)$(COMMA_SIGN)./internal \
+			) \
+			$(call exec_cmd, swag init \
+				--dir ./cmd/$(proj_mod)$(COMMA_SIGN)./internal/http/handler \
+				--output ./docs \
+				--parseDependency true \
+				--parseInternal true \
+			) \
+			$(call exec_cmd, swagger generate markdown \
+				--spec ./docs/swagger.json \
+				--target ./docs/  \
+			) \
 	)
 
 ###############################################################################
@@ -247,6 +263,11 @@ install-swag: ## Install swag for swagger documentation (https://github.com/swag
 	@printf "👉 Installing swag...\n"
 	$(call exec_cmd, go install github.com/swaggo/swag/cmd/swag@latest )
 
+.PHONY: install-go-swagger
+install-go-swagger: ## Install swag for swagger documentation (https://github.com/swaggo/http-swagger)
+	@printf "👉 Installing swag...\n"
+	$(call exec_cmd, go install github.com/go-swagger/go-swagger/cmd/swagger@latest )
+
 .PHONY: install-goose
 install-goose: ## Install goose for database migrations (
 	@printf "👉 Installing goose...\n"
@@ -256,6 +277,16 @@ install-goose: ## Install goose for database migrations (
 install-go-test-coverage: ## Install got tool for test coverage (https://github.com/vladopajic/go-test-coverage)
 	@printf "👉 Installing got tool for test coverage...\n"
 	$(call exec_cmd, go install github.com/vladopajic/go-test-coverage/v2@latest )
+
+.PHONY: install-govulncheck
+install-govulncheck: ## Install govulncheck for vulnerabilities check (https://pkg.go.dev/golang.org/x/vuln/cmd/govulncheck#section-documentation)
+	@printf "👉 Installing govulncheck...\n"
+	$(call exec_cmd, go install golang.org/x/vuln/cmd/govulncheck@latest )
+
+.PHONY: install-golangci-lint
+install-golangci-lint: ## Install golangci-lint for linting (https://golangci-lint.run/)
+	@printf "👉 Installing golangci-lint...\n"
+	$(call exec_cmd, go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest )
 
 ###############################################################################
 ##@ Development commands

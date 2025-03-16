@@ -204,14 +204,14 @@ func (ref *UsersHandler) getByID(w http.ResponseWriter, r *http.Request) {
 
 // create Create a new user
 //
-//	@Id				f71e14db-fc77-4fb3-a21d-292eade431df
-//	@Summary		Create a new user
-//	@Description	Create a new user from scratch
-//	@Description	If the id is not provided, it will be generated automatically
+//	@ID				8a1488b0-2d2c-42a0-a57a-6560aaf3ec76
+//	@Summary		Create user
+//	@Description	Create new user from scratch.
+//	@Description	If the id is not provided, it will be generated automatically.
 //	@Tags			Users
 //	@Accept			json
 //	@Produce		json
-//	@Param			user	body		model.CreateUserRequest	true	"CreateUserRequest"	Format(json)
+//	@Param			body	body		model.CreateUserRequest	true	"Create user request"
 //	@Success		201		{object}	model.HTTPMessage
 //	@Failure		400		{object}	model.HTTPMessage
 //	@Failure		409		{object}	model.HTTPMessage
@@ -318,14 +318,14 @@ func (ref *UsersHandler) create(w http.ResponseWriter, r *http.Request) {
 
 // update Update a user
 //
-//	@Id				75165751-045b-465d-ba93-c88a27b6a42e
+//	@Id				a7979074-e16c-4aec-86e0-e5a154bbfc51
 //	@Summary		Update a user
 //	@Description	Update a user
 //	@Tags			Users
 //	@Accept			json
 //	@Produce		json
 //	@Param			user_id	path		string					true	"The user ID in UUID format"	Format(uuid)
-//	@Param			user	body		model.UpdateUserRequest	true	"User"							Format(json)
+//	@Param			body	body		model.UpdateUserRequest	true	"User update request"
 //	@Success		200		{object}	model.HTTPMessage
 //	@Failure		400		{object}	model.HTTPMessage
 //	@Failure		409		{object}	model.HTTPMessage
@@ -517,9 +517,9 @@ func (ref *UsersHandler) delete(w http.ResponseWriter, r *http.Request) {
 
 // list Return a paginated list of users
 //
-//	@Id				1213ffb2-b9f3-4134-923e-13bb777da62b
-//	@Summary		List all users
-//	@Description	List all users
+//	@ID				b51b8ab6-4bb4-4b37-af5c-9825ba7e71e5
+//	@Summary		List users
+//	@Description	List users with pagination and filtering
 //	@Tags			Users
 //	@Produce		json
 //	@Param			sort		query		string	false	"Comma-separated list of fields to sort by. Example: first_name ASC, created_at DESC"	Format(string)
@@ -605,12 +605,12 @@ func (ref *UsersHandler) list(w http.ResponseWriter, r *http.Request) {
 	}
 
 	users := &model.ListUsersResponse{
-		Items:     make([]*model.User, len(sUsers.Items)),
+		Items:     make([]model.User, len(sUsers.Items)),
 		Paginator: sUsers.Paginator,
 	}
 
 	for i, sUser := range sUsers.Items {
-		users.Items[i] = &model.User{
+		users.Items[i] = model.User{
 			ID:        sUser.ID,
 			FirstName: sUser.FirstName,
 			LastName:  sUser.LastName,
