@@ -114,9 +114,9 @@ func (ref *OpenTelemetryTracer) newTraceExporter(ctx context.Context) (trace.Spa
 		}
 	case "otlp-http":
 		insecureOpt := otlptracehttp.WithInsecure()
-
+		withCompression := otlptracehttp.WithCompression(otlptracehttp.GzipCompression)
 		endpointOpt := otlptracehttp.WithEndpoint(fmt.Sprintf("%s:%d", ref.traceEndpoint, ref.tracePort))
-		exporter, err = otlptracehttp.New(ctx, insecureOpt, endpointOpt)
+		exporter, err = otlptracehttp.New(ctx, insecureOpt, endpointOpt, withCompression)
 		if err != nil {
 			return nil, err
 		}

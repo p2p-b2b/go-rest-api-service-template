@@ -104,14 +104,14 @@ func (ref *OpenTelemetryMeter) newMetricExporter(ctx context.Context) (metric.Ex
 		}
 	case "otlp-http":
 		insecureOpt := otlpmetrichttp.WithInsecure()
-
+		WithCompression := otlpmetrichttp.WithCompression(otlpmetrichttp.GzipCompression)
 		endpointOpt := otlpmetrichttp.WithEndpointURL(
 			fmt.Sprintf("http://%s:%d/api/v1/otlp/v1/metrics",
 				ref.metricEndpoint,
 				ref.metricPort,
 			),
 		)
-		exporter, err = otlpmetrichttp.New(ctx, insecureOpt, endpointOpt)
+		exporter, err = otlpmetrichttp.New(ctx, insecureOpt, endpointOpt, WithCompression)
 		if err != nil {
 			return nil, err
 		}
