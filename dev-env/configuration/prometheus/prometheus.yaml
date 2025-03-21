@@ -12,12 +12,8 @@ storage:
     # A 10min time window is enough because it can easily absorb retries and network delays.
     out_of_order_time_window: 10m
 
-remote_write:
-  - url: http://localhost:9090/api/v1/otlp/v1/metrics
-    queue_config:
-      capacity: 1000000
-      batch_send_deadline: 10s
-      max_samples_per_send: 1000
-      max_shards: 3
-    remote_timeout: "30s"
-    follow_redirects: true
+tracing:
+  endpoint: "localhost:4317"
+  insecure: true
+  compression: "gzip"
+  timeout: "10s"
