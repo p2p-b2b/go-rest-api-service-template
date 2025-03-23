@@ -1,21 +1,4 @@
 definitions:
-  handler.Version:
-    properties:
-      build_date:
-        type: string
-      git_branch:
-        type: string
-      git_commit:
-        type: string
-      go_version:
-        type: string
-      go_version_arch:
-        type: string
-      go_version_os:
-        type: string
-      version:
-        type: string
-    type: object
   model.Check:
     description: Health check of the service
     properties:
@@ -190,6 +173,38 @@ definitions:
       updated_at:
         example: "2021-01-01T00:00:00Z"
         format: date-time
+        type: string
+    type: object
+  model.Version:
+    description: Version is the struct that holds the version information.
+    properties:
+      build_date:
+        example: "2021-01-01T00:00:00Z"
+        format: string
+        type: string
+      git_branch:
+        example: main
+        format: string
+        type: string
+      git_commit:
+        example: abcdef123456
+        format: string
+        type: string
+      go_version:
+        example: go1.24.1
+        format: string
+        type: string
+      go_version_arch:
+        example: amd64
+        format: string
+        type: string
+      go_version_os:
+        example: linux
+        format: string
+        type: string
+      version:
+        example: 1.0.0
+        format: string
         type: string
     type: object
 info:
@@ -429,7 +444,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/handler.Version'
+            $ref: '#/definitions/model.Version'
         "500":
           description: Internal Server Error
           schema:

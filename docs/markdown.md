@@ -443,7 +443,7 @@ Status: OK
    
   
 
-[HandlerVersion](#handler-version)
+[ModelVersion](#model-version)
 
 ##### <span id="d85b4a3f-b032-4dd1-b3ab-bc9a00f95eb5-500"></span> 500 - Internal Server Error
 Status: Internal Server Error
@@ -455,27 +455,6 @@ Status: Internal Server Error
 [ModelHTTPMessage](#model-http-message)
 
 ## Models
-
-### <span id="handler-version"></span> handler.Version
-
-
-  
-
-
-
-**Properties**
-
-| Name | Type | Go type | Required | Default | Description | Example |
-|------|------|---------|:--------:| ------- |-------------|---------|
-| build_date | string| `string` |  | |  |  |
-| git_branch | string| `string` |  | |  |  |
-| git_commit | string| `string` |  | |  |  |
-| go_version | string| `string` |  | |  |  |
-| go_version_arch | string| `string` |  | |  |  |
-| go_version_os | string| `string` |  | |  |  |
-| version | string| `string` |  | |  |  |
-
-
 
 ### <span id="model-check"></span> model.Check
 
@@ -646,5 +625,29 @@ Status: Internal Server Error
 | id | uuid (formatted string)| `strfmt.UUID` |  | |  | `550e8400-e29b-41d4-a716-446655440000` |
 | last_name | string (formatted string)| `string` |  | |  | `Doe` |
 | updated_at | date-time (formatted string)| `strfmt.DateTime` |  | |  | `2021-01-01T00:00:00Z` |
+
+
+
+### <span id="model-version"></span> model.Version
+
+
+> Version is the struct that holds the version information.
+  
+
+
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| build_date | string (formatted string)| `string` |  | |  | `2021-01-01T00:00:00Z` |
+| git_branch | string (formatted string)| `string` |  | |  | `main` |
+| git_commit | string (formatted string)| `string` |  | |  | `abcdef123456` |
+| go_version | string (formatted string)| `string` |  | |  | `go1.24.1` |
+| go_version_arch | string (formatted string)| `string` |  | |  | `amd64` |
+| go_version_os | string (formatted string)| `string` |  | |  | `linux` |
+| version | string (formatted string)| `string` |  | |  | `1.0.0` |
 
 
