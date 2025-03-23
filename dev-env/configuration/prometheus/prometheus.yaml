@@ -11,9 +11,17 @@ storage:
   tsdb:
     # A 10min time window is enough because it can easily absorb retries and network delays.
     out_of_order_time_window: 10m
+# tracing:
+#   endpoint: "localhost:4317"
+#   insecure: true
+#   compression: "gzip"
+#   timeout: "10s"
 
-tracing:
-  endpoint: "localhost:4317"
-  insecure: true
-  compression: "gzip"
-  timeout: "10s"
+otlp:
+  keep_identifying_resource_attributes: true
+  translation_strategy: NoUTF8EscapingWithSuffixes
+  promote_resource_attributes:
+    - service.instance.id
+    - service.name
+    - service.namespace
+    - service.version
