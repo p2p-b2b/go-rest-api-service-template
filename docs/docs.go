@@ -338,7 +338,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handler.Version"
+                            "$ref": "#/definitions/model.Version"
                         }
                     },
                     "500": {
@@ -352,32 +352,6 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "handler.Version": {
-            "type": "object",
-            "properties": {
-                "build_date": {
-                    "type": "string"
-                },
-                "git_branch": {
-                    "type": "string"
-                },
-                "git_commit": {
-                    "type": "string"
-                },
-                "go_version": {
-                    "type": "string"
-                },
-                "go_version_arch": {
-                    "type": "string"
-                },
-                "go_version_os": {
-                    "type": "string"
-                },
-                "version": {
-                    "type": "string"
-                }
-            }
-        },
         "model.Check": {
             "description": "Health check of the service",
             "type": "object",
@@ -604,6 +578,47 @@ const docTemplate = `{
                     "type": "string",
                     "format": "date-time",
                     "example": "2021-01-01T00:00:00Z"
+                }
+            }
+        },
+        "model.Version": {
+            "description": "Version is the struct that holds the version information.",
+            "type": "object",
+            "properties": {
+                "build_date": {
+                    "type": "string",
+                    "format": "string",
+                    "example": "2021-01-01T00:00:00Z"
+                },
+                "git_branch": {
+                    "type": "string",
+                    "format": "string",
+                    "example": "main"
+                },
+                "git_commit": {
+                    "type": "string",
+                    "format": "string",
+                    "example": "abcdef123456"
+                },
+                "go_version": {
+                    "type": "string",
+                    "format": "string",
+                    "example": "go1.24.1"
+                },
+                "go_version_arch": {
+                    "type": "string",
+                    "format": "string",
+                    "example": "amd64"
+                },
+                "go_version_os": {
+                    "type": "string",
+                    "format": "string",
+                    "example": "linux"
+                },
+                "version": {
+                    "type": "string",
+                    "format": "string",
+                    "example": "1.0.0"
                 }
             }
         }

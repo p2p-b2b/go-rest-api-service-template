@@ -5,6 +5,7 @@ import (
 
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/http/middleware"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/http/respond"
+	"github.com/p2p-b2b/go-rest-api-service-template/internal/model"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/version"
 )
 
@@ -30,13 +31,13 @@ func (ref *VersionHandler) RegisterRoutes(mux *http.ServeMux, middlewares ...mid
 //	@Description	Get the version of the service
 //	@Tags			Version
 //	@Produce		json
-//	@Success		200	{object}	Version
+//	@Success		200	{object}	model.Version
 //	@Failure		500	{object}	model.HTTPMessage
 //	@Router			/version [get]
 func (ref *VersionHandler) get(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	v := Version{
+	v := model.Version{
 		Version:       version.Version,
 		BuildDate:     version.BuildDate,
 		GitCommit:     version.GitCommit,
