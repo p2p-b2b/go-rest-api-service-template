@@ -18,6 +18,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
+  "id": 2,
   "links": [],
   "panels": [
     {
@@ -37,6 +38,7 @@
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 0,
             "gradientMode": "none",
@@ -81,7 +83,7 @@
       },
       "gridPos": {
         "h": 8,
-        "w": 12,
+        "w": 23,
         "x": 0,
         "y": 0
       },
@@ -94,10 +96,12 @@
           "showLegend": true
         },
         "tooltip": {
+          "hideZeros": false,
           "mode": "single",
           "sort": "none"
         }
       },
+      "pluginVersion": "11.5.2",
       "targets": [
         {
           "datasource": {
@@ -126,7 +130,7 @@
               "scope": "span",
               "tag": "name",
               "value": [
-                "handler"
+                "handler.*"
               ],
               "valueType": "string"
             },
@@ -141,7 +145,8 @@
           ],
           "hide": false,
           "limit": 20,
-          "queryType": "traceqlSearch",
+          "query": "{resource.service.name=\"go-rest-api-service-template\" && name=~\"handler.*\" && status=ok}",
+          "queryType": "traceql",
           "refId": "A",
           "tableType": "traces"
         }
@@ -166,6 +171,7 @@
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 0,
             "gradientMode": "none",
@@ -223,11 +229,13 @@
           "showLegend": true
         },
         "tooltip": {
+          "hideZeros": false,
           "maxHeight": 600,
           "mode": "single",
           "sort": "none"
         }
       },
+      "pluginVersion": "11.5.2",
       "targets": [
         {
           "datasource": {
@@ -236,7 +244,7 @@
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "rate(handlers_calls_total[1m])",
+          "expr": "rate(handlers_calls_total_total[1m])",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
@@ -266,6 +274,7 @@
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 0,
             "gradientMode": "none",
@@ -323,11 +332,13 @@
           "showLegend": true
         },
         "tooltip": {
+          "hideZeros": false,
           "maxHeight": 600,
           "mode": "single",
           "sort": "none"
         }
       },
+      "pluginVersion": "11.5.2",
       "targets": [
         {
           "datasource": {
@@ -336,7 +347,7 @@
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "rate(services_calls_total[1m])",
+          "expr": "rate(services_calls_total_total[1m])",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
@@ -366,6 +377,7 @@
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 0,
             "gradientMode": "none",
@@ -423,11 +435,13 @@
           "showLegend": true
         },
         "tooltip": {
+          "hideZeros": false,
           "maxHeight": 600,
           "mode": "single",
           "sort": "none"
         }
       },
+      "pluginVersion": "11.5.2",
       "targets": [
         {
           "datasource": {
@@ -436,7 +450,7 @@
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "rate(repositories_calls_total[1m])",
+          "expr": "rate(repository_calls_total_total[1m])",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
@@ -450,7 +464,8 @@
       "type": "timeseries"
     }
   ],
-  "schemaVersion": 39,
+  "preload": false,
+  "schemaVersion": 40,
   "tags": [],
   "templating": {
     "list": []
