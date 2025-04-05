@@ -65,9 +65,9 @@ type User struct {
 	Email        string    `json:"email,omitempty" example:"my@email.com" format:"email"`
 	Password     string    `json:"-"`
 	PasswordHash string    `json:"-"`
-	Disabled     bool      `json:"disabled" example:"false" format:"boolean"`
-	CreatedAt    time.Time `json:"created_at,omitempty,omitzero" example:"2021-01-01T00:00:00Z" format:"date-time"`
-	UpdatedAt    time.Time `json:"updated_at,omitempty,omitzero" example:"2021-01-01T00:00:00Z" format:"date-time"`
+	Disabled     *bool     `json:"disabled,omitempty" example:"false" format:"boolean"`
+	CreatedAt    time.Time `json:"created_at,omitzero" example:"2021-01-01T00:00:00Z" format:"date-time"`
+	UpdatedAt    time.Time `json:"updated_at,omitzero" example:"2021-01-01T00:00:00Z" format:"date-time"`
 	SerialID     int64     `json:"-"`
 }
 
