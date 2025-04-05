@@ -57,11 +57,7 @@ func (ref *Paginator) GenerateToken(id uuid.UUID, serial int64) string {
 
 // Validate validates the model.
 func (ref *Paginator) Validate() error {
-	if ref.Limit < MinLimit {
-		return ErrModelInvalidLimit
-	}
-
-	if ref.Limit > MaxLimit {
+	if ref.Limit < MinLimit || ref.Limit > MaxLimit {
 		return ErrModelInvalidLimit
 	}
 
