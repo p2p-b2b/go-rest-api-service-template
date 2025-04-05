@@ -286,7 +286,7 @@ install-govulncheck: ## Install govulncheck for vulnerabilities check (https://p
 .PHONY: install-golangci-lint
 install-golangci-lint: ## Install golangci-lint for linting (https://golangci-lint.run/)
 	@printf "👉 Installing golangci-lint...\n"
-	$(call exec_cmd, go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest )
+	$(call exec_cmd, go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2 )
 
 ###############################################################################
 ##@ Development commands
