@@ -16,7 +16,6 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/model"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/o11y"
-	"github.com/p2p-b2b/go-rest-api-service-template/internal/query"
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -629,10 +628,12 @@ func (ref *UsersRepository) Select(ctx context.Context, input *model.SelectUsers
 	// if no fields are provided, select all fields
 	sqlFieldsPrefix := "usrs."
 	fieldsStr := sqlFieldsPrefix + "*"
-	if input.Fields[0] != "" {
+
+	if input.Fields != "" {
+		inputFields := strings.Split(input.Fields, ",")
 		fields := make([]string, 0)
 		var isIsPresent bool
-		for _, field := range input.Fields {
+		for _, field := range inputFields {
 			fields = append(fields, sqlFieldsPrefix+field)
 			if field == "id" {
 				isIsPresent = true
@@ -650,21 +651,7 @@ func (ref *UsersRepository) Select(ctx context.Context, input *model.SelectUsers
 
 	var filterQuery string
 	if input.Filter != "" {
-		filter, err := query.PrefixFilterFields(input.Filter, sqlFieldsPrefix)
-		if err != nil {
-			span.SetStatus(codes.Error, err.Error())
-			span.RecordError(err)
-			slog.Error("repository.Users.Select", "error", err)
-			ref.metrics.repositoryCalls.Add(ctx, 1,
-				metric.WithAttributes(
-					append(metricCommonAttributes, attribute.String("successful", "false"))...,
-				),
-			)
-
-			return nil, err
-		}
-
-		filterQuery = fmt.Sprintf("WHERE (%s)", filter)
+		filterQuery = fmt.Sprintf("WHERE (%s)", input.Filter)
 	}
 
 	var sortQuery string
@@ -818,7 +805,7 @@ func (ref *UsersRepository) Select(ctx context.Context, input *model.SelectUsers
 
 		scanFields := make([]interface{}, 0)
 
-		if input.Fields[0] == "" {
+		if input.Fields == "" {
 			scanFields = []interface{}{
 				&item.ID,
 				&item.FirstName,
@@ -833,7 +820,9 @@ func (ref *UsersRepository) Select(ctx context.Context, input *model.SelectUsers
 		} else {
 			var idFound bool
 
-			for _, field := range input.Fields {
+			inputFields := strings.SplitSeq(input.Fields, ",")
+
+			for field := range inputFields {
 				switch field {
 				case "id":
 					scanFields = append(scanFields, &item.ID)

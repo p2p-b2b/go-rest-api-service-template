@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/p2p-b2b/go-rest-api-service-template/internal/query"
+	"github.com/p2p-b2b/qfv"
 )
 
 var (
@@ -203,7 +203,7 @@ func (ref *DeleteUserInput) Validate() error {
 type SelectUsersInput struct {
 	Sort      string
 	Filter    string
-	Fields    []string
+	Fields    string
 	Paginator Paginator
 }
 
@@ -212,17 +212,24 @@ func (ref *SelectUsersInput) Validate() error {
 		return ErrInvalidLimit
 	}
 
-	if ref.Sort != "" && !query.IsValidSort(UserSortFields, ref.Sort) {
-		return ErrInvalidSort
+	if ref.Sort != "" {
+		_, err := qfv.NewSortParser(UserSortFields).Parse(ref.Sort)
+		if err != nil {
+			return err
+		}
 	}
 
-	if ref.Filter != "" && !query.IsValidFilter(UserFilterFields, ref.Filter) {
-		return ErrInvalidFilter
+	if ref.Filter != "" {
+		_, err := qfv.NewFilterParser(UserFilterFields).Parse(ref.Filter)
+		if err != nil {
+			return err
+		}
 	}
 
-	for _, field := range ref.Fields {
-		if !query.IsValidFields(UserPartialFields, field) {
-			return ErrInvalidFields
+	if ref.Fields != "" {
+		_, err := qfv.NewFieldsParser(UserFilterFields).Parse(ref.Fields)
+		if err != nil {
+			return err
 		}
 	}
 

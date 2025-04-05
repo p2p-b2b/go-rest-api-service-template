@@ -5,6 +5,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/model"
+	"github.com/p2p-b2b/qfv"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -39,7 +40,7 @@ func TestParseSortQueryParams(t *testing.T) {
 	}{
 		{"name ASC", "name ASC", nil},
 		{"age ASC, name DESC", "age ASC, name DESC", nil},
-		{"invalid", "", ErrInvalidSort},
+		{"invalid", "", &qfv.QFVSortError{Field: "invalid", Message: "field not allowed for sorting"}},
 	}
 
 	for _, test := range tests {
@@ -59,7 +60,7 @@ func TestParseFilterQueryParams(t *testing.T) {
 	}{
 		{"status='active'", "status='active'", nil},
 		{"status='active' AND type=1", "status='active' AND type=1", nil},
-		{"invalid", "", ErrInvalidFilter},
+		{"invalid", "", &qfv.QFVFilterError{Field: "", Message: "parsing errors: [error on field 'invalid': field not allowed error on field 'invalid': unexpected token after field]"}},
 	}
 
 	for _, test := range tests {
@@ -78,7 +79,7 @@ func TestParseFieldsQueryParams(t *testing.T) {
 		err      error
 	}{
 		{"id,name", []string{"id", "name"}, nil},
-		{"invalid", nil, ErrInvalidFields},
+		{"invalid", nil, &qfv.QFVFieldsError{Field: "invalid", Message: "unknown field"}},
 	}
 
 	for _, test := range tests {
@@ -150,27 +151,47 @@ func TestParseLimitQueryParams(t *testing.T) {
 }
 
 func TestParseListQueryParams(t *testing.T) {
-	testID := uuid.New()
+	t.Run("TestParseListQueryParams", func(t *testing.T) {
+		testID := uuid.New()
 
-	params := map[string]any{
-		"sort":      "name ASC",
-		"filter":    "status='active'",
-		"fields":    "id,name",
-		"nextToken": model.EncodeToken(testID, 10),
-		"prevToken": model.EncodeToken(testID, 10),
-		"limit":     "5",
-	}
+		params := map[string]any{
+			"sort":      "name ASC",
+			"filter":    "status='active'",
+			"fields":    "id, name",
+			"nextToken": model.EncodeToken(testID, 10),
+			"prevToken": model.EncodeToken(testID, 10),
+			"limit":     "5",
+		}
 
-	sortFields := []string{"name", "age"}
-	filterFields := []string{"status", "type"}
-	fieldsFields := []string{"id", "name"}
+		sortFields := []string{"name", "age"}
+		filterFields := []string{"status", "type"}
+		fieldsFields := []string{"id", "name"}
 
-	sort, filter, fields, nextToken, prevToken, limit, err := parseListQueryParams(params, fieldsFields, filterFields, sortFields)
-	assert.NoError(t, err)
-	assert.Equal(t, "name ASC", sort)
-	assert.Equal(t, "status='active'", filter)
-	assert.Equal(t, []string{"id", "name"}, fields)
-	assert.Equal(t, model.EncodeToken(testID, 10), nextToken)
-	assert.Equal(t, model.EncodeToken(testID, 10), prevToken)
-	assert.Equal(t, 5, limit)
+		sort, filter, fields, nextToken, prevToken, limit, err := parseListQueryParams(params, fieldsFields, filterFields, sortFields)
+		assert.NoError(t, err)
+		assert.Equal(t, "name ASC", sort)
+		assert.Equal(t, "status='active'", filter)
+		assert.Equal(t, []string{"id", "name"}, fields)
+		assert.Equal(t, model.EncodeToken(testID, 10), nextToken)
+		assert.Equal(t, model.EncodeToken(testID, 10), prevToken)
+		assert.Equal(t, 5, limit)
+	})
+
+	t.Run("TestParseListQueryParamsWithInvalidSort", func(t *testing.T) {
+		params := map[string]any{
+			"sort":      "invalid",
+			"filter":    "status='active'",
+			"fields":    "id, name",
+			"nextToken": "",
+			"prevToken": "",
+			"limit":     "5",
+		}
+
+		sortFields := []string{"name", "age"}
+		filterFields := []string{"status", "type"}
+		fieldsFields := []string{"id", "name"}
+		_, _, _, _, _, _, err := parseListQueryParams(params, fieldsFields, filterFields, sortFields)
+		assert.Error(t, err)
+		assert.Equal(t, &qfv.QFVSortError{Field: "invalid", Message: "field not allowed for sorting"}, err)
+	})
 }
