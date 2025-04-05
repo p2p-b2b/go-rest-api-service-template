@@ -104,19 +104,29 @@ func init() {
 	flag.Parse()
 
 	flag.Usage = func() {
-		fmt.Fprintf(flag.CommandLine.Output(), "Usage: %s [options]\n\nOptions:\n", appName)
+		_, err := fmt.Fprintf(flag.CommandLine.Output(), "Usage: %s [options]\n\nOptions:\n", appName)
+		if err != nil {
+			slog.Error("error printing usage", "error", err)
+			os.Exit(1)
+		}
+
 		flag.PrintDefaults()
 	}
 
 	// implement the version flag
 	if showVersion {
-		fmt.Printf("%s version: %s\n", appName, version.Version)
+		_, err := fmt.Printf("%s version: %s\n", appName, version.Version)
+		if err != nil {
+			slog.Error("error printing version", "error", err)
+			os.Exit(1)
+		}
+
 		os.Exit(0)
 	}
 
 	// implement the long version flag
 	if showLongVersion {
-		fmt.Printf("%s version: %s,  Git Commit: %s, Build Date: %s, Go Version: %s, OS/Arch: %s/%s\n",
+		_, err := fmt.Printf("%s version: %s,  Git Commit: %s, Build Date: %s, Go Version: %s, OS/Arch: %s/%s\n",
 			appName,
 			version.Version,
 			version.GitCommit,
@@ -125,6 +135,11 @@ func init() {
 			version.GoVersionOS,
 			version.GoVersionArch,
 		)
+		if err != nil {
+			slog.Error("error printing long version", "error", err)
+			os.Exit(1)
+		}
+
 		os.Exit(0)
 	}
 

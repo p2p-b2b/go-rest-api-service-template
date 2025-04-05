@@ -1,0 +1,64 @@
+version: "2"
+linters:
+  # Enable specific linter
+  # https://golangci-lint.run/usage/linters/#enabled-by-default
+  enable:
+    - errcheck
+    - ineffassign
+    - staticcheck
+    - unused
+
+  # Disable specific linter
+  # https://golangci-lint.run/usage/linters/#disabled-by-default
+  disable:
+    # Enable presets.
+    # https://golangci-lint.run/usage/linters
+    # Default: []
+    - govet
+    - godot
+    - wsl
+    - testpackage
+    - whitespace
+    - tagalign
+    - nosprintfhostport
+    - nlreturn
+    - nestif
+    - mnd
+    - misspell
+    - lll
+    - godox
+    - funlen
+    - gochecknoinits
+    - depguard
+    - goconst
+    - dupword
+    - cyclop
+    - gocognit
+    - maintidx
+    - gocyclo
+    - dupl
+
+  settings:
+    errcheck:
+      # Report about not checking of errors in type assertions: `a := b.(MyStruct)`.
+      # Such cases aren't reported by default.
+      # Default: false
+      check-type-assertions: false
+      # report about assignment of errors to blank identifier: `num, _ := strconv.Atoi(numStr)`.
+      # Such cases aren't reported by default.
+      # Default: false
+      check-blank: true
+      # To disable the errcheck built-in exclude list.
+      # See `-excludeonly` option in https://github.com/kisielk/errcheck#excluding-functions for details.
+      # Default: false
+      disable-default-exclusions: true
+      # List of functions to exclude from checking, where each entry is a single function to exclude.
+      # See https://github.com/kisielk/errcheck#excluding-functions for details.
+      exclude-functions:
+        - (*os.File).Close
+        - (io.Closer).Close
+        - io/ioutil.ReadFile
+        - io.Copy(*bytes.Buffer)
+        - io.Copy(os.Stdout)
+        - os.Setenv
+        - os.Unsetenv

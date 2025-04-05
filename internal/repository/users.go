@@ -274,7 +274,12 @@ func (ref *UsersRepository) Update(ctx context.Context, input *model.UpdateUserI
 		args = append(args, nil)
 	}
 
-	updatedAt, _ := time.Now().In(time.FixedZone("UTC", 0)).MarshalText()
+	updatedAt, err := time.Now().In(time.FixedZone("UTC", 0)).MarshalText()
+	if err != nil {
+		slog.Error("repository.Users.Update", "error", err)
+		return err
+	}
+
 	args = append(args, updatedAt)
 
 	query := `
@@ -661,7 +666,7 @@ func (ref *UsersRepository) Select(ctx context.Context, input *model.SelectUsers
 		sortQuery = input.Sort
 	}
 
-	var queryTemplate string = `
+	queryTemplate := `
         WITH usrs AS (
             SELECT
                 {{.QueryColumns}}
