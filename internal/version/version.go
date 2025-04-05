@@ -27,14 +27,3 @@ var (
 	// GoVersionOS is the operating system of Go used to build the application
 	GoVersionOS = runtime.GOOS
 )
-
-// VersionInfo represents the version information of the application.
-type VersionInfo struct {
-	Version       string
-	BuildDate     string
-	GitCommit     string
-	GitBranch     string
-	GoVersion     string
-	GoVersionArch string
-	GoVersionOS   string
-}
