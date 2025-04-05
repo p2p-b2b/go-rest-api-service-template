@@ -450,7 +450,7 @@ func (ref *UsersService) List(ctx context.Context, input *model.ListUsersInput) 
 	span.SetAttributes(
 		attribute.String("component", "service.Users.List"),
 		attribute.String("sort", input.Sort),
-		attribute.StringSlice("fields", input.Fields),
+		attribute.String("fields", input.Fields),
 		attribute.String("filter", input.Filter),
 		attribute.Int("limit", input.Paginator.Limit),
 	)

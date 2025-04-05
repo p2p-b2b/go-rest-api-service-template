@@ -5,7 +5,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/model"
-	"github.com/p2p-b2b/go-rest-api-service-template/internal/query"
+	"github.com/p2p-b2b/qfv"
 )
 
 // parseUUIDQueryParams parses a string into a UUID.
@@ -31,8 +31,13 @@ func parseUUIDQueryParams(input string) (uuid.UUID, error) {
 
 // parseSortQueryParams parses a string into a sort field.
 func parseSortQueryParams(sort string, allowedFields []string) (string, error) {
-	if !query.IsValidSort(allowedFields, sort) {
-		return "", ErrInvalidSort
+	if sort == "" {
+		return "", nil
+	}
+
+	_, err := qfv.NewSortParser(allowedFields).Parse(sort)
+	if err != nil {
+		return "", err
 	}
 
 	return sort, nil
@@ -40,20 +45,30 @@ func parseSortQueryParams(sort string, allowedFields []string) (string, error) {
 
 // parseFilterQueryParams parses a string into a filter field.
 func parseFilterQueryParams(filter string, allowedFields []string) (string, error) {
-	if !query.IsValidFilter(allowedFields, filter) {
-		return "", ErrInvalidFilter
+	if filter == "" {
+		return "", nil
+	}
+
+	_, err := qfv.NewFilterParser(allowedFields).Parse(filter)
+	if err != nil {
+		return "", err
 	}
 
 	return filter, nil
 }
 
 // parseFieldsQueryParams parses a string into a list of fields.
-func parseFieldsQueryParams(fields string, allowedFields []string) ([]string, error) {
-	if !query.IsValidFields(allowedFields, fields) {
-		return nil, ErrInvalidFields
+func parseFieldsQueryParams(fields string, allowedFields []string) (string, error) {
+	if fields == "" {
+		return "", nil
 	}
 
-	return query.GetFields(fields), nil
+	_, err := qfv.NewFieldsParser(allowedFields).Parse(fields)
+	if err != nil {
+		return "", err
+	}
+
+	return fields, nil
 }
 
 // parseNextTokenQueryParams parses a string into a nextToken field.
@@ -111,7 +126,7 @@ func parseLimitQueryParams(limit string) (int, error) {
 func parseListQueryParams(params map[string]any, fieldsFields, filterFields, sortFields []string) (
 	sort string,
 	filter string,
-	fields []string,
+	fields string,
 	nextToken string,
 	prevToken string,
 	limit int,
@@ -119,32 +134,32 @@ func parseListQueryParams(params map[string]any, fieldsFields, filterFields, sor
 ) {
 	sort, err = parseSortQueryParams(params["sort"].(string), sortFields)
 	if err != nil {
-		return "", "", nil, "", "", 0, err
+		return "", "", "", "", "", 0, err
 	}
 
 	filter, err = parseFilterQueryParams(params["filter"].(string), filterFields)
 	if err != nil {
-		return "", "", nil, "", "", 0, err
+		return "", "", "", "", "", 0, err
 	}
 
 	fields, err = parseFieldsQueryParams(params["fields"].(string), fieldsFields)
 	if err != nil {
-		return "", "", nil, "", "", 0, err
+		return "", "", "", "", "", 0, err
 	}
 
 	nextToken, err = parseNextTokenQueryParams(params["nextToken"].(string))
 	if err != nil {
-		return "", "", nil, "", "", 0, err
+		return "", "", "", "", "", 0, err
 	}
 
 	prevToken, err = parsePrevTokenQueryParams(params["prevToken"].(string))
 	if err != nil {
-		return "", "", nil, "", "", 0, err
+		return "", "", "", "", "", 0, err
 	}
 
 	limit, err = parseLimitQueryParams(params["limit"].(string))
 	if err != nil {
-		return "", "", nil, "", "", 0, err
+		return "", "", "", "", "", 0, err
 	}
 
 	return sort, filter, fields, nextToken, prevToken, limit, nil
