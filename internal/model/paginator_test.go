@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestEncodeToken(t *testing.T) {
@@ -80,6 +81,42 @@ func TestDecodeToken(t *testing.T) {
 			wantId:     uuid.Nil,
 			wantErr:    true,
 		},
+		{
+			name: "invalid format - missing separator",
+			args: args{
+				s: base64.StdEncoding.EncodeToString([]byte("ffffffff-ffff-ffff-ffff-ffffffffffff")),
+			},
+			wantSerial: 0,
+			wantId:     uuid.Nil,
+			wantErr:    true,
+		},
+		{
+			name: "invalid format - too many separators",
+			args: args{
+				s: base64.StdEncoding.EncodeToString([]byte("ffffffff-ffff-ffff-ffff-ffffffffffff;0;extra")),
+			},
+			wantSerial: 0,
+			wantId:     uuid.Nil,
+			wantErr:    true,
+		},
+		{
+			name: "invalid uuid",
+			args: args{
+				s: base64.StdEncoding.EncodeToString([]byte("not-a-uuid;0")),
+			},
+			wantSerial: 0,
+			wantId:     uuid.Nil,
+			wantErr:    true,
+		},
+		{
+			name: "invalid serial",
+			args: args{
+				s: base64.StdEncoding.EncodeToString([]byte("ffffffff-ffff-ffff-ffff-ffffffffffff;not-a-number")),
+			},
+			wantSerial: 0,
+			wantId:     uuid.Nil,
+			wantErr:    true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -101,6 +138,400 @@ func TestDecodeToken(t *testing.T) {
 				if token != tt.args.s {
 					t.Errorf("EncodeToken() = %v, want %v", token, tt.args.s)
 				}
+			}
+		})
+	}
+}
+
+func TestPaginator_GenerateToken(t *testing.T) {
+	type fields struct {
+		NextToken string
+		NextPage  string
+		PrevToken string
+		PrevPage  string
+		Size      int
+		Limit     int
+	}
+	type args struct {
+		id     uuid.UUID
+		serial int64
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   string
+	}{
+		{
+			name: "success with uuid.Max",
+			fields: fields{
+				Limit: 10,
+			},
+			args: args{
+				id:     uuid.Max,
+				serial: 0,
+			},
+			want: base64.StdEncoding.EncodeToString([]byte("ffffffff-ffff-ffff-ffff-ffffffffffff;0")),
+		},
+		{
+			name: "success with random uuid",
+			fields: fields{
+				Limit: 20,
+			},
+			args: args{
+				id:     uuid.MustParse("f47ac10b-58cc-0372-8567-0e02b2c3d479"),
+				serial: 1234567890,
+			},
+			want: base64.StdEncoding.EncodeToString([]byte("f47ac10b-58cc-0372-8567-0e02b2c3d479;1234567890")),
+		},
+		{
+			name: "success with nil uuid",
+			fields: fields{
+				Limit: 5,
+			},
+			args: args{
+				id:     uuid.Nil,
+				serial: 42,
+			},
+			want: base64.StdEncoding.EncodeToString([]byte("00000000-0000-0000-0000-000000000000;42")),
+		},
+		{
+			name: "success with negative serial",
+			fields: fields{
+				Limit: 100,
+			},
+			args: args{
+				id:     uuid.MustParse("a1a2a3a4-b1b2-c1c2-d1d2-d3d4d5d6d7d8"),
+				serial: -9876543210,
+			},
+			want: base64.StdEncoding.EncodeToString([]byte("a1a2a3a4-b1b2-c1c2-d1d2-d3d4d5d6d7d8;-9876543210")),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ref := &Paginator{
+				NextToken: tt.fields.NextToken,
+				NextPage:  tt.fields.NextPage,
+				PrevToken: tt.fields.PrevToken,
+				PrevPage:  tt.fields.PrevPage,
+				Size:      tt.fields.Size,
+				Limit:     tt.fields.Limit,
+			}
+			if got := ref.GenerateToken(tt.args.id, tt.args.serial); got != tt.want {
+				t.Errorf("Paginator.GenerateToken() = %v, want %v", got, tt.want)
+			}
+
+			// Verify we can decode the token correctly
+			id, serial, err := DecodeToken(tt.want)
+			if err != nil {
+				t.Errorf("Failed to decode token: %v", err)
+			}
+			if id != tt.args.id {
+				t.Errorf("Decoded ID = %v, want %v", id, tt.args.id)
+			}
+			if serial != tt.args.serial {
+				t.Errorf("Decoded serial = %v, want %v", serial, tt.args.serial)
+			}
+		})
+	}
+}
+
+func TestPaginator_Validate(t *testing.T) {
+	validUUID := uuid.New()
+	validToken := EncodeToken(validUUID, 123)
+	invalidToken := "invalid-token-not-base64"
+	invalidBase64Token := base64.StdEncoding.EncodeToString([]byte("invalid-format"))
+
+	tests := []struct {
+		name    string
+		p       Paginator
+		wantErr bool
+		errType error
+	}{
+		{
+			name: "valid paginator with default values",
+			p: Paginator{
+				Limit: DefaultLimit,
+			},
+			wantErr: false,
+		},
+		{
+			name: "valid paginator with tokens",
+			p: Paginator{
+				NextToken: validToken,
+				PrevToken: validToken,
+				Limit:     DefaultLimit,
+			},
+			wantErr: false,
+		},
+		{
+			name: "invalid limit - below minimum",
+			p: Paginator{
+				Limit: MinLimit - 1,
+			},
+			wantErr: true,
+			errType: ErrModelInvalidLimit,
+		},
+		{
+			name: "invalid limit - above maximum",
+			p: Paginator{
+				Limit: MaxLimit + 1,
+			},
+			wantErr: true,
+			errType: ErrModelInvalidLimit,
+		},
+		{
+			name: "invalid next token - not base64",
+			p: Paginator{
+				NextToken: invalidToken,
+				Limit:     DefaultLimit,
+			},
+			wantErr: true,
+			errType: ErrModelInvalidCursor,
+		},
+		{
+			name: "invalid prev token - not base64",
+			p: Paginator{
+				PrevToken: invalidToken,
+				Limit:     DefaultLimit,
+			},
+			wantErr: true,
+			errType: ErrModelInvalidCursor,
+		},
+		{
+			name: "invalid next token - invalid format",
+			p: Paginator{
+				NextToken: invalidBase64Token,
+				Limit:     DefaultLimit,
+			},
+			wantErr: true,
+			errType: ErrModelInvalidCursor,
+		},
+		{
+			name: "invalid prev token - invalid format",
+			p: Paginator{
+				PrevToken: invalidBase64Token,
+				Limit:     DefaultLimit,
+			},
+			wantErr: true,
+			errType: ErrModelInvalidCursor,
+		},
+		{
+			name: "valid limit at minimum",
+			p: Paginator{
+				Limit: MinLimit,
+			},
+			wantErr: false,
+		},
+		{
+			name: "valid limit at maximum",
+			p: Paginator{
+				Limit: MaxLimit,
+			},
+			wantErr: false,
+		},
+		{
+			name: "multiple validation errors - invalid limit and tokens",
+			p: Paginator{
+				NextToken: invalidToken,
+				PrevToken: invalidToken,
+				Limit:     MinLimit - 1,
+			},
+			wantErr: true,
+			errType: ErrModelInvalidLimit, // First error encountered
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.p.Validate()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Paginator.Validate() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if tt.wantErr && err != tt.errType {
+				t.Errorf("Paginator.Validate() error = %v, wantErrType %v", err, tt.errType)
+			}
+		})
+	}
+}
+
+func TestPaginator_GeneratePages(t *testing.T) {
+	validUUID := uuid.New()
+
+	tests := []struct {
+		name         string
+		paginator    Paginator
+		url          string
+		wantNextPage string
+		wantPrevPage string
+	}{
+		{
+			name: "both tokens present",
+			paginator: Paginator{
+				NextToken: EncodeToken(validUUID, 123),
+				PrevToken: EncodeToken(validUUID, 122),
+				Limit:     20,
+			},
+			url:          "https://api.example.com/resources",
+			wantNextPage: "https://api.example.com/resources?next_token=" + EncodeToken(validUUID, 123) + "&limit=20",
+			wantPrevPage: "https://api.example.com/resources?prev_token=" + EncodeToken(validUUID, 122) + "&limit=20",
+		},
+		{
+			name: "only next token present",
+			paginator: Paginator{
+				NextToken: EncodeToken(validUUID, 123),
+				PrevToken: "",
+				Limit:     10,
+			},
+			url:          "https://api.example.com/resources",
+			wantNextPage: "https://api.example.com/resources?next_token=" + EncodeToken(validUUID, 123) + "&limit=10",
+			wantPrevPage: "",
+		},
+		{
+			name: "only prev token present",
+			paginator: Paginator{
+				NextToken: "",
+				PrevToken: EncodeToken(validUUID, 122),
+				Limit:     30,
+			},
+			url:          "https://api.example.com/resources",
+			wantNextPage: "",
+			wantPrevPage: "https://api.example.com/resources?prev_token=" + EncodeToken(validUUID, 122) + "&limit=30",
+		},
+		{
+			name: "no tokens present",
+			paginator: Paginator{
+				NextToken: "",
+				PrevToken: "",
+				Limit:     50,
+			},
+			url:          "https://api.example.com/resources",
+			wantNextPage: "",
+			wantPrevPage: "",
+		},
+		{
+			name: "with path parameters",
+			paginator: Paginator{
+				NextToken: EncodeToken(validUUID, 123),
+				PrevToken: EncodeToken(validUUID, 122),
+				Limit:     15,
+			},
+			url:          "https://api.example.com/users/42/resources",
+			wantNextPage: "https://api.example.com/users/42/resources?next_token=" + EncodeToken(validUUID, 123) + "&limit=15",
+			wantPrevPage: "https://api.example.com/users/42/resources?prev_token=" + EncodeToken(validUUID, 122) + "&limit=15",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Create a copy of the paginator to avoid modifying the test case
+			p := tt.paginator
+
+			// Call the method under test
+			p.GeneratePages(tt.url)
+
+			// Check that the next page URL is correct
+			if p.NextPage != tt.wantNextPage {
+				t.Errorf("GeneratePages() NextPage = %v, want %v", p.NextPage, tt.wantNextPage)
+			}
+
+			// Check that the prev page URL is correct
+			if p.PrevPage != tt.wantPrevPage {
+				t.Errorf("GeneratePages() PrevPage = %v, want %v", p.PrevPage, tt.wantPrevPage)
+			}
+		})
+	}
+}
+
+func TestGetTokens(t *testing.T) {
+	// Setup test data
+	firstID := uuid.MustParse("11111111-1111-1111-1111-111111111111")
+	firstSerial := int64(1000)
+	lastID := uuid.MustParse("99999999-9999-9999-9999-999999999999")
+	lastSerial := int64(9000)
+
+	tests := []struct {
+		name        string
+		size        int
+		limit       int
+		firstID     uuid.UUID
+		firstSerial int64
+		lastID      uuid.UUID
+		lastSerial  int64
+		wantNext    bool
+		wantPrev    bool
+	}{
+		{
+			name:        "empty result",
+			size:        0,
+			limit:       10,
+			firstID:     firstID,
+			firstSerial: firstSerial,
+			lastID:      lastID,
+			lastSerial:  lastSerial,
+			wantNext:    false,
+			wantPrev:    false,
+		},
+		{
+			name:        "partial result",
+			size:        5,
+			limit:       10,
+			firstID:     firstID,
+			firstSerial: firstSerial,
+			lastID:      lastID,
+			lastSerial:  lastSerial,
+			wantNext:    false,
+			wantPrev:    false,
+		},
+		{
+			name:        "full result",
+			size:        10,
+			limit:       10,
+			firstID:     firstID,
+			firstSerial: firstSerial,
+			lastID:      lastID,
+			lastSerial:  lastSerial,
+			wantNext:    true,
+			wantPrev:    true,
+		},
+		{
+			name:        "more than limit",
+			size:        15,
+			limit:       10,
+			firstID:     firstID,
+			firstSerial: firstSerial,
+			lastID:      lastID,
+			lastSerial:  lastSerial,
+			wantNext:    true,
+			wantPrev:    true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			next, prev := GetTokens(tt.size, tt.limit, tt.firstID, tt.firstSerial, tt.lastID, tt.lastSerial)
+
+			if tt.wantNext {
+				assert.NotEmpty(t, next, "next token should not be empty")
+				// Decode and verify token contents
+				decodedID, decodedSerial, err := DecodeToken(next)
+				assert.NoError(t, err)
+				assert.Equal(t, tt.lastID, decodedID)
+				assert.Equal(t, tt.lastSerial, decodedSerial)
+			} else {
+				assert.Empty(t, next, "next token should be empty")
+			}
+
+			if tt.wantPrev {
+				assert.NotEmpty(t, prev, "prev token should not be empty")
+				// Decode and verify token contents
+				decodedID, decodedSerial, err := DecodeToken(prev)
+				assert.NoError(t, err)
+				assert.Equal(t, tt.firstID, decodedID)
+				assert.Equal(t, tt.firstSerial, decodedSerial)
+			} else {
+				assert.Empty(t, prev, "prev token should be empty")
 			}
 		})
 	}
