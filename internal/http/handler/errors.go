@@ -1,20 +1,70 @@
 package handler
 
 import (
-	"errors"
+	"fmt"
 )
 
-var (
-	ErrModelServiceRequired  = errors.New("model service required")
-	ErrOpenTelemetryRequired = errors.New("open telemetry required")
+var ErrInternalServerError = fmt.Errorf("internal server error")
 
-	ErrInternalServerError          = errors.New("internal server error")
-	ErrAtLeastOneFieldMustBeUpdated = errors.New("at least one field must be updated, any of these could be empty")
-	ErrRequiredUUID                 = errors.New("required UUID")
-	ErrInvalidUUID                  = errors.New("invalid UUID")
-	ErrUUIDCannotBeNil              = errors.New("UUID cannot be nil")
+type InvalidUUIDError struct {
+	UUID    string
+	Message string
+}
 
-	ErrInvalidLimit     = errors.New("invalid limit field")
-	ErrInvalidNextToken = errors.New("invalid nextToken field")
-	ErrInvalidPrevToken = errors.New("invalid prevToken field")
-)
+func (e *InvalidUUIDError) Error() string {
+	if e.UUID != "" && e.Message != "" {
+		return fmt.Sprintf("invalid UUID '%s': '%s'", e.UUID, e.Message)
+	}
+
+	if e.UUID != "" && e.Message == "" {
+		return fmt.Sprintf("invalid UUID: '%s'", e.UUID)
+	}
+
+	if e.UUID == "" && e.Message != "" {
+		return fmt.Sprintf("invalid UUID: '%s'", e.Message)
+	}
+
+	return "invalid UUID"
+}
+
+type InvalidServiceError struct {
+	Name   string
+	Reason string
+}
+
+func (e *InvalidServiceError) Error() string {
+	if e.Name != "" && e.Reason != "" {
+		return fmt.Sprintf("invalid service %s: %s", e.Name, e.Reason)
+	}
+
+	if e.Name != "" && e.Reason == "" {
+		return fmt.Sprintf("invalid service: %s", e.Name)
+	}
+
+	if e.Name == "" && e.Reason != "" {
+		return fmt.Sprintf("invalid service: %s", e.Reason)
+	}
+
+	return "invalid service"
+}
+
+type InvalidOpenTelemetryError struct {
+	Name   string
+	Reason string
+}
+
+func (e *InvalidOpenTelemetryError) Error() string {
+	if e.Name != "" && e.Reason != "" {
+		return fmt.Sprintf("invalid open telemetry %s: %s", e.Name, e.Reason)
+	}
+
+	if e.Name != "" && e.Reason == "" {
+		return fmt.Sprintf("invalid open telemetry: %s", e.Name)
+	}
+
+	if e.Name == "" && e.Reason != "" {
+		return fmt.Sprintf("invalid open telemetry: %s", e.Reason)
+	}
+
+	return "invalid open telemetry"
+}

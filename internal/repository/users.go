@@ -171,11 +171,11 @@ func (ref *UsersRepository) Insert(ctx context.Context, input *model.InsertUserI
 		if errors.As(err, &pgErr) {
 			if pgErr.Code == "23505" {
 				if strings.Contains(pgErr.Message, "_pkey") {
-					return model.ErrUserIDAlreadyExists
+					return &model.UserAlreadyExistsError{ID: input.ID.String()}
 				}
 
 				if strings.Contains(pgErr.Message, "_email") {
-					return model.ErrUserEmailAlreadyExists
+					return &model.UserEmailAlreadyExistsError{Email: input.Email}
 				}
 
 				return err
@@ -308,16 +308,17 @@ func (ref *UsersRepository) Update(ctx context.Context, input *model.UpdateUserI
 	}
 
 	if result.RowsAffected() == 0 {
-		span.SetStatus(codes.Error, model.ErrUserNotFound.Error())
-		span.RecordError(model.ErrUserNotFound)
-		slog.Error("repository.Users.Update", "error", model.ErrUserNotFound)
+		errorType := &model.UserNotFoundError{ID: input.ID.String()}
+		span.SetStatus(codes.Error, errorType.Error())
+		span.RecordError(errorType)
+		slog.Error("repository.Users.Update", "error", errorType)
 		ref.metrics.repositoryCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				append(metricCommonAttributes, attribute.String("successful", "false"))...,
 			),
 		)
 
-		return model.ErrUserNotFound
+		return errorType
 	}
 
 	span.SetStatus(codes.Ok, "user updated successfully")
@@ -396,16 +397,17 @@ func (ref *UsersRepository) Delete(ctx context.Context, input *model.DeleteUserI
 	}
 
 	if result.RowsAffected() == 0 {
-		span.SetStatus(codes.Error, model.ErrUserNotFound.Error())
-		span.RecordError(model.ErrUserNotFound)
-		slog.Error("repository.Users.Delete", "error", model.ErrUserNotFound)
+		errorType := &model.UserNotFoundError{ID: input.ID.String()}
+		span.SetStatus(codes.Error, errorType.Error())
+		span.RecordError(errorType)
+		slog.Error("repository.Users.Delete", "error", errorType)
 		ref.metrics.repositoryCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				append(metricCommonAttributes, attribute.String("successful", "false"))...,
 			),
 		)
 
-		return model.ErrUserNotFound
+		return errorType
 	}
 
 	span.SetStatus(codes.Ok, "user deleted successfully")
@@ -438,16 +440,17 @@ func (ref *UsersRepository) SelectByID(ctx context.Context, id uuid.UUID) (*mode
 	}
 
 	if id == uuid.Nil {
+		errorType := &model.InvalidUserIDError{ID: id.String()}
 		slog.Error("repository.Users.SelectByID", "error", "id is nil")
-		span.SetStatus(codes.Error, model.ErrUserInvalidID.Error())
-		span.RecordError(model.ErrUserInvalidID)
+		span.SetStatus(codes.Error, errorType.Error())
+		span.RecordError(errorType)
 		ref.metrics.repositoryCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				append(metricCommonAttributes, attribute.String("successful", "false"))...,
 			),
 		)
 
-		return nil, model.ErrUserInvalidID
+		return nil, errorType
 	}
 
 	query := `
@@ -520,16 +523,17 @@ func (ref *UsersRepository) SelectByEmail(ctx context.Context, email string) (*m
 	}
 
 	if email == "" {
+		errorType := &model.InvalidUserEmailError{Email: email}
 		slog.Error("repository.Users.SelectByEmail", "error", "email is empty")
-		span.SetStatus(codes.Error, model.ErrUserInvalidEmail.Error())
-		span.RecordError(model.ErrUserInvalidEmail)
+		span.SetStatus(codes.Error, errorType.Error())
+		span.RecordError(errorType)
 		ref.metrics.repositoryCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				append(metricCommonAttributes, attribute.String("successful", "false"))...,
 			),
 		)
 
-		return nil, model.ErrUserInvalidEmail
+		return nil, errorType
 	}
 
 	query := `
@@ -571,7 +575,7 @@ func (ref *UsersRepository) SelectByEmail(ctx context.Context, email string) (*m
 		)
 
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, model.ErrUserNotFound
+			return nil, &model.UserNotFoundError{Email: email}
 		}
 
 		return nil, err

@@ -47,7 +47,18 @@ var (
 	debug           bool
 )
 
-func init() {
+func flagsConfig() {
+	// Get Configuration from Environment Variables
+	// and override the values when they are set
+	if err := config.SetEnvVarFromFile(); err != nil {
+		slog.Error("failed to set environment variables from .env file", "error", err)
+		os.Exit(1)
+	}
+
+	// Get Configuration from Environment Variables
+	// and override the values when they are set
+	config.ParseEnvVars(logConfig, httpSrvConfig, dbConfig, otConfig)
+
 	// Version flag
 	flag.BoolVar(&showVersion, "version", false, "Show the version information")
 	flag.BoolVar(&showLongVersion, "version.long", false, "Show the long version information")
@@ -181,17 +192,6 @@ func init() {
 	logger = slog.New(logHandler)
 	slog.SetDefault(logger)
 
-	// Get Configuration from Environment Variables
-	// and override the values when they are set
-	if err := config.SetEnvVarFromFile(); err != nil {
-		slog.Error("failed to set environment variables from .env file", "error", err)
-		os.Exit(1)
-	}
-
-	// Get Configuration from Environment Variables
-	// and override the values when they are set
-	config.ParseEnvVars(logConfig, httpSrvConfig, dbConfig, otConfig)
-
 	// Validate the configuration
 	if err := config.Validate(logConfig, httpSrvConfig, dbConfig, otConfig); err != nil {
 		slog.Error("error validating configuration", "error", err)
@@ -215,6 +215,8 @@ func init() {
 //	@description	- Debug mode to enable debug logging.
 //	@description	- TLS enabled to secure the communication.
 func main() {
+	flagsConfig()
+
 	// Default context
 	ctx := context.Background()
 

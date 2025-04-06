@@ -2,7 +2,6 @@ package model
 
 import (
 	"encoding/base64"
-	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -11,18 +10,13 @@ import (
 )
 
 const (
-	DefaultLimit int = 10
-	MinLimit     int = 1
-	MaxLimit     int = 100
+	PaginatorDefaultLimit int = 10
+	PaginatorMinLimit     int = 1
+	PaginatorMaxLimit     int = 100
 )
 
 // DataSeparator is the separator used to separate the data in the cursor token.
 var DataSeparator string = ";"
-
-var (
-	ErrModelInvalidCursor = errors.New("invalid cursor token")
-	ErrModelInvalidLimit  = errors.New("invalid limit. must be greater than " + strconv.Itoa(MinLimit) + " and less than or equal to " + strconv.Itoa(MaxLimit))
-)
 
 // Paginator represents a model.
 //
@@ -57,15 +51,15 @@ func (ref *Paginator) GenerateToken(id uuid.UUID, serial int64) string {
 
 // Validate validates the model.
 func (ref *Paginator) Validate() error {
-	if ref.Limit < MinLimit || ref.Limit > MaxLimit {
-		return ErrModelInvalidLimit
+	if ref.Limit < PaginatorMinLimit || ref.Limit > PaginatorMaxLimit {
+		return &InvalidPaginatorLimitError{MinLimit: PaginatorMinLimit, MaxLimit: PaginatorMaxLimit}
 	}
 
 	// next should be a base64 encoded string
 	if ref.NextToken != "" {
 		_, _, err := DecodeToken(ref.NextToken)
 		if err != nil {
-			return ErrModelInvalidCursor
+			return &InvalidPaginatorTokenError{Message: "next token cannot be decoded"}
 		}
 	}
 
@@ -73,7 +67,7 @@ func (ref *Paginator) Validate() error {
 	if ref.PrevToken != "" {
 		_, _, err := DecodeToken(ref.PrevToken)
 		if err != nil {
-			return ErrModelInvalidCursor
+			return &InvalidPaginatorTokenError{Message: "previous token cannot be decoded"}
 		}
 	}
 
@@ -108,7 +102,7 @@ func DecodeToken(s string) (id uuid.UUID, serial int64, err error) {
 
 	parts := strings.Split(string(data), DataSeparator)
 	if len(parts) != 2 {
-		return uuid.Nil, 0, ErrModelInvalidCursor
+		return uuid.Nil, 0, &InvalidPaginatorCursorError{Message: "invalid token"}
 	}
 
 	serial, err = strconv.ParseInt(parts[1], 10, 64)

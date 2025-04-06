@@ -2,6 +2,7 @@ package model
 
 import (
 	"encoding/base64"
+	"errors"
 	"reflect"
 	"testing"
 
@@ -251,7 +252,7 @@ func TestPaginator_Validate(t *testing.T) {
 		{
 			name: "valid paginator with default values",
 			p: Paginator{
-				Limit: DefaultLimit,
+				Limit: PaginatorDefaultLimit,
 			},
 			wantErr: false,
 		},
@@ -260,73 +261,87 @@ func TestPaginator_Validate(t *testing.T) {
 			p: Paginator{
 				NextToken: validToken,
 				PrevToken: validToken,
-				Limit:     DefaultLimit,
+				Limit:     PaginatorDefaultLimit,
 			},
 			wantErr: false,
 		},
 		{
 			name: "invalid limit - below minimum",
 			p: Paginator{
-				Limit: MinLimit - 1,
+				Limit: PaginatorMinLimit - 1,
 			},
 			wantErr: true,
-			errType: ErrModelInvalidLimit,
+			errType: &InvalidPaginatorLimitError{
+				MinLimit: PaginatorMinLimit,
+				MaxLimit: PaginatorMaxLimit,
+			},
 		},
 		{
 			name: "invalid limit - above maximum",
 			p: Paginator{
-				Limit: MaxLimit + 1,
+				Limit: PaginatorMaxLimit + 1,
 			},
 			wantErr: true,
-			errType: ErrModelInvalidLimit,
+			errType: &InvalidPaginatorLimitError{
+				MinLimit: PaginatorMinLimit,
+				MaxLimit: PaginatorMaxLimit,
+			},
 		},
 		{
 			name: "invalid next token - not base64",
 			p: Paginator{
 				NextToken: invalidToken,
-				Limit:     DefaultLimit,
+				Limit:     PaginatorDefaultLimit,
 			},
 			wantErr: true,
-			errType: ErrModelInvalidCursor,
+			errType: &InvalidPaginatorTokenError{
+				Message: "next token cannot be decoded",
+			},
 		},
 		{
 			name: "invalid prev token - not base64",
 			p: Paginator{
 				PrevToken: invalidToken,
-				Limit:     DefaultLimit,
+				Limit:     PaginatorDefaultLimit,
 			},
 			wantErr: true,
-			errType: ErrModelInvalidCursor,
+			errType: &InvalidPaginatorTokenError{
+				Message: "prev token cannot be decoded",
+			},
 		},
 		{
 			name: "invalid next token - invalid format",
 			p: Paginator{
 				NextToken: invalidBase64Token,
-				Limit:     DefaultLimit,
+				Limit:     PaginatorDefaultLimit,
 			},
 			wantErr: true,
-			errType: ErrModelInvalidCursor,
+			errType: &InvalidPaginatorCursorError{
+				Message: "next token cannot be decoded",
+			},
 		},
 		{
 			name: "invalid prev token - invalid format",
 			p: Paginator{
 				PrevToken: invalidBase64Token,
-				Limit:     DefaultLimit,
+				Limit:     PaginatorDefaultLimit,
 			},
 			wantErr: true,
-			errType: ErrModelInvalidCursor,
+			errType: &InvalidPaginatorCursorError{
+				Message: "prev token cannot be decoded",
+			},
 		},
 		{
 			name: "valid limit at minimum",
 			p: Paginator{
-				Limit: MinLimit,
+				Limit: PaginatorMinLimit,
 			},
 			wantErr: false,
 		},
 		{
 			name: "valid limit at maximum",
 			p: Paginator{
-				Limit: MaxLimit,
+				Limit: PaginatorMaxLimit,
 			},
 			wantErr: false,
 		},
@@ -335,10 +350,13 @@ func TestPaginator_Validate(t *testing.T) {
 			p: Paginator{
 				NextToken: invalidToken,
 				PrevToken: invalidToken,
-				Limit:     MinLimit - 1,
+				Limit:     PaginatorMinLimit - 1,
 			},
 			wantErr: true,
-			errType: ErrModelInvalidLimit, // First error encountered
+			errType: &InvalidPaginatorLimitError{
+				MinLimit: PaginatorMinLimit,
+				MaxLimit: PaginatorMaxLimit,
+			},
 		},
 	}
 
@@ -346,11 +364,30 @@ func TestPaginator_Validate(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			err := tt.p.Validate()
 			if (err != nil) != tt.wantErr {
-				t.Errorf("Paginator.Validate() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("Paginator.Validate(): got = '%v', want = '%v'", err, tt.wantErr)
 				return
 			}
-			if tt.wantErr && err != tt.errType {
-				t.Errorf("Paginator.Validate() error = %v, wantErrType %v", err, tt.errType)
+
+			if tt.wantErr {
+				var invalidLimitError *InvalidPaginatorLimitError
+				if errors.As(tt.errType, &invalidLimitError) {
+					if invalidLimitError.MinLimit != PaginatorMinLimit || invalidLimitError.MaxLimit != PaginatorMaxLimit {
+						t.Errorf("InvalidPaginatorLimitError: got = '%v', want = '%v'", invalidLimitError, tt.errType)
+					}
+				}
+				var invalidTokenError *InvalidPaginatorTokenError
+				if errors.As(tt.errType, &invalidTokenError) {
+					if invalidTokenError.Message != "next token cannot be decoded" && invalidTokenError.Message != "prev token cannot be decoded" {
+						t.Errorf("InvalidPaginatorTokenError: got = '%v', want = '%v'", invalidTokenError, tt.errType)
+					}
+				}
+
+				var invalidCursorError *InvalidPaginatorCursorError
+				if errors.As(tt.errType, &invalidCursorError) {
+					if invalidCursorError.Message != "next token cannot be decoded" && invalidCursorError.Message != "prev token cannot be decoded" {
+						t.Errorf("InvalidPaginatorCursorError: got = '%v', want = '%v'", invalidCursorError, tt.errType)
+					}
+				}
 			}
 		})
 	}
