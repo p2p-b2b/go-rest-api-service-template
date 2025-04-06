@@ -14,16 +14,16 @@ import (
 // If the input is a nil UUID, it returns an error.
 func parseUUIDQueryParams(input string) (uuid.UUID, error) {
 	if input == "" {
-		return uuid.Nil, ErrRequiredUUID
+		return uuid.Nil, &InvalidUUIDError{Message: "input is empty"}
 	}
 
 	id, err := uuid.Parse(input)
 	if err != nil {
-		return uuid.Nil, ErrInvalidUUID
+		return uuid.Nil, &InvalidUUIDError{UUID: input, Message: err.Error()}
 	}
 
 	if id == uuid.Nil {
-		return uuid.Nil, ErrUUIDCannotBeNil
+		return uuid.Nil, &InvalidUUIDError{UUID: input, Message: "input is nil"}
 	}
 
 	return id, nil
@@ -76,7 +76,7 @@ func parseNextTokenQueryParams(nextToken string) (string, error) {
 	if nextToken != "" {
 		_, _, err := model.DecodeToken(nextToken)
 		if err != nil {
-			return "", ErrInvalidNextToken
+			return "", &model.InvalidPaginatorTokenError{Message: err.Error()}
 		}
 	}
 
@@ -88,7 +88,7 @@ func parsePrevTokenQueryParams(prevToken string) (string, error) {
 	if prevToken != "" {
 		_, _, err := model.DecodeToken(prevToken)
 		if err != nil {
-			return "", ErrInvalidPrevToken
+			return "", &model.InvalidPaginatorTokenError{Message: err.Error()}
 		}
 	}
 
@@ -101,22 +101,22 @@ func parseLimitQueryParams(limit string) (int, error) {
 	var err error
 
 	if limit == "" {
-		return model.DefaultLimit, nil
+		return model.PaginatorDefaultLimit, nil
 	}
 
 	// check if this is a valid integer
 	if limitInt, err = strconv.Atoi(limit); err != nil {
-		return 0, ErrInvalidLimit
+		return 0, &model.InvalidPaginatorLimitError{MinLimit: model.PaginatorMinLimit, MaxLimit: model.PaginatorMaxLimit}
 	}
 
 	if limitInt == 0 {
-		limitInt = model.DefaultLimit
+		limitInt = model.PaginatorDefaultLimit
 	}
 
-	if limitInt < model.MinLimit {
-		return 0, ErrInvalidLimit
-	} else if limitInt > model.MaxLimit {
-		limitInt = model.MaxLimit
+	if limitInt < model.PaginatorMinLimit {
+		return 0, &model.InvalidPaginatorLimitError{MinLimit: model.PaginatorMinLimit, MaxLimit: model.PaginatorMaxLimit}
+	} else if limitInt > model.PaginatorMaxLimit {
+		limitInt = model.PaginatorMaxLimit
 	}
 
 	return limitInt, nil

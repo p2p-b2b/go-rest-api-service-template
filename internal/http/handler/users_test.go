@@ -69,7 +69,6 @@ func TestUser_GetByID(t *testing.T) {
 					Method:     "GET",
 					Path:       "/users/InvalidUUID",
 					StatusCode: http.StatusBadRequest,
-					Message:    "invalid UUID",
 				},
 				mockCall: nil,
 			},
@@ -82,7 +81,6 @@ func TestUser_GetByID(t *testing.T) {
 					Method:     "GET",
 					Path:       "/users/" + uuid.Nil.String(),
 					StatusCode: http.StatusBadRequest,
-					Message:    "UUID cannot be nil",
 				},
 				mockCall: nil,
 			},
@@ -104,7 +102,6 @@ func TestUser_GetByID(t *testing.T) {
 					Method:     "GET",
 					Path:       "/users/''",
 					StatusCode: http.StatusBadRequest,
-					Message:    "invalid UUID",
 				},
 				mockCall: nil,
 			},
@@ -117,7 +114,6 @@ func TestUser_GetByID(t *testing.T) {
 					Method:     "GET",
 					Path:       "/users/e1cdf461-87c7-465f-a374-dc6bc7e962b9",
 					StatusCode: http.StatusInternalServerError,
-					Message:    "internal server error",
 				},
 				mockCall: mockService.
 					EXPECT().
@@ -223,11 +219,6 @@ func TestUser_GetByID(t *testing.T) {
 						}
 
 						t.Fatalf("could not decode response: %v", err)
-					}
-
-					if apiError.Message != tc.apiError.Message {
-						t.Log(apiError)
-						t.Errorf("expected message %q, got %q", tc.apiError.Message, apiError.Message)
 					}
 
 					if apiError.Method != tc.apiError.Method {

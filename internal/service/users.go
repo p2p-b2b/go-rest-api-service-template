@@ -93,16 +93,17 @@ func (ref *UsersService) GetByID(ctx context.Context, id uuid.UUID) (*model.User
 	}
 
 	if id == uuid.Nil {
-		slog.Error("service.Users.GetByID", "error", model.ErrUserInvalidID)
-		span.SetStatus(codes.Error, model.ErrUserInvalidID.Error())
-		span.RecordError(model.ErrUserInvalidID)
+		errorType := &model.InvalidUserIDError{ID: id.String()}
+		slog.Error("service.Users.GetByID", "error", errorType)
+		span.SetStatus(codes.Error, errorType.Error())
+		span.RecordError(errorType)
 		ref.metrics.serviceCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				append(metricCommonAttributes, attribute.String("successful", "false"))...,
 			),
 		)
 
-		return nil, model.ErrUserInvalidID
+		return nil, errorType
 	}
 
 	slog.Debug("service.Users.GetByID", "user.id", id)
@@ -118,7 +119,7 @@ func (ref *UsersService) GetByID(ctx context.Context, id uuid.UUID) (*model.User
 		)
 
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, model.ErrUserNotFound
+			return nil, &model.UserNotFoundError{ID: id.String()}
 		}
 
 		return nil, err
@@ -151,16 +152,17 @@ func (ref *UsersService) GetByEmail(ctx context.Context, email string) (*model.U
 	}
 
 	if email == "" {
-		slog.Error("service.Users.GetByEmail", "error", model.ErrUserInvalidEmail)
-		span.SetStatus(codes.Error, model.ErrUserInvalidEmail.Error())
-		span.RecordError(model.ErrUserInvalidEmail)
+		errorType := &model.InvalidUserEmailError{Email: email}
+		slog.Error("service.Users.GetByEmail", "error", errorType)
+		span.SetStatus(codes.Error, errorType.Error())
+		span.RecordError(errorType)
 		ref.metrics.serviceCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				append(metricCommonAttributes, attribute.String("successful", "false"))...,
 			),
 		)
 
-		return nil, model.ErrUserInvalidEmail
+		return nil, errorType
 	}
 
 	slog.Debug("service.Users.GetByEmail", "user.email", email)
@@ -174,11 +176,6 @@ func (ref *UsersService) GetByEmail(ctx context.Context, email string) (*model.U
 				append(metricCommonAttributes, attribute.String("successful", "false"))...,
 			),
 		)
-
-		if errors.Is(err, sql.ErrNoRows) ||
-			errors.Is(err, model.ErrUserNotFound) {
-			return nil, model.ErrUserNotFound
-		}
 
 		return nil, err
 	}
@@ -209,14 +206,14 @@ func (ref *UsersService) Create(ctx context.Context, input *model.CreateUserInpu
 	}
 
 	if input == nil {
-		span.SetStatus(codes.Error, ErrInputIsNil.Error())
-		span.RecordError(ErrInputIsNil)
+		span.SetStatus(codes.Error, model.ErrInputIsNil.Error())
+		span.RecordError(model.ErrInputIsNil)
 		ref.metrics.serviceCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				append(metricCommonAttributes, attribute.String("successful", "false"))...,
 			),
 		)
-		return ErrInputIsNil
+		return model.ErrInputIsNil
 	}
 
 	span.SetAttributes(
@@ -304,15 +301,15 @@ func (ref *UsersService) Update(ctx context.Context, input *model.UpdateUserInpu
 	}
 
 	if input == nil {
-		span.SetStatus(codes.Error, ErrInputIsNil.Error())
-		span.RecordError(ErrInputIsNil)
+		span.SetStatus(codes.Error, model.ErrInputIsNil.Error())
+		span.RecordError(model.ErrInputIsNil)
 		ref.metrics.serviceCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				append(metricCommonAttributes, attribute.String("successful", "false"))...,
 			),
 		)
 
-		return ErrInputIsNil
+		return model.ErrInputIsNil
 	}
 
 	span.SetAttributes(
@@ -401,15 +398,15 @@ func (ref *UsersService) Delete(ctx context.Context, input *model.DeleteUserInpu
 	}
 
 	if input.ID == uuid.Nil {
-		span.SetStatus(codes.Error, ErrInputIsNil.Error())
-		span.RecordError(ErrInputIsNil)
+		span.SetStatus(codes.Error, model.ErrInputIsNil.Error())
+		span.RecordError(model.ErrInputIsNil)
 		ref.metrics.serviceCalls.Add(ctx, 1,
 			metric.WithAttributes(
 				append(metricCommonAttributes, attribute.String("successful", "false"))...,
 			),
 		)
 
-		return ErrInputIsNil
+		return model.ErrInputIsNil
 	}
 
 	rParams := &model.DeleteUserInput{

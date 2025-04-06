@@ -53,13 +53,11 @@ type UsersHandler struct {
 // NewUsersHandler creates a new UsersHandler.
 func NewUsersHandler(conf UsersHandlerConf) (*UsersHandler, error) {
 	if conf.Service == nil {
-		slog.Error("service is required")
-		return nil, ErrModelServiceRequired
+		return nil, &InvalidServiceError{Name: "UsersService", Reason: "service is required"}
 	}
 
 	if conf.OT == nil {
-		slog.Error("open telemetry is required")
-		return nil, ErrOpenTelemetryRequired
+		return nil, &InvalidOpenTelemetryError{Name: "UsersHandler", Reason: "open telemetry is required"}
 	}
 
 	uh := &UsersHandler{
@@ -146,7 +144,8 @@ func (ref *UsersHandler) getByID(w http.ResponseWriter, r *http.Request) {
 		span.RecordError(err)
 		slog.Error("handler.Users.getByID", "error", err.Error())
 
-		if errors.Is(err, model.ErrUserNotFound) {
+		var errNotFound *model.UserNotFoundError
+		if errors.As(err, &errNotFound) {
 			ref.metrics.handlerCalls.Add(ctx, 1,
 				metric.WithAttributes(
 					attribute.String("code", fmt.Sprintf("%d", http.StatusNotFound)),
@@ -279,9 +278,10 @@ func (ref *UsersHandler) create(w http.ResponseWriter, r *http.Request) {
 		span.SetStatus(codes.Error, err.Error())
 		span.RecordError(err)
 
-		if errors.Is(err, model.ErrUserIDAlreadyExists) ||
-			errors.Is(err, model.ErrUserEmailAlreadyExists) {
-
+		var errUserAlreadyExists *model.UserAlreadyExistsError
+		var errUserEmailAlreadyExists *model.UserEmailAlreadyExistsError
+		if errors.As(err, &errUserAlreadyExists) ||
+			errors.As(err, &errUserEmailAlreadyExists) {
 			ref.metrics.handlerCalls.Add(ctx, 1,
 				metric.WithAttributes(
 					append(metricCommonAttributes, attribute.String("code", fmt.Sprintf("%d", http.StatusConflict)))...,
@@ -406,8 +406,11 @@ func (ref *UsersHandler) update(w http.ResponseWriter, r *http.Request) {
 		span.RecordError(ErrInternalServerError)
 		slog.Error("handler.Users.update", "error", ErrInternalServerError.Error())
 
-		if errors.Is(err, model.ErrUserEmailAlreadyExists) ||
-			errors.Is(err, model.ErrUserNotFound) {
+		var errUserNotFound *model.UserNotFoundError
+		var errUserEmailAlreadyExists *model.UserEmailAlreadyExistsError
+
+		if errors.As(err, &errUserNotFound) ||
+			errors.As(err, &errUserEmailAlreadyExists) {
 			ref.metrics.handlerCalls.Add(ctx, 1,
 				metric.WithAttributes(
 					append(metricCommonAttributes, attribute.String("code", fmt.Sprintf("%d", http.StatusConflict)))...,

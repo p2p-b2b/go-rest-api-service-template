@@ -17,9 +17,9 @@ func TestParseUUIDQueryParams(t *testing.T) {
 		expected uuid.UUID
 		err      error
 	}{
-		{"", uuid.Nil, ErrRequiredUUID},
-		{"invalid-uuid", uuid.Nil, ErrInvalidUUID},
-		{uuid.Nil.String(), uuid.Nil, ErrUUIDCannotBeNil},
+		{"", uuid.Nil, &InvalidUUIDError{Message: "input is empty"}},
+		{"invalid-uuid", uuid.Nil, &InvalidUUIDError{UUID: "invalid-uuid", Message: "invalid UUID length: 12"}},
+		{uuid.Nil.String(), uuid.Nil, &InvalidUUIDError{UUID: uuid.Nil.String(), Message: "input is nil"}},
 		{testID.String(), testID, nil},
 	}
 
@@ -98,7 +98,7 @@ func TestParseNextTokenQueryParams(t *testing.T) {
 		err       error
 	}{
 		{"", "", nil},
-		{"invalid", "", ErrInvalidNextToken},
+		{"invalid", "", &model.InvalidPaginatorTokenError{Message: "illegal base64 data at input byte 4"}},
 		{model.EncodeToken(testID, 10), model.EncodeToken(testID, 10), nil},
 	}
 
@@ -118,7 +118,7 @@ func TestParsePrevTokenQueryParams(t *testing.T) {
 		err       error
 	}{
 		{"", "", nil},
-		{"invalid", "", ErrInvalidPrevToken},
+		{"invalid", "", &model.InvalidPaginatorTokenError{Message: "illegal base64 data at input byte 4"}},
 		{model.EncodeToken(testID, 10), model.EncodeToken(testID, 10), nil},
 	}
 
@@ -135,12 +135,12 @@ func TestParseLimitQueryParams(t *testing.T) {
 		expected int
 		err      error
 	}{
-		{"", model.DefaultLimit, nil},
-		{"invalid", 0, ErrInvalidLimit},
-		{"0", model.DefaultLimit, nil},
+		{"", model.PaginatorDefaultLimit, nil},
+		{"invalid", 0, &model.InvalidPaginatorLimitError{MinLimit: model.PaginatorMinLimit, MaxLimit: model.PaginatorMaxLimit}},
+		{"0", model.PaginatorDefaultLimit, nil},
 		{"5", 5, nil},
-		{"-1", 0, ErrInvalidLimit},
-		{"1000", model.MaxLimit, nil},
+		{"-1", 0, &model.InvalidPaginatorLimitError{MinLimit: model.PaginatorMinLimit, MaxLimit: model.PaginatorMaxLimit}},
+		{"1000", model.PaginatorMaxLimit, nil},
 	}
 
 	for _, test := range tests {

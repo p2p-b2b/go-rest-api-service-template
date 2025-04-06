@@ -1,25 +1,12 @@
 package model
 
 import (
-	"errors"
-	"fmt"
 	"net/mail"
 	"reflect"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/p2p-b2b/qfv"
-)
-
-var (
-	ErrInputIsNil                   = errors.New("input is nil")
-	ErrAtLeastOneFieldMustBeUpdated = errors.New("at least one field must be updated")
-	ErrInvalidLimit                 = errors.New("invalid limit field")
-	ErrInvalidSort                  = errors.New("invalid sort field")
-	ErrInvalidFilter                = errors.New("invalid filter field")
-	ErrInvalidFields                = errors.New("invalid fields field")
-	ErrInvalidNextToken             = errors.New("invalid nextToken field")
-	ErrInvalidPrevToken             = errors.New("invalid prevToken field")
 )
 
 const (
@@ -31,17 +18,6 @@ const (
 	ValidUserEmailMaxLength     = 50
 	ValidUserPasswordMinLength  = 6
 	ValidUserPasswordMaxLength  = 255
-)
-
-var (
-	ErrUserInvalidID          = errors.New("invalid user ID. Must be a valid UUID")
-	ErrUserInvalidFirstName   = errors.New("invalid first name. Must be between " + fmt.Sprintf("%d and %d", ValidUserFirstNameMinLength, ValidUserFirstNameMaxLength) + " characters long")
-	ErrUserInvalidLastName    = errors.New("invalid last name. Must be between " + fmt.Sprintf("%d and %d", ValidUserLastNameMinLength, ValidUserLastNameMaxLength) + " characters long")
-	ErrUserInvalidEmail       = errors.New("invalid email. Must be between " + fmt.Sprintf("%d and %d", ValidUserEmailMinLength, ValidUserEmailMaxLength) + " characters long")
-	ErrUserInvalidPassword    = errors.New("invalid password. Must be between " + fmt.Sprintf("%d and %d", ValidUserPasswordMinLength, ValidUserPasswordMaxLength) + " characters long")
-	ErrUserNotFound           = errors.New("user not found")
-	ErrUserIDAlreadyExists    = errors.New("user ID already exists")
-	ErrUserEmailAlreadyExists = errors.New("user email already exists")
 )
 
 var (
@@ -83,35 +59,35 @@ type InsertUserInput struct {
 
 func (ref *InsertUserInput) Validate() error {
 	if ref.ID == uuid.Nil {
-		return ErrUserInvalidID
+		return &InvalidUserIDError{ID: ref.ID.String()}
 	}
 
 	if len(ref.FirstName) < ValidUserFirstNameMinLength || len(ref.FirstName) > ValidUserFirstNameMaxLength {
-		return ErrUserInvalidFirstName
+		return &InvalidUserFirstNameError{MinLength: ValidUserFirstNameMinLength, MaxLength: ValidUserFirstNameMaxLength}
 	}
 
 	if len(ref.LastName) < ValidUserLastNameMinLength || len(ref.LastName) > ValidUserLastNameMaxLength {
-		return ErrUserInvalidLastName
+		return &InvalidUserLastNameError{MinLength: ValidUserLastNameMinLength, MaxLength: ValidUserLastNameMaxLength}
 	}
 
 	if len(ref.Email) < ValidUserEmailMinLength || len(ref.Email) > ValidUserEmailMaxLength {
-		return ErrUserInvalidEmail
+		return &InvalidUserEmailError{MinLength: ValidUserEmailMinLength, MaxLength: ValidUserEmailMaxLength, Email: ref.Email}
 	}
 
 	_, err := mail.ParseAddress(ref.Email)
 	if err != nil {
-		return ErrUserInvalidEmail
+		return &InvalidUserEmailError{MinLength: ValidUserEmailMinLength, MaxLength: ValidUserEmailMaxLength, Email: ref.Email}
 	}
 
 	if ref.PasswordHash != "" {
 		if len(ref.PasswordHash) < ValidUserPasswordMinLength || len(ref.PasswordHash) > ValidUserPasswordMaxLength {
-			return ErrUserInvalidPassword
+			return &InvalidUserPasswordError{MinLength: ValidUserPasswordMinLength, MaxLength: ValidUserPasswordMaxLength}
 		}
 	}
 
 	if ref.Password != "" {
 		if len(ref.Password) < ValidUserPasswordMinLength || len(ref.Password) > ValidUserPasswordMaxLength {
-			return ErrUserInvalidPassword
+			return &InvalidUserPasswordError{MinLength: ValidUserPasswordMinLength, MaxLength: ValidUserPasswordMaxLength}
 		}
 	}
 
@@ -137,30 +113,30 @@ func (ref *UpdateUserInput) Validate() error {
 	}
 
 	if ref.ID == uuid.Nil {
-		return ErrUserInvalidID
+		return &InvalidUserIDError{ID: ref.ID.String()}
 	}
 
 	if ref.FirstName != nil {
 		if len(*ref.FirstName) < ValidUserFirstNameMinLength || len(*ref.FirstName) > ValidUserFirstNameMaxLength {
-			return ErrUserInvalidFirstName
+			return &InvalidUserFirstNameError{MinLength: ValidUserFirstNameMinLength, MaxLength: ValidUserFirstNameMaxLength}
 		}
 	}
 
 	if ref.LastName != nil {
 		if len(*ref.LastName) < ValidUserLastNameMinLength || len(*ref.LastName) > ValidUserLastNameMaxLength {
-			return ErrUserInvalidLastName
+			return &InvalidUserLastNameError{MinLength: ValidUserLastNameMinLength, MaxLength: ValidUserLastNameMaxLength}
 		}
 	}
 
 	if ref.Email != nil {
 		if len(*ref.Email) < ValidUserEmailMinLength || len(*ref.Email) > ValidUserEmailMaxLength {
-			return ErrUserInvalidEmail
+			return &InvalidUserEmailError{MinLength: ValidUserEmailMinLength, MaxLength: ValidUserEmailMaxLength, Email: *ref.Email}
 		}
 	}
 
 	if ref.Email != nil {
 		if len(*ref.Email) < ValidUserEmailMinLength || len(*ref.Email) > ValidUserEmailMaxLength {
-			return ErrUserInvalidEmail
+			return &InvalidUserEmailError{MinLength: ValidUserEmailMinLength, MaxLength: ValidUserEmailMaxLength, Email: *ref.Email}
 		}
 	}
 
@@ -168,20 +144,20 @@ func (ref *UpdateUserInput) Validate() error {
 		if len(*ref.PasswordHash) >= ValidUserPasswordMinLength || len(*ref.PasswordHash) <= ValidUserPasswordMaxLength {
 			_, err := mail.ParseAddress(*ref.Email)
 			if err != nil {
-				return ErrUserInvalidEmail
+				return &InvalidUserEmailError{MinLength: ValidUserEmailMinLength, MaxLength: ValidUserEmailMaxLength, Email: *ref.Email}
 			}
 		}
 	}
 
 	if ref.PasswordHash != nil {
 		if len(*ref.PasswordHash) < ValidUserPasswordMinLength || len(*ref.PasswordHash) > ValidUserPasswordMaxLength {
-			return ErrUserInvalidPassword
+			return &InvalidUserPasswordError{MinLength: ValidUserPasswordMinLength, MaxLength: ValidUserPasswordMaxLength}
 		}
 	}
 
 	if ref.Password != nil {
 		if len(*ref.Password) < ValidUserPasswordMinLength || len(*ref.Password) > ValidUserPasswordMaxLength {
-			return ErrUserInvalidPassword
+			return &InvalidUserPasswordError{MinLength: ValidUserPasswordMinLength, MaxLength: ValidUserPasswordMaxLength}
 		}
 	}
 
@@ -194,7 +170,7 @@ type DeleteUserInput struct {
 
 func (ref *DeleteUserInput) Validate() error {
 	if ref.ID == uuid.Nil {
-		return ErrUserInvalidID
+		return &InvalidUserIDError{ID: ref.ID.String()}
 	}
 
 	return nil
@@ -208,8 +184,8 @@ type SelectUsersInput struct {
 }
 
 func (ref *SelectUsersInput) Validate() error {
-	if ref.Paginator.Limit < 1 {
-		return ErrInvalidLimit
+	if err := ref.Paginator.Validate(); err != nil {
+		return err
 	}
 
 	if ref.Sort != "" {
@@ -259,29 +235,29 @@ type CreateUserRequest struct {
 // Validate validates the CreateUserRequest.
 func (req *CreateUserRequest) Validate() error {
 	if req.ID == uuid.Nil {
-		return ErrUserInvalidID
+		return &InvalidUserIDError{ID: req.ID.String()}
 	}
 
 	if len(req.FirstName) < ValidUserFirstNameMinLength || len(req.FirstName) > ValidUserFirstNameMaxLength {
-		return ErrUserInvalidFirstName
+		return &InvalidUserFirstNameError{MinLength: ValidUserFirstNameMinLength, MaxLength: ValidUserFirstNameMaxLength}
 	}
 
 	if len(req.LastName) < ValidUserLastNameMinLength || len(req.LastName) > ValidUserLastNameMaxLength {
-		return ErrUserInvalidLastName
+		return &InvalidUserLastNameError{MinLength: ValidUserLastNameMinLength, MaxLength: ValidUserLastNameMaxLength}
 	}
 
 	// minimal email validation
 	if len(req.Email) < ValidUserEmailMinLength || len(req.Email) > ValidUserEmailMaxLength {
-		return ErrUserInvalidEmail
+		return &InvalidUserEmailError{MinLength: ValidUserEmailMinLength, MaxLength: ValidUserEmailMaxLength, Email: req.Email}
 	}
 
 	_, err := mail.ParseAddress(req.Email)
 	if err != nil {
-		return ErrUserInvalidEmail
+		return &InvalidUserEmailError{MinLength: ValidUserEmailMinLength, MaxLength: ValidUserEmailMaxLength, Email: req.Email}
 	}
 
 	if len(req.Password) < ValidUserPasswordMinLength || len(req.Password) > ValidUserPasswordMaxLength {
-		return ErrUserInvalidPassword
+		return &InvalidUserPasswordError{MinLength: ValidUserPasswordMinLength, MaxLength: ValidUserPasswordMaxLength}
 	}
 
 	return nil
@@ -305,20 +281,20 @@ func (req *UpdateUserRequest) Validate() error {
 
 	if req.FirstName != nil {
 		if len(*req.FirstName) < ValidUserFirstNameMinLength || len(*req.FirstName) > ValidUserFirstNameMaxLength {
-			return ErrUserInvalidFirstName
+			return &InvalidUserFirstNameError{MinLength: ValidUserFirstNameMinLength, MaxLength: ValidUserFirstNameMaxLength}
 		}
 	}
 
 	if req.LastName != nil {
 		if len(*req.LastName) < ValidUserLastNameMinLength || len(*req.LastName) > ValidUserLastNameMaxLength {
-			return ErrUserInvalidLastName
+			return &InvalidUserLastNameError{MinLength: ValidUserLastNameMinLength, MaxLength: ValidUserLastNameMaxLength}
 		}
 	}
 
 	// minimal email validation
 	if req.Email != nil {
 		if len(*req.Email) < ValidUserEmailMinLength || len(*req.Email) > ValidUserEmailMaxLength {
-			return ErrUserInvalidEmail
+			return &InvalidUserEmailError{MinLength: ValidUserEmailMinLength, MaxLength: ValidUserEmailMaxLength, Email: *req.Email}
 		}
 	}
 
@@ -326,7 +302,7 @@ func (req *UpdateUserRequest) Validate() error {
 		if len(*req.Email) >= ValidUserEmailMinLength && len(*req.Email) <= ValidUserEmailMaxLength {
 			_, err := mail.ParseAddress(*req.Email)
 			if err != nil {
-				return ErrUserInvalidEmail
+				return &InvalidUserEmailError{MinLength: ValidUserEmailMinLength, MaxLength: ValidUserEmailMaxLength, Email: *req.Email}
 			}
 		}
 	}
