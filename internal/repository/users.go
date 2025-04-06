@@ -643,6 +643,7 @@ func (ref *UsersRepository) Select(ctx context.Context, input *model.SelectUsers
 		fields := make([]string, 0)
 		var isIsPresent bool
 		for _, field := range inputFields {
+			field = strings.TrimSpace(field)
 			fields = append(fields, sqlFieldsPrefix+field)
 			if field == "id" {
 				isIsPresent = true

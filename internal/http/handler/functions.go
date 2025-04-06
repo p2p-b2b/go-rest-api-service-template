@@ -2,6 +2,7 @@ package handler
 
 import (
 	"strconv"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/model"
@@ -68,7 +69,9 @@ func parseFieldsQueryParams(fields string, allowedFields []string) (string, erro
 		return "", err
 	}
 
-	return fields, nil
+	ret := strings.ReplaceAll(fields, " ", "")
+
+	return ret, nil
 }
 
 // parseNextTokenQueryParams parses a string into a nextToken field.
