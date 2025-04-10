@@ -66,3 +66,8 @@ jobs:
       #   run: |
       #     echo "## Make build" >> $GITHUB_STEP_SUMMARY
       #     make build-all 2>&1 | tee -a $GITHUB_STEP_SUMMARY
+
+      - name: git log
+        run: |
+          echo "## Git log" >> $GITHUB_STEP_SUMMARY
+          git log --graph --format=format:'%C(bold blue)%h%C(reset) - %C(bold green)(%ar)%C(reset) %C(white)%an%C(reset)%C(bold yellow)%d%C(reset) %C(dim white)- %s%C(reset)' -n 10 | tee -a $GITHUB_STEP_SUMMARY
