@@ -9,7 +9,9 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/p2p-b2b/go-rest-api-service-template/internal/model"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/o11y"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 )
 
@@ -37,15 +39,15 @@ type HealthRepository struct {
 // NewHealthRepository creates a new HealthRepository.
 func NewHealthRepository(conf HealthRepositoryConfig) (*HealthRepository, error) {
 	if conf.DB == nil {
-		return nil, ErrDBInvalidConfiguration
+		return nil, &model.InvalidDBConfigurationError{Message: "invalid database configuration. It is nil"}
 	}
 
 	if conf.MaxPingTimeout < 10*time.Millisecond {
-		return nil, ErrDBInvalidMaxPingTimeout
+		return nil, &model.InvalidDBMaxPingTimeoutError{Message: "invalid max ping timeout. It must be greater than 10 millisecond"}
 	}
 
 	if conf.OT == nil {
-		return nil, ErrOTInvalidConfiguration
+		return nil, &model.InvalidOTConfigurationError{Message: "invalid OpenTelemetry configuration. It is nil"}
 	}
 
 	repo := &HealthRepository{
@@ -84,6 +86,10 @@ func (ref *HealthRepository) PingContext(ctx context.Context) error {
 	defer cancel()
 
 	ctx, span := ref.ot.Traces.Tracer.Start(ctx, "repository.Health.PingContext")
+	span.SetAttributes(
+		attribute.String("driver", ref.DriverName()),
+		attribute.String("method", "PingContext"),
+	)
 	defer span.End()
 
 	return ref.db.Ping(ctx)

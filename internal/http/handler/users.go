@@ -15,7 +15,6 @@ import (
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/model"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/o11y"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/metric"
 )
 
@@ -26,8 +25,8 @@ type UsersService interface {
 	GetByID(ctx context.Context, id uuid.UUID) (*model.User, error)
 	GetByEmail(ctx context.Context, email string) (*model.User, error)
 	Create(ctx context.Context, input *model.CreateUserInput) error
-	Update(ctx context.Context, input *model.UpdateUserInput) error
-	Delete(ctx context.Context, input *model.DeleteUserInput) error
+	UpdateByID(ctx context.Context, input *model.UpdateUserInput) error
+	DeleteByID(ctx context.Context, input *model.DeleteUserInput) error
 	List(ctx context.Context, input *model.ListUsersInput) (*model.ListUsersOutput, error)
 }
 
@@ -89,9 +88,9 @@ func (ref *UsersHandler) RegisterRoutes(mux *http.ServeMux, middlewares ...middl
 
 	mux.Handle("GET /users", mdw.ThenFunc((ref.list)))
 	mux.Handle("GET /users/{user_id}", mdw.ThenFunc((ref.getByID)))
-	mux.Handle("PUT /users/{user_id}", mdw.ThenFunc((ref.update)))
+	mux.Handle("PUT /users/{user_id}", mdw.ThenFunc((ref.updateByID)))
 	mux.Handle("POST /users", mdw.ThenFunc((ref.create)))
-	mux.Handle("DELETE /users/{user_id}", mdw.ThenFunc((ref.delete)))
+	mux.Handle("DELETE /users/{user_id}", mdw.ThenFunc((ref.deleteByID)))
 }
 
 // getByID Get a user by ID
@@ -108,96 +107,40 @@ func (ref *UsersHandler) RegisterRoutes(mux *http.ServeMux, middlewares ...middl
 //	@Failure		500		{object}	model.HTTPMessage
 //	@Router			/users/{user_id} [get]
 func (ref *UsersHandler) getByID(w http.ResponseWriter, r *http.Request) {
-	ctx, span := ref.ot.Traces.Tracer.Start(r.Context(), "handler.Users.getByID")
+	ctx, span, metricCommonAttributes := setupContext(r, ref.ot.Traces.Tracer, "handler.Users.getByID")
 	defer span.End()
 
-	span.SetAttributes(
-		attribute.String("component", "handler.Users.getByID"),
-		attribute.String("http.method", r.Method),
-		attribute.String("http.path", r.URL.Path[:strings.LastIndex(r.URL.Path, "/")]),
-	)
-
-	metricCommonAttributes := []attribute.KeyValue{
-		attribute.String("component", "handler.Users.getByID"),
-		attribute.String("http.method", r.Method),
-		attribute.String("http.path", r.URL.Path[:strings.LastIndex(r.URL.Path, "/")]),
-	}
-
-	id, err := parseUUIDQueryParams(r.PathValue("user_id"))
+	userID, err := parseUUIDQueryParams(r.PathValue("user_id"))
 	if err != nil {
-		span.SetStatus(codes.Error, err.Error())
-		span.RecordError(err)
-		slog.Error("handler.Users.getByID", "error", err.Error())
-		ref.metrics.handlerCalls.Add(ctx, 1,
-			metric.WithAttributes(
-				append(metricCommonAttributes, attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)))...,
-			),
-		)
-
-		respond.WriteJSONMessage(w, r, http.StatusBadRequest, err.Error())
+		e := recordError(ctx, span, err, ref.metrics.handlerCalls, metricCommonAttributes, http.StatusBadRequest, "handler.Users.getByID")
+		respond.WriteJSONMessage(w, r, http.StatusBadRequest, e.Error())
 		return
 	}
 
-	sUser, err := ref.service.GetByID(ctx, id)
+	out, err := ref.service.GetByID(ctx, userID)
 	if err != nil {
-		span.SetStatus(codes.Error, err.Error())
-		span.RecordError(err)
-		slog.Error("handler.Users.getByID", "error", err.Error())
-
-		var errNotFound *model.UserNotFoundError
-		if errors.As(err, &errNotFound) {
-			ref.metrics.handlerCalls.Add(ctx, 1,
-				metric.WithAttributes(
-					attribute.String("code", fmt.Sprintf("%d", http.StatusNotFound)),
-				),
-			)
-
-			respond.WriteJSONMessage(w, r, http.StatusNotFound, err.Error())
+		var UserNotFoundError *model.UserNotFoundError
+		if errors.As(err, &UserNotFoundError) {
+			e := recordError(ctx, span, err, ref.metrics.handlerCalls, metricCommonAttributes, http.StatusNotFound, "handler.Users.getByID")
+			respond.WriteJSONMessage(w, r, http.StatusNotFound, e.Error())
 			return
 		}
 
-		ref.metrics.handlerCalls.Add(ctx, 1,
-			metric.WithAttributes(
-				attribute.String("code", fmt.Sprintf("%d", http.StatusInternalServerError)),
-			),
-		)
-
-		respond.WriteJSONMessage(w, r, http.StatusInternalServerError, err.Error())
+		e := recordError(ctx, span, err, ref.metrics.handlerCalls, metricCommonAttributes, http.StatusInternalServerError, "handler.Users.getByID")
+		respond.WriteJSONMessage(w, r, http.StatusInternalServerError, e.Error())
 		return
 	}
 
-	// create user from service.User
-	user := &model.User{
-		ID:        sUser.ID,
-		FirstName: sUser.FirstName,
-		LastName:  sUser.LastName,
-		Email:     sUser.Email,
-		Disabled:  sUser.Disabled,
-		CreatedAt: sUser.CreatedAt,
-		UpdatedAt: sUser.UpdatedAt,
-	}
-
-	if err := respond.WriteJSONData(w, http.StatusOK, user); err != nil {
-		span.SetStatus(codes.Error, err.Error())
-		span.RecordError(err)
-		slog.Error("handler.Users.getByID", "error", err.Error())
-		ref.metrics.handlerCalls.Add(ctx, 1,
-			metric.WithAttributes(
-				attribute.String("code", fmt.Sprintf("%d", http.StatusInternalServerError)),
-			),
-		)
-
-		respond.WriteJSONMessage(w, r, http.StatusInternalServerError, err.Error())
+	if err := respond.WriteJSONData(w, http.StatusOK, out); err != nil {
+		e := recordError(ctx, span, err, ref.metrics.handlerCalls, metricCommonAttributes, http.StatusInternalServerError, "handler.Users.getByID")
+		respond.WriteJSONMessage(w, r, http.StatusInternalServerError, e.Error())
 		return
 	}
 
-	slog.Debug("handler.Users.getByID", "email", user.Email)
-	span.SetStatus(codes.Ok, "User found")
-	span.SetAttributes(attribute.String("user.id", user.ID.String()))
-	ref.metrics.handlerCalls.Add(ctx, 1,
-		metric.WithAttributes(
-			attribute.String("code", fmt.Sprintf("%d", http.StatusOK)),
-		),
+	slog.Debug("handler.Users.getByID", "user.email", out.Email)
+	recordSuccess(ctx, span, ref.metrics.handlerCalls, metricCommonAttributes, http.StatusOK, "User found",
+		attribute.String("user.id", out.ID.String()),
+		attribute.String("user.email", out.Email),
 	)
 }
 
@@ -217,33 +160,13 @@ func (ref *UsersHandler) getByID(w http.ResponseWriter, r *http.Request) {
 //	@Failure		500		{object}	model.HTTPMessage
 //	@Router			/users [post]
 func (ref *UsersHandler) create(w http.ResponseWriter, r *http.Request) {
-	ctx, span := ref.ot.Traces.Tracer.Start(r.Context(), "handler.Users.create")
+	ctx, span, metricCommonAttributes := setupContext(r, ref.ot.Traces.Tracer, "handler.Users.create")
 	defer span.End()
-
-	span.SetAttributes(
-		attribute.String("component", "handler.Users.create"),
-		attribute.String("http.method", r.Method),
-		attribute.String("http.path", r.URL.Path[:strings.LastIndex(r.URL.Path, "/")]),
-	)
-
-	metricCommonAttributes := []attribute.KeyValue{
-		attribute.String("component", "handler.Users.create"),
-		attribute.String("http.method", r.Method),
-		attribute.String("http.path", r.URL.Path[:strings.LastIndex(r.URL.Path, "/")]),
-	}
 
 	var req model.CreateUserRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		slog.Error("handler.Users.create", "error", err.Error())
-		span.SetStatus(codes.Error, err.Error())
-		span.RecordError(err)
-		ref.metrics.handlerCalls.Add(ctx, 1,
-			metric.WithAttributes(
-				append(metricCommonAttributes, attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)))...,
-			),
-		)
-
-		respond.WriteJSONMessage(w, r, http.StatusBadRequest, err.Error())
+		e := recordError(ctx, span, err, ref.metrics.handlerCalls, metricCommonAttributes, http.StatusBadRequest, "handler.Users.create")
+		respond.WriteJSONMessage(w, r, http.StatusBadRequest, e.Error())
 		return
 	}
 
@@ -252,16 +175,8 @@ func (ref *UsersHandler) create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := req.Validate(); err != nil {
-		slog.Error("handler.Users.create", "error", err.Error())
-		span.SetStatus(codes.Error, err.Error())
-		span.RecordError(err)
-		ref.metrics.handlerCalls.Add(ctx, 1,
-			metric.WithAttributes(
-				append(metricCommonAttributes, attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)))...,
-			),
-		)
-
-		respond.WriteJSONMessage(w, r, http.StatusBadRequest, err.Error())
+		e := recordError(ctx, span, err, ref.metrics.handlerCalls, metricCommonAttributes, http.StatusBadRequest, "handler.Users.create")
+		respond.WriteJSONMessage(w, r, http.StatusBadRequest, e.Error())
 		return
 	}
 
@@ -274,49 +189,36 @@ func (ref *UsersHandler) create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := ref.service.Create(ctx, user); err != nil {
-		slog.Error("handler.Users.create", "error", err.Error())
-		span.SetStatus(codes.Error, err.Error())
-		span.RecordError(err)
+		var userAlreadyExistsError *model.UserAlreadyExistsError
+		var userEmailAlreadyExistsError *model.UserEmailAlreadyExistsError
+		var invalidUserEmailError *model.InvalidUserEmailError
 
-		var errUserAlreadyExists *model.UserAlreadyExistsError
-		var errUserEmailAlreadyExists *model.UserEmailAlreadyExistsError
-		if errors.As(err, &errUserAlreadyExists) ||
-			errors.As(err, &errUserEmailAlreadyExists) {
-			ref.metrics.handlerCalls.Add(ctx, 1,
-				metric.WithAttributes(
-					append(metricCommonAttributes, attribute.String("code", fmt.Sprintf("%d", http.StatusConflict)))...,
-				),
-			)
-
-			respond.WriteJSONMessage(w, r, http.StatusConflict, err.Error())
+		if errors.As(err, &userAlreadyExistsError) ||
+			errors.As(err, &userEmailAlreadyExistsError) ||
+			errors.As(err, &invalidUserEmailError) {
+			e := recordError(ctx, span, err, ref.metrics.handlerCalls, metricCommonAttributes, http.StatusConflict, "handler.Users.create")
+			respond.WriteJSONMessage(w, r, http.StatusConflict, e.Error())
 			return
 		}
 
-		ref.metrics.handlerCalls.Add(ctx, 1,
-			metric.WithAttributes(
-				append(metricCommonAttributes, attribute.String("code", fmt.Sprintf("%d", http.StatusInternalServerError)))...,
-			),
-		)
-
-		respond.WriteJSONMessage(w, r, http.StatusInternalServerError, err.Error())
+		e := recordError(ctx, span, err, ref.metrics.handlerCalls, metricCommonAttributes, http.StatusInternalServerError, "handler.Users.create")
+		respond.WriteJSONMessage(w, r, http.StatusInternalServerError, e.Error())
 		return
 	}
 
-	slog.Debug("handler.Users.create", "email", user.Email)
-	span.SetStatus(codes.Ok, "User created")
-	span.SetAttributes(attribute.String("user.id", user.ID.String()))
-	ref.metrics.handlerCalls.Add(ctx, 1,
-		metric.WithAttributes(
-			append(metricCommonAttributes, attribute.String("code", fmt.Sprintf("%d", http.StatusCreated)))...,
-		),
-	)
+	slog.Debug("handler.Users.create", "user.email", user.Email)
 
 	// Location header is required for RESTful APIs
 	w.Header().Set("Location", fmt.Sprintf("%s%s/%s", r.Header.Get("Origin"), r.RequestURI, user.ID.String()))
-	respond.WriteJSONMessage(w, r, http.StatusCreated, "User created")
+
+	recordSuccess(ctx, span, ref.metrics.handlerCalls, metricCommonAttributes, http.StatusCreated, "User created",
+		attribute.String("user.id", user.ID.String()),
+		attribute.String("user.email", user.Email))
+
+	respond.WriteJSONMessage(w, r, http.StatusCreated, model.UserUserCreatedSuccessfully)
 }
 
-// update Update a user
+// updateByID Update a user
 //
 //	@Id				a7979074-e16c-4aec-86e0-e5a154bbfc51
 //	@Summary		Update a user
@@ -331,69 +233,32 @@ func (ref *UsersHandler) create(w http.ResponseWriter, r *http.Request) {
 //	@Failure		409		{object}	model.HTTPMessage
 //	@Failure		500		{object}	model.HTTPMessage
 //	@Router			/users/{user_id} [put]
-func (ref *UsersHandler) update(w http.ResponseWriter, r *http.Request) {
-	ctx, span := ref.ot.Traces.Tracer.Start(r.Context(), "handler.Users.update")
+func (ref *UsersHandler) updateByID(w http.ResponseWriter, r *http.Request) {
+	ctx, span, metricCommonAttributes := setupContext(r, ref.ot.Traces.Tracer, "handler.Users.updateByID")
 	defer span.End()
 
-	span.SetAttributes(
-		attribute.String("component", "handler.Users.update"),
-		attribute.String("http.method", r.Method),
-		attribute.String("http.path", r.URL.Path[:strings.LastIndex(r.URL.Path, "/")]),
-	)
-
-	metricCommonAttributes := []attribute.KeyValue{
-		attribute.String("component", "handler.Users.update"),
-		attribute.String("http.method", r.Method),
-		attribute.String("http.path", r.URL.Path[:strings.LastIndex(r.URL.Path, "/")]),
-	}
-
-	id, err := parseUUIDQueryParams(r.PathValue("user_id"))
+	userID, err := parseUUIDQueryParams(r.PathValue("user_id"))
 	if err != nil {
-		span.SetStatus(codes.Error, err.Error())
-		span.RecordError(err)
-		slog.Error("handler.Users.update", "error", err.Error())
-		ref.metrics.handlerCalls.Add(ctx, 1,
-			metric.WithAttributes(
-				append(metricCommonAttributes, attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)))...,
-			),
-		)
-
-		respond.WriteJSONMessage(w, r, http.StatusBadRequest, err.Error())
+		e := recordError(ctx, span, err, ref.metrics.handlerCalls, metricCommonAttributes, http.StatusBadRequest, "handler.Users.updateByID")
+		respond.WriteJSONMessage(w, r, http.StatusBadRequest, e.Error())
 		return
 	}
 
 	var req model.UpdateUserRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		span.SetStatus(codes.Error, err.Error())
-		span.RecordError(err)
-		slog.Error("handler.Users.update", "error", err.Error())
-
-		ref.metrics.handlerCalls.Add(ctx, 1,
-			metric.WithAttributes(
-				append(metricCommonAttributes, attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)))...,
-			),
-		)
-
-		respond.WriteJSONMessage(w, r, http.StatusBadRequest, err.Error())
+		e := recordError(ctx, span, err, ref.metrics.handlerCalls, metricCommonAttributes, http.StatusBadRequest, "handler.Users.updateByID")
+		respond.WriteJSONMessage(w, r, http.StatusBadRequest, e.Error())
 		return
 	}
 
 	if err := req.Validate(); err != nil {
-		span.SetStatus(codes.Error, err.Error())
-		span.RecordError(err)
-		slog.Error("handler.Users.update", "error", err.Error())
-		ref.metrics.handlerCalls.Add(ctx, 1,
-			metric.WithAttributes(
-				append(metricCommonAttributes, attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)))...,
-			),
-		)
-
-		respond.WriteJSONMessage(w, r, http.StatusBadRequest, err.Error())
+		e := recordError(ctx, span, err, ref.metrics.handlerCalls, metricCommonAttributes, http.StatusBadRequest, "handler.Users.updateByID")
+		respond.WriteJSONMessage(w, r, http.StatusBadRequest, e.Error())
 		return
 	}
 
 	user := model.UpdateUserInput{
-		ID:        id,
+		ID:        userID,
 		FirstName: req.FirstName,
 		LastName:  req.LastName,
 		Email:     req.Email,
@@ -401,51 +266,41 @@ func (ref *UsersHandler) update(w http.ResponseWriter, r *http.Request) {
 		Disabled:  req.Disabled,
 	}
 
-	if err := ref.service.Update(ctx, &user); err != nil {
-		span.SetStatus(codes.Error, ErrInternalServerError.Error())
-		span.RecordError(ErrInternalServerError)
-		slog.Error("handler.Users.update", "error", ErrInternalServerError.Error())
+	if err := ref.service.UpdateByID(ctx, &user); err != nil {
+		var userAlreadyExistsError *model.UserAlreadyExistsError
+		var userEmailAlreadyExistsError *model.UserEmailAlreadyExistsError
+		var userNotFoundError *model.UserNotFoundError
 
-		var errUserNotFound *model.UserNotFoundError
-		var errUserEmailAlreadyExists *model.UserEmailAlreadyExistsError
-
-		if errors.As(err, &errUserNotFound) ||
-			errors.As(err, &errUserEmailAlreadyExists) {
-			ref.metrics.handlerCalls.Add(ctx, 1,
-				metric.WithAttributes(
-					append(metricCommonAttributes, attribute.String("code", fmt.Sprintf("%d", http.StatusConflict)))...,
-				),
-			)
-
-			respond.WriteJSONMessage(w, r, http.StatusConflict, err.Error())
+		if errors.As(err, &userAlreadyExistsError) ||
+			errors.As(err, &userEmailAlreadyExistsError) {
+			e := recordError(ctx, span, err, ref.metrics.handlerCalls, metricCommonAttributes, http.StatusConflict, "handler.Users.updateByID")
+			respond.WriteJSONMessage(w, r, http.StatusConflict, e.Error())
 			return
 		}
 
-		ref.metrics.handlerCalls.Add(ctx, 1,
-			metric.WithAttributes(
-				append(metricCommonAttributes, attribute.String("code", fmt.Sprintf("%d", http.StatusInternalServerError)))...,
-			),
-		)
+		if errors.As(err, &userNotFoundError) {
+			e := recordError(ctx, span, err, ref.metrics.handlerCalls, metricCommonAttributes, http.StatusNotFound, "handler.Users.updateByID")
+			respond.WriteJSONMessage(w, r, http.StatusNotFound, e.Error())
+			return
+		}
 
-		respond.WriteJSONMessage(w, r, http.StatusInternalServerError, err.Error())
+		e := recordError(ctx, span, err, ref.metrics.handlerCalls, metricCommonAttributes, http.StatusInternalServerError, "handler.Users.updateByID")
+		respond.WriteJSONMessage(w, r, http.StatusInternalServerError, e.Error())
 		return
 	}
 
-	slog.Debug("handler.Users.update", "user.email", user.Email)
-	span.SetStatus(codes.Ok, "User updated")
-	span.SetAttributes(attribute.String("user.id", user.ID.String()))
-	ref.metrics.handlerCalls.Add(ctx, 1,
-		metric.WithAttributes(
-			append(metricCommonAttributes, attribute.String("code", fmt.Sprintf("%d", http.StatusOK)))...,
-		),
-	)
+	slog.Debug("handler.Users.updateByID", "user.email", user.Email)
 
 	// Location header is required for RESTful APIs
 	w.Header().Set("Location", fmt.Sprintf("%s%s", r.Header.Get("Origin"), r.RequestURI))
-	respond.WriteJSONMessage(w, r, http.StatusOK, "User updated")
+
+	recordSuccess(ctx, span, ref.metrics.handlerCalls, metricCommonAttributes, http.StatusOK, "User updated",
+		attribute.String("user.id", user.ID.String()))
+
+	respond.WriteJSONMessage(w, r, http.StatusOK, model.UserUserUpdatedSuccessfully)
 }
 
-// delete Delete a user
+// deleteByID Delete a user
 //
 //	@Id				48e60e0a-ea1c-46d4-8729-c47dd82a4e93
 //	@Summary		Delete a user
@@ -457,65 +312,33 @@ func (ref *UsersHandler) update(w http.ResponseWriter, r *http.Request) {
 //	@Failure		400	{object}	model.HTTPMessage
 //	@Failure		500	{object}	model.HTTPMessage
 //	@Router			/users/{user_id} [delete]
-func (ref *UsersHandler) delete(w http.ResponseWriter, r *http.Request) {
-	ctx, span := ref.ot.Traces.Tracer.Start(r.Context(), "handler.Users.delete")
+func (ref *UsersHandler) deleteByID(w http.ResponseWriter, r *http.Request) {
+	ctx, span, metricCommonAttributes := setupContext(r, ref.ot.Traces.Tracer, "handler.Users.deleteByID")
 	defer span.End()
 
-	span.SetAttributes(
-		attribute.String("component", "handler.Users.delete"),
-		attribute.String("http.method", r.Method),
-		attribute.String("http.path", r.URL.Path[:strings.LastIndex(r.URL.Path, "/")]),
-	)
-
-	metricCommonAttributes := []attribute.KeyValue{
-		attribute.String("component", "handler.Users.delete"),
-		attribute.String("http.method", r.Method),
-		attribute.String("http.path", r.URL.Path[:strings.LastIndex(r.URL.Path, "/")]),
-	}
-
-	id, err := parseUUIDQueryParams(r.PathValue("user_id"))
+	userID, err := parseUUIDQueryParams(r.PathValue("user_id"))
 	if err != nil {
-		span.SetStatus(codes.Error, err.Error())
-		span.RecordError(err)
-		slog.Error("handler.Users.delete", "error", err.Error())
-		ref.metrics.handlerCalls.Add(ctx, 1,
-			metric.WithAttributes(
-				append(metricCommonAttributes, attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)))...,
-			),
-		)
-
-		respond.WriteJSONMessage(w, r, http.StatusBadRequest, err.Error())
+		e := recordError(ctx, span, err, ref.metrics.handlerCalls, metricCommonAttributes, http.StatusBadRequest, "handler.Users.deleteByID")
+		respond.WriteJSONMessage(w, r, http.StatusBadRequest, e.Error())
 		return
 	}
 
 	user := model.DeleteUserInput{
-		ID: id,
+		ID: userID,
 	}
 
-	if err := ref.service.Delete(ctx, &user); err != nil {
-		span.SetStatus(codes.Error, err.Error())
-		span.RecordError(err)
-		slog.Error("handler.Users.delete", "error", err.Error())
-		ref.metrics.handlerCalls.Add(ctx, 1,
-			metric.WithAttributes(
-				append(metricCommonAttributes, attribute.String("code", fmt.Sprintf("%d", http.StatusInternalServerError)))...,
-			),
-		)
-
-		respond.WriteJSONMessage(w, r, http.StatusInternalServerError, err.Error())
+	if err := ref.service.DeleteByID(ctx, &user); err != nil {
+		e := recordError(ctx, span, err, ref.metrics.handlerCalls, metricCommonAttributes, http.StatusInternalServerError, "handler.Users.deleteByID")
+		respond.WriteJSONMessage(w, r, http.StatusInternalServerError, e.Error())
 		return
 	}
 
-	slog.Debug("handler.Users.delete", "user.id", user.ID)
-	span.SetStatus(codes.Ok, "User deleted")
-	span.SetAttributes(attribute.String("user.id", id.String()))
-	ref.metrics.handlerCalls.Add(ctx, 1,
-		metric.WithAttributes(
-			append(metricCommonAttributes, attribute.String("code", fmt.Sprintf("%d", http.StatusOK)))...,
-		),
-	)
+	slog.Debug("handler.Users.deleteByID", "id", user.ID)
 
-	respond.WriteJSONMessage(w, r, http.StatusOK, "User deleted")
+	recordSuccess(ctx, span, ref.metrics.handlerCalls, metricCommonAttributes, http.StatusOK, "User deleted",
+		attribute.String("user.id", userID.String()))
+
+	respond.WriteJSONMessage(w, r, http.StatusOK, model.UserUserDeletedSuccessfully)
 }
 
 // list Return a paginated list of users
@@ -536,20 +359,8 @@ func (ref *UsersHandler) delete(w http.ResponseWriter, r *http.Request) {
 //	@Failure		500			{object}	model.HTTPMessage
 //	@Router			/users [get]
 func (ref *UsersHandler) list(w http.ResponseWriter, r *http.Request) {
-	ctx, span := ref.ot.Traces.Tracer.Start(r.Context(), "handler.Users.list")
+	ctx, span, metricCommonAttributes := setupContext(r, ref.ot.Traces.Tracer, "handler.Users.list")
 	defer span.End()
-
-	span.SetAttributes(
-		attribute.String("component", "handler.Users.list"),
-		attribute.String("http.method", r.Method),
-		attribute.String("http.path", r.URL.Path[:strings.LastIndex(r.URL.Path, "/")]),
-	)
-
-	metricCommonAttributes := []attribute.KeyValue{
-		attribute.String("component", "handler.Users.list"),
-		attribute.String("http.method", r.Method),
-		attribute.String("http.path", r.URL.Path[:strings.LastIndex(r.URL.Path, "/")]),
-	}
 
 	// parse the query parameters
 	params := map[string]any{
@@ -568,16 +379,8 @@ func (ref *UsersHandler) list(w http.ResponseWriter, r *http.Request) {
 		model.UserSortFields,
 	)
 	if err != nil {
-		span.SetStatus(codes.Error, err.Error())
-		span.RecordError(err)
-		slog.Error("handler.Users.list", "error", err.Error())
-		ref.metrics.handlerCalls.Add(ctx, 1,
-			metric.WithAttributes(
-				append(metricCommonAttributes, attribute.String("code", fmt.Sprintf("%d", http.StatusBadRequest)))...,
-			),
-		)
-
-		respond.WriteJSONMessage(w, r, http.StatusBadRequest, err.Error())
+		e := recordError(ctx, span, err, ref.metrics.handlerCalls, metricCommonAttributes, http.StatusBadRequest, "handler.Users.list")
+		respond.WriteJSONMessage(w, r, http.StatusBadRequest, e.Error())
 		return
 	}
 
@@ -592,62 +395,25 @@ func (ref *UsersHandler) list(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 
-	sUsers, err := ref.service.List(ctx, sParams)
+	out, err := ref.service.List(ctx, sParams)
 	if err != nil {
-		span.SetStatus(codes.Error, err.Error())
-		span.RecordError(err)
-		slog.Error("handler.Users.list", "error", err.Error())
-		ref.metrics.handlerCalls.Add(ctx, 1,
-			metric.WithAttributes(
-				append(metricCommonAttributes, attribute.String("code", fmt.Sprintf("%d", http.StatusInternalServerError)))...,
-			),
-		)
-
-		respond.WriteJSONMessage(w, r, http.StatusInternalServerError, err.Error())
+		e := recordError(ctx, span, err, ref.metrics.handlerCalls, metricCommonAttributes, http.StatusInternalServerError, "handler.Users.list")
+		respond.WriteJSONMessage(w, r, http.StatusInternalServerError, e.Error())
 		return
-	}
-
-	users := &model.ListUsersResponse{
-		Items:     make([]model.User, len(sUsers.Items)),
-		Paginator: sUsers.Paginator,
-	}
-
-	for i, sUser := range sUsers.Items {
-		users.Items[i] = model.User{
-			ID:        sUser.ID,
-			FirstName: sUser.FirstName,
-			LastName:  sUser.LastName,
-			Email:     sUser.Email,
-			Disabled:  sUser.Disabled,
-			CreatedAt: sUser.CreatedAt,
-			UpdatedAt: sUser.UpdatedAt,
-		}
 	}
 
 	// Generate the next and previous pages
 	location := fmt.Sprintf("http://%s%s", r.Host, r.URL.Path)
-	users.Paginator.GeneratePages(location)
+	out.Paginator.GeneratePages(location)
 
-	if err := respond.WriteJSONData(w, http.StatusOK, users); err != nil {
-		span.SetStatus(codes.Error, err.Error())
-		span.RecordError(err)
-		slog.Error("handler.Users.list", "error", err.Error())
-		ref.metrics.handlerCalls.Add(ctx, 1,
-			metric.WithAttributes(
-				append(metricCommonAttributes, attribute.String("code", fmt.Sprintf("%d", http.StatusInternalServerError)))...,
-			),
-		)
-
-		respond.WriteJSONMessage(w, r, http.StatusInternalServerError, err.Error())
+	if err := respond.WriteJSONData(w, http.StatusOK, out); err != nil {
+		e := recordError(ctx, span, err, ref.metrics.handlerCalls, metricCommonAttributes, http.StatusInternalServerError, "handler.Users.list")
+		respond.WriteJSONMessage(w, r, http.StatusInternalServerError, e.Error())
 		return
 	}
 
-	slog.Debug("handler.Users.list: called", "users.count", len(users.Items))
-	span.SetStatus(codes.Ok, "list users")
-	span.SetAttributes(attribute.Int("users.count", len(users.Items)))
-	ref.metrics.handlerCalls.Add(ctx, 1,
-		metric.WithAttributes(
-			append(metricCommonAttributes, attribute.String("code", fmt.Sprintf("%d", http.StatusOK)))...,
-		),
-	)
+	slog.Debug("handler.Users.listUsers: called", "users", len(out.Items))
+
+	recordSuccess(ctx, span, ref.metrics.handlerCalls, metricCommonAttributes, http.StatusOK, "List users",
+		attribute.Int("users.count", len(out.Items)))
 }

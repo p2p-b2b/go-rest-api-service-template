@@ -474,7 +474,7 @@ const docTemplate = `{
             }
         },
         "model.Paginator": {
-            "description": "Paginator represents a paginator",
+            "description": "Paginator represents a paginator.",
             "type": "object",
             "properties": {
                 "limit": {
