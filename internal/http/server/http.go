@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/config"
@@ -27,6 +28,10 @@ type HTTPServer struct {
 
 	osSigChan chan os.Signal
 	stopChan  chan struct{}
+
+	// Protect stopChan from concurrent access
+	mu       sync.Mutex
+	isClosed bool
 }
 
 func NewHTTPServer(conf HTTPServerConfig) *HTTPServer {
@@ -36,7 +41,7 @@ func NewHTTPServer(conf HTTPServerConfig) *HTTPServer {
 
 	addr := fmt.Sprintf("%s:%d", conf.Config.Address.Value, conf.Config.Port.Value)
 
-	server := &HTTPServer{
+	ref := &HTTPServer{
 		ctx: conf.Ctx,
 		httpServer: &http.Server{
 			Addr:    addr,
@@ -45,67 +50,93 @@ func NewHTTPServer(conf HTTPServerConfig) *HTTPServer {
 		conf:      conf.Config,
 		osSigChan: make(chan os.Signal, 1),
 		stopChan:  make(chan struct{}),
+		isClosed:  false,
 	}
 
 	// notify the server to listen for OS signals
-	signal.Notify(server.osSigChan, os.Interrupt, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
+	signal.Notify(ref.osSigChan, os.Interrupt, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
 
-	return server
+	return ref
 }
 
-func (s *HTTPServer) Start() {
-	slog.Info("starting http server", "address", s.httpServer.Addr, "tls", s.conf.TLSEnabled.Value)
+func (ref *HTTPServer) Start() {
+	slog.Info("starting http server", "address", ref.httpServer.Addr, "tls", ref.conf.TLSEnabled.Value)
 
 	// Listen for OS signals
-	s.listenOsSignals()
+	ref.listenOsSignals()
 
-	if s.conf.TLSEnabled.Value {
-		if err := s.httpServer.ListenAndServeTLS(
-			s.conf.CertificateFile.Value.Name(),
-			s.conf.PrivateKeyFile.Value.Name(),
+	if ref.conf.TLSEnabled.Value {
+		if err := ref.httpServer.ListenAndServeTLS(
+			ref.conf.CertificateFile.Value.Name(),
+			ref.conf.PrivateKeyFile.Value.Name(),
 		); !errors.Is(err, http.ErrServerClosed) {
 			slog.Error("http server error", "error", err)
 
-			s.Stop()
+			ref.Stop()
 		}
 	} else {
-		if err := s.httpServer.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
+		if err := ref.httpServer.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
 			slog.Error("http server error", "error", err)
 
-			s.Stop()
+			ref.Stop()
 		}
 	}
 }
 
-func (s *HTTPServer) Wait() <-chan struct{} {
-	return s.stopChan
+func (ref *HTTPServer) Wait() <-chan struct{} {
+	return ref.stopChan
 }
 
-func (s *HTTPServer) Stop() {
-	s.stopChan <- struct{}{}
+func (ref *HTTPServer) Stop() {
+	ref.mu.Lock()
+	defer ref.mu.Unlock()
+
+	// If already closed, don't try to send on the channel
+	if ref.isClosed {
+		slog.Debug("stop channel already closed")
+		return
+	}
+
+	// Use a non-blocking send to avoid potential deadlocks
+	select {
+	case ref.stopChan <- struct{}{}:
+		// Successfully sent stop signal
+		slog.Debug("sent stop signal")
+	default:
+		// Channel is not receiving (buffer full)
+		slog.Debug("stop channel not receiving")
+	}
 }
 
-func (s *HTTPServer) listenOsSignals() {
+func (ref *HTTPServer) listenOsSignals() {
 	go func() {
 		slog.Info("http server listening for OS signals")
 
-		ctx, cancel := context.WithTimeout(s.ctx, s.conf.ShutdownTimeout.Value)
+		ctx, cancel := context.WithTimeout(ref.ctx, ref.conf.ShutdownTimeout.Value)
 		defer cancel()
 
 		for {
 			select {
-			case sig := <-s.osSigChan:
-				slog.Debug("http server received OS signal", "signal", sig)
+			case sig := <-ref.osSigChan:
+				slog.Debug("received OS signal", "signal", sig)
 
 				// Handle the signal to shutdown the server or reload
 				switch sig {
 				case os.Interrupt, syscall.SIGINT, syscall.SIGTERM:
 					slog.Warn("shutting down http server...")
-					if err := s.httpServer.Shutdown(ctx); err != nil {
+					if err := ref.httpServer.Shutdown(ctx); err != nil {
 						slog.Error("http server shutdown with error", "error", err)
 						os.Exit(1)
 					}
-					close(s.stopChan)
+
+					// Mark channel as closed to prevent sending on closed channel
+					ref.mu.Lock()
+					if !ref.isClosed {
+						ref.isClosed = true
+						close(ref.stopChan)
+					}
+					ref.mu.Unlock()
+
 					return
 				case syscall.SIGHUP:
 					slog.Warn("reloading http server...")
@@ -117,7 +148,21 @@ func (s *HTTPServer) listenOsSignals() {
 					slog.Warn("unknown signal", "signal", sig)
 					return
 				}
-			case <-s.stopChan:
+			case <-ref.stopChan:
+				slog.Info("received programmatic shutdown signal")
+				if err := ref.httpServer.Shutdown(ctx); err != nil {
+					slog.Error("http server shutdown with error", "error", err)
+					os.Exit(1)
+				}
+
+				// Mark channel as closed to prevent sending on closed channel
+				ref.mu.Lock()
+				if !ref.isClosed {
+					ref.isClosed = true
+					close(ref.stopChan)
+				}
+				ref.mu.Unlock()
+
 				return
 			}
 		}
@@ -127,15 +172,15 @@ func (s *HTTPServer) listenOsSignals() {
 // setTLSConfig sets the TLS configuration for the server.
 //
 //lint:ignore U1000 This function is used depending on the configuration.
-func (s *HTTPServer) setTLSConfig() error {
+func (ref *HTTPServer) setTLSConfig() error {
 	slog.Info("configuring tls")
-	if _, err := os.Stat(s.conf.CertificateFile.Value.Name()); os.IsNotExist(err) {
-		slog.Error(".crt file not found", "file", s.conf.CertificateFile.Value.Name(), "error", err)
+	if _, err := os.Stat(ref.conf.CertificateFile.Value.Name()); os.IsNotExist(err) {
+		slog.Error(".crt file not found", "file", ref.conf.CertificateFile.Value.Name(), "error", err)
 		return err
 	}
 
-	if _, err := os.Stat(s.conf.PrivateKeyFile.Value.Name()); os.IsNotExist(err) {
-		slog.Error(".key file not found", "file", s.conf.PrivateKeyFile.Value.Name(), "error", err)
+	if _, err := os.Stat(ref.conf.PrivateKeyFile.Value.Name()); os.IsNotExist(err) {
+		slog.Error(".key file not found", "file", ref.conf.PrivateKeyFile.Value.Name(), "error", err)
 		return err
 	}
 
@@ -150,8 +195,8 @@ func (s *HTTPServer) setTLSConfig() error {
 			tls.TLS_RSA_WITH_AES_256_CBC_SHA,
 		},
 	}
-	s.httpServer.TLSConfig = tlsCfg
-	s.httpServer.TLSNextProto = make(map[string]func(*http.Server, *tls.Conn, http.Handler), 0)
+	ref.httpServer.TLSConfig = tlsCfg
+	ref.httpServer.TLSNextProto = make(map[string]func(*http.Server, *tls.Conn, http.Handler), 0)
 
 	return nil
 }

@@ -62,3 +62,7 @@ linters:
         - io.Copy(os.Stdout)
         - os.Setenv
         - os.Unsetenv
+        - fmt.Printf
+        - fmt.Print
+        - fmt.Println
+        - fmt.Fprintf
