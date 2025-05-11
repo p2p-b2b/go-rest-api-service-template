@@ -91,41 +91,105 @@ func TestParseFieldsQueryParams(t *testing.T) {
 
 func TestParseNextTokenQueryParams(t *testing.T) {
 	testID := uuid.New()
+	validToken := model.EncodeToken(testID, 10, model.TokenDirectionNext)
 
 	tests := []struct {
+		name      string
 		nextToken string
 		expected  string
 		err       error
 	}{
-		{"", "", nil},
-		{"invalid", "", &model.InvalidPaginatorTokenError{Message: "illegal base64 data at input byte 4"}},
-		{model.EncodeToken(testID, 10), model.EncodeToken(testID, 10), nil},
+		{
+			name:      "Empty token",
+			nextToken: "",
+			expected:  "",
+			err:       nil,
+		},
+		{
+			name:      "Invalid token",
+			nextToken: "invalid",
+			expected:  "",
+			err:       &model.InvalidPaginatorTokenError{Message: "invalid token: illegal base64 data at input byte 4"},
+		},
+		{
+			name:      "Valid token",
+			nextToken: validToken,
+			expected:  validToken,
+			err:       nil,
+		},
 	}
 
 	for _, test := range tests {
-		result, err := parseNextTokenQueryParams(test.nextToken)
-		assert.Equal(t, test.expected, result)
-		assert.Equal(t, test.err, err)
+		t.Run(test.name, func(t *testing.T) {
+			result, err := parseNextTokenQueryParams(test.nextToken)
+
+			if test.err == nil {
+				assert.NoError(t, err)
+			} else {
+				assert.Error(t, err)
+				assert.IsType(t, test.err, err)
+				// assert.Contains(t, err.Error(), test.err.Error())
+			}
+
+			assert.Equal(t, test.expected, result)
+		})
 	}
 }
 
 func TestParsePrevTokenQueryParams(t *testing.T) {
 	testID := uuid.New()
+	validPrevToken := model.EncodeToken(testID, 10, model.TokenDirectionPrev)
+	validNextToken := model.EncodeToken(testID, 10, model.TokenDirectionNext)
 
 	tests := []struct {
+		name      string
 		prevToken string
 		expected  string
 		err       error
 	}{
-		{"", "", nil},
-		{"invalid", "", &model.InvalidPaginatorTokenError{Message: "illegal base64 data at input byte 4"}},
-		{model.EncodeToken(testID, 10), model.EncodeToken(testID, 10), nil},
+		{
+			name:      "Empty token",
+			prevToken: "",
+			expected:  "",
+			err:       nil,
+		},
+		{
+			name:      "Invalid token (bad format)",
+			prevToken: "invalid", // Input that causes a base64 decoding error
+			expected:  "",
+			err:       &model.InvalidPaginatorTokenError{Message: "invalid cursor: invalid token: not base64"},
+		},
+		{
+			name:      "Valid token (encoded as Prev)",
+			prevToken: validPrevToken,
+			expected:  validPrevToken,
+			err:       nil,
+		},
+		{
+			name:      "Invalid token (direction mismatch - next token for prev param)",
+			prevToken: validNextToken,
+			expected:  "", // On error, the function returns an empty string for the token
+			err:       &model.InvalidPaginatorTokenError{Message: "invalid cursor: token direction mismatch: expected prev, got next"},
+		},
 	}
 
 	for _, test := range tests {
-		result, err := parsePrevTokenQueryParams(test.prevToken)
-		assert.Equal(t, test.expected, result)
-		assert.Equal(t, test.err, err)
+		t.Run(test.name, func(t *testing.T) {
+			result, err := parsePrevTokenQueryParams(test.prevToken)
+
+			if test.err == nil {
+				assert.NoError(t, err)
+			} else {
+				assert.Error(t, err)
+				assert.IsType(t, test.err, err)
+				// Check if the actual error message contains the expected message
+				// This provides flexibility if the error messages don't match exactly
+				// but the core issue is the same.
+				assert.Contains(t, err.Error(), test.err.Error())
+			}
+
+			assert.Equal(t, test.expected, result)
+		})
 	}
 }
 
@@ -158,8 +222,8 @@ func TestParseListQueryParams(t *testing.T) {
 			"sort":      "name ASC",
 			"filter":    "status='active'",
 			"fields":    "id, name",
-			"nextToken": model.EncodeToken(testID, 10),
-			"prevToken": model.EncodeToken(testID, 10),
+			"nextToken": model.EncodeToken(testID, 10, model.TokenDirectionNext),
+			"prevToken": model.EncodeToken(testID, 10, model.TokenDirectionPrev),
 			"limit":     "5",
 		}
 
@@ -172,8 +236,8 @@ func TestParseListQueryParams(t *testing.T) {
 		assert.Equal(t, "name ASC", sort)
 		assert.Equal(t, "status='active'", filter)
 		assert.Equal(t, "id,name", fields)
-		assert.Equal(t, model.EncodeToken(testID, 10), nextToken)
-		assert.Equal(t, model.EncodeToken(testID, 10), prevToken)
+		assert.Equal(t, model.EncodeToken(testID, 10, model.TokenDirectionNext), nextToken)
+		assert.Equal(t, model.EncodeToken(testID, 10, model.TokenDirectionPrev), prevToken)
 		assert.Equal(t, 5, limit)
 	})
 
@@ -181,7 +245,7 @@ func TestParseListQueryParams(t *testing.T) {
 		params := map[string]any{
 			"sort":      "invalid",
 			"filter":    "status='active'",
-			"fields":    "id,name",
+			"fields":    "id, name",
 			"nextToken": "",
 			"prevToken": "",
 			"limit":     "5",

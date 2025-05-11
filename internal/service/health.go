@@ -40,11 +40,11 @@ type HealthService struct {
 // NewHealthService creates a new HealthService.
 func NewHealthService(conf HealthServiceConf) (*HealthService, error) {
 	if conf.Repository == nil {
-		return nil, ErrRepositoryRequired
+		return nil, &model.InvalidRepositoryConfigurationError{Message: "repository is required"}
 	}
 
 	if conf.OT == nil {
-		return nil, ErrOpenTelemetryRequired
+		return nil, &model.InvalidOTConfigurationError{Message: "open telemetry is required"}
 	}
 
 	service := &HealthService{

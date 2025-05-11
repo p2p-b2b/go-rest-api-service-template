@@ -56,18 +56,18 @@ func (mr *MockUsersServiceMockRecorder) Create(ctx, input any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockUsersService)(nil).Create), ctx, input)
 }
 
-// Delete mocks base method.
-func (m *MockUsersService) Delete(ctx context.Context, input *model.DeleteUserInput) error {
+// DeleteByID mocks base method.
+func (m *MockUsersService) DeleteByID(ctx context.Context, input *model.DeleteUserInput) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Delete", ctx, input)
+	ret := m.ctrl.Call(m, "DeleteByID", ctx, input)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// Delete indicates an expected call of Delete.
-func (mr *MockUsersServiceMockRecorder) Delete(ctx, input any) *gomock.Call {
+// DeleteByID indicates an expected call of DeleteByID.
+func (mr *MockUsersServiceMockRecorder) DeleteByID(ctx, input any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockUsersService)(nil).Delete), ctx, input)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteByID", reflect.TypeOf((*MockUsersService)(nil).DeleteByID), ctx, input)
 }
 
 // GetByEmail mocks base method.
@@ -115,16 +115,16 @@ func (mr *MockUsersServiceMockRecorder) List(ctx, input any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockUsersService)(nil).List), ctx, input)
 }
 
-// Update mocks base method.
-func (m *MockUsersService) Update(ctx context.Context, input *model.UpdateUserInput) error {
+// UpdateByID mocks base method.
+func (m *MockUsersService) UpdateByID(ctx context.Context, input *model.UpdateUserInput) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Update", ctx, input)
+	ret := m.ctrl.Call(m, "UpdateByID", ctx, input)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// Update indicates an expected call of Update.
-func (mr *MockUsersServiceMockRecorder) Update(ctx, input any) *gomock.Call {
+// UpdateByID indicates an expected call of UpdateByID.
+func (mr *MockUsersServiceMockRecorder) UpdateByID(ctx, input any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockUsersService)(nil).Update), ctx, input)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateByID", reflect.TypeOf((*MockUsersService)(nil).UpdateByID), ctx, input)
 }

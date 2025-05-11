@@ -1,13 +1,98 @@
 package handler
 
 import (
+	"context"
+	"fmt"
+	"net/http"
 	"strconv"
 	"strings"
 
 	"github.com/google/uuid"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/model"
+	"github.com/p2p-b2b/go-rest-api-service-template/internal/o11y"
 	"github.com/p2p-b2b/qfv"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/trace"
 )
+
+// setupContext creates a context with common attributes for tracing and metrics.
+// Returns the context, span, and common metric attributes for consistent tracking across handlers.
+func setupContext(r *http.Request, tracer trace.Tracer, component string) (context.Context, trace.Span, []attribute.KeyValue) {
+	ctx, span := tracer.Start(r.Context(), component)
+
+	// Get the base path by removing the last part after the last slash
+	path := r.URL.Path
+	lastSlashIndex := strings.LastIndex(path, "/")
+	if lastSlashIndex != -1 {
+		path = path[:lastSlashIndex]
+	}
+
+	span.SetAttributes(
+		attribute.String("component", component),
+		attribute.String("http.method", r.Method),
+		attribute.String("http.path", path),
+	)
+
+	metricCommonAttributes := []attribute.KeyValue{
+		attribute.String("component", component),
+		attribute.String("http.method", r.Method),
+		attribute.String("http.path", path),
+	}
+
+	return ctx, span, metricCommonAttributes
+}
+
+// recordError records an error in the span, logs it, and updates metrics with failure status.
+// It is a wrapper around o11y.RecordError with HTTP specific context
+// Returns the error for chainable error handling.
+func recordError(
+	ctx context.Context,
+	span trace.Span,
+	err error,
+	metricsCounter metric.Int64Counter,
+	metricAttrs []attribute.KeyValue,
+	statusCode int,
+	component string,
+	details ...any,
+) error {
+	// Add HTTP status code to metric attributes
+	metricAttrs = append(metricAttrs, attribute.String("code", fmt.Sprintf("%d", statusCode)))
+
+	return o11y.RecordError(
+		ctx,
+		span,
+		err,
+		metricsCounter,
+		metricAttrs,
+		component,
+		details...,
+	)
+}
+
+// recordSuccess records a successful operation in the span and updates metrics with success status.
+// It is a wrapper around o11y.RecordSuccess with HTTP specific context.
+func recordSuccess(
+	ctx context.Context,
+	span trace.Span,
+	metricsCounter metric.Int64Counter,
+	metricAttrs []attribute.KeyValue,
+	statusCode int,
+	message string,
+	attrs ...attribute.KeyValue,
+) {
+	// Add HTTP status code to metric attributes
+	metricAttrs = append(metricAttrs, attribute.String("code", fmt.Sprintf("%d", statusCode)))
+
+	o11y.RecordSuccess(
+		ctx,
+		span,
+		metricsCounter,
+		metricAttrs,
+		message,
+		attrs...,
+	)
+}
 
 // parseUUIDQueryParams parses a string into a UUID.
 // If the input is empty, it returns an error.
@@ -77,7 +162,7 @@ func parseFieldsQueryParams(fields string, allowedFields []string) (string, erro
 // parseNextTokenQueryParams parses a string into a nextToken field.
 func parseNextTokenQueryParams(nextToken string) (string, error) {
 	if nextToken != "" {
-		_, _, err := model.DecodeToken(nextToken)
+		_, _, _, err := model.DecodeToken(nextToken, model.TokenDirectionNext)
 		if err != nil {
 			return "", &model.InvalidPaginatorTokenError{Message: err.Error()}
 		}
@@ -89,7 +174,7 @@ func parseNextTokenQueryParams(nextToken string) (string, error) {
 // parsePrevTokenQueryParams parses a string into a prevToken field.
 func parsePrevTokenQueryParams(prevToken string) (string, error) {
 	if prevToken != "" {
-		_, _, err := model.DecodeToken(prevToken)
+		_, _, _, err := model.DecodeToken(prevToken, model.TokenDirectionPrev)
 		if err != nil {
 			return "", &model.InvalidPaginatorTokenError{Message: err.Error()}
 		}

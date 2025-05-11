@@ -17,7 +17,13 @@ const (
 	ValidUserEmailMinLength     = 6
 	ValidUserEmailMaxLength     = 50
 	ValidUserPasswordMinLength  = 6
-	ValidUserPasswordMaxLength  = 255
+	ValidUserPasswordMaxLength  = 100
+
+	UserUserCreatedSuccessfully          = "User created successfully"
+	UserUserUpdatedSuccessfully          = "User updated successfully"
+	UserUserDeletedSuccessfully          = "User deleted successfully"
+	UserRoleLinkedToUserSuccessfully     = "User role linked successfully"
+	UserRoleUnlinkedFromUserSuccessfully = "User role unlinked successfully"
 )
 
 var (

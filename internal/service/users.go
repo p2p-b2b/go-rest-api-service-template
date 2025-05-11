@@ -6,15 +6,14 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"net/http"
 	"strings"
 
 	"github.com/google/uuid"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/model"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/o11y"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/trace"
 )
 
 //go:generate go tool mockgen -package=mocks -destination=../../mocks/service/users.go -source=users.go UsersRepository
@@ -22,8 +21,8 @@ import (
 // UsersRepository is the interface for the user repository methods.
 type UsersRepository interface {
 	Insert(ctx context.Context, input *model.InsertUserInput) error
-	Update(ctx context.Context, input *model.UpdateUserInput) error
-	Delete(ctx context.Context, input *model.DeleteUserInput) error
+	UpdateByID(ctx context.Context, input *model.UpdateUserInput) error
+	DeleteByID(ctx context.Context, input *model.DeleteUserInput) error
 	SelectByID(ctx context.Context, id uuid.UUID) (*model.User, error)
 	SelectByEmail(ctx context.Context, email string) (*model.User, error)
 	Select(ctx context.Context, input *model.SelectUsersInput) (*model.SelectUsersOutput, error)
@@ -49,11 +48,11 @@ type UsersService struct {
 // NewUsersService creates a new UsersService.
 func NewUsersService(conf UsersServiceConf) (*UsersService, error) {
 	if conf.Repository == nil {
-		return nil, ErrRepositoryRequired
+		return nil, &model.InvalidRepositoryConfigurationError{Message: "invalid repository configuration. It is nil"}
 	}
 
 	if conf.OT == nil {
-		return nil, ErrOpenTelemetryRequired
+		return nil, &model.InvalidOTConfigurationError{Message: "invalid OpenTelemetry configuration. It is nil"}
 	}
 
 	u := &UsersService{
@@ -80,177 +79,78 @@ func NewUsersService(conf UsersServiceConf) (*UsersService, error) {
 
 // GetByID returns the user with the specified ID.
 func (ref *UsersService) GetByID(ctx context.Context, id uuid.UUID) (*model.User, error) {
-	ctx, span := ref.ot.Traces.Tracer.Start(ctx, "service.Users.GetByID")
+	ctx, span, metricCommonAttributes := ref.setupContext(ctx, "service.Users.GetByID")
 	defer span.End()
 
-	span.SetAttributes(
-		attribute.String("component", "service.Users.GetByID"),
-		attribute.String("user.id", id.String()),
-	)
-
-	metricCommonAttributes := []attribute.KeyValue{
-		attribute.String("component", "service.Users.GetByID"),
-	}
+	span.SetAttributes(attribute.String("user.id", id.String()))
 
 	if id == uuid.Nil {
-		errorType := &model.InvalidUserIDError{ID: id.String()}
-		slog.Error("service.Users.GetByID", "error", errorType)
-		span.SetStatus(codes.Error, errorType.Error())
-		span.RecordError(errorType)
-		ref.metrics.serviceCalls.Add(ctx, 1,
-			metric.WithAttributes(
-				append(metricCommonAttributes, attribute.String("successful", "false"))...,
-			),
-		)
-
-		return nil, errorType
+		errorType := &model.InvalidUserIDError{Message: "user ID cannot be empty"}
+		return nil, o11y.RecordError(ctx, span, errorType, ref.metrics.serviceCalls, metricCommonAttributes, "service.Users.GetByID")
 	}
 
-	slog.Debug("service.Users.GetByID", "user.id", id)
+	slog.Debug("service.Users.GetByID", "id", id)
 	out, err := ref.repository.SelectByID(ctx, id)
 	if err != nil {
-		span.SetStatus(codes.Error, err.Error())
-		span.RecordError(err)
-		slog.Error("service.Users.GetByID", "error", err)
-		ref.metrics.serviceCalls.Add(ctx, 1,
-			metric.WithAttributes(
-				append(metricCommonAttributes, attribute.String("successful", "false"))...,
-			),
-		)
-
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, &model.UserNotFoundError{ID: id.String()}
-		}
-
-		return nil, err
+		return nil, o11y.RecordError(ctx, span, err, ref.metrics.serviceCalls, metricCommonAttributes, "service.Users.GetByID")
 	}
 
-	slog.Debug("service.Users.GetByID", "user.email", out.Email)
-	span.SetStatus(codes.Ok, "user found")
-	span.SetAttributes(attribute.String("user.email", out.Email))
-	ref.metrics.serviceCalls.Add(ctx, 1,
-		metric.WithAttributes(
-			append(metricCommonAttributes, attribute.String("successful", "true"))...,
-		),
-	)
+	slog.Debug("service.Users.GetByID", "email", out.Email)
+	o11y.RecordSuccess(ctx, span, ref.metrics.serviceCalls, metricCommonAttributes, "user found", attribute.String("user.email", out.Email))
 
 	return out, nil
 }
 
 // GetByEmail returns the user with the specified email.
 func (ref *UsersService) GetByEmail(ctx context.Context, email string) (*model.User, error) {
-	ctx, span := ref.ot.Traces.Tracer.Start(ctx, "service.Users.GetByEmail")
+	ctx, span, metricCommonAttributes := ref.setupContext(ctx, "service.Users.GetByEmail")
 	defer span.End()
 
-	span.SetAttributes(
-		attribute.String("component", "service.Users.GetByEmail"),
-		attribute.String("user.email", email),
-	)
-
-	metricCommonAttributes := []attribute.KeyValue{
-		attribute.String("component", "service.Users.GetByEmail"),
-	}
+	span.SetAttributes(attribute.String("user.email", email))
 
 	if email == "" {
 		errorType := &model.InvalidUserEmailError{Email: email}
-		slog.Error("service.Users.GetByEmail", "error", errorType)
-		span.SetStatus(codes.Error, errorType.Error())
-		span.RecordError(errorType)
-		ref.metrics.serviceCalls.Add(ctx, 1,
-			metric.WithAttributes(
-				append(metricCommonAttributes, attribute.String("successful", "false"))...,
-			),
-		)
-
-		return nil, errorType
+		return nil, o11y.RecordError(ctx, span, errorType, ref.metrics.serviceCalls, metricCommonAttributes, "service.Users.GetByEmail")
 	}
 
-	slog.Debug("service.Users.GetByEmail", "user.email", email)
+	slog.Debug("service.Users.GetByEmail", "email", email)
 	out, err := ref.repository.SelectByEmail(ctx, email)
 	if err != nil {
-		span.SetStatus(codes.Error, err.Error())
-		span.RecordError(err)
-		slog.Error("service.Users.GetByEmail", "error", err)
-		ref.metrics.serviceCalls.Add(ctx, 1,
-			metric.WithAttributes(
-				append(metricCommonAttributes, attribute.String("successful", "false"))...,
-			),
-		)
-
-		return nil, err
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, o11y.RecordError(ctx, span, &model.UserNotFoundError{Email: email}, ref.metrics.serviceCalls, metricCommonAttributes, "service.Users.GetByEmail")
+		}
+		return nil, o11y.RecordError(ctx, span, err, ref.metrics.serviceCalls, metricCommonAttributes, "service.Users.GetByEmail")
 	}
 
-	slog.Debug("service.Users.GetByEmail", "user.email", out.Email)
-	span.SetStatus(codes.Ok, "user found")
-	span.SetAttributes(attribute.String("user.email", out.Email))
-	ref.metrics.serviceCalls.Add(ctx, 1,
-		metric.WithAttributes(
-			append(metricCommonAttributes, attribute.String("successful", "true"))...,
-		),
-	)
+	slog.Debug("service.Users.GetByEmail", "email", out.Email)
+	o11y.RecordSuccess(ctx, span, ref.metrics.serviceCalls, metricCommonAttributes, "user found", attribute.String("user.email", out.Email))
 
 	return out, nil
 }
 
 // Create inserts a new user into the database.
 func (ref *UsersService) Create(ctx context.Context, input *model.CreateUserInput) error {
-	ctx, span := ref.ot.Traces.Tracer.Start(ctx, "service.Users.Create")
+	ctx, span, metricCommonAttributes := ref.setupContext(ctx, "service.Users.Create")
 	defer span.End()
 
-	span.SetAttributes(
-		attribute.String("component", "service.Users.Create"),
-	)
-
-	metricCommonAttributes := []attribute.KeyValue{
-		attribute.String("component", "service.Users.Create"),
-	}
-
 	if input == nil {
-		span.SetStatus(codes.Error, model.ErrInputIsNil.Error())
-		span.RecordError(model.ErrInputIsNil)
-		ref.metrics.serviceCalls.Add(ctx, 1,
-			metric.WithAttributes(
-				append(metricCommonAttributes, attribute.String("successful", "false"))...,
-			),
-		)
-		return model.ErrInputIsNil
+		errorValue := &model.InputIsInvalidError{Message: "input cannot be nil"}
+		return o11y.RecordError(ctx, span, errorValue, ref.metrics.serviceCalls, metricCommonAttributes, "service.Users.Create")
 	}
 
-	span.SetAttributes(
-		attribute.String("user.email", input.Email),
-	)
+	span.SetAttributes(attribute.String("user.email", input.Email))
 
 	if input.ID == uuid.Nil {
 		input.ID = uuid.New()
 	}
 
-	// validate the user input
 	if err := input.Validate(); err != nil {
-		span.SetStatus(codes.Error, err.Error())
-		span.RecordError(err)
-		slog.Error("service.Users.Create", "error", err)
-		ref.metrics.serviceCalls.Add(ctx, 1,
-			metric.WithAttributes(
-				append(metricCommonAttributes, attribute.String("successful", "false"))...,
-			),
-		)
-
-		return err
+		return o11y.RecordError(ctx, span, err, ref.metrics.serviceCalls, metricCommonAttributes, "service.Users.Create")
 	}
 
-	hashPwd, err := hashAndSaltPassword(input.Password)
+	hashPwd, err := HashAndSaltPassword(input.Password)
 	if err != nil {
-		slog.Error("handler.Users.createUser", "error", err.Error())
-		span.SetStatus(codes.Error, err.Error())
-		span.RecordError(err)
-		slog.Error("handler.Users.createUser", "error", err.Error())
-		ref.metrics.serviceCalls.Add(ctx, 1,
-			metric.WithAttributes(
-				append(metricCommonAttributes, attribute.String("code", fmt.Sprintf("%d", http.StatusInternalServerError)))...,
-			),
-		)
-
-		return err
+		return o11y.RecordError(ctx, span, err, ref.metrics.serviceCalls, metricCommonAttributes, "service.Users.Create", "failed to hash password")
 	}
 
 	rParams := &model.InsertUserInput{
@@ -263,70 +163,31 @@ func (ref *UsersService) Create(ctx context.Context, input *model.CreateUserInpu
 	}
 
 	if err := ref.repository.Insert(ctx, rParams); err != nil {
-		span.SetStatus(codes.Error, err.Error())
-		span.RecordError(err)
-		slog.Error("service.Users.Create", "error", err)
-		ref.metrics.serviceCalls.Add(ctx, 1,
-			metric.WithAttributes(
-				append(metricCommonAttributes, attribute.String("successful", "false"))...,
-			),
-		)
-
-		return err
+		return o11y.RecordError(ctx, span, err, ref.metrics.serviceCalls, metricCommonAttributes, "service.Users.Create")
 	}
 
-	slog.Debug("service.Users.Create", "user.email", input.Email)
-	span.SetStatus(codes.Ok, "User created")
-	span.SetAttributes(attribute.String("user.email", input.Email))
-	ref.metrics.serviceCalls.Add(ctx, 1,
-		metric.WithAttributes(
-			append(metricCommonAttributes, attribute.String("successful", "true"))...,
-		),
-	)
+	slog.Debug("service.Users.Create", "email", input.Email)
+	o11y.RecordSuccess(ctx, span, ref.metrics.serviceCalls, metricCommonAttributes, "user created successfully",
+		attribute.String("user.email", input.Email),
+		attribute.String("user.id", input.ID.String()))
 
 	return nil
 }
 
 // Update updates the user with the specified ID.
-func (ref *UsersService) Update(ctx context.Context, input *model.UpdateUserInput) error {
-	ctx, span := ref.ot.Traces.Tracer.Start(ctx, "service.Users.Update")
+func (ref *UsersService) UpdateByID(ctx context.Context, input *model.UpdateUserInput) error {
+	ctx, span, metricCommonAttributes := ref.setupContext(ctx, "service.Users.Update")
 	defer span.End()
 
-	span.SetAttributes(
-		attribute.String("component", "service.Users.Update"),
-	)
-
-	metricCommonAttributes := []attribute.KeyValue{
-		attribute.String("component", "service.Users.Update"),
-	}
-
 	if input == nil {
-		span.SetStatus(codes.Error, model.ErrInputIsNil.Error())
-		span.RecordError(model.ErrInputIsNil)
-		ref.metrics.serviceCalls.Add(ctx, 1,
-			metric.WithAttributes(
-				append(metricCommonAttributes, attribute.String("successful", "false"))...,
-			),
-		)
-
-		return model.ErrInputIsNil
+		errorValue := &model.InvalidUserIDError{Message: "user ID cannot be empty"}
+		return o11y.RecordError(ctx, span, errorValue, ref.metrics.serviceCalls, metricCommonAttributes, "service.Users.Update")
 	}
 
-	span.SetAttributes(
-		attribute.String("user.id", input.ID.String()),
-	)
+	span.SetAttributes(attribute.String("user.id", input.ID.String()))
 
 	if err := input.Validate(); err != nil {
-		span.SetStatus(codes.Error, err.Error())
-		span.RecordError(err)
-		slog.Error("service.Users.Update", "error", err)
-		ref.metrics.serviceCalls.Add(ctx, 1,
-			metric.WithAttributes(
-				append(metricCommonAttributes, attribute.String("successful", "false"))...,
-			),
-		)
-
-		return err
+		return o11y.RecordError(ctx, span, err, ref.metrics.serviceCalls, metricCommonAttributes, "service.Users.Update")
 	}
 
 	rParams := &model.UpdateUserInput{
@@ -340,121 +201,60 @@ func (ref *UsersService) Update(ctx context.Context, input *model.UpdateUserInpu
 	// update the password if it is provided
 	if input.Password != nil && len(*input.Password) < model.ValidUserPasswordMinLength {
 
-		hashPwd, err := hashAndSaltPassword(*input.Password)
+		hashPwd, err := HashAndSaltPassword(*input.Password)
 		if err != nil {
-			slog.Error("handler.Users.createUser", "error", err.Error())
-			span.SetStatus(codes.Error, err.Error())
-			span.RecordError(err)
-			slog.Error("handler.Users.createUser", "error", err.Error())
-			ref.metrics.serviceCalls.Add(ctx, 1,
-				metric.WithAttributes(
-					append(metricCommonAttributes, attribute.String("code", fmt.Sprintf("%d", http.StatusInternalServerError)))...,
-				),
-			)
-
-			return err
+			return o11y.RecordError(ctx, span, err, ref.metrics.serviceCalls, metricCommonAttributes, "service.Users.Update", "failed to hash password")
 		}
 
 		rParams.PasswordHash = &hashPwd
 	}
 
-	if err := ref.repository.Update(ctx, rParams); err != nil {
-		span.SetStatus(codes.Error, err.Error())
-		span.RecordError(err)
-		slog.Error("service.Users.Update", "error", err)
-		ref.metrics.serviceCalls.Add(ctx, 1,
-			metric.WithAttributes(
-				append(metricCommonAttributes, attribute.String("successful", "false"))...,
-			),
-		)
-
-		return err
+	if err := ref.repository.UpdateByID(ctx, rParams); err != nil {
+		return o11y.RecordError(ctx, span, err, ref.metrics.serviceCalls, metricCommonAttributes, "service.Users.Update")
 	}
 
-	slog.Debug("service.Users.Update", "user.email", input.Email)
-	span.SetStatus(codes.Ok, "User updated")
-	span.SetAttributes(attribute.String("user.id", input.ID.String()))
-	ref.metrics.serviceCalls.Add(ctx, 1,
-		metric.WithAttributes(
-			append(metricCommonAttributes, attribute.String("successful", "true"))...,
-		),
-	)
+	o11y.RecordSuccess(ctx, span, ref.metrics.serviceCalls, metricCommonAttributes, "user updated successfully", attribute.String("user.id", input.ID.String()))
 
 	return nil
 }
 
 // Delete deletes the user with the specified ID.
-func (ref *UsersService) Delete(ctx context.Context, input *model.DeleteUserInput) error {
-	ctx, span := ref.ot.Traces.Tracer.Start(ctx, "service.Users.Delete")
+func (ref *UsersService) DeleteByID(ctx context.Context, input *model.DeleteUserInput) error {
+	ctx, span, metricCommonAttributes := ref.setupContext(ctx, "service.Users.DeleteByID")
 	defer span.End()
 
-	span.SetAttributes(
-		attribute.String("component", "service.Users.Delete"),
-		attribute.String("user.id", input.ID.String()),
-	)
-
-	metricCommonAttributes := []attribute.KeyValue{
-		attribute.String("component", "service.Users.Delete"),
-	}
-
 	if input.ID == uuid.Nil {
-		span.SetStatus(codes.Error, model.ErrInputIsNil.Error())
-		span.RecordError(model.ErrInputIsNil)
-		ref.metrics.serviceCalls.Add(ctx, 1,
-			metric.WithAttributes(
-				append(metricCommonAttributes, attribute.String("successful", "false"))...,
-			),
-		)
-
-		return model.ErrInputIsNil
+		errorValue := &model.InvalidUserIDError{Message: "user ID cannot be empty"}
+		return o11y.RecordError(ctx, span, errorValue, ref.metrics.serviceCalls, metricCommonAttributes, "service.Users.DeleteByID")
 	}
+	span.SetAttributes(attribute.String("user.id", input.ID.String()))
 
 	rParams := &model.DeleteUserInput{
 		ID: input.ID,
 	}
 
-	slog.Debug("service.Users.Delete", "qParams", rParams)
+	slog.Debug("service.Users.DeleteByID", "qParams", rParams)
 
-	if err := ref.repository.Delete(ctx, rParams); err != nil {
-		span.SetStatus(codes.Error, err.Error())
-		span.RecordError(err)
-		slog.Error("service.Users.Delete", "error", err)
-		ref.metrics.serviceCalls.Add(ctx, 1,
-			metric.WithAttributes(
-				append(metricCommonAttributes, attribute.String("successful", "false"))...,
-			),
-		)
-
-		return err
+	if err := ref.repository.DeleteByID(ctx, rParams); err != nil {
+		return o11y.RecordError(ctx, span, err, ref.metrics.serviceCalls, metricCommonAttributes, "service.Users.DeleteByID")
 	}
 
-	span.SetStatus(codes.Ok, "User deleted")
-	span.SetAttributes(attribute.String("user.id", input.ID.String()))
-	ref.metrics.serviceCalls.Add(ctx, 1,
-		metric.WithAttributes(
-			append(metricCommonAttributes, attribute.String("successful", "true"))...,
-		),
-	)
+	o11y.RecordSuccess(ctx, span, ref.metrics.serviceCalls, metricCommonAttributes, "user deleted successfully", attribute.String("user.id", input.ID.String()))
 
 	return nil
 }
 
 // List returns a list of users.
 func (ref *UsersService) List(ctx context.Context, input *model.ListUsersInput) (*model.ListUsersOutput, error) {
-	ctx, span := ref.ot.Traces.Tracer.Start(ctx, "service.Users.List")
+	ctx, span, metricCommonAttributes := ref.setupContext(ctx, "service.Users.List")
 	defer span.End()
 
 	span.SetAttributes(
-		attribute.String("component", "service.Users.List"),
 		attribute.String("sort", input.Sort),
 		attribute.String("fields", input.Fields),
 		attribute.String("filter", input.Filter),
 		attribute.Int("limit", input.Paginator.Limit),
 	)
-
-	metricCommonAttributes := []attribute.KeyValue{
-		attribute.String("component", "service.Users.List"),
-	}
 
 	rParams := &model.SelectUsersInput{
 		Sort:      input.Sort,
@@ -467,28 +267,29 @@ func (ref *UsersService) List(ctx context.Context, input *model.ListUsersInput) 
 
 	out, err := ref.repository.Select(ctx, rParams)
 	if err != nil {
-		span.SetStatus(codes.Error, err.Error())
-		span.RecordError(err)
-		slog.Error("service.Users.List", "error", err)
-		ref.metrics.serviceCalls.Add(ctx, 1,
-			metric.WithAttributes(
-				append(metricCommonAttributes, attribute.String("successful", "false"))...,
-			),
-		)
-
-		return nil, err
+		return nil, o11y.RecordError(ctx, span, err, ref.metrics.serviceCalls, metricCommonAttributes, "service.Users.List")
 	}
 
-	slog.Debug("service.Users.List", "users.count", len(out.Items))
-	span.SetStatus(codes.Ok, "Users found")
-	ref.metrics.serviceCalls.Add(ctx, 1,
-		metric.WithAttributes(
-			append(metricCommonAttributes, attribute.String("successful", "true"))...,
-		),
+	o11y.RecordSuccess(ctx, span, ref.metrics.serviceCalls, metricCommonAttributes, "users listed successfully",
+		attribute.Int("count", len(out.Items)))
+
+	return out, nil
+}
+
+// Helper functions for common patterns
+
+// setupContext creates a context with a span and common attributes for metrics.
+// Returns the new context, span, and common metric attributes.
+func (ref *UsersService) setupContext(ctx context.Context, operation string) (context.Context, trace.Span, []attribute.KeyValue) {
+	ctx, span := ref.ot.Traces.Tracer.Start(ctx, operation)
+
+	span.SetAttributes(
+		attribute.String("component", operation),
 	)
 
-	return &model.ListUsersOutput{
-		Items:     out.Items,
-		Paginator: out.Paginator,
-	}, nil
+	metricCommonAttributes := []attribute.KeyValue{
+		attribute.String("component", operation),
+	}
+
+	return ctx, span, metricCommonAttributes
 }

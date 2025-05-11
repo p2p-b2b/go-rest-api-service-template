@@ -42,18 +42,18 @@ func (m *MockUsersRepository) EXPECT() *MockUsersRepositoryMockRecorder {
 	return m.recorder
 }
 
-// Delete mocks base method.
-func (m *MockUsersRepository) Delete(ctx context.Context, input *model.DeleteUserInput) error {
+// DeleteByID mocks base method.
+func (m *MockUsersRepository) DeleteByID(ctx context.Context, input *model.DeleteUserInput) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Delete", ctx, input)
+	ret := m.ctrl.Call(m, "DeleteByID", ctx, input)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// Delete indicates an expected call of Delete.
-func (mr *MockUsersRepositoryMockRecorder) Delete(ctx, input any) *gomock.Call {
+// DeleteByID indicates an expected call of DeleteByID.
+func (mr *MockUsersRepositoryMockRecorder) DeleteByID(ctx, input any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockUsersRepository)(nil).Delete), ctx, input)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteByID", reflect.TypeOf((*MockUsersRepository)(nil).DeleteByID), ctx, input)
 }
 
 // Insert mocks base method.
@@ -115,16 +115,16 @@ func (mr *MockUsersRepositoryMockRecorder) SelectByID(ctx, id any) *gomock.Call 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SelectByID", reflect.TypeOf((*MockUsersRepository)(nil).SelectByID), ctx, id)
 }
 
-// Update mocks base method.
-func (m *MockUsersRepository) Update(ctx context.Context, input *model.UpdateUserInput) error {
+// UpdateByID mocks base method.
+func (m *MockUsersRepository) UpdateByID(ctx context.Context, input *model.UpdateUserInput) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Update", ctx, input)
+	ret := m.ctrl.Call(m, "UpdateByID", ctx, input)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// Update indicates an expected call of Update.
-func (mr *MockUsersRepositoryMockRecorder) Update(ctx, input any) *gomock.Call {
+// UpdateByID indicates an expected call of UpdateByID.
+func (mr *MockUsersRepositoryMockRecorder) UpdateByID(ctx, input any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockUsersRepository)(nil).Update), ctx, input)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateByID", reflect.TypeOf((*MockUsersRepository)(nil).UpdateByID), ctx, input)
 }

@@ -562,7 +562,7 @@ Status: Internal Server Error
 ### <span id="model-paginator"></span> model.Paginator
 
 
-> Paginator represents a paginator
+> Paginator represents a paginator.
   
 
 
