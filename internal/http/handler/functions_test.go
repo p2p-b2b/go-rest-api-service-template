@@ -171,7 +171,7 @@ func TestParseListQueryParams(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, "name ASC", sort)
 		assert.Equal(t, "status='active'", filter)
-		assert.Equal(t, "id, name", fields)
+		assert.Equal(t, "id,name", fields)
 		assert.Equal(t, model.EncodeToken(testID, 10), nextToken)
 		assert.Equal(t, model.EncodeToken(testID, 10), prevToken)
 		assert.Equal(t, 5, limit)
@@ -181,7 +181,7 @@ func TestParseListQueryParams(t *testing.T) {
 		params := map[string]any{
 			"sort":      "invalid",
 			"filter":    "status='active'",
-			"fields":    "id, name",
+			"fields":    "id,name",
 			"nextToken": "",
 			"prevToken": "",
 			"limit":     "5",

@@ -2,21 +2,29 @@ package middleware
 
 import (
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"slices"
 	"strings"
 	"time"
 
+	"github.com/p2p-b2b/go-rest-api-service-template/internal/http/respond"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/model"
+	"github.com/p2p-b2b/ratelimiter"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/propagation"
 )
 
-type JWTClaimsName string
+// ContextKey is a type for context keys
+type ContextKey string
+
+func (k ContextKey) String() string {
+	return string(k)
+}
 
 const (
-	ClaimsName JWTClaimsName = "jwt_claims"
+	JwtClaims ContextKey = "jwt_claims"
 )
 
 // Middleware is a function that wraps an http.Handler
@@ -26,6 +34,12 @@ type Middleware func(http.Handler) http.Handler
 // ThenFunc wraps an http.HandlerFunc with a middleware
 func (m Middleware) ThenFunc(h http.HandlerFunc) http.Handler {
 	return m(http.HandlerFunc(h))
+}
+
+// Then wraps an http.Handler with a middleware
+// This is a convenience method to allow chaining middlewares
+func (m Middleware) Then(h http.Handler) http.Handler {
+	return m(h)
 }
 
 // Apply applies the middleware to an http.Handler
@@ -149,11 +163,12 @@ func RewriteStandardErrorsAsJSON(h http.Handler) http.Handler {
 	})
 }
 
-// CorsOpts represents the options for the CORS middleware.
-// If AllowedOrigins is empty, the default value is ["*"].
-// If AllowedMethods is empty, the default value is [GET, POST, PUT, DELETE, OPTIONS].
-// If AllowedHeaders is empty, the default value is [Accept, Content-Type, Content-Length, Accept-Encoding, Authorization].
-// If AllowCredentials is false, the default value is false.
+// CorsOpts is the configuration for the CORS middleware
+// Options are:
+// AllowedOrigins is a list of origins a cross-domain request can be executed from
+// AllowedMethods is a list of methods the client is allowed to use with cross-domain requests
+// AllowedHeaders is a list of non-simple headers the client is allowed to use with cross-domain requests
+// AllowCredentials indicates whether the request can include user credentials like cookies, HTTP authentication or client side SSL certificates
 type CorsOpts struct {
 	AllowedOrigins   []string
 	AllowedMethods   []string
@@ -161,7 +176,7 @@ type CorsOpts struct {
 	AllowCredentials bool
 }
 
-// Cors is a middleware that adds CORS headers to the response.
+// Cors middleware adds CORS headers to the response
 func Cors(opts CorsOpts) Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -195,6 +210,26 @@ func Cors(opts CorsOpts) Middleware {
 			// to handle OPTIONS requests
 			if r.Method == http.MethodOptions {
 				w.WriteHeader(http.StatusOK)
+				return
+			}
+
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+// IPRateLimiter is a middleware that limits the number of requests
+// from a single IP address
+// The rate limiter is a token bucket algorithm
+// https://en.wikipedia.org/wiki/Token_bucket
+func IPRateLimiter(limiter *ratelimiter.BucketLimiter) Middleware {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ip := strings.Split(r.RemoteAddr, ":")[0]
+
+			lim := limiter.GetOrAdd(ip)
+			if !lim.Allow() {
+				respond.WriteJSONMessage(w, r, http.StatusTooManyRequests, fmt.Sprintf("too many requests from ip address %s", ip))
 				return
 			}
 
