@@ -415,7 +415,8 @@ func (ref *UsersRepository) Select(ctx context.Context, input *model.SelectUsers
 
 	var filterQuery string
 	if input.Filter != "" {
-		filterQuery = fmt.Sprintf("WHERE (%s)", input.Filter)
+		filterSentence := injectPrefixToFields(sqlFieldsPrefix, input.Filter, model.UsersFilterFields)
+		filterQuery = fmt.Sprintf("WHERE (%s)", filterSentence)
 	}
 
 	var sortQuery string

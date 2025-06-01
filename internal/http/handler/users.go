@@ -374,9 +374,9 @@ func (ref *UsersHandler) list(w http.ResponseWriter, r *http.Request) {
 
 	sort, filter, fields, nextToken, prevToken, limit, err := parseListQueryParams(
 		params,
-		model.UserPartialFields,
-		model.UserFilterFields,
-		model.UserSortFields,
+		model.UsersPartialFields,
+		model.UsersFilterFields,
+		model.UsersSortFields,
 	)
 	if err != nil {
 		e := recordError(ctx, span, err, ref.metrics.handlerCalls, metricCommonAttributes, http.StatusBadRequest, "handler.Users.list")

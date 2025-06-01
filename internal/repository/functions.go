@@ -180,3 +180,21 @@ func buildPaginationCriteria(
 
 	return whereClause, internalSort
 }
+
+// injectPrefixToFields injects a prefix to the fields in the filter query.
+// It checks if the filter contains any of the allowed fields and injects the prefix
+// if it does. The function returns the modified filter query.
+func injectPrefixToFields(prefix, filter string, allowedField []string) string {
+	if filter == "" {
+		return ""
+	}
+
+	for _, field := range allowedField {
+		if strings.Contains(filter, field) {
+			// If the field is found in the filter, inject the prefix
+			filter = strings.ReplaceAll(filter, field, prefix+field)
+		}
+	}
+
+	return filter
+}

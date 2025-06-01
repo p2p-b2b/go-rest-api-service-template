@@ -27,14 +27,14 @@ const (
 )
 
 var (
-	// UserFilterFields is a list of valid fields for filtering users.
-	UserFilterFields = []string{"id", "first_name", "last_name", "email", "disabled", "created_at", "updated_at"}
+	// UsersFilterFields is a list of valid fields for filtering users.
+	UsersFilterFields = []string{"id", "first_name", "last_name", "email", "disabled", "created_at", "updated_at"}
 
-	// UserSortFields is a list of valid fields for sorting users.
-	UserSortFields = []string{"id", "first_name", "last_name", "email", "disabled", "created_at", "updated_at"}
+	// UsersSortFields is a list of valid fields for sorting users.
+	UsersSortFields = []string{"id", "first_name", "last_name", "email", "disabled", "created_at", "updated_at"}
 
-	// UserPartialFields is a list of valid fields for partial responses.
-	UserPartialFields = []string{"id", "first_name", "last_name", "email", "disabled", "created_at", "updated_at"}
+	// UsersPartialFields is a list of valid fields for partial responses.
+	UsersPartialFields = []string{"id", "first_name", "last_name", "email", "disabled", "created_at", "updated_at"}
 )
 
 // User represents a user entity used to model the data stored in the database.
@@ -195,21 +195,21 @@ func (ref *SelectUsersInput) Validate() error {
 	}
 
 	if ref.Sort != "" {
-		_, err := qfv.NewSortParser(UserSortFields).Parse(ref.Sort)
+		_, err := qfv.NewSortParser(UsersSortFields).Parse(ref.Sort)
 		if err != nil {
 			return err
 		}
 	}
 
 	if ref.Filter != "" {
-		_, err := qfv.NewFilterParser(UserFilterFields).Parse(ref.Filter)
+		_, err := qfv.NewFilterParser(UsersFilterFields).Parse(ref.Filter)
 		if err != nil {
 			return err
 		}
 	}
 
 	if ref.Fields != "" {
-		_, err := qfv.NewFieldsParser(UserFilterFields).Parse(ref.Fields)
+		_, err := qfv.NewFieldsParser(UsersFilterFields).Parse(ref.Fields)
 		if err != nil {
 			return err
 		}
