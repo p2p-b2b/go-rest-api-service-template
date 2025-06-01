@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"html/template"
 	"regexp"
+	"sort"
 	"strings"
 
 	"github.com/google/uuid"
@@ -181,20 +182,46 @@ func buildPaginationCriteria(
 	return whereClause, internalSort
 }
 
-// injectPrefixToFields injects a prefix to the fields in the filter query.
-// It checks if the filter contains any of the allowed fields and injects the prefix
-// if it does. The function returns the modified filter query.
-func injectPrefixToFields(prefix, filter string, allowedField []string) string {
-	if filter == "" {
-		return ""
+// injectPrefixToFields intelligently injects a prefix to specific fields in a filter query.
+// It uses a regular expression that identifies and ignores matches within quoted strings
+// to prevent incorrectly modifying string literals.
+func injectPrefixToFields(prefix, filter string, allowedFields []string) string {
+	if prefix == "" || filter == "" || len(allowedFields) == 0 {
+		return filter
 	}
 
-	for _, field := range allowedField {
-		if strings.Contains(filter, field) {
-			// If the field is found in the filter, inject the prefix
-			filter = strings.ReplaceAll(filter, field, prefix+field)
+	// To prevent ambiguous matches where one allowed field is a substring of another
+	// (e.g., "id" and "user_id"), we sort the fields by length in descending order.
+	// The regex engine will then try to match longer fields first.
+	sort.Slice(allowedFields, func(i, j int) bool {
+		return len(allowedFields[i]) > len(allowedFields[j])
+	})
+
+	escapedFields := make([]string, len(allowedFields))
+	for i, field := range allowedFields {
+		escapedFields[i] = regexp.QuoteMeta(field)
+	}
+
+	// This pattern has three alternatives, separated by the OR operator `|`:
+	// 1. `'[^']*'`: Matches any content within a pair of single quotes.
+	// 2. `"[^"]*"`: Matches any content within a pair of double quotes.
+	// 3. `\b(field1|field2)\b`: Matches any of the allowed fields as whole words.
+	// By placing the quote patterns first, the regex engine prioritizes matching them.
+	fieldsPattern := `\b(` + strings.Join(escapedFields, "|") + `)\b`
+	pattern := `'[^']*'|"[^"]*"|` + fieldsPattern
+
+	re := regexp.MustCompile(pattern)
+
+	// The callback function inspects each match to decide on the replacement.
+	return re.ReplaceAllStringFunc(filter, func(match string) string {
+		// Check if the match is a quoted literal (starts with ' or ").
+		// If it is, we return it unchanged.
+		if strings.HasPrefix(match, "'") || strings.HasPrefix(match, `"`) {
+			return match
 		}
-	}
 
-	return filter
+		// Otherwise, the match must be one of our target fields.
+		// We prepend the prefix and return the new string.
+		return prefix + match
+	})
 }
