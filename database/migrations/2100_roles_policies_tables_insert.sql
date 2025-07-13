@@ -8,7 +8,9 @@ INSERT INTO roles (id, name, description, system, auto_assign) VALUES
 -- Administrator
 ('019791d2-adef-74be-b82a-079b56877764', 'Administrator', 'Administrator role.',                         TRUE, FALSE),
 -- AuthenticatedUser
-('019791d2-adef-758d-b043-55ea5be663a0', 'AuthenticatedUser', 'Authenticated user role. Allow do login', TRUE, TRUE);
+('019791d2-adef-758d-b043-55ea5be663a0', 'AuthenticatedUser', 'Authenticated user role. Allow do login', TRUE, TRUE),
+-- ProjectAdmin
+('01980464-8a12-7b13-9404-495b6634614f', 'ProjectAdmin', 'Project administrator role. Allow manage projects.', TRUE, FALSE);
 
 -----------------------------------------------------------------------------------------
 -- table resources
@@ -93,7 +95,9 @@ INSERT INTO policies (id, resources_id, name, description, allowed_action, allow
 -- Allow logout
 ('01979221-694f-7b7d-ab32-5c301e0e1745', '0198042a-f9c5-75d4-afa6-fe658744c80f', 'Allow logout', 'Allow make logout', 'DELETE', '/auth/logout', TRUE),
 -- Allow refresh token
-('01979221-694f-7b69-a3a8-c8fce0f43afc', '0198042a-f9c5-75d8-aa7b-37524ea4f124', 'Allow refresh token', 'Allow refresh token', 'POST', '/auth/refresh', TRUE);
+('01979221-694f-7b69-a3a8-c8fce0f43afc', '0198042a-f9c5-75d8-aa7b-37524ea4f124', 'Allow refresh token', 'Allow refresh token', 'POST', '/auth/refresh', TRUE),
+-- Allow create project
+('01980464-8a12-7b17-af6f-bc536bc6d71c', '0198042a-f9c5-7622-9142-88fbaa727659', 'Allow create project', 'Allow create project', 'POST', '/projects', TRUE);
 
 -----------------------------------------------------------------------------------------
 -- table roles_policies
@@ -103,14 +107,19 @@ INSERT INTO roles_policies (roles_id, policies_id) VALUES
 ('019791d2-adef-74be-b82a-079b56877764', '01979221-694f-7ba0-8930-8e7b9e147c2e'),
 -- AuthenticatedUser
 ('019791d2-adef-758d-b043-55ea5be663a0', '01979221-694f-7b7d-ab32-5c301e0e1745'),
-('019791d2-adef-758d-b043-55ea5be663a0', '01979221-694f-7b69-a3a8-c8fce0f43afc');
+('019791d2-adef-758d-b043-55ea5be663a0', '01979221-694f-7b69-a3a8-c8fce0f43afc'),
+-- ProjectAdmin
+('01980464-8a12-7b13-9404-495b6634614f', '01980464-8a12-7b17-af6f-bc536bc6d71c');
 
 -----------------------------------------------------------------------------------------
 -- table users_roles
 -----------------------------------------------------------------------------------------
 INSERT INTO users_roles (users_id, roles_id) VALUES
 -- Administrator
-('019791d2-adef-76d2-a865-5b19e5073e60', '019791d2-adef-74be-b82a-079b56877764');
+('019791d2-adef-76d2-a865-5b19e5073e60', '019791d2-adef-74be-b82a-079b56877764'),
+-- User
+('01980464-8a12-7b1b-8e3b-8d065c7a08c2', '019791d2-adef-758d-b043-55ea5be663a0'),
+('01980464-8a12-7b1b-8e3b-8d065c7a08c2', '01980464-8a12-7b13-9404-495b6634614f');
 
 -- +goose StatementEnd
 --
