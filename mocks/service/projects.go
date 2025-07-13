@@ -86,18 +86,18 @@ func (mr *MockProjectsRepositoryMockRecorder) Select(ctx, input any) *gomock.Cal
 }
 
 // SelectByID mocks base method.
-func (m *MockProjectsRepository) SelectByID(ctx context.Context, id uuid.UUID) (*model.Project, error) {
+func (m *MockProjectsRepository) SelectByID(ctx context.Context, id, userID uuid.UUID) (*model.Project, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SelectByID", ctx, id)
+	ret := m.ctrl.Call(m, "SelectByID", ctx, id, userID)
 	ret0, _ := ret[0].(*model.Project)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // SelectByID indicates an expected call of SelectByID.
-func (mr *MockProjectsRepositoryMockRecorder) SelectByID(ctx, id any) *gomock.Call {
+func (mr *MockProjectsRepositoryMockRecorder) SelectByID(ctx, id, userID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SelectByID", reflect.TypeOf((*MockProjectsRepository)(nil).SelectByID), ctx, id)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SelectByID", reflect.TypeOf((*MockProjectsRepository)(nil).SelectByID), ctx, id, userID)
 }
 
 // UpdateByID mocks base method.

@@ -21,7 +21,7 @@ type ProjectsRepository interface {
 	Insert(ctx context.Context, input *model.InsertProjectInput) error
 	UpdateByID(ctx context.Context, input *model.UpdateProjectInput) error
 	DeleteByID(ctx context.Context, input *model.DeleteProjectInput) error
-	SelectByID(ctx context.Context, id uuid.UUID) (*model.Project, error)
+	SelectByID(ctx context.Context, id, userID uuid.UUID) (*model.Project, error)
 	Select(ctx context.Context, input *model.SelectProjectsInput) (*model.SelectProjectsOutput, error)
 }
 
@@ -78,7 +78,7 @@ func NewProjectsService(conf ProjectsServiceConf) (*ProjectsService, error) {
 }
 
 // GetByID returns the projects with the specified ID.
-func (ref *ProjectsService) GetByID(ctx context.Context, id uuid.UUID) (*model.Project, error) {
+func (ref *ProjectsService) GetByID(ctx context.Context, id, userID uuid.UUID) (*model.Project, error) {
 	ctx, span, metricCommonAttributes := ref.setupContext(ctx, "service.Projects.GetByID")
 	defer span.End()
 
@@ -89,7 +89,7 @@ func (ref *ProjectsService) GetByID(ctx context.Context, id uuid.UUID) (*model.P
 		return nil, o11y.RecordError(ctx, span, errorType, ref.metrics.serviceCalls, metricCommonAttributes, "service.Projects.GetByID")
 	}
 
-	out, err := ref.repository.SelectByID(ctx, id)
+	out, err := ref.repository.SelectByID(ctx, id, userID)
 	if err != nil {
 		return nil, o11y.RecordError(ctx, span, err, ref.metrics.serviceCalls, metricCommonAttributes, "service.Projects.GetByID")
 	}

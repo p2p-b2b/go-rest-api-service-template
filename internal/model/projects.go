@@ -129,6 +129,7 @@ type UpdateProjectInput struct {
 	Description *string
 	Disabled    *bool
 	ID          uuid.UUID
+	UserID      uuid.UUID
 }
 
 func (ref *UpdateProjectInput) Validate() error {
@@ -136,6 +137,12 @@ func (ref *UpdateProjectInput) Validate() error {
 
 	// Validate ID
 	if err := ValidateUUID(ref.ID, 7, "id"); err != nil {
+		if ve, ok := err.(*ValidationError); ok {
+			validationErrors.Errors = append(validationErrors.Errors, *ve)
+		}
+	}
+
+	if err := ValidateUUID(ref.UserID, 7, "user_id"); err != nil {
 		if ve, ok := err.(*ValidationError); ok {
 			validationErrors.Errors = append(validationErrors.Errors, *ve)
 		}
@@ -195,17 +202,33 @@ func (ref *UpdateProjectInput) Validate() error {
 }
 
 type DeleteProjectInput struct {
-	ID uuid.UUID
+	ID     uuid.UUID
+	UserID uuid.UUID
 }
 
 func (ref *DeleteProjectInput) Validate() error {
+	var validationErrors ValidationErrors
 	if err := ValidateUUID(ref.ID, 7, "id"); err != nil {
-		return err
+		if ve, ok := err.(*ValidationError); ok {
+			validationErrors.Errors = append(validationErrors.Errors, *ve)
+		}
 	}
+
+	if err := ValidateUUID(ref.UserID, 7, "user_id"); err != nil {
+		if ve, ok := err.(*ValidationError); ok {
+			validationErrors.Errors = append(validationErrors.Errors, *ve)
+		}
+	}
+
+	if validationErrors.HasErrors() {
+		return &validationErrors
+	}
+
 	return nil
 }
 
 type SelectProjectsInput struct {
+	UserID    uuid.UUID
 	Sort      string
 	Filter    string
 	Fields    string
@@ -214,6 +237,12 @@ type SelectProjectsInput struct {
 
 func (ref *SelectProjectsInput) Validate() error {
 	var validationErrors ValidationErrors
+
+	if err := ValidateUUID(ref.UserID, 7, "user_id"); err != nil {
+		if ve, ok := err.(*ValidationError); ok {
+			validationErrors.Errors = append(validationErrors.Errors, *ve)
+		}
+	}
 
 	// Validate paginator
 	if err := ref.Paginator.Validate(); err != nil {

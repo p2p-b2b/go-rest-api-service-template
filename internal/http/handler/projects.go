@@ -22,7 +22,7 @@ import (
 
 // ProjectsService represents the service for the projects.
 type ProjectsService interface {
-	GetByID(ctx context.Context, id uuid.UUID) (*model.Project, error)
+	GetByID(ctx context.Context, id, userID uuid.UUID) (*model.Project, error)
 	Create(ctx context.Context, input *model.CreateProjectInput) error
 	UpdateByID(ctx context.Context, input *model.UpdateProjectInput) error
 	DeleteByID(ctx context.Context, input *model.DeleteProjectInput) error
@@ -92,56 +92,6 @@ func (ref *ProjectsHandler) RegisterRoutes(mux *http.ServeMux, middlewares ...mi
 	mux.Handle("POST /projects", mdw.ThenFunc(ref.create))
 }
 
-// getByID Get a project by ID
-//
-//	@ID				0198042a-f9c5-761e-b1c2-66a3f8ab30d6
-//	@Summary		Get project
-//	@Description	Retrieve a specific project by its unique identifier
-//	@Tags			Projects
-//	@Param			project_id	path	string	true	"The project id in UUID format"	Format(uuid)
-//	@Produce		json
-//	@Success		200	{object}	model.Project
-//	@Failure		400	{object}	model.HTTPMessage
-//	@Failure		404	{object}	model.HTTPMessage
-//	@Failure		500	{object}	model.HTTPMessage
-//	@Router			/projects/{project_id} [get]
-//	@Security		AccessToken
-func (ref *ProjectsHandler) getByID(w http.ResponseWriter, r *http.Request) {
-	ctx, span, metricCommonAttributes := setupContext(r, ref.ot.Traces.Tracer, "handler.Projects.getByID")
-	defer span.End()
-
-	projectID, err := parseUUIDQueryParams(r.PathValue("project_id"))
-	if err != nil {
-		e := recordError(ctx, span, err, ref.metrics.handlerCalls, metricCommonAttributes, http.StatusBadRequest, "handler.Projects.getByID")
-		respond.WriteJSONMessage(w, r, http.StatusBadRequest, e.Error())
-		return
-	}
-
-	project, err := ref.service.GetByID(ctx, projectID)
-	if err != nil {
-		var projectNotFoundError *model.ProjectNotFoundError
-		if errors.As(err, &projectNotFoundError) {
-			e := recordError(ctx, span, err, ref.metrics.handlerCalls, metricCommonAttributes, http.StatusNotFound, "handler.Projects.getByID")
-			respond.WriteJSONMessage(w, r, http.StatusNotFound, e.Error())
-			return
-		}
-
-		e := recordError(ctx, span, err, ref.metrics.handlerCalls, metricCommonAttributes, http.StatusInternalServerError, "handler.Projects.getByID")
-		respond.WriteJSONMessage(w, r, http.StatusInternalServerError, e.Error())
-		return
-	}
-
-	if err := respond.WriteJSONData(w, http.StatusOK, project); err != nil {
-		e := recordError(ctx, span, err, ref.metrics.handlerCalls, metricCommonAttributes, http.StatusInternalServerError, "handler.Projects.getByID")
-		respond.WriteJSONMessage(w, r, http.StatusInternalServerError, e.Error())
-		return
-	}
-
-	slog.Debug("handler.Projects.getByID: called", "project", project.ID)
-	recordSuccess(ctx, span, ref.metrics.handlerCalls, metricCommonAttributes, http.StatusOK, "get project",
-		attribute.String("project.id", project.ID.String()))
-}
-
 // create Create a project
 //
 //	@ID				0198042a-f9c5-7622-9142-88fbaa727659
@@ -162,7 +112,6 @@ func (ref *ProjectsHandler) create(w http.ResponseWriter, r *http.Request) {
 	defer span.End()
 
 	claims := ctx.Value(middleware.JwtClaims).(map[string]any)
-	slog.Debug("claims", "claims", claims)
 
 	userIDstring, ok := claims["sub"].(string)
 	if !ok {
@@ -234,6 +183,74 @@ func (ref *ProjectsHandler) create(w http.ResponseWriter, r *http.Request) {
 	respond.WriteJSONMessage(w, r, http.StatusCreated, model.ProjectsProjectCreatedSuccessfully)
 }
 
+// getByID Get a project by ID
+//
+//	@ID				0198042a-f9c5-761e-b1c2-66a3f8ab30d6
+//	@Summary		Get project
+//	@Description	Retrieve a specific project by its unique identifier
+//	@Tags			Projects
+//	@Param			project_id	path	string	true	"The project id in UUID format"	Format(uuid)
+//	@Produce		json
+//	@Success		200	{object}	model.Project
+//	@Failure		400	{object}	model.HTTPMessage
+//	@Failure		404	{object}	model.HTTPMessage
+//	@Failure		500	{object}	model.HTTPMessage
+//	@Router			/projects/{project_id} [get]
+//	@Security		AccessToken
+func (ref *ProjectsHandler) getByID(w http.ResponseWriter, r *http.Request) {
+	ctx, span, metricCommonAttributes := setupContext(r, ref.ot.Traces.Tracer, "handler.Projects.getByID")
+	defer span.End()
+
+	claims := ctx.Value(middleware.JwtClaims).(map[string]any)
+
+	userIDstring, ok := claims["sub"].(string)
+	if !ok {
+		errorType := &model.InvalidUserIDError{Message: "user ID is not a uuid string"}
+		e := recordError(ctx, span, errorType, ref.metrics.handlerCalls, metricCommonAttributes, http.StatusBadRequest, "handler.Projects.getByID")
+		respond.WriteJSONMessage(w, r, http.StatusBadRequest, e.Error())
+		return
+	}
+
+	userID, err := parseUUIDQueryParams(userIDstring)
+	if err != nil {
+		errorType := &model.InvalidUserIDError{Message: "user ID cannot be empty"}
+		e := recordError(ctx, span, errorType, ref.metrics.handlerCalls, metricCommonAttributes, http.StatusBadRequest, "handler.Projects.getByID")
+		respond.WriteJSONMessage(w, r, http.StatusBadRequest, e.Error())
+		return
+	}
+
+	projectID, err := parseUUIDQueryParams(r.PathValue("project_id"))
+	if err != nil {
+		e := recordError(ctx, span, err, ref.metrics.handlerCalls, metricCommonAttributes, http.StatusBadRequest, "handler.Projects.getByID")
+		respond.WriteJSONMessage(w, r, http.StatusBadRequest, e.Error())
+		return
+	}
+
+	project, err := ref.service.GetByID(ctx, projectID, userID)
+	if err != nil {
+		var projectNotFoundError *model.ProjectNotFoundError
+		if errors.As(err, &projectNotFoundError) {
+			e := recordError(ctx, span, err, ref.metrics.handlerCalls, metricCommonAttributes, http.StatusNotFound, "handler.Projects.getByID")
+			respond.WriteJSONMessage(w, r, http.StatusNotFound, e.Error())
+			return
+		}
+
+		e := recordError(ctx, span, err, ref.metrics.handlerCalls, metricCommonAttributes, http.StatusInternalServerError, "handler.Projects.getByID")
+		respond.WriteJSONMessage(w, r, http.StatusInternalServerError, e.Error())
+		return
+	}
+
+	if err := respond.WriteJSONData(w, http.StatusOK, project); err != nil {
+		e := recordError(ctx, span, err, ref.metrics.handlerCalls, metricCommonAttributes, http.StatusInternalServerError, "handler.Projects.getByID")
+		respond.WriteJSONMessage(w, r, http.StatusInternalServerError, e.Error())
+		return
+	}
+
+	slog.Debug("handler.Projects.getByID: called", "project", project.ID)
+	recordSuccess(ctx, span, ref.metrics.handlerCalls, metricCommonAttributes, http.StatusOK, "get project",
+		attribute.String("project.id", project.ID.String()))
+}
+
 // updateByID Update a project by ID
 //
 //	@ID				0198042a-f9c5-7626-be9f-996a2898ef07
@@ -253,6 +270,24 @@ func (ref *ProjectsHandler) create(w http.ResponseWriter, r *http.Request) {
 func (ref *ProjectsHandler) updateByID(w http.ResponseWriter, r *http.Request) {
 	ctx, span, metricCommonAttributes := setupContext(r, ref.ot.Traces.Tracer, "handler.Projects.updateByID")
 	defer span.End()
+
+	claims := ctx.Value(middleware.JwtClaims).(map[string]any)
+
+	userIDstring, ok := claims["sub"].(string)
+	if !ok {
+		errorType := &model.InvalidUserIDError{Message: "user ID is not a uuid string"}
+		e := recordError(ctx, span, errorType, ref.metrics.handlerCalls, metricCommonAttributes, http.StatusBadRequest, "handler.Projects.updateByID")
+		respond.WriteJSONMessage(w, r, http.StatusBadRequest, e.Error())
+		return
+	}
+
+	userID, err := parseUUIDQueryParams(userIDstring)
+	if err != nil {
+		errorType := &model.InvalidUserIDError{Message: "user ID cannot be empty"}
+		e := recordError(ctx, span, errorType, ref.metrics.handlerCalls, metricCommonAttributes, http.StatusBadRequest, "handler.Projects.updateByID")
+		respond.WriteJSONMessage(w, r, http.StatusBadRequest, e.Error())
+		return
+	}
 
 	projectID, err := parseUUIDQueryParams(r.PathValue("project_id"))
 	if err != nil {
@@ -276,6 +311,7 @@ func (ref *ProjectsHandler) updateByID(w http.ResponseWriter, r *http.Request) {
 
 	input := &model.UpdateProjectInput{
 		ID:          projectID,
+		UserID:      userID,
 		Name:        req.Name,
 		Description: req.Description,
 		Disabled:    req.Disabled,
@@ -329,6 +365,24 @@ func (ref *ProjectsHandler) deleteByID(w http.ResponseWriter, r *http.Request) {
 	ctx, span, metricCommonAttributes := setupContext(r, ref.ot.Traces.Tracer, "handler.Projects.deleteByID")
 	defer span.End()
 
+	claims := ctx.Value(middleware.JwtClaims).(map[string]any)
+
+	userIDstring, ok := claims["sub"].(string)
+	if !ok {
+		errorType := &model.InvalidUserIDError{Message: "user ID is not a uuid string"}
+		e := recordError(ctx, span, errorType, ref.metrics.handlerCalls, metricCommonAttributes, http.StatusBadRequest, "handler.Projects.deleteByID")
+		respond.WriteJSONMessage(w, r, http.StatusBadRequest, e.Error())
+		return
+	}
+
+	userID, err := parseUUIDQueryParams(userIDstring)
+	if err != nil {
+		errorType := &model.InvalidUserIDError{Message: "user ID cannot be empty"}
+		e := recordError(ctx, span, errorType, ref.metrics.handlerCalls, metricCommonAttributes, http.StatusBadRequest, "handler.Projects.deleteByID")
+		respond.WriteJSONMessage(w, r, http.StatusBadRequest, e.Error())
+		return
+	}
+
 	id, err := parseUUIDQueryParams(r.PathValue("project_id"))
 	if err != nil {
 		e := recordError(ctx, span, err, ref.metrics.handlerCalls, metricCommonAttributes, http.StatusBadRequest, "handler.Projects.deleteByID")
@@ -337,7 +391,8 @@ func (ref *ProjectsHandler) deleteByID(w http.ResponseWriter, r *http.Request) {
 	}
 
 	input := &model.DeleteProjectInput{
-		ID: id,
+		ID:     id,
+		UserID: userID,
 	}
 
 	if err := ref.service.DeleteByID(ctx, input); err != nil {
@@ -374,6 +429,24 @@ func (ref *ProjectsHandler) list(w http.ResponseWriter, r *http.Request) {
 	ctx, span, metricCommonAttributes := setupContext(r, ref.ot.Traces.Tracer, "handler.Projects.list")
 	defer span.End()
 
+	claims := ctx.Value(middleware.JwtClaims).(map[string]any)
+
+	userIDstring, ok := claims["sub"].(string)
+	if !ok {
+		errorType := &model.InvalidUserIDError{Message: "user ID is not a uuid string"}
+		e := recordError(ctx, span, errorType, ref.metrics.handlerCalls, metricCommonAttributes, http.StatusBadRequest, "handler.Projects.list")
+		respond.WriteJSONMessage(w, r, http.StatusBadRequest, e.Error())
+		return
+	}
+
+	userID, err := parseUUIDQueryParams(userIDstring)
+	if err != nil {
+		errorType := &model.InvalidUserIDError{Message: "user ID cannot be empty"}
+		e := recordError(ctx, span, errorType, ref.metrics.handlerCalls, metricCommonAttributes, http.StatusBadRequest, "handler.Projects.list")
+		respond.WriteJSONMessage(w, r, http.StatusBadRequest, e.Error())
+		return
+	}
+
 	// parse the query parameters
 	params := map[string]any{
 		"sort":      r.URL.Query().Get("sort"),
@@ -397,6 +470,7 @@ func (ref *ProjectsHandler) list(w http.ResponseWriter, r *http.Request) {
 	}
 
 	input := &model.ListProjectsInput{
+		UserID: userID,
 		Sort:   sort,
 		Filter: filter,
 		Fields: fields,

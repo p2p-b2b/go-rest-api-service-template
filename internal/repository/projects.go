@@ -191,7 +191,7 @@ func (ref *ProjectsRepository) UpdateByID(ctx context.Context, input *model.Upda
 		return o11y.RecordError(ctx, span, err, ref.metrics.repositoryCalls, metricCommonAttributes, "repository.Projects.UpdateByID")
 	}
 
-	args := []any{input.ID}
+	args := []any{input.ID, input.UserID}
 
 	if input.Name != nil && *input.Name != "" {
 		args = append(args, *input.Name)
@@ -221,14 +221,27 @@ func (ref *ProjectsRepository) UpdateByID(ctx context.Context, input *model.Upda
 
 	query := `
         UPDATE projects SET
-            name        = COALESCE(NULLIF($2, ''), name),
-            description = COALESCE(NULLIF($3, ''), description),
-            disabled    = COALESCE($4, disabled),
-            updated_at  = $5
-        WHERE id = $1;
+            name        = COALESCE(NULLIF($3, ''), name),
+            description = COALESCE(NULLIF($4, ''), description),
+            disabled    = COALESCE($5, disabled),
+            updated_at  = $6
+        WHERE id = $1
+        AND (
+            -- 2. Add a security check that must pass
+            -- Condition A: The user is an admin
+            (SELECT admin FROM users WHERE id = $2) = TRUE
+            OR
+            -- Condition B: The user is assigned to this specific project
+            EXISTS (
+                SELECT 1
+                FROM projects_users
+                WHERE projects_id = $1
+                AND users_id = $2
+            )
+        );
     `
 
-	slog.Debug("repository.Projects.UpdateByID", "query", prettyPrint(query))
+	slog.Debug("repository.Projects.UpdateByID", "query", prettyPrint(query, args...))
 
 	result, err := ref.db.Exec(ctx, query, args...)
 	if err != nil {
@@ -263,10 +276,24 @@ func (ref *ProjectsRepository) DeleteByID(ctx context.Context, input *model.Dele
 	}
 
 	query := `
-        DELETE FROM projects WHERE id = $1;
+        DELETE FROM projects
+        WHERE id = $1
+        AND (
+            -- 2. Add a security check that must pass
+            -- Condition A: The user is an admin
+            (SELECT admin FROM users WHERE id = $2) = TRUE
+            OR
+            -- Condition B: The user is assigned to this specific project
+            EXISTS (
+                SELECT 1
+                FROM projects_users
+                WHERE projects_id = $1
+                AND users_id = $2
+            )
+        );
     `
 
-	_, err := ref.db.Exec(ctx, query, input.ID)
+	_, err := ref.db.Exec(ctx, query, input.ID, input.UserID)
 	if err != nil {
 		e := o11y.RecordError(ctx, span, err, ref.metrics.repositoryCalls, metricCommonAttributes, "repository.Projects.DeleteByID")
 		return ref.handlePgError(e, input)
@@ -278,7 +305,7 @@ func (ref *ProjectsRepository) DeleteByID(ctx context.Context, input *model.Dele
 }
 
 // SelectByID returns the project with the specified ID.
-func (ref *ProjectsRepository) SelectByID(ctx context.Context, id uuid.UUID) (*model.Project, error) {
+func (ref *ProjectsRepository) SelectByID(ctx context.Context, id, userID uuid.UUID) (*model.Project, error) {
 	ctx, span, metricCommonAttributes, cancel := ref.setupContext(ctx, "repository.Projects.SelectByID", ref.maxQueryTimeout)
 	defer cancel()
 	defer span.End()
@@ -292,21 +319,20 @@ func (ref *ProjectsRepository) SelectByID(ctx context.Context, id uuid.UUID) (*m
 
 	query := `
         SELECT
-            p.id,
-            p.name,
-            p.description,
-            p.disabled,
-            p.system,
-            p.created_at,
-            p.updated_at
-        FROM projects p
-        WHERE p.id = $1
-        GROUP BY p.id;
+            vp.id,
+            vp.name,
+            vp.description,
+            vp.disabled,
+            vp.system,
+            vp.created_at,
+            vp.updated_at
+        FROM view_projects_users vp
+        WHERE vp.id = $1 AND vp.user_id = $2;
     `
 
-	slog.Debug("repository.Projects.SelectByID", "query", prettyPrint(query))
+	slog.Debug("repository.Projects.SelectByID", "query", prettyPrint(query, id.String(), userID.String()))
 
-	row := ref.db.QueryRow(ctx, query, id.String())
+	row := ref.db.QueryRow(ctx, query, id.String(), userID.String())
 
 	var item model.Project
 
@@ -342,7 +368,7 @@ func (ref *ProjectsRepository) Select(ctx context.Context, input *model.SelectPr
 	}
 
 	// if no fields are provided, select all fields
-	sqlFieldsPrefix := "prjs."
+	sqlFieldsPrefix := "vp."
 	fieldsArray := []string{
 		"id",
 		"name",
@@ -359,26 +385,27 @@ func (ref *ProjectsRepository) Select(ctx context.Context, input *model.SelectPr
 	var filterQuery string
 	if input.Filter != "" {
 		filterSentence := injectPrefixToFields(sqlFieldsPrefix, input.Filter, model.ProjectFilterFields)
-		filterQuery = fmt.Sprintf("WHERE (%s)", filterSentence)
+		filterQuery = fmt.Sprintf("AND (%s)", filterSentence)
 	}
 
 	var sortQuery string
 	if input.Sort == "" {
-		sortQuery = "prjs.serial_id DESC, prjs.id DESC"
+		sortQuery = "vp.serial_id DESC, vp.id DESC"
 	} else {
 		sortQuery = input.Sort
 	}
 
 	// query template
 	queryTemplate := `
-        WITH prjs AS (
+        WITH vp AS (
             SELECT
                 {{.QueryColumns}}
-            FROM projects AS prjs
+            FROM view_projects_users AS vp
+            WHERE vp.user_id = $1
                 {{ .QueryWhere }}
             ORDER BY {{.QueryInternalSort}}
             LIMIT {{.QueryLimit}}
-        ) SELECT * FROM prjs ORDER BY {{.QueryExternalSort}}
+        ) SELECT * FROM vp ORDER BY {{.QueryExternalSort}}
     `
 
 	// struct to hold the query values
@@ -394,7 +421,7 @@ func (ref *ProjectsRepository) Select(ctx context.Context, input *model.SelectPr
 	queryValues.QueryColumns = template.HTML(fieldsStr)
 	queryValues.QueryWhere = template.HTML(filterQuery)
 	queryValues.QueryLimit = input.Paginator.Limit + 1 // Fetch one extra item
-	queryValues.QueryInternalSort = "prjs.serial_id DESC, prjs.id DESC"
+	queryValues.QueryInternalSort = "vp.serial_id DESC, vp.id DESC"
 	queryValues.QueryExternalSort = sortQuery
 
 	tokenDirection, id, serial, err := model.GetPaginatorDirection(input.Paginator.NextToken, input.Paginator.PrevToken)
@@ -402,7 +429,7 @@ func (ref *ProjectsRepository) Select(ctx context.Context, input *model.SelectPr
 		return nil, o11y.RecordError(ctx, span, err, ref.metrics.repositoryCalls, metricCommonAttributes, "repository.Projects.Select", "failed to get paginator direction")
 	}
 
-	queryValues.QueryWhere, queryValues.QueryInternalSort = buildPaginationCriteria("prjs", tokenDirection, id, serial, filterQuery, false)
+	queryValues.QueryWhere, queryValues.QueryInternalSort = buildPaginationCriteria("vp", tokenDirection, id, serial, filterQuery, false)
 
 	// render the template on query variable
 	var tpl bytes.Buffer
@@ -416,7 +443,7 @@ func (ref *ProjectsRepository) Select(ctx context.Context, input *model.SelectPr
 	slog.Debug("repository.Projects.Select", "query", prettyPrint(query))
 
 	// execute the query
-	rows, err := ref.db.Query(ctx, query)
+	rows, err := ref.db.Query(ctx, query, input.UserID)
 	if err != nil {
 		return nil, o11y.RecordError(ctx, span, err, ref.metrics.repositoryCalls, metricCommonAttributes, "repository.Projects.Select", "failed to select all projects")
 	}

@@ -71,18 +71,18 @@ func (mr *MockProjectsServiceMockRecorder) DeleteByID(ctx, input any) *gomock.Ca
 }
 
 // GetByID mocks base method.
-func (m *MockProjectsService) GetByID(ctx context.Context, id uuid.UUID) (*model.Project, error) {
+func (m *MockProjectsService) GetByID(ctx context.Context, id, userID uuid.UUID) (*model.Project, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetByID", ctx, id)
+	ret := m.ctrl.Call(m, "GetByID", ctx, id, userID)
 	ret0, _ := ret[0].(*model.Project)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetByID indicates an expected call of GetByID.
-func (mr *MockProjectsServiceMockRecorder) GetByID(ctx, id any) *gomock.Call {
+func (mr *MockProjectsServiceMockRecorder) GetByID(ctx, id, userID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByID", reflect.TypeOf((*MockProjectsService)(nil).GetByID), ctx, id)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByID", reflect.TypeOf((*MockProjectsService)(nil).GetByID), ctx, id, userID)
 }
 
 // List mocks base method.
