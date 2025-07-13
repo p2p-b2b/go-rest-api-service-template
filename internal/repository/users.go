@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"html/template"
@@ -13,6 +14,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/model"
@@ -67,6 +69,7 @@ func NewUsersRepository(conf UsersRepositoryConfig) (*UsersRepository, error) {
 		maxQueryTimeout: conf.MaxQueryTimeout,
 		ot:              conf.OT,
 	}
+
 	if conf.MetricsPrefix != "" {
 		repo.metricsPrefix = strings.ReplaceAll(conf.MetricsPrefix, "-", "_")
 		repo.metricsPrefix += "_"
@@ -77,7 +80,6 @@ func NewUsersRepository(conf UsersRepositoryConfig) (*UsersRepository, error) {
 		metric.WithDescription("The number of calls to the user repository"),
 	)
 	if err != nil {
-		slog.Error("repository.Users.NewUsersRepository", "error", err)
 		return nil, err
 	}
 
@@ -106,7 +108,7 @@ func (ref *UsersRepository) Insert(ctx context.Context, input *model.InsertUserI
 	defer span.End()
 
 	if input == nil {
-		errorValue := &model.InputIsInvalidError{Message: "input is nil"}
+		errorValue := &model.InvalidInputError{Message: "input is nil"}
 		return o11y.RecordError(ctx, span, errorValue, ref.metrics.repositoryCalls, metricCommonAttributes, "repository.Users.Insert")
 	}
 
@@ -116,25 +118,63 @@ func (ref *UsersRepository) Insert(ctx context.Context, input *model.InsertUserI
 		return o11y.RecordError(ctx, span, err, ref.metrics.repositoryCalls, metricCommonAttributes, "repository.Users.Insert")
 	}
 
-	query := `
-        INSERT INTO users (id, first_name, last_name, email, password_hash, disabled)
-        VALUES ($1, $2, $3, $4, $5, $6);
+	tx, txErr := ref.db.Begin(ctx)
+	if txErr != nil {
+		return o11y.RecordError(ctx, span, txErr, ref.metrics.repositoryCalls, metricCommonAttributes, "repository.Users.Insert", "failed to begin transaction")
+	}
+
+	defer func() {
+		if txErr != nil {
+			if err := tx.Rollback(ctx); err != nil {
+				e := o11y.RecordError(ctx, span, err, ref.metrics.repositoryCalls, metricCommonAttributes, "repository.Users.Insert", "failed to rollback transaction")
+				slog.Error("repository.Users.Insert", "error", e)
+			}
+		} else {
+			if err := tx.Commit(ctx); err != nil {
+				e := o11y.RecordError(ctx, span, err, ref.metrics.repositoryCalls, metricCommonAttributes, "repository.Users.Insert", "failed to commit transaction")
+				slog.Error("repository.Users.Insert", "error", e)
+			}
+		}
+	}()
+
+	// insert the user
+	query1 := `
+        INSERT INTO users (id, first_name, last_name, email, password_hash)
+        VALUES ($1, $2, $3, $4, $5);
     `
 
-	slog.Debug("repository.Users.Insert", "query", prettyPrint(query))
+	slog.Debug("repository.Users.Insert", "query", prettyPrint(query1))
 
-	_, err := ref.db.Exec(ctx, query,
+	_, txErr = tx.Exec(ctx, query1,
 		input.ID,
 		input.FirstName,
 		input.LastName,
 		input.Email,
 		input.PasswordHash,
-		input.Disabled,
 	)
-	if err != nil {
-		return ref.handlePgError(o11y.RecordError(ctx, span, err, ref.metrics.repositoryCalls, metricCommonAttributes, "repository.Users.Insert"), input)
+	if txErr != nil {
+		return ref.handlePgError(o11y.RecordError(ctx, span, txErr, ref.metrics.repositoryCalls, metricCommonAttributes, "repository.Users.Insert"), input)
 	}
 
+	// select from roles where default is true and link to the new user
+	query2 := `
+        WITH
+            default_roles AS (
+                SELECT id FROM roles WHERE auto_assign = true
+            )
+
+        INSERT INTO users_roles (users_id, roles_id)
+        SELECT $1, id FROM default_roles
+        ON CONFLICT (users_id, roles_id) DO NOTHING;
+    `
+
+	slog.Debug("repository.Users.Insert", "query", prettyPrint(query2))
+	_, txErr = tx.Exec(ctx, query2, input.ID)
+	if txErr != nil {
+		return o11y.RecordError(ctx, span, txErr, ref.metrics.repositoryCalls, metricCommonAttributes, "repository.Users.Insert")
+	}
+
+	slog.Debug("repository.Users.Insert", "user.id", input.ID)
 	o11y.RecordSuccess(ctx, span, ref.metrics.repositoryCalls, metricCommonAttributes, "user inserted successfully", attribute.String("user.id", input.ID.String()))
 
 	return nil
@@ -146,7 +186,7 @@ func (ref *UsersRepository) UpdateByID(ctx context.Context, input *model.UpdateU
 	defer span.End()
 
 	if input == nil {
-		errorValue := &model.InputIsInvalidError{Message: "input is nil"}
+		errorValue := &model.InvalidInputError{Message: "input is nil"}
 		return o11y.RecordError(ctx, span, errorValue, ref.metrics.repositoryCalls, metricCommonAttributes, "repository.Users.UpdateByID")
 	}
 
@@ -229,7 +269,7 @@ func (ref *UsersRepository) DeleteByID(ctx context.Context, input *model.DeleteU
 	defer span.End()
 
 	if input == nil {
-		errorValue := &model.InputIsInvalidError{Message: "input is nil"}
+		errorValue := &model.InvalidInputError{Message: "input is nil"}
 		return o11y.RecordError(ctx, span, errorValue, ref.metrics.repositoryCalls, metricCommonAttributes, "repository.Users.DeleteByID")
 	}
 
@@ -253,9 +293,9 @@ func (ref *UsersRepository) DeleteByID(ctx context.Context, input *model.DeleteU
 	if result.RowsAffected() == 0 {
 		// grateful return user was deleted, security reason, but log and record error
 		errorType := &model.UserNotFoundError{ID: input.ID.String()}
-		err := o11y.RecordError(ctx, span, errorType, ref.metrics.repositoryCalls, metricCommonAttributes, "repository.Users.DeleteByID")
-		if err != nil {
-			return nil
+		e := o11y.RecordError(ctx, span, errorType, ref.metrics.repositoryCalls, metricCommonAttributes, "repository.Users.DeleteByID")
+		if e != nil {
+			slog.Error("repository.Users.DeleteByID", "error", e)
 		}
 
 		return nil
@@ -307,7 +347,7 @@ func (ref *UsersRepository) SelectByID(ctx context.Context, id uuid.UUID) (*mode
 		&item.CreatedAt,
 		&item.UpdatedAt,
 	); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+		if errors.Is(err, pgx.ErrNoRows) {
 			errorType := &model.UserNotFoundError{ID: id.String()}
 			return nil, o11y.RecordError(ctx, span, errorType, ref.metrics.repositoryCalls, metricCommonAttributes, "repository.Users.SelectByID")
 		}
@@ -316,7 +356,6 @@ func (ref *UsersRepository) SelectByID(ctx context.Context, id uuid.UUID) (*mode
 	}
 
 	o11y.RecordSuccess(ctx, span, ref.metrics.repositoryCalls, metricCommonAttributes, "user selected successfully", attribute.String("user.id", id.String()))
-
 	return &item, nil
 }
 
@@ -328,18 +367,18 @@ func (ref *UsersRepository) SelectByEmail(ctx context.Context, email string) (*m
 	span.SetAttributes(attribute.String("user.email", email))
 
 	if email == "" {
-		errorType := &model.InvalidUserEmailError{Email: email}
+		errorType := &model.InvalidEmailError{Email: email}
 		return nil, o11y.RecordError(ctx, span, errorType, ref.metrics.repositoryCalls, metricCommonAttributes, "repository.Users.SelectByEmail", "email is empty")
 	}
 
 	if len(email) < model.ValidUserEmailMinLength || len(email) > model.ValidUserEmailMaxLength {
-		errorType := &model.InvalidUserEmailError{Email: email}
+		errorType := &model.InvalidEmailError{Email: email}
 		return nil, o11y.RecordError(ctx, span, errorType, ref.metrics.repositoryCalls, metricCommonAttributes, "repository.Users.SelectByEmail")
 	}
 
 	_, err := mail.ParseAddress(email)
 	if err != nil {
-		errorType := &model.InvalidUserEmailError{Email: email}
+		errorType := &model.InvalidEmailError{Email: email}
 		return nil, o11y.RecordError(ctx, span, errorType, ref.metrics.repositoryCalls, metricCommonAttributes, "repository.Users.SelectByEmail")
 	}
 
@@ -372,9 +411,10 @@ func (ref *UsersRepository) SelectByEmail(ctx context.Context, email string) (*m
 		&item.CreatedAt,
 		&item.UpdatedAt,
 	); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, &model.UserNotFoundError{Email: email}
 		}
+
 		return nil, o11y.RecordError(ctx, span, err, ref.metrics.repositoryCalls, metricCommonAttributes, "repository.Users.SelectByEmail", "scan failed")
 	}
 
@@ -383,13 +423,185 @@ func (ref *UsersRepository) SelectByEmail(ctx context.Context, email string) (*m
 	return &item, nil
 }
 
+func (ref *UsersRepository) SelectByRoleID(ctx context.Context, roleID uuid.UUID, input *model.ListUsersInput) (*model.SelectUsersOutput, error) {
+	ctx, span, metricCommonAttributes, cancel := ref.setupContext(ctx, "repository.Users.SelectByRoleID", ref.maxQueryTimeout)
+	defer cancel()
+	defer span.End()
+
+	if input == nil {
+		errorValue := &model.InvalidInputError{Message: "input is nil"}
+		return nil, o11y.RecordError(ctx, span, errorValue, ref.metrics.repositoryCalls, metricCommonAttributes, "repository.Users.SelectByRoleID")
+	}
+
+	if err := input.Validate(); err != nil {
+		return nil, o11y.RecordError(ctx, span, err, ref.metrics.repositoryCalls, metricCommonAttributes, "repository.Users.SelectByRoleID")
+	}
+
+	// if no fields are provided, select all fields
+	sqlFieldsPrefix := "usrs."
+	fieldsArray := []string{
+		"id",
+		"first_name",
+		"last_name",
+		"email",
+		"password_hash",
+		"disabled",
+		"created_at",
+		"updated_at",
+		"serial_id",
+	}
+
+	fieldsStr := buildFieldSelection(sqlFieldsPrefix, fieldsArray, input.Fields)
+
+	var filterQuery string
+	if input.Filter != "" {
+		filterSentence := injectPrefixToFields(sqlFieldsPrefix, input.Filter, model.UsersFilterFields)
+		filterQuery = fmt.Sprintf("WHERE (%s)", filterSentence)
+	}
+
+	var sortQuery string
+	if input.Sort == "" {
+		sortQuery = "usrs.serial_id DESC, usrs.id DESC"
+	} else {
+		sortQuery = input.Sort
+	}
+
+	// query template
+	queryTemplate := `
+        WITH usrs AS (
+            SELECT
+                {{.QueryColumns}}
+            FROM users AS usrs
+                -- roles
+                JOIN users_roles AS ur ON usrs.id = ur.users_id
+                JOIN roles AS rls ON ur.roles_id = rls.id
+            WHERE rls.id = $1
+            {{ .QueryWhere }}
+            ORDER BY {{.QueryInternalSort}}
+            LIMIT {{.QueryLimit}}
+        ) SELECT * FROM usrs ORDER BY {{.QueryExternalSort}}
+    `
+
+	// struct to hold the query values
+	var queryValues struct {
+		QueryColumns      template.HTML
+		QueryWhere        template.HTML
+		QueryLimit        int
+		QueryInternalSort string
+		QueryExternalSort string
+	}
+
+	// default values
+	queryValues.QueryColumns = template.HTML(fieldsStr)
+	queryValues.QueryWhere = template.HTML(filterQuery)
+	queryValues.QueryLimit = input.Paginator.Limit + 1 // Fetch one extra item
+	queryValues.QueryInternalSort = "usrs.serial_id DESC, usrs.id DESC"
+	queryValues.QueryExternalSort = sortQuery
+
+	tokenDirection, id, serial, err := model.GetPaginatorDirection(input.Paginator.NextToken, input.Paginator.PrevToken)
+	if err != nil {
+		return nil, o11y.RecordError(ctx, span, err, ref.metrics.repositoryCalls, metricCommonAttributes, "repository.Users.SelectByRoleID", "invalid token")
+	}
+
+	queryValues.QueryWhere, queryValues.QueryInternalSort = buildPaginationCriteria("usrs", tokenDirection, id, serial, filterQuery, true)
+
+	// render the template on query variable
+	var tpl bytes.Buffer
+	t := template.Must(template.New("query").Parse(queryTemplate))
+	err = t.Execute(&tpl, queryValues)
+	if err != nil {
+		return nil, o11y.RecordError(ctx, span, err, ref.metrics.repositoryCalls, metricCommonAttributes, "repository.Users.SelectByRoleID", "failed to render query template")
+	}
+
+	query := tpl.String()
+	slog.Debug("repository.Users.SelectByRoleID", "query", prettyPrint(query))
+
+	// execute the query
+	rows, err := ref.db.Query(ctx, query, roleID)
+	if err != nil {
+		return nil, o11y.RecordError(ctx, span, err, ref.metrics.repositoryCalls, metricCommonAttributes, "repository.Users.SelectByRoleID", "failed to select all users")
+	}
+	defer rows.Close()
+
+	var fetchedItems []model.User
+	for rows.Next() {
+		var item model.User
+
+		scanFields := ref.buildScanFields(&item, input.Fields)
+
+		if err := rows.Scan(scanFields...); err != nil {
+			return nil, o11y.RecordError(ctx, span, err, ref.metrics.repositoryCalls, metricCommonAttributes, "repository.Users.SelectByRoleID", "failed to scan user")
+		}
+
+		fetchedItems = append(fetchedItems, item)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, o11y.RecordError(ctx, span, rows.Err(), ref.metrics.repositoryCalls, metricCommonAttributes, "repository.Users.SelectByRoleID", "failed to scan all users")
+	}
+
+	hasMore := len(fetchedItems) > input.Paginator.Limit
+	displayItems := fetchedItems
+	if hasMore {
+		displayItems = fetchedItems[:input.Paginator.Limit]
+	}
+
+	outLen := len(displayItems)
+	if outLen == 0 {
+		return &model.SelectUsersOutput{
+			Items:     make([]model.User, 0),
+			Paginator: model.Paginator{},
+		}, nil
+	}
+
+	repoFoundMoreForNextQuery := false
+	repoFoundMoreForPrevQuery := false
+
+	switch tokenDirection {
+	case model.TokenDirectionNext: // Used 'next' token to get current page
+		repoFoundMoreForPrevQuery = true // Came from a previous page
+		repoFoundMoreForNextQuery = hasMore
+	case model.TokenDirectionPrev: // Used 'prev' token to get current page
+		repoFoundMoreForNextQuery = true // Came from a next page
+		repoFoundMoreForPrevQuery = hasMore
+	default: // Initial load (tokenDirection == model.TokenDirectionInvalid)
+		repoFoundMoreForNextQuery = hasMore
+		// repoFoundMoreForPrevQuery remains false, GetTokens will handle it
+	}
+
+	nextToken, prevToken := model.GetTokens(
+		outLen,
+		displayItems[0].ID,
+		displayItems[0].SerialID,
+		displayItems[outLen-1].ID,
+		displayItems[outLen-1].SerialID,
+		tokenDirection,
+		repoFoundMoreForNextQuery,
+		repoFoundMoreForPrevQuery,
+	)
+
+	ret := &model.SelectUsersOutput{
+		Items: displayItems,
+		Paginator: model.Paginator{
+			Size:      outLen,
+			Limit:     input.Paginator.Limit,
+			NextToken: nextToken,
+			PrevToken: prevToken,
+		},
+	}
+
+	o11y.RecordSuccess(ctx, span, ref.metrics.repositoryCalls, metricCommonAttributes, "users selected successfully")
+
+	return ret, nil
+}
+
 func (ref *UsersRepository) Select(ctx context.Context, input *model.SelectUsersInput) (*model.SelectUsersOutput, error) {
 	ctx, span, metricCommonAttributes, cancel := ref.setupContext(ctx, "repository.Users.Select", ref.maxQueryTimeout)
 	defer cancel()
 	defer span.End()
 
 	if input == nil {
-		errorValue := &model.InputIsInvalidError{Message: "input is nil"}
+		errorValue := &model.InvalidInputError{Message: "input is nil"}
 		return nil, o11y.RecordError(ctx, span, errorValue, ref.metrics.repositoryCalls, metricCommonAttributes, "repository.Users.Select")
 	}
 
@@ -459,7 +671,7 @@ func (ref *UsersRepository) Select(ctx context.Context, input *model.SelectUsers
 		return nil, o11y.RecordError(ctx, span, err, ref.metrics.repositoryCalls, metricCommonAttributes, "repository.Users.Select", "invalid token")
 	}
 
-	queryValues.QueryWhere, queryValues.QueryInternalSort = buildPaginationCriteria("usrs", tokenDirection, id, serial, filterQuery)
+	queryValues.QueryWhere, queryValues.QueryInternalSort = buildPaginationCriteria("usrs", tokenDirection, id, serial, filterQuery, false)
 
 	// render the template on query variable
 	var tpl bytes.Buffer
@@ -549,6 +761,197 @@ func (ref *UsersRepository) Select(ctx context.Context, input *model.SelectUsers
 	o11y.RecordSuccess(ctx, span, ref.metrics.repositoryCalls, metricCommonAttributes, "users selected successfully")
 
 	return ret, nil
+}
+
+func (ref *UsersRepository) LinkRoles(ctx context.Context, input *model.LinkRolesToUserInput) error {
+	ctx, span, metricCommonAttributes, cancel := ref.setupContext(ctx, "repository.Users.LinkRoles", ref.maxQueryTimeout)
+	defer cancel()
+	defer span.End()
+
+	if input == nil {
+		errorValue := &model.InvalidInputError{Message: "input is nil"}
+		return o11y.RecordError(ctx, span, errorValue, ref.metrics.repositoryCalls, metricCommonAttributes, "repository.Users.LinkRoles")
+	}
+
+	span.SetAttributes(attribute.String("user.id", input.UserID.String()))
+
+	if err := input.Validate(); err != nil {
+		return o11y.RecordError(ctx, span, err, ref.metrics.repositoryCalls, metricCommonAttributes, "repository.Users.LinkRoles")
+	}
+
+	var userRoles bytes.Buffer
+	for i, roleID := range input.RoleIDs {
+		_, err := userRoles.WriteString(fmt.Sprintf("('%s', '%s')", input.UserID, roleID))
+		if err != nil {
+			slog.Error("repository.Users.LinkRoles", "error", err)
+			return err
+		}
+
+		if i < len(input.RoleIDs)-1 {
+			_, err := userRoles.WriteString(", ")
+			if err != nil {
+				slog.Error("repository.Users.LinkRoles", "error", err)
+				return err
+			}
+		}
+	}
+
+	query2 := fmt.Sprintf(`
+        -- insert the new roles
+        INSERT INTO users_roles (users_id, roles_id)
+        VALUES %s
+        ON CONFLICT (users_id, roles_id)
+        DO UPDATE SET updated_at = NOW();
+    `,
+		userRoles.String(),
+	)
+
+	slog.Debug("repository.Users.LinkRoles", "query", prettyPrint(query2))
+
+	_, err := ref.db.Exec(ctx, query2)
+	if err != nil {
+		return o11y.RecordError(ctx, span, err, ref.metrics.repositoryCalls, metricCommonAttributes, "repository.Users.LinkRoles", "failed to link roles")
+	}
+
+	o11y.RecordSuccess(ctx, span, ref.metrics.repositoryCalls, metricCommonAttributes, "roles linked successfully")
+
+	return nil
+}
+
+func (ref *UsersRepository) UnLinkRoles(ctx context.Context, input *model.UnLinkRolesFromUsersInput) error {
+	ctx, span, metricCommonAttributes, cancel := ref.setupContext(ctx, "repository.Users.UnLinkRoles", ref.maxQueryTimeout)
+	defer cancel()
+	defer span.End()
+
+	if input == nil {
+		errorValue := &model.InvalidInputError{Message: "input is nil"}
+		return o11y.RecordError(ctx, span, errorValue, ref.metrics.repositoryCalls, metricCommonAttributes, "repository.Users.UnLinkRoles")
+	}
+
+	span.SetAttributes(attribute.String("user.id", input.UserID.String()))
+
+	if err := input.Validate(); err != nil {
+		return o11y.RecordError(ctx, span, err, ref.metrics.repositoryCalls, metricCommonAttributes, "repository.Users.UnLinkRoles")
+	}
+
+	var rolesIn bytes.Buffer
+	for i, roleID := range input.RoleIDs {
+		_, err := rolesIn.WriteString(fmt.Sprintf("'%s'", roleID))
+		if err != nil {
+			slog.Error("repository.Users.UnLinkRoles", "error", err)
+			return err
+		}
+
+		if i < len(input.RoleIDs)-1 {
+			_, err := rolesIn.WriteString(", ")
+			if err != nil {
+				slog.Error("repository.Users.UnLinkRoles", "error", err)
+				return err
+			}
+		}
+	}
+
+	queryString := fmt.Sprintf(`
+        DELETE FROM users_roles
+        WHERE users_id = '%s' AND roles_id IN (%s);
+    `,
+		input.UserID,
+		rolesIn.String(),
+	)
+
+	slog.Debug("repository.Users.UnLinkRoles", "query", prettyPrint(queryString))
+
+	_, err := ref.db.Exec(ctx, queryString)
+	if err != nil {
+		return o11y.RecordError(ctx, span, err, ref.metrics.repositoryCalls, metricCommonAttributes, "repository.Users.UnLinkRoles", "failed to unlink roles")
+	}
+
+	o11y.RecordSuccess(ctx, span, ref.metrics.repositoryCalls, metricCommonAttributes, "roles unlinked successfully")
+
+	return nil
+}
+
+func (ref *UsersRepository) SelectAuthz(ctx context.Context, userID uuid.UUID) (map[string]any, error) {
+	ctx, span, metricCommonAttributes, cancel := ref.setupContext(ctx, "repository.Users.SelectAuthz", ref.maxQueryTimeout)
+	defer cancel()
+	defer span.End()
+
+	span.SetAttributes(attribute.String("user.id", userID.String()))
+
+	if userID == uuid.Nil {
+		errorType := &model.InvalidUserIDError{Message: "user id is nil"}
+		return nil, o11y.RecordError(ctx, span, errorType, ref.metrics.repositoryCalls, metricCommonAttributes, "repository.Users.SelectAuthz", "user id is nil")
+	}
+
+	query := `
+        SELECT
+            json_build_object(
+                'permissions', json_build_object(
+                    'users', json_build_object (
+                        dpm.id, json_object_agg(dpm.allowed_resource, dpm.allowed_action)
+                    )
+                )
+            )
+        FROM (
+            SELECT
+                dp.allowed_resource as allowed_resource,
+                array_agg(dp.allowed_action) AS allowed_action,
+                dp.id as id
+            FROM (
+                SELECT
+                    DISTINCT
+                        pol.allowed_action AS allowed_action,
+                        pol.allowed_resource AS allowed_resource,
+                        u.id
+                FROM users AS u, users_roles AS ur, roles AS r, roles_policies AS rpol, policies AS pol
+                WHERE u.id = ur.users_id
+                    AND ur.roles_id = r.id
+                    AND r.id = rpol.roles_id
+                    AND rpol.policies_id = pol.id
+                    AND u.id = $1
+            ) AS dp
+            GROUP BY dp.id, dp.allowed_resource
+        ) dpm
+        GROUP BY id;
+    `
+
+	slog.Debug("repository.Users.SelectAuthz", "query", prettyPrint(query))
+
+	rows, err := ref.db.Query(ctx, query, userID)
+	if err != nil {
+		return nil, o11y.RecordError(ctx, span, err, ref.metrics.repositoryCalls, metricCommonAttributes, "repository.Users.SelectAuthz", "failed to select user roles")
+	}
+	defer rows.Close()
+
+	var item map[string]any
+	var jsonString string
+
+	for rows.Next() {
+		if err := rows.Scan(
+			&jsonString,
+		); err != nil {
+			return nil, o11y.RecordError(ctx, span, err, ref.metrics.repositoryCalls, metricCommonAttributes, "repository.Users.SelectAuthz", "failed to scan user roles")
+		}
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, o11y.RecordError(ctx, span, rows.Err(), ref.metrics.repositoryCalls, metricCommonAttributes, "repository.Users.SelectAuthz", "failed to scan all user roles")
+	}
+
+	// if the user does not have any roles and permissions, return an empty map
+	if len(jsonString) == 0 {
+		slog.Warn("repository.Users.SelectAuthz", "what", "user does not have any roles and permissions")
+		return make(map[string]any), nil
+	}
+
+	slog.Debug("repository.Users.SelectAuthz", "jsonString", jsonString)
+	if err := json.Unmarshal([]byte(jsonString), &item); err != nil {
+		return nil, o11y.RecordError(ctx, span, err, ref.metrics.repositoryCalls, metricCommonAttributes, "repository.Users.SelectAuthz", "failed to unmarshal user roles")
+	}
+
+	o11y.RecordSuccess(ctx, span, ref.metrics.repositoryCalls, metricCommonAttributes, "user roles selected successfully")
+
+	return item, nil
 }
 
 // Helper functions for common patterns

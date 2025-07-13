@@ -2,9 +2,7 @@ package handler
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"log/slog"
 	"net/http"
 	"strings"
 	"time"
@@ -16,11 +14,6 @@ import (
 	"go.opentelemetry.io/otel/metric"
 )
 
-var (
-	ErrInvalidService       = errors.New("invalid service")
-	ErrInvalidOpenTelemetry = errors.New("invalid open telemetry")
-)
-
 //go:generate go tool mockgen -package=mocks -destination=../../../mocks/handler/health.go -source=health.go HealthService
 
 // HealthService represents the service for the health.
@@ -28,7 +21,7 @@ type HealthService interface {
 	HealthCheck(ctx context.Context) (model.Health, error)
 }
 
-// HealthHandler represents the handler for the health.
+// HealthHandlerConf represents the configuration for the HealthHandler.
 type HealthHandlerConf struct {
 	Service       HealthService
 	OT            *o11y.OpenTelemetry
@@ -50,36 +43,34 @@ type HealthHandler struct {
 // NewHealthHandler creates a new health handler.
 func NewHealthHandler(conf HealthHandlerConf) (*HealthHandler, error) {
 	if conf.Service == nil {
-		slog.Error("service is required")
-		return nil, ErrInvalidService
+		return nil, &model.InvalidServiceError{Message: "HealthService is required"}
 	}
 
 	if conf.OT == nil {
-		slog.Error("open telemetry is required")
-		return nil, ErrInvalidOpenTelemetry
+		return nil, &model.InvalidOTConfigurationError{Message: "OpenTelemetry is required"}
 	}
 
-	uh := &HealthHandler{
+	handler := &HealthHandler{
 		service: conf.Service,
 		ot:      conf.OT,
 	}
 
 	if conf.MetricsPrefix != "" {
-		uh.metricsPrefix = strings.ReplaceAll(conf.MetricsPrefix, "-", "_")
-		uh.metricsPrefix += "_"
+		handler.metricsPrefix = strings.ReplaceAll(conf.MetricsPrefix, "-", "_")
+		handler.metricsPrefix += "_"
 	}
 
-	handlerCalls, err := uh.ot.Metrics.Meter.Int64Counter(
-		fmt.Sprintf("%s%s", uh.metricsPrefix, "handlers_calls_total"),
+	handlerCalls, err := handler.ot.Metrics.Meter.Int64Counter(
+		fmt.Sprintf("%s%s", handler.metricsPrefix, "handlers_calls_total"),
 		metric.WithDescription("The number of calls to the health handler"),
 	)
 	if err != nil {
-		slog.Error("handler.Health.registerMetrics", "error", err)
 		return nil, err
 	}
-	uh.metrics.handlerCalls = handlerCalls
 
-	return uh, nil
+	handler.metrics.handlerCalls = handlerCalls
+
+	return handler, nil
 }
 
 // RegisterRoutes registers the routes on the mux.
@@ -91,25 +82,33 @@ func (ref *HealthHandler) RegisterRoutes(mux *http.ServeMux, middlewares ...midd
 
 // getStatus Get the health of the health service
 //
-//	@ID				0986a6ff-aa83-4b06-9a16-7e338eaa50d1
-//	@Summary		Check health status
-//	@Description	Check health status of the service pinging the database and go metrics
+//	@ID				019791cc-06c7-7e57-8be6-a6f650ad5431
+//	@Summary		Check health
+//	@Description	Check service health status including database connectivity and system metrics
 //	@Tags			Health
 //	@Produce		json
 //	@Success		200	{object}	model.Health
 //	@Failure		500	{object}	model.HTTPMessage
 //	@Router			/health/status [get]
 func (ref *HealthHandler) getStatus(w http.ResponseWriter, r *http.Request) {
-	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+	ctx, span, metricCommonAttributes := setupContext(r, ref.ot.Traces.Tracer, "handler.Health.getStatus")
+	defer span.End()
+
+	ctxWithTimeout, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
-	health, err := ref.service.HealthCheck(ctx)
+
+	out, err := ref.service.HealthCheck(ctxWithTimeout)
 	if err != nil {
-		respond.WriteJSONMessage(w, r, http.StatusInternalServerError, ErrInternalServerError.Error())
+		e := recordError(ctx, span, err, ref.metrics.handlerCalls, metricCommonAttributes, http.StatusInternalServerError, "handler.Health.getStatus")
+		respond.WriteJSONMessage(w, r, http.StatusInternalServerError, e.Error())
 		return
 	}
 
-	if err := respond.WriteJSONData(w, http.StatusOK, health); err != nil {
-		respond.WriteJSONMessage(w, r, http.StatusInternalServerError, ErrInternalServerError.Error())
+	if err := respond.WriteJSONData(w, http.StatusOK, out); err != nil {
+		e := recordError(ctx, span, err, ref.metrics.handlerCalls, metricCommonAttributes, http.StatusInternalServerError, "handler.Health.getStatus")
+		respond.WriteJSONMessage(w, r, http.StatusInternalServerError, e.Error())
 		return
 	}
+
+	recordSuccess(ctx, span, ref.metrics.handlerCalls, metricCommonAttributes, http.StatusOK, "health status checked")
 }

@@ -11,17 +11,336 @@
         "version": "v1"
     },
     "paths": {
+        "/auth/login": {
+            "post": {
+                "description": "Authenticate user credentials and return JWT access and refresh tokens",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Login user",
+                "operationId": "019791cc-06c7-7d8c-81e4-914dd89098e8",
+                "parameters": [
+                    {
+                        "description": "The information of the user to login",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.LoginUserRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.LoginUserResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/logout": {
+            "delete": {
+                "security": [
+                    {
+                        "AccessToken": []
+                    }
+                ],
+                "description": "Logout user and invalidate session tokens",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Logout user",
+                "operationId": "019791cc-06c7-7e4c-961c-b1bf5f40d633",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/refresh": {
+            "post": {
+                "security": [
+                    {
+                        "RefreshToken": []
+                    }
+                ],
+                "description": "Generate new access token using valid refresh token",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Refresh access token",
+                "operationId": "019791cc-06c7-7e50-a5b6-bd1c82d5c031",
+                "parameters": [
+                    {
+                        "description": "The refresh token to use",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.RefreshTokenRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.RefreshTokenResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/register": {
+            "post": {
+                "description": "Create a new user account and send email verification",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Register user",
+                "operationId": "019791cc-06c7-7e38-ac82-6919df575ff7",
+                "parameters": [
+                    {
+                        "description": "The information of the user to register",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.RegisterUserRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/verify": {
+            "post": {
+                "description": "Resend account verification email to user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Resend verification",
+                "operationId": "019791cc-06c7-7e48-b046-99f072088c50",
+                "parameters": [
+                    {
+                        "description": "The email of the user to re-verify",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.ReVerifyUserRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/verify/{jwt}": {
+            "get": {
+                "description": "Verify user account using JWT verification token",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Verify user",
+                "operationId": "019791cc-06c7-7e40-bcc3-149cd13bee44",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "jwt",
+                        "description": "The JWT token to use",
+                        "name": "jwt",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    }
+                }
+            }
+        },
         "/health/status": {
             "get": {
-                "description": "Check health status of the service pinging the database and go metrics",
+                "description": "Check service health status including database connectivity and system metrics",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Health"
                 ],
-                "summary": "Check health status",
-                "operationId": "0986a6ff-aa83-4b06-9a16-7e338eaa50d1",
+                "summary": "Check health",
+                "operationId": "019791cc-06c7-7e57-8be6-a6f650ad5431",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -38,9 +357,2381 @@
                 }
             }
         },
+        "/policies": {
+            "get": {
+                "security": [
+                    {
+                        "AccessToken": []
+                    }
+                ],
+                "description": "Retrieve paginated list of all policies in the system",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Policies"
+                ],
+                "summary": "List policies",
+                "operationId": "019791cc-06c7-7e73-96aa-7e0383caae0d",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "string",
+                        "description": "Comma-separated list of fields to sort by. Example: first_name ASC, created_at DESC",
+                        "name": "sort",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "format": "string",
+                        "description": "Filter field. Example: id=1 AND first_name='John'",
+                        "name": "filter",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "format": "string",
+                        "description": "Fields to return. Example: id,first_name,last_name",
+                        "name": "fields",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "format": "string",
+                        "description": "Next cursor",
+                        "name": "next_token",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "format": "string",
+                        "description": "Previous cursor",
+                        "name": "prev_token",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "format": "int",
+                        "description": "Limit",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.ListPoliciesResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "AccessToken": []
+                    }
+                ],
+                "description": "Create a new policy with specified permissions",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Policies"
+                ],
+                "summary": "Create policy",
+                "operationId": "019791cc-06c7-7e63-8ec9-de5b38235dbf",
+                "parameters": [
+                    {
+                        "description": "Create policy Request",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.CreatePolicyRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    }
+                }
+            }
+        },
+        "/policies/{policy_id}": {
+            "get": {
+                "security": [
+                    {
+                        "AccessToken": []
+                    }
+                ],
+                "description": "Retrieve a specific policy by its unique identifier",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Policies"
+                ],
+                "summary": "Get policy",
+                "operationId": "019791cc-06c7-7e5b-b363-1ef381f1e832",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "The policy id in UUID format",
+                        "name": "policy_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.Policy"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "AccessToken": []
+                    }
+                ],
+                "description": "Modify an existing policy by its ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Policies"
+                ],
+                "summary": "Update policy",
+                "operationId": "019791cc-06c7-7e67-9e1b-49a34edfe07c",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "The policy id in UUID format",
+                        "name": "policy_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Update policy Request",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.UpdatePolicyRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "AccessToken": []
+                    }
+                ],
+                "description": "Remove a policy permanently from the system",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Policies"
+                ],
+                "summary": "Delete policy",
+                "operationId": "019791cc-06c7-7e6b-b308-a2b2cbc2aaa1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "The policy id in UUID format",
+                        "name": "policy_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    }
+                }
+            }
+        },
+        "/policies/{policy_id}/roles": {
+            "get": {
+                "security": [
+                    {
+                        "AccessToken": []
+                    }
+                ],
+                "description": "Retrieve paginated list of roles associated with a specific policy",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Roles",
+                    "Policies"
+                ],
+                "summary": "List roles by policy",
+                "operationId": "019791cc-06c7-7ecd-93da-d21bac8fd613",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "The policy id in UUID format",
+                        "name": "policy_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "format": "string",
+                        "description": "Comma-separated list of fields to sort by. Example: first_name ASC, created_at DESC",
+                        "name": "sort",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "format": "string",
+                        "description": "Filter field. Example: id=1 AND first_name='John'",
+                        "name": "filter",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "format": "string",
+                        "description": "Fields to return. Example: id,first_name,last_name",
+                        "name": "fields",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "format": "string",
+                        "description": "Next cursor",
+                        "name": "next_token",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "format": "string",
+                        "description": "Previous cursor",
+                        "name": "prev_token",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "format": "int",
+                        "description": "Limit",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.ListRolesResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "AccessToken": []
+                    }
+                ],
+                "description": "Associate multiple roles with a specific policy for authorization",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Policies",
+                    "Roles"
+                ],
+                "summary": "Link roles to policy",
+                "operationId": "019791cc-06c7-7e77-a2c3-4ed693a2bcdd",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "The policy id in UUID format",
+                        "name": "policy_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Link policy to roles Request",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.LinkRolesToPolicyRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "AccessToken": []
+                    }
+                ],
+                "description": "Remove role associations from a specific policy",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Policies",
+                    "Roles"
+                ],
+                "summary": "Unlink roles from policy",
+                "operationId": "019791cc-06c7-7e7b-bdfc-381b015c44e7",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "The policy id in UUID format",
+                        "name": "policy_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Unlink policy from roles Request",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.UnlinkRolesFromPolicyRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    }
+                }
+            }
+        },
+        "/products": {
+            "get": {
+                "security": [
+                    {
+                        "AccessToken": []
+                    }
+                ],
+                "description": "Retrieve paginated list of all products in the system",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Products"
+                ],
+                "summary": "List products",
+                "operationId": "01979db7-f53f-73b5-a499-d6390831c94c",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "string",
+                        "description": "Comma-separated list of fields to sort by. Example: first_name ASC, created_at DESC",
+                        "name": "sort",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "format": "string",
+                        "description": "Filter field. Example: id=1 AND first_name='John'",
+                        "name": "filter",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "format": "string",
+                        "description": "Fields to return. Example: id,first_name,last_name",
+                        "name": "fields",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "format": "string",
+                        "description": "Next cursor",
+                        "name": "next_token",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "format": "string",
+                        "description": "Previous cursor",
+                        "name": "prev_token",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "format": "int",
+                        "description": "Limit",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.ListProductsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    }
+                }
+            }
+        },
+        "/projects": {
+            "get": {
+                "security": [
+                    {
+                        "AccessToken": []
+                    }
+                ],
+                "description": "Retrieve paginated list of all projects in the system",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Projects"
+                ],
+                "summary": "List projects",
+                "operationId": "019797e6-138a-7cf1-b7bb-fa9c5e168c49",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "string",
+                        "description": "Comma-separated list of fields to sort by. Example: first_name ASC, created_at DESC",
+                        "name": "sort",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "format": "string",
+                        "description": "Filter field. Example: id=1 AND first_name='John'",
+                        "name": "filter",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "format": "string",
+                        "description": "Fields to return. Example: id,first_name,last_name",
+                        "name": "fields",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "format": "string",
+                        "description": "Next cursor",
+                        "name": "next_token",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "format": "string",
+                        "description": "Previous cursor",
+                        "name": "prev_token",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "format": "int",
+                        "description": "Limit",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.ListProjectsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "AccessToken": []
+                    }
+                ],
+                "description": "Create a new project with specified configuration",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Projects"
+                ],
+                "summary": "Create project",
+                "operationId": "019797e6-138a-7d00-98db-740f21794f11",
+                "parameters": [
+                    {
+                        "description": "Create Project Request",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.CreateProjectRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    }
+                }
+            }
+        },
+        "/projects/{project_id}": {
+            "get": {
+                "security": [
+                    {
+                        "AccessToken": []
+                    }
+                ],
+                "description": "Retrieve a specific project by its unique identifier",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Projects"
+                ],
+                "summary": "Get project",
+                "operationId": "019797e6-138a-7d04-8db3-1d4755b25db3",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "The project id in UUID format",
+                        "name": "project_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.Project"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "AccessToken": []
+                    }
+                ],
+                "description": "Modify an existing project by its ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Projects"
+                ],
+                "summary": "Update project",
+                "operationId": "019797e6-138a-7cf8-9887-e4c44ad0ae19",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "The project id in UUID format",
+                        "name": "project_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Update Project Request",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.UpdateProjectRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "AccessToken": []
+                    }
+                ],
+                "description": "Remove a project permanently from the system",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Projects"
+                ],
+                "summary": "Delete project",
+                "operationId": "019797e6-138a-7cf4-8694-e4611baded39",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "The project id in UUID format",
+                        "name": "project_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    }
+                }
+            }
+        },
+        "/projects/{project_id}/products": {
+            "get": {
+                "security": [
+                    {
+                        "AccessToken": []
+                    }
+                ],
+                "description": "Retrieve paginated list of products for a specific project",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Products",
+                    "Projects"
+                ],
+                "summary": "List products by project",
+                "operationId": "01979db7-f53f-73b1-993f-15f77e72c8cc",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "The project id in UUID format",
+                        "name": "project_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "format": "string",
+                        "description": "Comma-separated list of fields to sort by. Example: first_name ASC, created_at DESC",
+                        "name": "sort",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "format": "string",
+                        "description": "Filter field. Example: id=1 AND first_name='John'",
+                        "name": "filter",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "format": "string",
+                        "description": "Fields to return. Example: id,first_name,last_name",
+                        "name": "fields",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "format": "string",
+                        "description": "Next cursor",
+                        "name": "next_token",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "format": "string",
+                        "description": "Previous cursor",
+                        "name": "prev_token",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "format": "int",
+                        "description": "Limit",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.ListProductsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "AccessToken": []
+                    }
+                ],
+                "description": "Create a new product with specified configuration",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Products",
+                    "Projects"
+                ],
+                "summary": "Create product",
+                "operationId": "01979db7-f53f-73a5-b916-297c6db5b714",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "The project id in UUID format",
+                        "name": "project_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Create product request",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.CreateProductRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    }
+                }
+            }
+        },
+        "/projects/{project_id}/products/{product_id}": {
+            "get": {
+                "security": [
+                    {
+                        "AccessToken": []
+                    }
+                ],
+                "description": "Retrieve a specific product by its unique identifier",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Products",
+                    "Projects"
+                ],
+                "summary": "Get product",
+                "operationId": "01979db7-f53f-73a1-aab2-74802b79be51",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "The project id in UUID format",
+                        "name": "project_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "The product id in UUID format",
+                        "name": "product_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.Product"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "AccessToken": []
+                    }
+                ],
+                "description": "Modify an existing product by its ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Products",
+                    "Projects"
+                ],
+                "summary": "Update product",
+                "operationId": "01979db7-f53f-73a9-bd58-e1cd5d7df436",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "The project id in UUID format",
+                        "name": "project_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "The model id in UUID format",
+                        "name": "product_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Update product request",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.UpdateProductRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "AccessToken": []
+                    }
+                ],
+                "description": "Remove a product permanently from the system",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Products",
+                    "Projects"
+                ],
+                "summary": "Delete product",
+                "operationId": "01979db7-f53f-73ad-a84e-49bbdfe9e5c9",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "The project id in UUID format",
+                        "name": "project_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "The product id in UUID format",
+                        "name": "product_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    }
+                }
+            }
+        },
+        "/projects/{project_id}/products/{product_id}/payment_processor": {
+            "post": {
+                "security": [
+                    {
+                        "AccessToken": []
+                    }
+                ],
+                "description": "Associate a product with a payment processor to enable billing and invoicing",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Products",
+                    "Projects"
+                ],
+                "summary": "Link product to payment processor",
+                "operationId": "01979db7-f53f-73bd-b6c0-4541a48549c2",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "The project id in UUID format",
+                        "name": "project_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "The product id in UUID format",
+                        "name": "product_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Link product to payment processor request",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.LinkProductToPaymentProcessorRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "AccessToken": []
+                    }
+                ],
+                "description": "Remove the association between a product and a payment processor",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Products",
+                    "Projects"
+                ],
+                "summary": "Unlink product from payment processor",
+                "operationId": "01979db7-f53f-73b9-818f-cdd1848f15d0",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "The project id in UUID format",
+                        "name": "project_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "The product id in UUID format",
+                        "name": "product_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Unlink product from payment processor request",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.UnlinkProductFromPaymentProcessorRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    }
+                }
+            }
+        },
+        "/resources": {
+            "get": {
+                "security": [
+                    {
+                        "AccessToken": []
+                    }
+                ],
+                "description": "Retrieve paginated list of all resources in the system",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Resources"
+                ],
+                "summary": "List resources",
+                "operationId": "019791cc-06c7-7e8e-8d7e-cd3f9296e0fd",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "string",
+                        "description": "Comma-separated list of fields to sort by. Example: first_name ASC, created_at DESC",
+                        "name": "sort",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "format": "string",
+                        "description": "Filter field. Example: id=1 AND first_name='John'",
+                        "name": "filter",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "format": "string",
+                        "description": "Fields to return. Example: id,first_name,last_name",
+                        "name": "fields",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "format": "string",
+                        "description": "Next cursor",
+                        "name": "next_token",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "format": "string",
+                        "description": "Previous cursor",
+                        "name": "prev_token",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "format": "int",
+                        "description": "Limit",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.ListResourcesResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    }
+                }
+            }
+        },
+        "/resources/matches": {
+            "get": {
+                "security": [
+                    {
+                        "AccessToken": []
+                    }
+                ],
+                "description": "Find resources that match specific action and resource policy patterns",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Resources"
+                ],
+                "summary": "Match resources",
+                "operationId": "019791cc-06c7-7e92-9152-cb35902f79c4",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "string",
+                        "description": "Action to filter by",
+                        "name": "action",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "format": "string",
+                        "description": "Resource to filter by",
+                        "name": "resource",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "format": "string",
+                        "description": "Comma-separated list of fields to sort by. Example: first_name ASC, created_at DESC",
+                        "name": "sort",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "format": "string",
+                        "description": "Fields to return. Example: id,first_name,last_name",
+                        "name": "fields",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "format": "string",
+                        "description": "Next cursor",
+                        "name": "next_token",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "format": "string",
+                        "description": "Previous cursor",
+                        "name": "prev_token",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "format": "int",
+                        "description": "Limit",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.ListResourcesResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    }
+                }
+            }
+        },
+        "/resources/{resource_id}": {
+            "get": {
+                "security": [
+                    {
+                        "AccessToken": []
+                    }
+                ],
+                "description": "Retrieve a specific resource by its identifier",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Resources"
+                ],
+                "summary": "Get resource",
+                "operationId": "019791cc-06c7-7e86-ad42-b777bfcc9e40",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "The permission id in UUID format",
+                        "name": "resource_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.Resource"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    }
+                }
+            }
+        },
+        "/roles": {
+            "get": {
+                "security": [
+                    {
+                        "AccessToken": []
+                    }
+                ],
+                "description": "Retrieve paginated list of all roles in the system",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Roles"
+                ],
+                "summary": "List roles",
+                "operationId": "019791cc-06c7-7ead-968a-2a457714a7ee",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "string",
+                        "description": "Comma-separated list of fields to sort by. Example: first_name ASC, created_at DESC",
+                        "name": "sort",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "format": "string",
+                        "description": "Filter field. Example: id=1 AND first_name='John'",
+                        "name": "filter",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "format": "string",
+                        "description": "Fields to return. Example: id,first_name,last_name",
+                        "name": "fields",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "format": "string",
+                        "description": "Next cursor",
+                        "name": "next_token",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "format": "string",
+                        "description": "Previous cursor",
+                        "name": "prev_token",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "format": "int",
+                        "description": "Limit",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.ListRolesResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "AccessToken": []
+                    }
+                ],
+                "description": "Create a new role with specified permissions and access levels",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Roles"
+                ],
+                "summary": "Create role",
+                "operationId": "019791cc-06c7-7e9e-87bf-dcedfa5aefa7",
+                "parameters": [
+                    {
+                        "description": "Create role request",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.CreateRoleRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    }
+                }
+            }
+        },
+        "/roles/{role_id}": {
+            "get": {
+                "security": [
+                    {
+                        "AccessToken": []
+                    }
+                ],
+                "description": "Retrieve a specific role by its unique identifier",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Roles"
+                ],
+                "summary": "Get role",
+                "operationId": "019791cc-06c7-7e96-a284-ad37f86475bd",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "The role id in UUID format",
+                        "name": "role_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.Role"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "AccessToken": []
+                    }
+                ],
+                "description": "Modify an existing role by its ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Roles"
+                ],
+                "summary": "Update role",
+                "operationId": "019791cc-06c7-7ea2-8f0e-7b9f7cbc203a",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "The model id in UUID format",
+                        "name": "role_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Update role request",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.UpdateRoleRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "AccessToken": []
+                    }
+                ],
+                "description": "Remove a role permanently from the system",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Roles"
+                ],
+                "summary": "Delete role",
+                "operationId": "019791cc-06c7-7ea6-9423-184c13540c26",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "The role id in UUID format",
+                        "name": "role_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    }
+                }
+            }
+        },
+        "/roles/{role_id}/policies": {
+            "get": {
+                "security": [
+                    {
+                        "AccessToken": []
+                    }
+                ],
+                "description": "Retrieve paginated list of policies associated with a specific role",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Policies",
+                    "Roles"
+                ],
+                "summary": "List policies by role",
+                "operationId": "019791cc-06c7-7e82-967d-e13c399f5018",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "The role id in UUID format",
+                        "name": "role_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "format": "string",
+                        "description": "Comma-separated list of fields to sort by. Example: first_name ASC, created_at DESC",
+                        "name": "sort",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "format": "string",
+                        "description": "Filter field. Example: id=1 AND first_name='John'",
+                        "name": "filter",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "format": "string",
+                        "description": "Fields to return. Example: id,first_name,last_name",
+                        "name": "fields",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "format": "string",
+                        "description": "Next cursor",
+                        "name": "next_token",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "format": "string",
+                        "description": "Previous cursor",
+                        "name": "prev_token",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "format": "int",
+                        "description": "Limit",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.ListPoliciesResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "AccessToken": []
+                    }
+                ],
+                "description": "Associate multiple policies with a specific role for authorization",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Roles",
+                    "Policies"
+                ],
+                "summary": "Link policies to role",
+                "operationId": "019791cc-06c7-7ebd-b750-8c93b165d503",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "The role id in UUID format",
+                        "name": "role_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Link policies to role request",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.LinkPoliciesToRoleRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "AccessToken": []
+                    }
+                ],
+                "description": "Remove policy associations from a specific role",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Roles",
+                    "Policies"
+                ],
+                "summary": "Unlink policies from role",
+                "operationId": "019791cc-06c7-7ec1-aca1-291132927db6",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "The role id in UUID format",
+                        "name": "role_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "UnLink policies from role request",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.UnlinkPoliciesFromRoleRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    }
+                }
+            }
+        },
+        "/roles/{role_id}/users": {
+            "get": {
+                "security": [
+                    {
+                        "AccessToken": []
+                    }
+                ],
+                "description": "Retrieve paginated list of users associated with a specific role",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users",
+                    "Roles"
+                ],
+                "summary": "List users by role",
+                "operationId": "019791cc-06c7-7efb-99c2-b25af11e600c",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "The role id in UUID format",
+                        "name": "role_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "format": "string",
+                        "description": "Comma-separated list of fields to sort by. Example: first_name ASC, created_at DESC",
+                        "name": "sort",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "format": "string",
+                        "description": "Filter field. Example: id=1 AND first_name='John'",
+                        "name": "filter",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "format": "string",
+                        "description": "Fields to return. Example: id,first_name,last_name",
+                        "name": "fields",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "format": "string",
+                        "description": "Next cursor",
+                        "name": "next_token",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "format": "string",
+                        "description": "Previous cursor",
+                        "name": "prev_token",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "format": "int",
+                        "description": "Limit",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.ListUsersResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "AccessToken": []
+                    }
+                ],
+                "description": "Associate multiple users with a specific role for authorization",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Roles",
+                    "Users"
+                ],
+                "summary": "Link users to role",
+                "operationId": "019791cc-06c7-7eb1-b10c-4fbcd5943885",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "The role id in UUID format",
+                        "name": "role_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Link users to role request",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.LinkUsersToRoleRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "AccessToken": []
+                    }
+                ],
+                "description": "Remove user associations from a specific role",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Roles",
+                    "Users"
+                ],
+                "summary": "Unlink users from role",
+                "operationId": "019791cc-06c7-7eb5-9b74-ba394be221b4",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "The Embeddings Role ID in UUID format",
+                        "name": "role_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "UnLink users from role request",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.UnlinkUsersFromRoleRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    }
+                }
+            }
+        },
         "/users": {
             "get": {
-                "description": "List users with pagination and filtering",
+                "security": [
+                    {
+                        "AccessToken": []
+                    }
+                ],
+                "description": "Retrieve paginated list of all users in the system",
                 "produces": [
                     "application/json"
                 ],
@@ -48,7 +2739,7 @@
                     "Users"
                 ],
                 "summary": "List users",
-                "operationId": "b51b8ab6-4bb4-4b37-af5c-9825ba7e71e5",
+                "operationId": "019791cc-06c7-7ee4-8f2b-ea43720d520b",
                 "parameters": [
                     {
                         "type": "string",
@@ -115,7 +2806,12 @@
                 }
             },
             "post": {
-                "description": "Create new user from scratch.\nIf the id is not provided, it will be generated automatically.",
+                "security": [
+                    {
+                        "AccessToken": []
+                    }
+                ],
+                "description": "Create a new user account with specified configuration",
                 "consumes": [
                     "application/json"
                 ],
@@ -126,7 +2822,7 @@
                     "Users"
                 ],
                 "summary": "Create user",
-                "operationId": "8a1488b0-2d2c-42a0-a57a-6560aaf3ec76",
+                "operationId": "019791cc-06c7-7ed4-8f8b-2297e4565de3",
                 "parameters": [
                     {
                         "description": "Create user request",
@@ -168,15 +2864,20 @@
         },
         "/users/{user_id}": {
             "get": {
-                "description": "Get a user by ID",
+                "security": [
+                    {
+                        "AccessToken": []
+                    }
+                ],
+                "description": "Retrieve a specific user account by its unique identifier",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Users"
                 ],
-                "summary": "Get a user by ID",
-                "operationId": "b823ba3c-3b83-4eaa-bdf7-ce1b05237f23",
+                "summary": "Get user",
+                "operationId": "019791cc-06c7-7ed0-9140-556f721c5749",
                 "parameters": [
                     {
                         "type": "string",
@@ -215,7 +2916,12 @@
                 }
             },
             "put": {
-                "description": "Update a user",
+                "security": [
+                    {
+                        "AccessToken": []
+                    }
+                ],
+                "description": "Modify an existing user account by its ID",
                 "consumes": [
                     "application/json"
                 ],
@@ -225,8 +2931,8 @@
                 "tags": [
                     "Users"
                 ],
-                "summary": "Update a user",
-                "operationId": "a7979074-e16c-4aec-86e0-e5a154bbfc51",
+                "summary": "Update user",
+                "operationId": "019791cc-06c7-7edc-94d6-843e3f99e96f",
                 "parameters": [
                     {
                         "type": "string",
@@ -237,7 +2943,7 @@
                         "required": true
                     },
                     {
-                        "description": "User update request",
+                        "description": "Update user request",
                         "name": "body",
                         "in": "body",
                         "required": true,
@@ -274,15 +2980,20 @@
                 }
             },
             "delete": {
-                "description": "Delete a user",
+                "security": [
+                    {
+                        "AccessToken": []
+                    }
+                ],
+                "description": "Remove a user account permanently from the system",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Users"
                 ],
-                "summary": "Delete a user",
-                "operationId": "48e60e0a-ea1c-46d4-8729-c47dd82a4e93",
+                "summary": "Delete user",
+                "operationId": "019791cc-06c7-7ee0-85b7-45450ad476eb",
                 "parameters": [
                     {
                         "type": "string",
@@ -315,17 +3026,294 @@
                 }
             }
         },
+        "/users/{user_id}/authz": {
+            "get": {
+                "security": [
+                    {
+                        "AccessToken": []
+                    }
+                ],
+                "description": "Retrieve user authorization permissions and roles for access control",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users",
+                    "Auth"
+                ],
+                "summary": "Get user authorization",
+                "operationId": "019791cc-06c7-7ef4-afa5-81125e9dcde9",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "The user ID in UUID format",
+                        "name": "user_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    }
+                }
+            }
+        },
+        "/users/{user_id}/roles": {
+            "get": {
+                "security": [
+                    {
+                        "AccessToken": []
+                    }
+                ],
+                "description": "Retrieve paginated list of roles assigned to a specific user",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Roles",
+                    "Users"
+                ],
+                "summary": "List roles by user",
+                "operationId": "019791cc-06c7-7ec5-87fe-096d6d2760a9",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "The user id in UUID format",
+                        "name": "user_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "format": "string",
+                        "description": "Comma-separated list of fields to sort by. Example: first_name ASC, created_at DESC",
+                        "name": "sort",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "format": "string",
+                        "description": "Filter field. Example: id=1 AND first_name='John'",
+                        "name": "filter",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "format": "string",
+                        "description": "Fields to return. Example: id,first_name,last_name",
+                        "name": "fields",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "format": "string",
+                        "description": "Next cursor",
+                        "name": "next_token",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "format": "string",
+                        "description": "Previous cursor",
+                        "name": "prev_token",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "format": "int",
+                        "description": "Limit",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.ListRolesResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "AccessToken": []
+                    }
+                ],
+                "description": "Associate multiple roles with a user within a specific project",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users",
+                    "Roles"
+                ],
+                "summary": "Link roles to user",
+                "operationId": "019791cc-06c7-7eec-83f3-bcaed0c4d46f",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "The user ID in UUID format",
+                        "name": "user_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Link Roles Request",
+                        "name": "user",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.LinkRolesToUserRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "AccessToken": []
+                    }
+                ],
+                "description": "Remove role associations from a user within a specific project",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users",
+                    "Roles"
+                ],
+                "summary": "Unlink roles from user",
+                "operationId": "019791cc-06c7-7ef0-9394-d4ac3f52e94c",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "The user ID in UUID format",
+                        "name": "user_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "UnLink Roles Request",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.UnlinkRolesFromUserRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/model.HTTPMessage"
+                        }
+                    }
+                }
+            }
+        },
         "/version": {
             "get": {
-                "description": "Get the version of the service",
+                "description": "Retrieve the current version and build information of the service",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Version"
                 ],
-                "summary": "Get the version of the service",
-                "operationId": "d85b4a3f-b032-4dd1-b3ab-bc9a00f95eb5",
+                "summary": "Get version",
+                "operationId": "019791cc-06c7-7eff-a1df-fbc2ad0b27c9",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -345,13 +3333,12 @@
     },
     "definitions": {
         "model.Check": {
-            "description": "Health check of the service",
+            "description": "Health check of the service.",
             "type": "object",
             "properties": {
                 "data": {
                     "type": "object",
-                    "format": "map",
-                    "additionalProperties": true
+                    "additionalProperties": {}
                 },
                 "kind": {
                     "type": "string",
@@ -364,15 +3351,129 @@
                     "example": "database"
                 },
                 "status": {
+                    "description": "Health status of a service.",
                     "type": "boolean",
-                    "format": "boolean",
+                    "format": "string",
                     "example": true
                 }
             }
         },
-        "model.CreateUserRequest": {
-            "description": "CreateUserRequest represents the input for the CreateUser method",
+        "model.CreatePolicyRequest": {
+            "description": "Create a policy.",
             "type": "object",
+            "required": [
+                "allowed_action",
+                "allowed_resource",
+                "name"
+            ],
+            "properties": {
+                "allowed_action": {
+                    "type": "string",
+                    "format": "string",
+                    "example": "GET"
+                },
+                "allowed_resource": {
+                    "type": "string",
+                    "format": "string",
+                    "example": "/projects/39a4707f-536e-433f-8597-6fc0d53a724f/tokens"
+                },
+                "description": {
+                    "type": "string",
+                    "format": "string",
+                    "example": "This allows to list all the policies of a specific project"
+                },
+                "id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "example": "01979cde-6d91-7733-8381-eaef585fad97"
+                },
+                "name": {
+                    "type": "string",
+                    "format": "string",
+                    "example": "List Policies for project"
+                }
+            }
+        },
+        "model.CreateProductRequest": {
+            "description": "CreateProductRequest represents the input for the CreateProduct method.",
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string",
+                    "format": "string",
+                    "example": "This is a product"
+                },
+                "id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "example": "01979cde-6d91-7756-bd58-75b685419eb3"
+                },
+                "name": {
+                    "type": "string",
+                    "format": "string",
+                    "example": "New product name"
+                }
+            }
+        },
+        "model.CreateProjectRequest": {
+            "description": "CreateProjectRequest represents the inputs necessary to create a new project.",
+            "type": "object",
+            "required": [
+                "description",
+                "name"
+            ],
+            "properties": {
+                "description": {
+                    "type": "string",
+                    "format": "string",
+                    "example": "This is a new project"
+                },
+                "id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "example": "01979cde-6d91-7720-aaa5-d45582f94ac4"
+                },
+                "name": {
+                    "type": "string",
+                    "format": "string",
+                    "example": "New project name"
+                }
+            }
+        },
+        "model.CreateRoleRequest": {
+            "description": "CreateRoleRequest represents the input for the CreateRole method.",
+            "type": "object",
+            "required": [
+                "description",
+                "name"
+            ],
+            "properties": {
+                "description": {
+                    "type": "string",
+                    "format": "string",
+                    "example": "This is a role"
+                },
+                "id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "example": "01979cde-6d91-7766-a529-ebe2a773d447"
+                },
+                "name": {
+                    "type": "string",
+                    "format": "string",
+                    "example": "New role name"
+                }
+            }
+        },
+        "model.CreateUserRequest": {
+            "description": "Create user request.",
+            "type": "object",
+            "required": [
+                "email",
+                "first_name",
+                "last_name",
+                "password"
+            ],
             "properties": {
                 "email": {
                     "type": "string",
@@ -387,7 +3488,7 @@
                 "id": {
                     "type": "string",
                     "format": "uuid",
-                    "example": "550e8400-e29b-41d4-a716-446655440000"
+                    "example": "01979cde-6d91-775e-b049-9627e2c6f848"
                 },
                 "last_name": {
                     "type": "string",
@@ -402,13 +3503,13 @@
             }
         },
         "model.HTTPMessage": {
-            "description": "HTTPMessage represents a message to be sent to the client though the HTTP REST API.",
+            "description": "HTTPMessage represents a message to be sent to the client trough HTTP REST API.",
             "type": "object",
             "properties": {
                 "message": {
                     "type": "string",
                     "format": "string",
-                    "example": "Hello, World!"
+                    "example": "success"
                 },
                 "method": {
                     "type": "string",
@@ -418,7 +3519,7 @@
                 "path": {
                     "type": "string",
                     "format": "string",
-                    "example": "/api/v1/hello"
+                    "example": "/api/v1/users"
                 },
                 "status_code": {
                     "type": "integer",
@@ -428,30 +3529,183 @@
                 "timestamp": {
                     "type": "string",
                     "format": "date-time",
-                    "example": "2021-01-01T00:00:00Z"
+                    "example": "2021-07-01T00:00:00Z"
                 }
             }
         },
         "model.Health": {
-            "description": "Health check of the service",
+            "description": "Health check of the service.",
             "type": "object",
             "properties": {
                 "checks": {
                     "type": "array",
                     "items": {
-                        "format": "array",
                         "$ref": "#/definitions/model.Check"
                     }
                 },
                 "status": {
+                    "description": "Health status of a service.",
                     "type": "boolean",
-                    "format": "boolean",
+                    "format": "string",
                     "example": true
                 }
             }
         },
+        "model.LinkPoliciesToRoleRequest": {
+            "description": "LinkPoliciesToRoleRequest input values for linking policies to a role.",
+            "type": "object",
+            "required": [
+                "policy_ids"
+            ],
+            "properties": {
+                "policy_ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "format": "uuid"
+                    }
+                }
+            }
+        },
+        "model.LinkProductToPaymentProcessorRequest": {
+            "description": "LinkProductToPaymentProcessorRequest represents the input for linking a product to a payment processor.",
+            "type": "object",
+            "properties": {
+                "payment_processor_id": {
+                    "type": "string"
+                },
+                "payment_processor_product_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.LinkRolesToPolicyRequest": {
+            "description": "Link roles to a policy.",
+            "type": "object",
+            "required": [
+                "role_ids"
+            ],
+            "properties": {
+                "role_ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "example": [
+                        "01979cde-6d91-772b-ac5b-c7a2aa7512f5"
+                    ]
+                }
+            }
+        },
+        "model.LinkRolesToUserRequest": {
+            "description": "Link roles request.",
+            "type": "object",
+            "required": [
+                "role_ids"
+            ],
+            "properties": {
+                "role_ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "format": "uuid"
+                    }
+                }
+            }
+        },
+        "model.LinkUsersToRoleRequest": {
+            "description": "LinkUsersToRoleRequest input values for linking users to a role.",
+            "type": "object",
+            "required": [
+                "user_ids"
+            ],
+            "properties": {
+                "user_ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "format": "uuid"
+                    }
+                }
+            }
+        },
+        "model.ListPoliciesResponse": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.Policy"
+                    }
+                },
+                "paginator": {
+                    "$ref": "#/definitions/model.Paginator"
+                }
+            }
+        },
+        "model.ListProductsResponse": {
+            "description": "ListProductResponse represents a list of users.",
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.Product"
+                    }
+                },
+                "paginator": {
+                    "$ref": "#/definitions/model.Paginator"
+                }
+            }
+        },
+        "model.ListProjectsResponse": {
+            "description": "ListProjectsResponse represents a list of users.",
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.Project"
+                    }
+                },
+                "paginator": {
+                    "$ref": "#/definitions/model.Paginator"
+                }
+            }
+        },
+        "model.ListResourcesResponse": {
+            "description": "ListResourcesResponse represents a list of users.",
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.Resource"
+                    }
+                },
+                "paginator": {
+                    "$ref": "#/definitions/model.Paginator"
+                }
+            }
+        },
+        "model.ListRolesResponse": {
+            "description": "ListRoleResponse represents a list of users.",
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.Role"
+                    }
+                },
+                "paginator": {
+                    "$ref": "#/definitions/model.Paginator"
+                }
+            }
+        },
         "model.ListUsersResponse": {
-            "description": "ListUsersResponse represents a list of users",
+            "description": "List of users.",
             "type": "object",
             "properties": {
                 "items": {
@@ -462,6 +3716,55 @@
                 },
                 "paginator": {
                     "$ref": "#/definitions/model.Paginator"
+                }
+            }
+        },
+        "model.LoginUserRequest": {
+            "description": "LoginUserRequest is the request struct for the LoginUser handler.",
+            "type": "object",
+            "required": [
+                "email",
+                "password"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string",
+                    "format": "email",
+                    "example": "admin@qu3ry.me"
+                },
+                "password": {
+                    "type": "string",
+                    "format": "string",
+                    "example": "ThisIsApassw0rd.,"
+                }
+            }
+        },
+        "model.LoginUserResponse": {
+            "description": "LoginUserResponse is the response when a user logs in.",
+            "type": "object",
+            "properties": {
+                "access_token": {
+                    "type": "string",
+                    "format": "string"
+                },
+                "permissions": {
+                    "type": "object",
+                    "format": "object",
+                    "additionalProperties": {}
+                },
+                "refresh_token": {
+                    "type": "string",
+                    "format": "string"
+                },
+                "token_type": {
+                    "type": "string",
+                    "format": "string",
+                    "example": "Bearer"
+                },
+                "user_id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "example": "01979cde-6d91-773b-a03c-3779be3b55b3"
                 }
             }
         },
@@ -501,8 +3804,453 @@
                 }
             }
         },
+        "model.Policy": {
+            "description": "Policy represents a role.",
+            "type": "object",
+            "properties": {
+                "allowed_action": {
+                    "type": "string",
+                    "format": "string",
+                    "example": "GET"
+                },
+                "allowed_resource": {
+                    "type": "string",
+                    "format": "string",
+                    "example": "/projects/39a4707f-536e-433f-8597-6fc0d53a724f/tokens"
+                },
+                "created_at": {
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2021-01-01T00:00:00Z"
+                },
+                "description": {
+                    "type": "string",
+                    "format": "string",
+                    "example": "This is a role"
+                },
+                "id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "example": "01979cde-6d91-7728-bfbb-ec90edcd6767"
+                },
+                "name": {
+                    "type": "string",
+                    "format": "string",
+                    "example": "Policy Name"
+                },
+                "resource": {
+                    "$ref": "#/definitions/model.Resource"
+                },
+                "system": {
+                    "type": "boolean",
+                    "format": "boolean",
+                    "example": false
+                },
+                "updated_at": {
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2021-01-01T00:00:00Z"
+                }
+            }
+        },
+        "model.Product": {
+            "description": "Product represents a product.",
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2021-01-01T00:00:00Z"
+                },
+                "description": {
+                    "type": "string",
+                    "format": "string",
+                    "example": "This is a product"
+                },
+                "id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "example": "01979cde-6d91-7753-9b69-975f70601c14"
+                },
+                "name": {
+                    "type": "string",
+                    "format": "string",
+                    "example": "Product Name"
+                },
+                "project": {
+                    "$ref": "#/definitions/model.Project"
+                },
+                "updated_at": {
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2021-01-01T00:00:00Z"
+                }
+            }
+        },
+        "model.Project": {
+            "description": "Project represents a project.",
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2021-01-01T00:00:00Z"
+                },
+                "description": {
+                    "type": "string",
+                    "format": "string",
+                    "example": "This is a project"
+                },
+                "disabled": {
+                    "type": "boolean",
+                    "format": "boolean",
+                    "example": false
+                },
+                "id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "example": "01979cde-6d91-769f-8d3e-b04eeb538a83"
+                },
+                "name": {
+                    "type": "string",
+                    "format": "string",
+                    "example": "John"
+                },
+                "system": {
+                    "type": "boolean",
+                    "format": "boolean",
+                    "example": false
+                },
+                "updated_at": {
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2021-01-01T00:00:00Z"
+                }
+            }
+        },
+        "model.ReVerifyUserRequest": {
+            "description": "ReVerifyUserRequest is the request struct for the ReVerifyUser handler.",
+            "type": "object",
+            "required": [
+                "email"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string",
+                    "format": "email",
+                    "example": "user@mail.com"
+                }
+            }
+        },
+        "model.RefreshTokenRequest": {
+            "description": "RefreshTokenRequest is the request struct for the RefreshToken handler.",
+            "type": "object",
+            "properties": {
+                "refresh_token": {
+                    "type": "string",
+                    "format": "string"
+                }
+            }
+        },
+        "model.RefreshTokenResponse": {
+            "description": "RefreshTokenResponse is the response when a user refreshes their token.",
+            "type": "object",
+            "properties": {
+                "access_token": {
+                    "type": "string",
+                    "format": "string"
+                },
+                "token_type": {
+                    "type": "string",
+                    "format": "string",
+                    "example": "Bearer"
+                }
+            }
+        },
+        "model.RegisterUserRequest": {
+            "description": "RegisterUserRequest is the request struct for the RegisterUser handler.",
+            "type": "object",
+            "required": [
+                "email",
+                "first_name",
+                "last_name",
+                "password"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string",
+                    "format": "email",
+                    "example": "john.doe@email.com"
+                },
+                "first_name": {
+                    "type": "string",
+                    "format": "string",
+                    "example": "John"
+                },
+                "id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "example": "01979cde-6d91-773f-a630-7eed93217f35"
+                },
+                "last_name": {
+                    "type": "string",
+                    "format": "string",
+                    "example": "Doe"
+                },
+                "password": {
+                    "type": "string",
+                    "format": "string",
+                    "example": "ThisIsApassw0rd.,"
+                }
+            }
+        },
+        "model.Resource": {
+            "description": "Resource represents a permission.",
+            "type": "object",
+            "properties": {
+                "action": {
+                    "type": "string",
+                    "format": "string",
+                    "example": "GET"
+                },
+                "created_at": {
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2021-01-01T00:00:00Z"
+                },
+                "description": {
+                    "type": "string",
+                    "format": "string",
+                    "example": "Allows reading of users"
+                },
+                "id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "example": "01979cde-6d91-7743-a481-bfe67f26a3c2"
+                },
+                "name": {
+                    "type": "string",
+                    "format": "string",
+                    "example": "Read Users"
+                },
+                "resource": {
+                    "type": "string",
+                    "format": "string",
+                    "example": "users"
+                },
+                "system": {
+                    "type": "boolean",
+                    "format": "bool",
+                    "example": false
+                },
+                "updated_at": {
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2021-01-01T00:00:00Z"
+                }
+            }
+        },
+        "model.Role": {
+            "description": "Role represents a role.",
+            "type": "object",
+            "properties": {
+                "auto_assign": {
+                    "type": "boolean",
+                    "format": "boolean",
+                    "example": false
+                },
+                "created_at": {
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2021-01-01T00:00:00Z"
+                },
+                "description": {
+                    "type": "string",
+                    "format": "string",
+                    "example": "This is a role"
+                },
+                "id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "example": "01979cde-6d91-7762-aae3-871d5e5ee975"
+                },
+                "name": {
+                    "type": "string",
+                    "format": "string",
+                    "example": "Role Name"
+                },
+                "system": {
+                    "type": "boolean",
+                    "format": "boolean",
+                    "example": false
+                },
+                "updated_at": {
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2021-01-01T00:00:00Z"
+                }
+            }
+        },
+        "model.UnlinkPoliciesFromRoleRequest": {
+            "description": "LinkPoliciesToRoleRequest input values for linking policies to a role.",
+            "type": "object",
+            "required": [
+                "policy_ids"
+            ],
+            "properties": {
+                "policy_ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "format": "uuid"
+                    }
+                }
+            }
+        },
+        "model.UnlinkProductFromPaymentProcessorRequest": {
+            "description": "LinkProductToPaymentProcessorRequest represents the input for linking a product to a payment processor.",
+            "type": "object",
+            "properties": {
+                "payment_processor_id": {
+                    "type": "string"
+                },
+                "payment_processor_product_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.UnlinkRolesFromPolicyRequest": {
+            "description": "Link roles to a policy.",
+            "type": "object",
+            "required": [
+                "role_ids"
+            ],
+            "properties": {
+                "role_ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "example": [
+                        "01979cde-6d91-772b-ac5b-c7a2aa7512f5"
+                    ]
+                }
+            }
+        },
+        "model.UnlinkRolesFromUserRequest": {
+            "description": "Link roles request.",
+            "type": "object",
+            "required": [
+                "role_ids"
+            ],
+            "properties": {
+                "role_ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "format": "uuid"
+                    }
+                }
+            }
+        },
+        "model.UnlinkUsersFromRoleRequest": {
+            "description": "LinkUsersToRoleRequest input values for linking users to a role.",
+            "type": "object",
+            "required": [
+                "user_ids"
+            ],
+            "properties": {
+                "user_ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "format": "uuid"
+                    }
+                }
+            }
+        },
+        "model.UpdatePolicyRequest": {
+            "description": "Update a policy.",
+            "type": "object",
+            "properties": {
+                "allowed_action": {
+                    "type": "string",
+                    "format": "string",
+                    "example": "GET"
+                },
+                "allowed_resource": {
+                    "type": "string",
+                    "format": "string",
+                    "example": "/projects/39a4707f-536e-433f-8597-6fc0d53a724f/tokens"
+                },
+                "description": {
+                    "type": "string",
+                    "format": "string",
+                    "example": "This is a role"
+                },
+                "name": {
+                    "type": "string",
+                    "format": "string",
+                    "example": "Policy Name"
+                }
+            }
+        },
+        "model.UpdateProductRequest": {
+            "description": "UpdateProductRequest represents the input for the UpdateProduct method.",
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string",
+                    "format": "string",
+                    "example": "This is a product"
+                },
+                "name": {
+                    "type": "string",
+                    "format": "string",
+                    "example": "Modified product name"
+                }
+            }
+        },
+        "model.UpdateProjectRequest": {
+            "description": "UpdateProjectRequest represents the inputs necessary to update a project.",
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string",
+                    "format": "string",
+                    "example": "This is a new project data"
+                },
+                "disabled": {
+                    "type": "boolean",
+                    "format": "boolean",
+                    "example": false
+                },
+                "name": {
+                    "type": "string",
+                    "format": "string",
+                    "example": "New project name"
+                }
+            }
+        },
+        "model.UpdateRoleRequest": {
+            "description": "UpdateRoleRequest represents the input for the UpdateRole method.",
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string",
+                    "format": "string",
+                    "example": "This is a role"
+                },
+                "name": {
+                    "type": "string",
+                    "format": "string",
+                    "example": "Modified role name"
+                }
+            }
+        },
         "model.UpdateUserRequest": {
-            "description": "UpdateUserRequest represents the input for the UpdateUser method",
+            "description": "Update user request.",
             "type": "object",
             "properties": {
                 "disabled": {
@@ -533,7 +4281,7 @@
             }
         },
         "model.User": {
-            "description": "User represents a user entity",
+            "description": "User represents a user entity.",
             "type": "object",
             "properties": {
                 "created_at": {
@@ -559,7 +4307,7 @@
                 "id": {
                     "type": "string",
                     "format": "uuid",
-                    "example": "550e8400-e29b-41d4-a716-446655440000"
+                    "example": "01979cde-6d91-775a-ad3f-1a97b23ee649"
                 },
                 "last_name": {
                     "type": "string",

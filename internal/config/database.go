@@ -71,7 +71,7 @@ const (
 	DefaultDatabaseMinConns = 5
 
 	DefaultDatabaseConnMaxIdleTime = 30 * time.Minute
-	DefaultDatabaseConnMaxLifetime = 2 * time.Minute
+	DefaultDatabaseConnMaxLifetime = 5 * time.Minute
 
 	DefaultDatabaseMigrationEnable = true
 )

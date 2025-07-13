@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"log/slog"
 	"strings"
 	"time"
 
@@ -26,7 +25,6 @@ type healthRepositoryMetrics struct {
 	repositoryCalls metric.Int64Counter
 }
 
-// this implement repository.HealthRepository
 // HealthRepository is a PostgreSQL store.
 type HealthRepository struct {
 	db             *pgxpool.Pool
@@ -66,7 +64,6 @@ func NewHealthRepository(conf HealthRepositoryConfig) (*HealthRepository, error)
 		metric.WithDescription("The number of calls to the health repository"),
 	)
 	if err != nil {
-		slog.Error("repository.Health.NewHealthRepository", "error", err)
 		return nil, err
 	}
 

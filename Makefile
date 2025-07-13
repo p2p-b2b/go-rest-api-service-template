@@ -4,6 +4,9 @@ EXECUTABLES = go zip shasum podman
 K := $(foreach exec,$(EXECUTABLES),\
   $(if $(shell which $(exec)),some string,$(error "No $(exec) in PATH)))
 
+# Add .SHELLFLAGS to ensure that shell errors are propagated
+.SHELLFLAGS := -e -c
+
 # this is used to rename the repository when is created from the template
 # we will use the git remote url to get the repository name
 GIT_REPOSITORY_NAME            ?= $(shell git remote get-url origin | cut -d '/' -f 2 | cut -d '.' -f 1)
@@ -20,11 +23,12 @@ TEMPLATE_NAME_UNDERSCORE := $(subst -,_,$(TEMPLATE_NAME))
 
 BUILD_DIR       := ./build
 DIST_DIR        := ./dist
-DIST_ASSEST_DIR := $(DIST_DIR)/assets
+DIST_ASSETS_DIR := $(DIST_DIR)/assets
 
 PROJECT_COVERAGE_FILE ?= $(BUILD_DIR)/coverage.txt
 PROJECT_COVERAGE_MODE	?= atomic
 PROJECT_COVERAGE_TAGS ?= unit
+PROJECT_INTEGRATION_COVERAGE_TAGS ?= integration
 
 GIT_VERSION     ?= $(shell git rev-parse --abbrev-ref HEAD | cut -d "/" -f 2)
 GIT_COMMIT      ?= $(shell git rev-parse HEAD | tr -d '\040\011\012\015\n')
@@ -55,8 +59,11 @@ CONTAINER_NAMESPACE  ?= $(PROJECT_NAMESPACE)
 CONTAINER_IMAGE_NAME ?= $(PROJECT_NAME)
 CONTAINER_OS         ?= linux darwin
 CONTAINER_ARCH       ?= arm64 amd64
-# CONTAINER_REPOS      ?= docker.io ghcr.io public.ecr.aws
+# CONTAINER_REPOS     ?= docker.io ghcr.io public.ecr.aws
 CONTAINER_REPOS      ?= ghcr.io
+
+CONTAINER_OS_TEST    ?= linux
+CONTAINER_ARCH_TEST  ?= amd64
 
 # detect operating system for sed command
 UNAME_S := $(shell uname -s)
@@ -67,33 +74,43 @@ ifeq ($(UNAME_S),Darwin)
 	SED_CMD := sed -i .removeit
 endif
 
+# this is used to detect the database type
+DB_USERNAME 	:= username
+DB_NAME 			:= go-rest-api-service-template
+DB_HOST 			:= localhost
+ER_MODEL_DIR 	:= ./database/model
+
 ######## Functions ########
-# this is a funtion that will execute a command and print a message
+# this is a function that will execute a command and print a message
 # MAKE_DEBUG=true make <target> will print the command
 # MAKE_STOP_ON_ERRORS=true make any fail will stop the execution if the command fails, this is useful for CI
-# NOTE: if the dommand has a > it will print the output into the original redirect of the command
+# NOTE: if the command has a > it will print the output into the original redirect of the command
+MAKE_STOP_ON_ERRORS := false
+MAKE_DEBUG := false
+
 define exec_cmd
 $(if $(filter $(MAKE_DEBUG),true),\
 	${1} \
 , \
 	$(if $(filter $(MAKE_STOP_ON_ERRORS),true),\
-		@${1}  > /dev/null && printf "  🤞 ${1} ✅\n" || (printf "  ${1} ❌ 🖕\n"; exit 1) \
+		@ERROR_OCCURRED=0; ${1} > /dev/null || ERROR_OCCURRED=1; if [ $$ERROR_OCCURRED -eq 0 ]; then printf "  🤞 ${1} ✅\n"; else printf "  ${1} ❌ 🖕\n"; exit 1; fi \
 	, \
 		$(if $(findstring >, $1),\
-			@${1} 2>/dev/null && printf "  🤞 ${1} ✅\n" || printf "  ${1} ❌ 🖕\n; exit 1" \
+			@${1} 2>/dev/null && printf "  🤞 ${1} ✅\n" || printf "  ${1} ❌ 🖕\n" \
 		, \
 			@${1} > /dev/null 2>&1 && printf '  🤞 ${1} ✅\n' || printf '  ${1} ❌ 🖕\n' \
 		) \
 	) \
 )
 
-endef # don't remove the whiteline before endef
+endef # don't remove the white space at the end of the line
+# this is a function that will execute a command and print a message
 
 ###############################################################################
 ######## Targets ##############################################################
 ##@ Default command
 .PHONY: all
-all: clean test build-all ## Clean, test and build the application.  Execute by default when make is called without arguments
+all: clean build ## Clean, test and build the application.  Execute by default when make is called without arguments
 
 ###############################################################################
 ##@ Golang commands
@@ -164,7 +181,7 @@ test: $(PROJECT_COVERAGE_FILE) go-generate go-mod-tidy go-fmt go-vet ## Run test
 		-v -race \
 		-coverprofile=$(PROJECT_COVERAGE_FILE) \
 		-covermode=$(PROJECT_COVERAGE_MODE) \
-			-tags=$(PROJECT_COVERAGE_TAGS) \
+		-tags=$(PROJECT_COVERAGE_TAGS) \
 		./... \
 	)
 
@@ -173,18 +190,30 @@ test-coverage: install-go-test-coverage ## Run tests and show coverage
 	@printf "👉 Running tests and showing coverage...\n"
 	$(call exec_cmd, go-test-coverage --config=./.testcoverage.yml )
 
+.PHONY: test-integration
+test-integration: stop-integration-test go-generate go-mod-tidy go-fmt go-vet start-integration-test ## Run integration tests
+	@printf "👉 Running integration tests...\n"
+	$(call exec_cmd, go test \
+		-v -race \
+		-tags=$(PROJECT_INTEGRATION_COVERAGE_TAGS) \
+		./tests/integration \
+	) \
+  make stop-integration-test
+
 ###############################################################################
 ##@ Build commands
 .PHONY: build
-build: go-generate docs-swagger lint vulncheck ## Build the application
+build: go-generate go-fmt go-vet docs-swagger  ## Build the API service only
 	@printf "👉 Building...\n"
 	$(foreach proj_mod, $(PROJECT_MODULES_NAME), \
-		$(call exec_cmd, CGO_ENABLED=$(GO_CGO_ENABLED) go build $(GO_LDFLAGS) $(GO_OPTS) -o $(BUILD_DIR)/$(proj_mod) ./cmd/$(proj_mod)/ ) \
-		$(call exec_cmd, chmod +x $(BUILD_DIR)/$(proj_mod) ) \
+		$(if $(filter go-rest%,$(proj_mod)), \
+			$(call exec_cmd, CGO_ENABLED=$(GO_CGO_ENABLED) go build $(GO_LDFLAGS) $(GO_OPTS) -o $(BUILD_DIR)/$(proj_mod) ./cmd/$(proj_mod)/ ) \
+			$(call exec_cmd, chmod +x $(BUILD_DIR)/$(proj_mod) ) \
+		) \
 	)
 
 .PHONY: build-all
-build-all: lint vulncheck go-generate go-fmt go-vet docs-swagger ## Build the application and execute go generate, go fmt and go vet
+build-all: lint vulncheck go-generate go-fmt go-vet docs-swagger ## Build all the application including the API service and the CLI
 	@printf "👉 Building and lintering...\n"
 	$(foreach proj_mod, $(PROJECT_MODULES_NAME), \
 		$(call exec_cmd, CGO_ENABLED=$(GO_CGO_ENABLED) go build $(GO_LDFLAGS) $(GO_OPTS) -o $(BUILD_DIR)/$(proj_mod) ./cmd/$(proj_mod)/ ) \
@@ -236,6 +265,7 @@ COMMA_SIGN := ,
 docs-swagger: install-swag install-go-swagger ## Generate swagger documentation
 	@printf "👉 Generating swagger documentation...\n"
 	$(foreach proj_mod, $(PROJECT_MODULES_NAME), \
+		$(if $(filter go-rest%,$(proj_mod)), \
 			$(call exec_cmd, swag fmt \
 				--dir ./cmd/$(proj_mod)$(COMMA_SIGN)./internal \
 			) \
@@ -249,6 +279,7 @@ docs-swagger: install-swag install-go-swagger ## Generate swagger documentation
 				--spec ./docs/swagger.json \
 				--target ./docs/  \
 			) \
+		) \
 	)
 
 ###############################################################################
@@ -298,28 +329,29 @@ stop-dev-env: ## Run the application in development mode
 .PHONY: start-dev-env
 start-dev-env: stop-dev-env install-air install-swag install-goose ## Run the application in development mode.  WARNING: This will stop the current running application deleting the data
 	@printf "👉 Running application in development mode...\n"
-		$(call exec_cmd, mkdir -p /tmp/$(PROJECT_NAME)/db-volume-host )
-		$(call exec_cmd, mkdir -p /tmp/$(PROJECT_NAME)/tempo-volume-host )
-		$(call exec_cmd, mkdir -p /tmp/$(PROJECT_NAME)/prometheus-volume-host )
-		$(call exec_cmd, mkdir -p /tmp/$(PROJECT_NAME)/grafana-ds )
-		$(call exec_cmd, mkdir -p /tmp/$(PROJECT_NAME)/grafana-dashboard-config )
-		$(call exec_cmd, mkdir -p /tmp/$(PROJECT_NAME)/grafana-dashboard )
-		$(call exec_cmd, mkdir -p /tmp/$(PROJECT_NAME)/dev-env)
-		$(call exec_cmd, chmod 777 /tmp/$(PROJECT_NAME)/tempo-volume-host )
-		$(call exec_cmd, chmod 777 /tmp/$(PROJECT_NAME)/prometheus-volume-host )
+		$(call exec_cmd, PROJECT_NAME=$(PROJECT_NAME) envsubst < ./dev-env/provisioning/dev-service-pod.yaml.tmpl > ./dev-env/provisioning/dev-service-pod.yaml)
+		$(call exec_cmd, mkdir -p $(HOME)/tmp/$(PROJECT_NAME)/db-volume-host )
+		$(call exec_cmd, mkdir -p $(HOME)/tmp/$(PROJECT_NAME)/tempo-volume-host )
+		$(call exec_cmd, mkdir -p $(HOME)/tmp/$(PROJECT_NAME)/prometheus-volume-host )
+		$(call exec_cmd, mkdir -p $(HOME)/tmp/$(PROJECT_NAME)/grafana-ds )
+		$(call exec_cmd, mkdir -p $(HOME)/tmp/$(PROJECT_NAME)/grafana-dashboard-config )
+		$(call exec_cmd, mkdir -p $(HOME)/tmp/$(PROJECT_NAME)/grafana-dashboard )
+		$(call exec_cmd, mkdir -p $(HOME)/tmp/$(PROJECT_NAME)/dev-env)
+		$(call exec_cmd, chmod 777 $(HOME)/tmp/$(PROJECT_NAME)/tempo-volume-host )
+		$(call exec_cmd, chmod 777 $(HOME)/tmp/$(PROJECT_NAME)/prometheus-volume-host )
 
-		$(call exec_cmd, cp ./dev-env/configuration/grafana/datasource/grafana-ds.yaml /tmp/$(PROJECT_NAME)/grafana-ds/grafana-ds.yaml)
-		$(call exec_cmd, cp ./dev-env/configuration/grafana/dashboard/default.yaml /tmp/$(PROJECT_NAME)/grafana-dashboard-config/default.yaml)
-		$(call exec_cmd, cp ./dev-env/configuration/grafana/dashboard/*.json /tmp/$(PROJECT_NAME)/grafana-dashboard/)
-		$(call exec_cmd, cp ./dev-env/configuration/prometheus/prometheus.yaml /tmp/$(PROJECT_NAME)/dev-env/prometheus.yaml )
-		$(call exec_cmd, cp ./dev-env/configuration/tempo/tempo-local-config.yaml /tmp/$(PROJECT_NAME)/dev-env/tempo-local-config.yaml )
+		$(call exec_cmd, cp ./dev-env/configuration/grafana/datasource/grafana-ds.yaml $(HOME)/tmp/$(PROJECT_NAME)/grafana-ds/grafana-ds.yaml)
+		$(call exec_cmd, cp ./dev-env/configuration/grafana/dashboard/default.yaml $(HOME)/tmp/$(PROJECT_NAME)/grafana-dashboard-config/default.yaml)
+		$(call exec_cmd, cp ./dev-env/configuration/grafana/dashboard/*.json $(HOME)/tmp/$(PROJECT_NAME)/grafana-dashboard/)
+		$(call exec_cmd, cp ./dev-env/configuration/prometheus/prometheus.yaml $(HOME)/tmp/$(PROJECT_NAME)/dev-env/prometheus.yaml )
+		$(call exec_cmd, cp ./dev-env/configuration/tempo/tempo-local-config.yaml $(HOME)/tmp/$(PROJECT_NAME)/dev-env/tempo-local-config.yaml )
 
 		$(call exec_cmd, podman play kube ./dev-env/provisioning/dev-service-pod.yaml )
 
 .PHONY: rm-dev-env
 rm-dev-env: stop-dev-env  ## Stop the application and remove the development environment
 	@printf "👉 Removing development environment...\n"
-		$(call exec_cmd, rm -rf /tmp/$(PROJECT_NAME) 2>/dev/null )
+		$(call exec_cmd, rm -rf $(HOME)/tmp/$(PROJECT_NAME) 2>/dev/null )
 
 .PHONY: rename-project
 rename-project: clean ## Rename the project.  This must be the first command to run after cloning the repository created from the template
@@ -333,10 +365,37 @@ rename-project: clean ## Rename the project.  This must be the first command to 
 		$(call exec_cmd, mv cmd/$(TEMPLATE_NAME) cmd/$(GIT_REPOSITORY_NAME) ) \
 	)
 
+.PHONY: start-integration-test
+start-integration-test:rm-dev-env stop-integration-test container-build-integration-test ## Start the integration test
+	@printf "👉 Starting integration test...\n"
+	$(call exec_cmd, podman play kube ./tests/provisioning/integration-test.yaml )
+
+.PHONY: stop-integration-test
+stop-integration-test: ## Stop the integration test
+	@printf "👉 Stopping integration test...\n"
+	$(call exec_cmd, podman play kube --down ./tests/provisioning/integration-test.yaml )
+	$(call exec_cmd, podman rm -f integration-test )
+
 ###############################################################################
 ##@ Container commands
+.PHONY: container-build-integration-test
+container-build-integration-test: build-dist ## Build the container image, requires make build-dist
+	@printf "👉 Building container images for integration test...\n"
+		$(call exec_cmd, podman build \
+			--platform $(CONTAINER_OS_TEST)/$(CONTAINER_ARCH_TEST) \
+			--tag $(CONTAINER_NAMESPACE)/$(CONTAINER_IMAGE_NAME):test-integration \
+			--build-arg SERVICE_NAME=$(PROJECT_NAME) \
+			--build-arg GOOS=$(CONTAINER_OS_TEST) \
+			--build-arg GOARCH=$(CONTAINER_ARCH_TEST) \
+			--build-arg BUILD_DATE=$(BUILD_DATE) \
+			--build-arg BUILD_VERSION=$(GIT_VERSION) \
+			--build-arg DESCRIPTION="Container image for $(PROJECT_NAME)" \
+			--build-arg REPO_URL="https://github.com/$(PROJECT_NAMESPACE)/$(PROJECT_NAME)" \
+			--file ./tests/provisioning/Containerfile . \
+	)
+
 .PHONY: container-build
-container-build: ## Build the container image, requires make build-dist
+container-build: build-dist ## Build the container image, requires make build-dist
 	@printf "👉 Building container images...\n"
 	$(foreach OS, $(CONTAINER_OS), \
 		$(foreach ARCH, $(CONTAINER_ARCH), \
@@ -401,7 +460,13 @@ clean: ## Clean the environment
 	@printf "👉 Cleaning environment...\n"
 	$(call exec_cmd, go clean -n -x -i)
 	$(call exec_cmd, rm -rf $(BUILD_DIR) $(DIST_DIR) )
-	$(call exec_cmd, rm -rf ./tmp )
+
+# Test target to verify error handling
+.PHONY: test-fail
+test-fail: ## Test target that always fails (for testing error handling)
+	@printf "👉 Testing error handling...\n"
+	$(call exec_cmd, false)  # 'false' command always returns exit code 1
+	@printf "This should not be printed if MAKE_STOP_ON_ERRORS=true\n"
 
 .PHONY: help
 help: ## Display this help

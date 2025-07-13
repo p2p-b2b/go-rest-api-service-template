@@ -1,3 +1,4 @@
+// Package version provides information about the current version of the application.
 package version
 
 import "runtime"

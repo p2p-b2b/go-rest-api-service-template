@@ -5,11 +5,13 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"os"
 	"strings"
 
 	"github.com/p2p-b2b/go-rest-api-service-template/docs"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/http/middleware"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/http/server"
+	"github.com/p2p-b2b/go-rest-api-service-template/internal/jwtvalidator"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/version"
 	"github.com/p2p-b2b/ratelimiter"
 	"golang.org/x/time/rate"
@@ -68,14 +70,33 @@ func (a *App) initHTTPServer(ctx context.Context) error {
 		apiCommonMdws = append(apiCommonMdws, middleware.IPRateLimiter(rateLimiter))
 	}
 
+	// Create JWT validators
+	jwtValidators := a.createJWTValidators()
+
 	// Create middleware chains
 	apiCommonMiddlewares := middleware.Chain(apiCommonMdws...)
+	accessTokenMiddlewares := middleware.Chain(
+		middleware.CheckAccessToken(jwtValidators),
+		middleware.CheckAuthz(a.services.Authz),
+	)
+	refreshTokenMiddlewares := middleware.Chain(
+		middleware.CheckRefreshToken(jwtValidators),
+		middleware.CheckAuthz(a.services.Authz),
+	)
 
 	// Register public routes
 	a.handlers.Swagger.RegisterRoutes(apiRouter)
 	a.handlers.Health.RegisterRoutes(apiRouter)
 	a.handlers.Version.RegisterRoutes(apiRouter)
-	a.handlers.Users.RegisterRoutes(apiRouter)
+
+	// Register protected routes
+	a.handlers.Users.RegisterRoutes(apiRouter, accessTokenMiddlewares)
+	a.handlers.Policies.RegisterRoutes(apiRouter, accessTokenMiddlewares)
+	a.handlers.Resources.RegisterRoutes(apiRouter, accessTokenMiddlewares)
+	a.handlers.Roles.RegisterRoutes(apiRouter, accessTokenMiddlewares)
+	a.handlers.Authn.RegisterRoutes(apiRouter, accessTokenMiddlewares, refreshTokenMiddlewares)
+	a.handlers.Projects.RegisterRoutes(apiRouter, accessTokenMiddlewares)
+	a.handlers.Products.RegisterRoutes(apiRouter, accessTokenMiddlewares)
 
 	// Create the main router
 	mainRouter := http.NewServeMux()
@@ -86,7 +107,7 @@ func (a *App) initHTTPServer(ctx context.Context) error {
 	// Create HTTP server
 	a.httpServer = server.NewHTTPServer(server.HTTPServerConfig{
 		Ctx:         ctx,
-		HttpHandler: mainRouter,
+		HTTPHandler: mainRouter,
 		Config:      a.configs.HTTPServer,
 	})
 
@@ -144,4 +165,28 @@ func (a *App) createRateLimiter() *ratelimiter.BucketLimiter {
 		a.configs.HTTPServer.IPRateLimiterDeleteAfter.Value,
 		storage,
 	)
+}
+
+// createJWTValidators creates JWT validators for access and refresh tokens
+func (a *App) createJWTValidators() map[string]jwtvalidator.Validator {
+	jwtValidators := make(map[string]jwtvalidator.Validator)
+
+	// Read the public key
+	jwtPublicKey, err := os.ReadFile(a.configs.Authn.PublicKeyFile.Value.Name())
+	if err != nil {
+		slog.Error("error reading JWT public key file", "file", a.configs.Authn.PublicKeyFile.Value.Name(), "error", err)
+		return jwtValidators
+	}
+
+	jwtValidators["accessToken"] = &jwtvalidator.AccessTokenValidator{
+		PublicKey: jwtPublicKey,
+		ClientID:  a.configs.Authn.Issuer.Value,
+	}
+
+	jwtValidators["refreshToken"] = &jwtvalidator.RefreshTokenValidator{
+		PublicKey: jwtPublicKey,
+		ClientID:  a.configs.Authn.Issuer.Value,
+	}
+
+	return jwtValidators
 }

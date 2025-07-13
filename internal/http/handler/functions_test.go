@@ -9,17 +9,62 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestParseJWTQueryParams(t *testing.T) {
+	tests := []struct {
+		name     string
+		jwt      string
+		expected string
+		err      error
+	}{
+		{
+			name:     "Empty JWT",
+			jwt:      "",
+			expected: "",
+			err:      &model.InvalidJWTError{Message: "input is empty"},
+		},
+		{
+			name:     "Invalid JWT (too short)",
+			jwt:      "short",
+			expected: "",
+			err:      &model.InvalidJWTError{Message: "input is too short or too long"},
+		},
+		{
+			name:     "Invalid JWT (wrong format)",
+			jwt:      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0",
+			expected: "",
+			err:      &model.InvalidJWTError{Message: "input is not a valid JWT"},
+		},
+		{
+			name:     "Valid JWT",
+			jwt:      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c",
+			expected: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c",
+			err:      nil,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			result, err := parseJWTQueryParams(test.jwt)
+			assert.Equal(t, test.expected, result)
+			assert.Equal(t, test.err, err)
+		})
+	}
+}
+
 func TestParseUUIDQueryParams(t *testing.T) {
-	testID := uuid.New()
+	testID, err := uuid.NewV7()
+	if err != nil {
+		t.Fatalf("Failed to generate UUID: %v", err)
+	}
 
 	tests := []struct {
 		input    string
 		expected uuid.UUID
 		err      error
 	}{
-		{"", uuid.Nil, &InvalidUUIDError{Message: "input is empty"}},
-		{"invalid-uuid", uuid.Nil, &InvalidUUIDError{UUID: "invalid-uuid", Message: "invalid UUID length: 12"}},
-		{uuid.Nil.String(), uuid.Nil, &InvalidUUIDError{UUID: uuid.Nil.String(), Message: "input is nil"}},
+		{"", uuid.Nil, &model.InvalidUUIDError{Message: "input is empty"}},
+		{"invalid-uuid", uuid.Nil, &model.InvalidUUIDError{UUID: "invalid-uuid", Message: "invalid UUID length: 12"}},
+		{uuid.Nil.String(), uuid.Nil, &model.InvalidUUIDError{UUID: uuid.Nil.String(), Message: "input is nil"}},
 		{testID.String(), testID, nil},
 	}
 
@@ -90,7 +135,11 @@ func TestParseFieldsQueryParams(t *testing.T) {
 }
 
 func TestParseNextTokenQueryParams(t *testing.T) {
-	testID := uuid.New()
+	testID, err := uuid.NewV7()
+	if err != nil {
+		t.Fatalf("Failed to generate UUID: %v", err)
+	}
+
 	validToken := model.EncodeToken(testID, 10, model.TokenDirectionNext)
 
 	tests := []struct {
@@ -109,7 +158,7 @@ func TestParseNextTokenQueryParams(t *testing.T) {
 			name:      "Invalid token",
 			nextToken: "invalid",
 			expected:  "",
-			err:       &model.InvalidPaginatorTokenError{Message: "invalid token: illegal base64 data at input byte 4"},
+			err:       &model.InvalidTokenError{Message: "invalid token: illegal base64 data at input byte 4"},
 		},
 		{
 			name:      "Valid token",
@@ -137,7 +186,11 @@ func TestParseNextTokenQueryParams(t *testing.T) {
 }
 
 func TestParsePrevTokenQueryParams(t *testing.T) {
-	testID := uuid.New()
+	testID, err := uuid.NewV7()
+	if err != nil {
+		t.Fatalf("Failed to generate UUID: %v", err)
+	}
+
 	validPrevToken := model.EncodeToken(testID, 10, model.TokenDirectionPrev)
 	validNextToken := model.EncodeToken(testID, 10, model.TokenDirectionNext)
 
@@ -157,7 +210,7 @@ func TestParsePrevTokenQueryParams(t *testing.T) {
 			name:      "Invalid token (bad format)",
 			prevToken: "invalid", // Input that causes a base64 decoding error
 			expected:  "",
-			err:       &model.InvalidPaginatorTokenError{Message: "invalid cursor: invalid token: not base64"},
+			err:       &model.InvalidTokenError{Message: "invalid cursor: invalid token: not base64"},
 		},
 		{
 			name:      "Valid token (encoded as Prev)",
@@ -169,7 +222,7 @@ func TestParsePrevTokenQueryParams(t *testing.T) {
 			name:      "Invalid token (direction mismatch - next token for prev param)",
 			prevToken: validNextToken,
 			expected:  "", // On error, the function returns an empty string for the token
-			err:       &model.InvalidPaginatorTokenError{Message: "invalid cursor: token direction mismatch: expected prev, got next"},
+			err:       &model.InvalidTokenError{Message: "invalid cursor: token direction mismatch: expected prev, got next"},
 		},
 	}
 
@@ -200,10 +253,10 @@ func TestParseLimitQueryParams(t *testing.T) {
 		err      error
 	}{
 		{"", model.PaginatorDefaultLimit, nil},
-		{"invalid", 0, &model.InvalidPaginatorLimitError{MinLimit: model.PaginatorMinLimit, MaxLimit: model.PaginatorMaxLimit}},
+		{"invalid", 0, &model.InvalidLimitError{MinLimit: model.PaginatorMinLimit, MaxLimit: model.PaginatorMaxLimit}},
 		{"0", model.PaginatorDefaultLimit, nil},
 		{"5", 5, nil},
-		{"-1", 0, &model.InvalidPaginatorLimitError{MinLimit: model.PaginatorMinLimit, MaxLimit: model.PaginatorMaxLimit}},
+		{"-1", 0, &model.InvalidLimitError{MinLimit: model.PaginatorMinLimit, MaxLimit: model.PaginatorMaxLimit}},
 		{"1000", model.PaginatorMaxLimit, nil},
 	}
 
@@ -216,7 +269,10 @@ func TestParseLimitQueryParams(t *testing.T) {
 
 func TestParseListQueryParams(t *testing.T) {
 	t.Run("TestParseListQueryParams", func(t *testing.T) {
-		testID := uuid.New()
+		testID, err := uuid.NewV7()
+		if err != nil {
+			t.Fatalf("Failed to generate UUID: %v", err)
+		}
 
 		params := map[string]any{
 			"sort":      "name ASC",

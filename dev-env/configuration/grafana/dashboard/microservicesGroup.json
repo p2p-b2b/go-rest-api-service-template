@@ -39,7 +39,7 @@
           "showLineNumbers": false,
           "showMiniMap": false
         },
-        "content": "<div style=\"text-align: center;\">\n  <h1>🔥 Go-rest-api-service-template System Metrics Dashboard</h1>\n  <h2>📊 Real-Time Monitoring</h2>\n</div>",
+        "content": "<div style=\"text-align: center;\">\n  <h1>🔥 SVC-QU3RY-CORE System Metrics Dashboard</h1>\n  <h2>📊 Real-Time Monitoring</h2>\n</div>",
         "mode": "html"
       },
       "pluginVersion": "11.5.2",
@@ -656,8 +656,7 @@
         },
         "definition": "label_values(handlers_calls_total_total,component)",
         "hide": 2,
-        "includeAll": true,
-        "multi": true,
+        "includeAll": false,
         "name": "scopes",
         "options": [],
         "query": {
@@ -677,7 +676,7 @@
   },
   "timepicker": {},
   "timezone": "browser",
-  "title": "go-rest-api-service-template (II)", 
+  "title": "SVC-QU3RY-CORE (II)", 
   "version": 1,
   "weekStart": ""
 }

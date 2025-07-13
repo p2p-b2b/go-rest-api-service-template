@@ -9,6 +9,7 @@ import (
 	"go.opentelemetry.io/otel"
 
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
+	"go.opentelemetry.io/otel/trace/noop"
 
 	"go.opentelemetry.io/otel/exporters/stdout/stdouttrace"
 	"go.opentelemetry.io/otel/propagation"
@@ -27,7 +28,9 @@ type OpenTelemetryTracerConfig struct {
 	TraceExporterBatchTimeout time.Duration
 }
 
-// OpenTrace represents the tracing of the service
+// OpenTelemetryTracer represents the traces of the service.
+// It is used to collect and export traces using OpenTelemetry.
+// It is initialized with the OpenTelemetryTracerConfig and provides methods to set up and shutdown the traces.
 type OpenTelemetryTracer struct {
 	ctx  context.Context
 	name string
@@ -64,6 +67,18 @@ func NewOpenTelemetryTracer(ctx context.Context, conf *OpenTelemetryTracerConfig
 }
 
 func (ref *OpenTelemetryTracer) SetupTraces() error {
+	// when testing, we don't want to set up the tracer
+	if ref.traceExporter == "noop" {
+		slog.Warn("No tracer exporter configured, use 'noop' for testing purposes only")
+
+		tp := noop.NewTracerProvider()
+
+		otel.SetTracerProvider(tp)
+		ref.Tracer = tp.Tracer(ref.name)
+
+		return nil
+	}
+
 	// Set up propagator.
 	prop := newPropagator()
 	otel.SetTextMapPropagator(prop)
@@ -89,8 +104,10 @@ func (ref *OpenTelemetryTracer) SetupTraces() error {
 
 func (ref *OpenTelemetryTracer) Shutdown() {
 	if ref.Tracer != nil {
-		if err := ref.tp.Shutdown(ref.ctx); err != nil {
-			slog.Error("failed to shutdown OpenTelemetry tracer", "error", err)
+		if ref.tp != nil {
+			if err := ref.tp.Shutdown(ref.ctx); err != nil {
+				slog.Error("failed to shutdown OpenTelemetry tracer", "error", err)
+			}
 		}
 	}
 }

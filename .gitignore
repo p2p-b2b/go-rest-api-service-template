@@ -30,3 +30,4 @@ certs/
 
 # local database volume
 go-rest-api-service-template-db-volume-host/
+dev-env/provisioning/dev-service-pod.yaml

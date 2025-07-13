@@ -3,6 +3,7 @@ package handler
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"strconv"
 	"strings"
@@ -12,6 +13,7 @@ import (
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/o11y"
 	"github.com/p2p-b2b/qfv"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -41,6 +43,36 @@ func setupContext(r *http.Request, tracer trace.Tracer, component string) (conte
 	}
 
 	return ctx, span, metricCommonAttributes
+}
+
+// recordContextError records a context-related error in the span, logs it, and updates metrics with failure status.
+// This is specifically for errors that aren't represented by an error type but as string messages.
+// It's similar to recordError but accepts a string message instead of an error.
+func recordContextError(
+	ctx context.Context,
+	span trace.Span,
+	message string,
+	metricsCounter metric.Int64Counter,
+	metricAttrs []attribute.KeyValue,
+	statusCode int,
+	component string,
+	details ...any,
+) {
+	// Add HTTP status code to metric attributes
+	metricAttrs = append(metricAttrs, attribute.String("code", fmt.Sprintf("%d", statusCode)))
+
+	// Set error status on span
+	span.SetStatus(codes.Error, message)
+	span.AddEvent("error", trace.WithAttributes(
+		attribute.String("error.message", message),
+		attribute.String("component", component),
+	))
+
+	// Log the error
+	slog.Error(component, "error", message, "details", details)
+
+	// Record the metric
+	metricsCounter.Add(ctx, 1, metric.WithAttributes(metricAttrs...))
 }
 
 // recordError records an error in the span, logs it, and updates metrics with failure status.
@@ -94,22 +126,46 @@ func recordSuccess(
 	)
 }
 
+// parserJWTQueryParams parses a string and check if it is a valid JWT format.
+func parseJWTQueryParams(jwt string) (string, error) {
+	if jwt == "" {
+		return "", &model.InvalidJWTError{Message: "input is empty"}
+	}
+
+	if len(jwt) < 50 || len(jwt) > 2048 {
+		return "", &model.InvalidJWTError{Message: "input is too short or too long"}
+	}
+
+	// JWT is a string composed of three parts: header, payload, and signature.
+	// Each part is separated by a dot.
+	parts := strings.Split(jwt, ".")
+	if len(parts) != 3 {
+		return "", &model.InvalidJWTError{Message: "input is not a valid JWT"}
+	}
+
+	return jwt, nil
+}
+
 // parseUUIDQueryParams parses a string into a UUID.
 // If the input is empty, it returns an error.
 // If the input is not a valid UUID, it returns an error.
 // If the input is a nil UUID, it returns an error.
 func parseUUIDQueryParams(input string) (uuid.UUID, error) {
 	if input == "" {
-		return uuid.Nil, &InvalidUUIDError{Message: "input is empty"}
+		return uuid.Nil, &model.InvalidUUIDError{Message: "input is empty"}
 	}
 
 	id, err := uuid.Parse(input)
 	if err != nil {
-		return uuid.Nil, &InvalidUUIDError{UUID: input, Message: err.Error()}
+		return uuid.Nil, &model.InvalidUUIDError{UUID: input, Message: err.Error()}
 	}
 
 	if id == uuid.Nil {
-		return uuid.Nil, &InvalidUUIDError{UUID: input, Message: "input is nil"}
+		return uuid.Nil, &model.InvalidUUIDError{UUID: input, Message: "input is nil"}
+	}
+
+	if id.Version() != uuid.Version(7) {
+		return uuid.Nil, &model.InvalidUUIDError{UUID: input, Message: "input is not a valid UUIDv7"}
 	}
 
 	return id, nil
@@ -164,7 +220,7 @@ func parseNextTokenQueryParams(nextToken string) (string, error) {
 	if nextToken != "" {
 		_, _, _, err := model.DecodeToken(nextToken, model.TokenDirectionNext)
 		if err != nil {
-			return "", &model.InvalidPaginatorTokenError{Message: err.Error()}
+			return "", &model.InvalidTokenError{Message: err.Error()}
 		}
 	}
 
@@ -176,7 +232,7 @@ func parsePrevTokenQueryParams(prevToken string) (string, error) {
 	if prevToken != "" {
 		_, _, _, err := model.DecodeToken(prevToken, model.TokenDirectionPrev)
 		if err != nil {
-			return "", &model.InvalidPaginatorTokenError{Message: err.Error()}
+			return "", &model.InvalidTokenError{Message: err.Error()}
 		}
 	}
 
@@ -194,17 +250,11 @@ func parseLimitQueryParams(limit string) (int, error) {
 
 	// check if this is a valid integer
 	if limitInt, err = strconv.Atoi(limit); err != nil {
-		return 0, &model.InvalidPaginatorLimitError{MinLimit: model.PaginatorMinLimit, MaxLimit: model.PaginatorMaxLimit}
+		return 0, &model.InvalidLimitError{MinLimit: model.PaginatorMinLimit, MaxLimit: model.PaginatorMaxLimit}
 	}
 
-	if limitInt == 0 {
-		limitInt = model.PaginatorDefaultLimit
-	}
-
-	if limitInt < model.PaginatorMinLimit {
-		return 0, &model.InvalidPaginatorLimitError{MinLimit: model.PaginatorMinLimit, MaxLimit: model.PaginatorMaxLimit}
-	} else if limitInt > model.PaginatorMaxLimit {
-		limitInt = model.PaginatorMaxLimit
+	if limitInt < model.PaginatorMinLimit || limitInt > model.PaginatorMaxLimit {
+		return 0, &model.InvalidLimitError{MinLimit: model.PaginatorMinLimit, MaxLimit: model.PaginatorMaxLimit}
 	}
 
 	return limitInt, nil

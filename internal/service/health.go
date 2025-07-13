@@ -3,13 +3,14 @@ package service
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"runtime"
 	"strings"
 
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/model"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/o11y"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/trace"
 )
 
 //go:generate go tool mockgen -package=mocks -destination=../../mocks/service/health.go -source=health.go HealthRepository
@@ -40,11 +41,11 @@ type HealthService struct {
 // NewHealthService creates a new HealthService.
 func NewHealthService(conf HealthServiceConf) (*HealthService, error) {
 	if conf.Repository == nil {
-		return nil, &model.InvalidRepositoryConfigurationError{Message: "repository is required"}
+		return nil, &model.InvalidRepositoryError{Message: "Repository is nil, but it is required for HealthService"}
 	}
 
 	if conf.OT == nil {
-		return nil, &model.InvalidOTConfigurationError{Message: "open telemetry is required"}
+		return nil, &model.InvalidOTConfigurationError{Message: "OpenTelemetry is nil, but it is required for HealthService"}
 	}
 
 	service := &HealthService{
@@ -61,9 +62,9 @@ func NewHealthService(conf HealthServiceConf) (*HealthService, error) {
 		metric.WithDescription("The number of calls to the model service"),
 	)
 	if err != nil {
-		slog.Error("service.Health.NewHealthService", "error", err)
 		return nil, err
 	}
+
 	service.metrics.serviceCalls = serviceCalls
 
 	return service, nil
@@ -71,11 +72,13 @@ func NewHealthService(conf HealthServiceConf) (*HealthService, error) {
 
 // HealthCheck verifies a connection to the repository is still alive.
 func (ref *HealthService) HealthCheck(ctx context.Context) (model.Health, error) {
+	ctx, span, metricAttrs := ref.setupContext(ctx, "service.Health.HealthCheck")
+	defer span.End()
+
 	// database
 	dbStatus := model.StatusUp
 	err := ref.repository.PingContext(ctx)
 	if err != nil {
-		slog.Error("service.Health.HealthCheck", "error", err)
 		dbStatus = model.StatusDown
 	}
 
@@ -93,7 +96,7 @@ func (ref *HealthService) HealthCheck(ctx context.Context) (model.Health, error)
 		Name:   "runtime",
 		Kind:   "go",
 		Status: rtStatus,
-		Data: map[string]interface{}{
+		Data: map[string]any{
 			"version":      runtime.Version(),
 			"numCPU":       runtime.NumCPU(),
 			"numGoroutine": runtime.NumGoroutine(),
@@ -113,5 +116,25 @@ func (ref *HealthService) HealthCheck(ctx context.Context) (model.Health, error)
 		},
 	}
 
+	o11y.RecordSuccess(ctx, span, ref.metrics.serviceCalls, metricAttrs, "health check successful")
+
 	return health, err
+}
+
+// Helper methods for consistent telemetry and error handling
+
+// setupContext creates a context with a span and common attributes for metrics.
+// Returns the new context, span, and common metric attributes.
+func (ref *HealthService) setupContext(ctx context.Context, operation string) (context.Context, trace.Span, []attribute.KeyValue) {
+	ctx, span := ref.ot.Traces.Tracer.Start(ctx, operation)
+
+	span.SetAttributes(
+		attribute.String("component", operation),
+	)
+
+	metricCommonAttributes := []attribute.KeyValue{
+		attribute.String("component", operation),
+	}
+
+	return ctx, span, metricCommonAttributes
 }

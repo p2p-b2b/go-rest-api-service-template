@@ -12,8 +12,8 @@ func TestGetEnv(t *testing.T) {
 		name         string
 		key          string
 		value        string
-		defaultValue interface{}
-		expected     interface{}
+		defaultValue any
+		expected     any
 	}{
 		{
 			name:         "string environment variable",

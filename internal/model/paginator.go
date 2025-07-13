@@ -89,23 +89,63 @@ func (ref *Paginator) GenerateToken(id uuid.UUID, serial int64, dir TokenDirecti
 
 // Validate validates the model.
 func (ref *Paginator) Validate() error {
-	if ref.Limit < PaginatorMinLimit || ref.Limit > PaginatorMaxLimit {
-		return &InvalidPaginatorLimitError{MinLimit: PaginatorMinLimit, MaxLimit: PaginatorMaxLimit}
+	// Validate limit with enhanced validation
+	if err := ValidatePagination(ref.Limit, 0, ""); err != nil {
+		return &InvalidLimitError{MinLimit: PaginatorMinLimit, MaxLimit: PaginatorMaxLimit}
 	}
 
-	// next should be a base64 encoded string
+	// Additional check for our specific limits
+	if ref.Limit < PaginatorMinLimit || ref.Limit > PaginatorMaxLimit {
+		return &InvalidLimitError{MinLimit: PaginatorMinLimit, MaxLimit: PaginatorMaxLimit}
+	}
+
+	// Validate next token with string validation
 	if ref.NextToken != "" {
-		_, _, _, err := DecodeToken(ref.NextToken, TokenDirectionNext)
+		// First validate the token string format
+		token, err := ValidateString(ref.NextToken, StringValidationOptions{
+			MinLength:      1,
+			MaxLength:      1024,
+			TrimWhitespace: true,
+			AllowEmpty:     false,
+			NoControlChars: true,
+			NoHTMLTags:     true,
+			NoScriptTags:   true,
+			FieldName:      "next_token",
+		})
 		if err != nil {
-			return &InvalidPaginatorTokenError{Message: "next token cannot be decoded"}
+			return &InvalidTokenError{Message: "invalid next token format"}
+		}
+		ref.NextToken = token
+
+		// Then validate it can be decoded
+		_, _, _, err = DecodeToken(ref.NextToken, TokenDirectionNext)
+		if err != nil {
+			return &InvalidTokenError{Message: "next token cannot be decoded"}
 		}
 	}
 
-	// previous should be a base64 encoded string
+	// Validate previous token with string validation
 	if ref.PrevToken != "" {
-		_, _, _, err := DecodeToken(ref.PrevToken, TokenDirectionPrev)
+		// First validate the token string format
+		token, err := ValidateString(ref.PrevToken, StringValidationOptions{
+			MinLength:      1,
+			MaxLength:      1024,
+			TrimWhitespace: true,
+			AllowEmpty:     false,
+			NoControlChars: true,
+			NoHTMLTags:     true,
+			NoScriptTags:   true,
+			FieldName:      "prev_token",
+		})
 		if err != nil {
-			return &InvalidPaginatorTokenError{Message: "previous token cannot be decoded"}
+			return &InvalidTokenError{Message: "invalid previous token format"}
+		}
+		ref.PrevToken = token
+
+		// Then validate it can be decoded
+		_, _, _, err = DecodeToken(ref.PrevToken, TokenDirectionPrev)
+		if err != nil {
+			return &InvalidTokenError{Message: "previous token cannot be decoded"}
 		}
 	}
 
@@ -169,32 +209,32 @@ func EncodeToken(id uuid.UUID, serial int64, dir TokenDirection) string {
 func DecodeToken(s string, expectedDir TokenDirection) (id uuid.UUID, serial int64, actualDir TokenDirection, err error) {
 	data, err := base64.StdEncoding.DecodeString(s)
 	if err != nil {
-		return uuid.Nil, 0, TokenDirectionInvalid, &InvalidPaginatorCursorError{Message: "invalid token: not base64"}
+		return uuid.Nil, 0, TokenDirectionInvalid, &InvalidCursorError{Message: "invalid token: not base64"}
 	}
 
 	parts := strings.Split(string(data), DataSeparator)
 	if len(parts) != 3 {
-		return uuid.Nil, 0, TokenDirectionInvalid, &InvalidPaginatorCursorError{Message: "invalid token: incorrect format"}
+		return uuid.Nil, 0, TokenDirectionInvalid, &InvalidCursorError{Message: "invalid token: incorrect format"}
 	}
 
 	id, err = uuid.Parse(parts[0])
 	if err != nil {
-		return uuid.Nil, 0, TokenDirectionInvalid, &InvalidPaginatorCursorError{Message: "invalid token: invalid uuid"}
+		return uuid.Nil, 0, TokenDirectionInvalid, &InvalidCursorError{Message: "invalid token: invalid uuid"}
 	}
 
 	serial, err = strconv.ParseInt(parts[1], 10, 64)
 	if err != nil {
-		return uuid.Nil, 0, TokenDirectionInvalid, &InvalidPaginatorCursorError{Message: "invalid token: invalid serial number"}
+		return uuid.Nil, 0, TokenDirectionInvalid, &InvalidCursorError{Message: "invalid token: invalid serial number"}
 	}
 
 	tmpDirVal, err := strconv.Atoi(parts[2])
 	if err != nil {
-		return uuid.Nil, 0, TokenDirectionInvalid, &InvalidPaginatorCursorError{Message: "invalid token: non-integer direction"}
+		return uuid.Nil, 0, TokenDirectionInvalid, &InvalidCursorError{Message: "invalid token: non-integer direction"}
 	}
 
 	// Check if the numeric value corresponds to any defined TokenDirection constant.
 	if tmpDirVal < int(TokenDirectionPrev) || tmpDirVal > int(TokenDirectionInvalid) { // Assumes Prev=1, Next=2, Invalid=3
-		return uuid.Nil, 0, TokenDirectionInvalid, &InvalidPaginatorCursorError{Message: "invalid token: unknown direction value"}
+		return uuid.Nil, 0, TokenDirectionInvalid, &InvalidCursorError{Message: "invalid token: unknown direction value"}
 	}
 
 	parsedDir := TokenDirection(tmpDirVal)
@@ -202,12 +242,12 @@ func DecodeToken(s string, expectedDir TokenDirection) (id uuid.UUID, serial int
 	// A token is inherently invalid if its embedded direction is not a usable one
 	// according to IsValid() (e.g., TokenDirectionInvalid itself).
 	if !parsedDir.IsValid() {
-		return uuid.Nil, 0, TokenDirectionInvalid, &InvalidPaginatorCursorError{Message: "token contains an inherently invalid direction"}
+		return uuid.Nil, 0, TokenDirectionInvalid, &InvalidCursorError{Message: "token contains an inherently invalid direction"}
 	}
 
 	// If the embedded direction is usable, it must also match the expected contextual direction.
 	if parsedDir != expectedDir {
-		return uuid.Nil, 0, TokenDirectionInvalid, &InvalidPaginatorCursorError{Message: fmt.Sprintf("token direction mismatch: expected %s, got %s", expectedDir, parsedDir)}
+		return uuid.Nil, 0, TokenDirectionInvalid, &InvalidCursorError{Message: fmt.Sprintf("token direction mismatch: expected %s, got %s", expectedDir, parsedDir)}
 	}
 
 	return id, serial, parsedDir, nil
@@ -284,7 +324,7 @@ func GetTokens(
 func GetPaginatorDirection(nextToken string, prevToken string) (direction TokenDirection, id uuid.UUID, serial int64, err error) {
 	// if both next and prev tokens are provided, use next token
 	if nextToken != "" && prevToken != "" {
-		return TokenDirectionInvalid, uuid.Nil, 0, &InvalidPaginatorCursorError{Message: "both next and prev tokens cannot be provided"}
+		return TokenDirectionInvalid, uuid.Nil, 0, &InvalidCursorError{Message: "both next and prev tokens cannot be provided"}
 	}
 
 	if nextToken != "" {
