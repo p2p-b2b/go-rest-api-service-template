@@ -715,6 +715,10 @@ definitions:
   model.User:
     description: User represents a user entity.
     properties:
+      admin:
+        example: false
+        format: boolean
+        type: boolean
       created_at:
         example: "2021-01-01T00:00:00Z"
         format: date-time

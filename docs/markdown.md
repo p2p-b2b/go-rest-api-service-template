@@ -4391,6 +4391,7 @@ Status: Internal Server Error
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
+| admin | boolean (formatted boolean)| `bool` |  | |  | `false` |
 | created_at | date-time (formatted string)| `strfmt.DateTime` |  | |  | `2021-01-01T00:00:00Z` |
 | disabled | boolean (formatted boolean)| `bool` |  | |  | `false` |
 | email | email (formatted string)| `strfmt.Email` |  | |  | `my@email.com` |

@@ -4292,6 +4292,11 @@ const docTemplate = `{
             "description": "User represents a user entity.",
             "type": "object",
             "properties": {
+                "admin": {
+                    "type": "boolean",
+                    "format": "boolean",
+                    "example": false
+                },
                 "created_at": {
                     "type": "string",
                     "format": "date-time",

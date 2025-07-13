@@ -45,6 +45,7 @@ type User struct {
 	CreatedAt    time.Time `json:"created_at,omitzero" example:"2021-01-01T00:00:00Z" format:"date-time"`
 	UpdatedAt    time.Time `json:"updated_at,omitzero" example:"2021-01-01T00:00:00Z" format:"date-time"`
 	Disabled     *bool     `json:"disabled,omitempty" example:"false" format:"boolean"`
+	Admin        *bool     `json:"admin,omitempty" example:"false" format:"boolean"`
 	FirstName    string    `json:"first_name,omitempty" example:"John" format:"string"`
 	LastName     string    `json:"last_name,omitempty" example:"Doe" format:"string"`
 	Email        string    `json:"email,omitempty" example:"my@email.com" format:"email"`

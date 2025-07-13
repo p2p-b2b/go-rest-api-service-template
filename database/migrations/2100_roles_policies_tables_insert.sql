@@ -91,9 +91,9 @@ INSERT INTO policies (id, resources_id, name, description, allowed_action, allow
 -- full access
 ('01979221-694f-7ba0-8930-8e7b9e147c2e', '019791d2-adef-7595-be12-21850e11b3ce', 'Full Access', 'Allow all actions on all resources', '*', '*', TRUE),
 -- Allow logout
-('01979221-694f-7b7d-ab32-5c301e0e1745', '019791cc-06c7-7e4c-961c-b1bf5f40d633', 'Allow logout', 'Allow make logout', 'DELETE', '/auth/logout', TRUE),
+('01979221-694f-7b7d-ab32-5c301e0e1745', '0198042a-f9c5-75d4-afa6-fe658744c80f', 'Allow logout', 'Allow make logout', 'DELETE', '/auth/logout', TRUE),
 -- Allow refresh token
-('01979221-694f-7b69-a3a8-c8fce0f43afc', '019791cc-06c7-7e50-a5b6-bd1c82d5c031', 'Allow refresh token', 'Allow refresh token', 'POST', '/auth/refresh', TRUE);
+('01979221-694f-7b69-a3a8-c8fce0f43afc', '0198042a-f9c5-75d8-aa7b-37524ea4f124', 'Allow refresh token', 'Allow refresh token', 'POST', '/auth/refresh', TRUE);
 
 -----------------------------------------------------------------------------------------
 -- table roles_policies
