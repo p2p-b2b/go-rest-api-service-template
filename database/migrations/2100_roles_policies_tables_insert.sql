@@ -97,7 +97,9 @@ INSERT INTO policies (id, resources_id, name, description, allowed_action, allow
 -- Allow refresh token
 ('01979221-694f-7b69-a3a8-c8fce0f43afc', '0198042a-f9c5-75d8-aa7b-37524ea4f124', 'Allow refresh token', 'Allow refresh token', 'POST', '/auth/refresh', TRUE),
 -- Allow create project
-('01980464-8a12-7b17-af6f-bc536bc6d71c', '0198042a-f9c5-7622-9142-88fbaa727659', 'Allow create project', 'Allow create project', 'POST', '/projects', TRUE);
+('01980464-8a12-7b17-af6f-bc536bc6d71c', '0198042a-f9c5-7622-9142-88fbaa727659', 'Allow create project', 'Allow create project', 'POST', '/projects', TRUE),
+-- Allow list projects
+('019804ef-e875-76be-bddf-b50533fd7f67', '0198042a-f9c5-76a7-a480-fbcb978b8501', 'Allow list projects', 'Allow list projects', 'GET', '/projects', TRUE);
 
 -----------------------------------------------------------------------------------------
 -- table roles_policies
@@ -109,7 +111,8 @@ INSERT INTO roles_policies (roles_id, policies_id) VALUES
 ('019791d2-adef-758d-b043-55ea5be663a0', '01979221-694f-7b7d-ab32-5c301e0e1745'),
 ('019791d2-adef-758d-b043-55ea5be663a0', '01979221-694f-7b69-a3a8-c8fce0f43afc'),
 -- ProjectAdmin
-('01980464-8a12-7b13-9404-495b6634614f', '01980464-8a12-7b17-af6f-bc536bc6d71c');
+('01980464-8a12-7b13-9404-495b6634614f', '01980464-8a12-7b17-af6f-bc536bc6d71c'),
+('01980464-8a12-7b13-9404-495b6634614f', '019804ef-e875-76be-bddf-b50533fd7f67');
 
 -----------------------------------------------------------------------------------------
 -- table users_roles
