@@ -33,4 +33,14 @@ CREATE INDEX "idx_users_pagination" ON users (serial_id, id);
 -- +goose Down
 -- +goose StatementBegin
 
+-- drop indexes for users
+DROP INDEX IF EXISTS "idx_users_id";
+DROP INDEX IF EXISTS "idx_users_email";
+DROP INDEX IF EXISTS "idx_users_created_at";
+DROP INDEX IF EXISTS "idx_users_updated_at";
+DROP INDEX IF EXISTS "idx_users_pagination";
+
+-- drop users table
+DROP TABLE IF EXISTS users;
+
 -- +goose StatementEnd

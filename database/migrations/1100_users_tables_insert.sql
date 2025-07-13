@@ -16,6 +16,7 @@ INSERT INTO users (id, first_name, last_name, email, password_hash, disabled) VA
 -- +goose Down
 -- +goose StatementBegin
 
+-- drop all users
 DELETE FROM user;
 
 -- +goose StatementEnd

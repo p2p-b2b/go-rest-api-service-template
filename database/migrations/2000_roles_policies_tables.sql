@@ -195,4 +195,48 @@ CREATE INDEX "idx_users_roles_id" ON users_roles (users_id, roles_id);
 -- +goose Down
 -- +goose StatementBegin
 
+-- drop indexes for roles
+DROP INDEX IF EXISTS "idx_roles_id";
+DROP INDEX IF EXISTS "idx_roles_name";
+DROP INDEX IF EXISTS "idx_roles_created_at";
+DROP INDEX IF EXISTS "idx_roles_updated_at";
+DROP INDEX IF EXISTS "idx_roles_pagination";
+
+-- drop roles table
+DROP TABLE IF EXISTS roles;
+
+-- drop indexes for resources
+DROP INDEX IF EXISTS "idx_permissions_id";
+DROP INDEX IF EXISTS "idx_permissions_action";
+DROP INDEX IF EXISTS "idx_permissions_resource";
+DROP INDEX IF EXISTS "idx_permissions_created_at";
+DROP INDEX IF EXISTS "idx_permissions_updated_at";
+DROP INDEX IF EXISTS "idx_permissions_pagination";
+
+-- drop resources table
+DROP TABLE IF EXISTS resources;
+
+-- drop indexes for policies
+DROP INDEX IF EXISTS "idx_policies_id";
+DROP INDEX IF EXISTS "idx_policies_resources_id";
+DROP INDEX IF EXISTS "idx_policies_name";
+DROP INDEX IF EXISTS "idx_policies_allowed_action";
+DROP INDEX IF EXISTS "idx_policies_allowed_resource";
+DROP INDEX IF EXISTS "idx_policies_created_at";
+DROP INDEX IF EXISTS "idx_policies_updated_at";
+DROP INDEX IF EXISTS "idx_policies_pagination";
+
+-- drop policies table
+DROP TABLE IF EXISTS policies;
+
+-- drop indexes for roles_policies
+DROP INDEX IF EXISTS "idx_roles_policies_roles_id";
+DROP INDEX IF EXISTS "idx_roles_policies_policies_id";
+DROP INDEX IF EXISTS "idx_roles_policies_created_at";
+DROP INDEX IF EXISTS "idx_roles_policies_updated_at";
+DROP INDEX IF EXISTS "idx_roles_policies_roles_id_policies_id";
+
+-- drop roles_policies table
+DROP TABLE IF EXISTS roles_policies;
+
 -- +goose StatementEnd

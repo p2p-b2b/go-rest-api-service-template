@@ -38,6 +38,7 @@ DROP INDEX IF EXISTS "idx_products_name";
 DROP INDEX IF EXISTS "idx_products_created_at";
 DROP INDEX IF EXISTS "idx_products_updated_at";
 DROP INDEX IF EXISTS "idx_products_pagination";
+
 -- drop products table
 DROP TABLE IF EXISTS products;
 

@@ -136,4 +136,16 @@ INSERT INTO users_roles (users_id, roles_id) VALUES
 -- +goose Down
 -- +goose StatementBegin
 
+-- delete all roles_policies
+DELETE FROM roles_policies;
+
+-- delete all policies
+DELETE FROM policies;
+
+-- delete all roles
+DELETE FROM roles;
+
+-- delete all resources
+DELETE FROM resources;
+
 -- +goose StatementEnd

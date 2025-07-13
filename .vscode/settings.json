@@ -36,6 +36,7 @@
     "PGSQL",
     "pgxpool",
     "pkey",
+    "plpgsql",
     "podman",
     "postgres",
     "pressly",
