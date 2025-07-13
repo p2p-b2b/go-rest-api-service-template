@@ -5,12 +5,21 @@ tmp_dir      = "tmp"
 [build]
 args_bin = [
   "-debug",
-  "-database.migration.enable=true",
-  "-http.server.pprof.enabled=true",
-  "-http.server.cors.enabled=true",
-  "-http.server.cors.allowed.origins=http://localhost:8080,http://localhost:5173",
+  "-log.add.source=true",
   "-opentelemetry.trace.exporter=otlp-http",
   "-opentelemetry.metric.exporter=otlp-http",
+  "-authn.access.token.duration=24h",
+  "-authn.refresh.token.duration=720h",
+  "-authn.private.key.file=./certs/jwt.key",
+  "-authn.public.key.file=./certs/jwt.pub",
+  "-authn.symmetric.key.file=./certs/aes-256-symmetric-hex.key",
+  "-http.server.pprof.enabled=false",
+  "-http.server.cors.enabled=true",
+  "-http.server.cors.allowed.origins=http://localhost:8080,http://localhost:5173",
+  "-http.server.ip.rate.limiter.enabled=true",
+  "-http.server.ip.rate.limiter.burst=400",
+  "-http.server.ip.rate.limiter.limit=100.0",
+  "-http.server.port=8080",
 ]
 bin = "./build/go-rest-api-service-template"
 cmd = "make build"

@@ -3014,4 +3014,19 @@ paths:
       summary: Get version
       tags:
       - Version
+securityDefinitions:
+  AccessToken:
+    description: |-
+      It is a bearer token for accessing the API.
+      The value must be "Bearer <access_token>"
+    in: header
+    name: Authorization
+    type: apiKey
+  RefreshToken:
+    description: |-
+      It is a bearer token for refreshing the access token.
+      The value must be "Bearer <refresh_token>"
+    in: header
+    name: Authorization
+    type: apiKey
 swagger: "2.0"

@@ -33,6 +33,24 @@ API Support info@qu3ry.me https://qu3ry.me
 ### Produces
   * application/json
 
+## Access control
+
+### Security Schemes
+
+#### AccessToken (header: Authorization)
+
+It is a bearer token for accessing the API.
+The value must be "Bearer <access_token>"
+
+> **Type**: apikey
+
+#### RefreshToken (header: Authorization)
+
+It is a bearer token for refreshing the access token.
+The value must be "Bearer <refresh_token>"
+
+> **Type**: apikey
+
 ## All endpoints
 
 ###  auth

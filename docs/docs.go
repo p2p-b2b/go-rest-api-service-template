@@ -4375,6 +4375,20 @@ const docTemplate = `{
                 }
             }
         }
+    },
+    "securityDefinitions": {
+        "AccessToken": {
+            "description": "It is a bearer token for accessing the API.\nThe value must be \"Bearer \u003caccess_token\u003e\"",
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
+        },
+        "RefreshToken": {
+            "description": "It is a bearer token for refreshing the access token.\nThe value must be \"Bearer \u003crefresh_token\u003e\"",
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
+        }
     }
 }`
 
