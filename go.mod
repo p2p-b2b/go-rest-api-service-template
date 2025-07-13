@@ -1,6 +1,6 @@
 module github.com/p2p-b2b/go-rest-api-service-template
 
-go 1.24.3
+go 1.24.5
 
 require (
 	github.com/golang-jwt/jwt/v5 v5.2.2
