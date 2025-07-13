@@ -5,8 +5,18 @@ import (
 
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/config"
 	"go.opentelemetry.io/otel/sdk/resource"
-	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.34.0"
 )
+
+type OpenTelemetryTracerService interface {
+	SetupTraces() error
+	Shutdown()
+}
+
+type OpenTelemetryMeterService interface {
+	SetupMetrics() error
+	Shutdown()
+}
 
 type OpenTelemetry struct {
 	Traces  *OpenTelemetryTracer

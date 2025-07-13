@@ -11,19 +11,31 @@ import (
 
 // main is the entry point of the application
 //
-//	@title			Go REST API Service Template
-//	@version		v1
-//	@contact.name	API Support
-//	@contact.url	https://qu3ry.me
-//	@contact.email	info@qu3ry.me
-//	@description	This is a service template for building RESTful APIs in Go.
-//	@description	It uses a PostgreSQL database to store user information.
-//	@description	The service provides:
-//	@description	- CRUD operations for users.
-//	@description	- Health and version endpoints.
-//	@description	- Configuration using environment variables or command line arguments.
-//	@description	- Debug mode to enable debug logging.
-//	@description	- TLS enabled to secure the communication.
+//	@title						Go REST API Service Template
+//	@version					v1
+//	@contact.name				API Support
+//	@contact.url				https://qu3ry.me
+//	@contact.email				info@qu3ry.me
+//	@description				This is a service template for building RESTful APIs in Go.
+//	@description				It uses a PostgreSQL database to store user information.
+//	@description				The service provides:
+//	@description				- CRUD operations for users.
+//	@description				- Health and version endpoints.
+//	@description				- Configuration using environment variables or command line arguments.
+//	@description				- Debug mode to enable debug logging.
+//	@description				- TLS enabled to secure the communication.
+//
+//	@securityDefinitions.apikey	RefreshToken
+//	@in							header
+//	@name						Authorization
+//	@description				It is a bearer token for refreshing the access token.
+//	@description				The value must be "Bearer <refresh_token>"
+
+//	@securityDefinitions.apikey	AccessToken
+//	@in							header
+//	@name						Authorization
+//	@description				It is a bearer token for accessing the API.
+//	@description				The value must be "Bearer <access_token>"
 //
 // main function initializes the application, sets up the database connection, and starts the HTTP server
 func main() {

@@ -27,6 +27,8 @@ server.crt
 tmp/
 .env
 certs/
+dev.env
 
 # local database volume
 go-rest-api-service-template-db-volume-host/
+dev-env/provisioning/dev-service-pod.yaml

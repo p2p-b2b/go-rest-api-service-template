@@ -14,6 +14,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/http/server"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/o11y"
+	"github.com/p2p-b2b/mailer"
 )
 
 const (
@@ -34,6 +35,7 @@ type App struct {
 
 	// HTTP servers
 	httpServer  *server.HTTPServer
+	mailServer  *mailer.MailService
 	pprofServer *http.Server
 
 	// Services and repositories (could be further grouped by domain)
@@ -71,6 +73,11 @@ func NewApp(ctx context.Context) (*App, error) {
 		return nil, err
 	}
 
+	// must be before initServices
+	if err := app.initMailService(ctx); err != nil {
+		return nil, err
+	}
+
 	if err := app.initServices(ctx); err != nil {
 		return nil, err
 	}
@@ -94,6 +101,7 @@ func (a *App) Run() error {
 
 	// Start HTTP server
 	go a.httpServer.Start()
+	go a.mailServer.Start()
 
 	// Start pprof server if enabled
 	if a.configs.HTTPServer.PprofEnabled.Value {
@@ -145,6 +153,10 @@ func (a *App) Shutdown() error {
 		// 3. Close database connection
 		slog.Info("closing database connection")
 		a.dbPool.Close()
+
+		// Stop the mail service
+		slog.Info("stopping mail service")
+		a.mailServer.Stop()
 
 		// 4. Shutdown telemetry
 		slog.Info("shutting down telemetry")

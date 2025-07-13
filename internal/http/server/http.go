@@ -1,3 +1,5 @@
+// Package server provides an HTTP server implementation with graceful shutdown and TLS support.
+// It listens for OS signals to gracefully shut down or reload the server.
 package server
 
 import (
@@ -17,7 +19,7 @@ import (
 
 type HTTPServerConfig struct {
 	Ctx         context.Context
-	HttpHandler http.Handler
+	HTTPHandler http.Handler
 	Config      *config.HTTPServerConfig
 }
 
@@ -45,7 +47,7 @@ func NewHTTPServer(conf HTTPServerConfig) *HTTPServer {
 		ctx: conf.Ctx,
 		httpServer: &http.Server{
 			Addr:    addr,
-			Handler: conf.HttpHandler,
+			Handler: conf.HTTPHandler,
 		},
 		conf:      conf.Config,
 		osSigChan: make(chan os.Signal, 1),

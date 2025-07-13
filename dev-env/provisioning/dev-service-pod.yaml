@@ -15,8 +15,8 @@ kind: Pod
 metadata:
   creationTimestamp: "2024-05-04T14:57:16Z"
   labels:
-    app: dev-service-pod
-  name: dev-service-pod
+    app: go-rest-api-service-template
+  name: go-rest-api-service-template
 spec:
   containers:
     - name: postgres
@@ -40,6 +40,12 @@ spec:
       volumeMounts:
         - name: db-volume-host
           mountPath: /var/lib/postgresq/data
+    - name: valkey
+      image: docker.io/valkey/valkey:latest
+      ports:
+        - containerPort: 6379
+          hostPort: 6379
+          protocol: TCP
     - name: grafana
       image: docker.io/grafana/grafana:latest
       args:
@@ -87,7 +93,8 @@ spec:
         - mountPath: /mnt/config/tempo-local-config.yaml:Z
           name: tempo-config
     - name: prometheus
-      image: docker.io/prom/prometheus:v3.2.1
+      # image: docker.io/prom/prometheus:latest
+      image: docker.io/prom/prometheus:v3.4.2
       args:
         - "--config.file=/etc/prometheus/prometheus.yml"
         - "--storage.tsdb.path=/prometheus"
@@ -104,36 +111,52 @@ spec:
           name: prometheus
         - mountPath: /etc/prometheus/prometheus.yml:Z
           name: prometheus-config
+
+    # https://github.com/axllent/mailpit
+    - name: mailpit
+      image: axllent/mailpit
+      args:
+        - "--smtp-auth-allow-insecure"
+        - "--smtp-auth-accept-any"
+      ports:
+        - containerPort: 8025
+          hostPort: 8025
+          protocol: TCP
+        - containerPort: 1025
+          hostPort: 1025
+          protocol: TCP
+
+  # volumes
   volumes:
     - name: db-volume-host
       hostPath:
-        path: /tmp/go-rest-api-service-template/db-volume-host
+        path: /Users/christian/tmp/go-rest-api-service-template/db-volume-host
         type: DirectoryOrCreate
     - name: grafana-datasources
       hostPath:
-        path: /tmp/go-rest-api-service-template/grafana-ds/grafana-ds.yaml
+        path: /Users/christian/tmp/go-rest-api-service-template/grafana-ds/grafana-ds.yaml
         type: File
     - name: grafana-dashboard-config
       hostPath:
-        path: /tmp/go-rest-api-service-template/grafana-dashboard-config/default.yaml
+        path: /Users/christian/tmp/go-rest-api-service-template/grafana-dashboard-config/default.yaml
         type: File
     - name: grafana-dashboard
       hostPath:
-        path: /tmp/go-rest-api-service-template/grafana-dashboard
+        path: /Users/christian/tmp/go-rest-api-service-template/grafana-dashboard
         type: DirectoryOrCreate
     - name: tempo
       hostPath:
-        path: /tmp/go-rest-api-service-template/tempo-volume-host
+        path: /Users/christian/tmp/go-rest-api-service-template/tempo-volume-host
         type: DirectoryOrCreate
     - name: tempo-config
       hostPath:
-        path: /tmp/go-rest-api-service-template/dev-env/tempo-local-config.yaml
+        path: /Users/christian/tmp/go-rest-api-service-template/dev-env/tempo-local-config.yaml
         type: File
     - name: prometheus
       hostPath:
-        path: /tmp/go-rest-api-service-template/prometheus-volume-host
+        path: /Users/christian/tmp/go-rest-api-service-template/prometheus-volume-host
         type: DirectoryOrCreate
     - name: prometheus-config
       hostPath:
-        path: /tmp/go-rest-api-service-template/dev-env/prometheus.yaml
+        path: /Users/christian/tmp/go-rest-api-service-template/dev-env/prometheus.yaml
         type: File

@@ -1,3 +1,8 @@
+// Package respond provides functions to write JSON responses to HTTP requests.
+// It includes a sync.Pool to reuse HTTP message objects, reducing memory allocations.
+// It also provides a function to write JSON data directly to the response writer.
+// The package is designed to be used in HTTP handlers to respond with structured JSON messages.
+// It includes logging capabilities to log the response details for debugging and monitoring purposes.
 package respond
 
 import (
@@ -33,21 +38,21 @@ var httpMessagePool = sync.Pool{
 // WriteJSONMessage writes a success log and response to the client with the given status code and message.
 func WriteJSONMessage(w http.ResponseWriter, r *http.Request, statusCode int, message string) {
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(statusCode)
 
-	// var success model.HTTPMessage
 	mgs := httpMessagePool.Get().(*model.HTTPMessage)
-
 	mgs.Timestamp = time.Now()
 	mgs.StatusCode = statusCode
 	mgs.Message = message
 	mgs.Method = r.Method
 	mgs.Path = r.URL.Path
 
+	// Set the status code before writing the response body
+	w.WriteHeader(statusCode)
+
+	// Now try to write the data
 	if err := json.NewEncoder(w).Encode(mgs); err != nil {
 		slog.Error("failed to write JSON response", "error", err)
-
-		http.Error(w, "failed to write JSON response", http.StatusInternalServerError)
+		w.WriteHeader(http.StatusInternalServerError)
 	}
 
 	httpMessagePool.Put(mgs)

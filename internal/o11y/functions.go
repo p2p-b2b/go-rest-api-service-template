@@ -3,6 +3,7 @@ package o11y
 import (
 	"context"
 	"log/slog"
+	"runtime"
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -36,10 +37,17 @@ func RecordError(
 	span.SetStatus(codes.Error, err.Error())
 	span.RecordError(err)
 
+	pc, file, line, ok := runtime.Caller(1)
+	if !ok {
+		file = "unknown"
+		line = 0
+	}
+
+	funcName := runtime.FuncForPC(pc).Name()
 	if len(details) > 0 {
-		slog.Error(component, append([]any{"error", err}, details...)...)
+		slog.Error(component, append([]any{"error", err, "func", funcName, "file", file, "line", line}, details...)...)
 	} else {
-		slog.Error(component, "error", err)
+		slog.Error(component, "error", err, "func", funcName, "file", file, "line", line)
 	}
 
 	if metricsCounter != nil {

@@ -64,7 +64,7 @@ func (s *SliceStringVar) Set(value string) error {
 }
 
 // Get returns the contents of the Value.
-func (s *SliceStringVar) Get() interface{} {
+func (s *SliceStringVar) Get() any {
 	return *s
 }
 
@@ -105,7 +105,7 @@ func (f *FileVar) Set(value string) error {
 }
 
 // Get returns the contents of the Value.
-func (f *FileVar) Get() interface{} {
+func (f *FileVar) Get() any {
 	return f.File
 }
 
@@ -248,7 +248,11 @@ func SetEnvVarFromFile() error {
 
 			// Set the environment variable
 			slog.Debug("setting environment variable", "key", key, "value", value)
-			os.Setenv(key, value)
+			if err := os.Setenv(key, value); err != nil {
+				slog.Error("failed to set environment variable", "key", key, "value", value, "error", err)
+				return err
+			}
+
 		}
 
 		if err := scanner.Err(); err != nil {

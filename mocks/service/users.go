@@ -70,6 +70,20 @@ func (mr *MockUsersRepositoryMockRecorder) Insert(ctx, input any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Insert", reflect.TypeOf((*MockUsersRepository)(nil).Insert), ctx, input)
 }
 
+// LinkRoles mocks base method.
+func (m *MockUsersRepository) LinkRoles(ctx context.Context, input *model.LinkRolesToUserInput) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "LinkRoles", ctx, input)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// LinkRoles indicates an expected call of LinkRoles.
+func (mr *MockUsersRepositoryMockRecorder) LinkRoles(ctx, input any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LinkRoles", reflect.TypeOf((*MockUsersRepository)(nil).LinkRoles), ctx, input)
+}
+
 // Select mocks base method.
 func (m *MockUsersRepository) Select(ctx context.Context, input *model.SelectUsersInput) (*model.SelectUsersOutput, error) {
 	m.ctrl.T.Helper()
@@ -83,6 +97,21 @@ func (m *MockUsersRepository) Select(ctx context.Context, input *model.SelectUse
 func (mr *MockUsersRepositoryMockRecorder) Select(ctx, input any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Select", reflect.TypeOf((*MockUsersRepository)(nil).Select), ctx, input)
+}
+
+// SelectAuthz mocks base method.
+func (m *MockUsersRepository) SelectAuthz(ctx context.Context, userID uuid.UUID) (map[string]any, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SelectAuthz", ctx, userID)
+	ret0, _ := ret[0].(map[string]any)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// SelectAuthz indicates an expected call of SelectAuthz.
+func (mr *MockUsersRepositoryMockRecorder) SelectAuthz(ctx, userID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SelectAuthz", reflect.TypeOf((*MockUsersRepository)(nil).SelectAuthz), ctx, userID)
 }
 
 // SelectByEmail mocks base method.
@@ -113,6 +142,35 @@ func (m *MockUsersRepository) SelectByID(ctx context.Context, id uuid.UUID) (*mo
 func (mr *MockUsersRepositoryMockRecorder) SelectByID(ctx, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SelectByID", reflect.TypeOf((*MockUsersRepository)(nil).SelectByID), ctx, id)
+}
+
+// SelectByRoleID mocks base method.
+func (m *MockUsersRepository) SelectByRoleID(ctx context.Context, roleID uuid.UUID, input *model.ListUsersInput) (*model.ListUsersOutput, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SelectByRoleID", ctx, roleID, input)
+	ret0, _ := ret[0].(*model.ListUsersOutput)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// SelectByRoleID indicates an expected call of SelectByRoleID.
+func (mr *MockUsersRepositoryMockRecorder) SelectByRoleID(ctx, roleID, input any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SelectByRoleID", reflect.TypeOf((*MockUsersRepository)(nil).SelectByRoleID), ctx, roleID, input)
+}
+
+// UnLinkRoles mocks base method.
+func (m *MockUsersRepository) UnLinkRoles(ctx context.Context, input *model.UnLinkRolesFromUsersInput) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UnLinkRoles", ctx, input)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UnLinkRoles indicates an expected call of UnLinkRoles.
+func (mr *MockUsersRepositoryMockRecorder) UnLinkRoles(ctx, input any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UnLinkRoles", reflect.TypeOf((*MockUsersRepository)(nil).UnLinkRoles), ctx, input)
 }
 
 // UpdateByID mocks base method.

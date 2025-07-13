@@ -101,7 +101,7 @@ func TestDecodeToken(t *testing.T) {
 		name          string
 		args          args
 		wantSerial    int64
-		wantId        uuid.UUID
+		wantID        uuid.UUID
 		wantDirection TokenDirection
 		wantErr       bool
 	}{
@@ -112,7 +112,7 @@ func TestDecodeToken(t *testing.T) {
 				dir: TokenDirectionNext,
 			},
 			wantSerial:    0,
-			wantId:        uuid.Max,
+			wantID:        uuid.Max,
 			wantDirection: TokenDirectionNext,
 			wantErr:       false,
 		},
@@ -123,7 +123,7 @@ func TestDecodeToken(t *testing.T) {
 				dir: TokenDirectionPrev,
 			},
 			wantSerial:    10,
-			wantId:        uuid.Max,
+			wantID:        uuid.Max,
 			wantDirection: TokenDirectionPrev,
 			wantErr:       false,
 		},
@@ -134,7 +134,7 @@ func TestDecodeToken(t *testing.T) {
 				dir: TokenDirectionNext,
 			},
 			wantSerial:    0,
-			wantId:        uuid.Nil,
+			wantID:        uuid.Nil,
 			wantDirection: TokenDirectionInvalid,
 			wantErr:       true,
 		},
@@ -145,7 +145,7 @@ func TestDecodeToken(t *testing.T) {
 				dir: TokenDirectionNext,
 			},
 			wantSerial:    0,
-			wantId:        uuid.Nil,
+			wantID:        uuid.Nil,
 			wantDirection: TokenDirectionInvalid,
 			wantErr:       true,
 		},
@@ -156,7 +156,7 @@ func TestDecodeToken(t *testing.T) {
 				dir: TokenDirectionNext,
 			},
 			wantSerial:    0,
-			wantId:        uuid.Nil,
+			wantID:        uuid.Nil,
 			wantDirection: TokenDirectionInvalid,
 			wantErr:       true,
 		},
@@ -167,7 +167,7 @@ func TestDecodeToken(t *testing.T) {
 				dir: TokenDirectionNext,
 			},
 			wantSerial:    0,
-			wantId:        uuid.Nil,
+			wantID:        uuid.Nil,
 			wantDirection: TokenDirectionInvalid,
 			wantErr:       true,
 		},
@@ -178,7 +178,7 @@ func TestDecodeToken(t *testing.T) {
 				dir: TokenDirectionNext,
 			},
 			wantSerial:    0,
-			wantId:        uuid.Nil,
+			wantID:        uuid.Nil,
 			wantDirection: TokenDirectionInvalid,
 			wantErr:       true,
 		},
@@ -189,7 +189,7 @@ func TestDecodeToken(t *testing.T) {
 				dir: TokenDirectionNext,
 			},
 			wantSerial:    0,
-			wantId:        uuid.Nil,
+			wantID:        uuid.Nil,
 			wantDirection: TokenDirectionInvalid,
 			wantErr:       true,
 		},
@@ -200,7 +200,7 @@ func TestDecodeToken(t *testing.T) {
 				dir: TokenDirectionNext,
 			},
 			wantSerial:    0,
-			wantId:        uuid.Nil,
+			wantID:        uuid.Nil,
 			wantDirection: TokenDirectionInvalid,
 			wantErr:       true,
 		},
@@ -211,7 +211,7 @@ func TestDecodeToken(t *testing.T) {
 				dir: TokenDirectionNext,
 			},
 			wantSerial:    0,
-			wantId:        uuid.Nil,
+			wantID:        uuid.Nil,
 			wantDirection: TokenDirectionInvalid,
 			wantErr:       true,
 		},
@@ -223,14 +223,14 @@ func TestDecodeToken(t *testing.T) {
 				// but we expect an error due to the embedded invalid direction.
 			},
 			wantSerial:    0,
-			wantId:        uuid.Nil,
+			wantID:        uuid.Nil,
 			wantDirection: TokenDirectionInvalid,
 			wantErr:       true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotId, gotSerial, gotDirection, gotErr := DecodeToken(tt.args.s, tt.args.dir)
+			gotID, gotSerial, gotDirection, gotErr := DecodeToken(tt.args.s, tt.args.dir)
 			if (gotErr != nil) != tt.wantErr {
 				t.Errorf("DecodeToken() error = %v, wantErr %v", gotErr, tt.wantErr)
 				return
@@ -239,15 +239,15 @@ func TestDecodeToken(t *testing.T) {
 				if !reflect.DeepEqual(gotSerial, tt.wantSerial) {
 					t.Errorf("DecodeToken() gotSerial = %v, want %v", gotSerial, tt.wantSerial)
 				}
-				if !reflect.DeepEqual(gotId, tt.wantId) {
-					t.Errorf("DecodeToken() gotId = %v, want %v", gotId, tt.wantId)
+				if !reflect.DeepEqual(gotID, tt.wantID) {
+					t.Errorf("DecodeToken() gotID = %v, want %v", gotID, tt.wantID)
 				}
 				if gotDirection != tt.wantDirection {
 					t.Errorf("DecodeToken() gotDirection = %v, want %v", gotDirection, tt.wantDirection)
 				}
 
 				// Encode the token to verify the decoding
-				token := EncodeToken(gotId, gotSerial, gotDirection)
+				token := EncodeToken(gotID, gotSerial, gotDirection)
 				if token != tt.args.s {
 					t.Errorf("EncodeToken() = %v, want %v", token, tt.args.s)
 				}
@@ -371,7 +371,11 @@ func TestPaginator_GenerateToken(t *testing.T) {
 }
 
 func TestPaginator_Validate(t *testing.T) {
-	validUUID := uuid.New()
+	validUUID, err := uuid.NewV7()
+	if err != nil {
+		t.Fatalf("Failed to generate UUID: %v", err)
+	}
+
 	validPrevToken := EncodeToken(validUUID, 123, TokenDirectionPrev)
 	validNextToken := EncodeToken(validUUID, 123, TokenDirectionNext)
 	invalidToken := "invalid-token-not-base64"
@@ -405,7 +409,7 @@ func TestPaginator_Validate(t *testing.T) {
 				Limit: PaginatorMinLimit - 1,
 			},
 			wantErr: true,
-			errType: &InvalidPaginatorLimitError{
+			errType: &InvalidLimitError{
 				MinLimit: PaginatorMinLimit,
 				MaxLimit: PaginatorMaxLimit,
 			},
@@ -416,7 +420,7 @@ func TestPaginator_Validate(t *testing.T) {
 				Limit: PaginatorMaxLimit + 1,
 			},
 			wantErr: true,
-			errType: &InvalidPaginatorLimitError{
+			errType: &InvalidLimitError{
 				MinLimit: PaginatorMinLimit,
 				MaxLimit: PaginatorMaxLimit,
 			},
@@ -428,7 +432,7 @@ func TestPaginator_Validate(t *testing.T) {
 				Limit:     PaginatorDefaultLimit,
 			},
 			wantErr: true,
-			errType: &InvalidPaginatorTokenError{
+			errType: &InvalidTokenError{
 				Message: "next token cannot be decoded",
 			},
 		},
@@ -439,7 +443,7 @@ func TestPaginator_Validate(t *testing.T) {
 				Limit:     PaginatorDefaultLimit,
 			},
 			wantErr: true,
-			errType: &InvalidPaginatorTokenError{
+			errType: &InvalidTokenError{
 				Message: "previous token cannot be decoded",
 			},
 		},
@@ -450,7 +454,7 @@ func TestPaginator_Validate(t *testing.T) {
 				Limit:     PaginatorDefaultLimit,
 			},
 			wantErr: true,
-			errType: &InvalidPaginatorTokenError{
+			errType: &InvalidTokenError{
 				Message: "next token cannot be decoded",
 			},
 		},
@@ -461,7 +465,7 @@ func TestPaginator_Validate(t *testing.T) {
 				Limit:     PaginatorDefaultLimit,
 			},
 			wantErr: true,
-			errType: &InvalidPaginatorTokenError{
+			errType: &InvalidTokenError{
 				Message: "previous token cannot be decoded",
 			},
 		},
@@ -487,7 +491,7 @@ func TestPaginator_Validate(t *testing.T) {
 				Limit:     PaginatorMinLimit - 1,
 			},
 			wantErr: true,
-			errType: &InvalidPaginatorLimitError{
+			errType: &InvalidLimitError{
 				MinLimit: PaginatorMinLimit,
 				MaxLimit: PaginatorMaxLimit,
 			},
@@ -503,27 +507,27 @@ func TestPaginator_Validate(t *testing.T) {
 			}
 
 			if tt.wantErr {
-				var invalidLimitError *InvalidPaginatorLimitError
+				var invalidLimitError *InvalidLimitError
 				if errors.As(tt.errType, &invalidLimitError) {
-					var gotInvalidLimitError *InvalidPaginatorLimitError
+					var gotInvalidLimitError *InvalidLimitError
 					if !errors.As(err, &gotInvalidLimitError) {
-						t.Errorf("Expected error of type InvalidPaginatorLimitError, got %T", err)
+						t.Errorf("Expected error of type InvalidLimitError, got %T", err)
 						return
 					}
 					if gotInvalidLimitError.MinLimit != PaginatorMinLimit || gotInvalidLimitError.MaxLimit != PaginatorMaxLimit {
-						t.Errorf("InvalidPaginatorLimitError: got = '%v', want = '%v'", gotInvalidLimitError, tt.errType)
+						t.Errorf("InvalidLimitError: got = '%v', want = '%v'", gotInvalidLimitError, tt.errType)
 					}
 				}
 
-				var invalidTokenError *InvalidPaginatorTokenError
+				var invalidTokenError *InvalidTokenError
 				if errors.As(tt.errType, &invalidTokenError) {
-					var gotInvalidTokenError *InvalidPaginatorTokenError
+					var gotInvalidTokenError *InvalidTokenError
 					if !errors.As(err, &gotInvalidTokenError) {
-						t.Errorf("Expected error of type InvalidPaginatorTokenError, got %T", err)
+						t.Errorf("Expected error of type InvalidTokenError, got %T", err)
 						return
 					}
 					if gotInvalidTokenError.Message != invalidTokenError.Message {
-						t.Errorf("InvalidPaginatorTokenError: got = '%v', want = '%v'", gotInvalidTokenError, tt.errType)
+						t.Errorf("InvalidTokenError: got = '%v', want = '%v'", gotInvalidTokenError, tt.errType)
 					}
 				}
 			}
@@ -532,7 +536,10 @@ func TestPaginator_Validate(t *testing.T) {
 }
 
 func TestPaginator_GeneratePages(t *testing.T) {
-	validUUID := uuid.New()
+	validUUID, err := uuid.NewV7()
+	if err != nil {
+		t.Fatalf("Failed to generate UUID: %v", err)
+	}
 
 	tests := []struct {
 		name         string

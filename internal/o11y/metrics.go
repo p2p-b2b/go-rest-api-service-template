@@ -9,6 +9,7 @@ import (
 	"go.opentelemetry.io/otel"
 
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp"
+	"go.opentelemetry.io/otel/metric/noop"
 
 	"go.opentelemetry.io/otel/exporters/stdout/stdoutmetric"
 	otelMetric "go.opentelemetry.io/otel/metric"
@@ -26,7 +27,9 @@ type OpenTelemetryMeterConfig struct {
 	MetricInterval time.Duration
 }
 
-// OpenTrace represents the tracing of the service
+// OpenTelemetryMeter represents the metrics of the service.
+// It is used to collect and export metrics using OpenTelemetry.
+// It is initialized with the OpenTelemetryMeterConfig and provides methods to set up and shutdown the metrics.
 type OpenTelemetryMeter struct {
 	ctx  context.Context
 	name string
@@ -63,6 +66,17 @@ func NewOpenTelemetryMeter(ctx context.Context, conf *OpenTelemetryMeterConfig) 
 }
 
 func (ref *OpenTelemetryMeter) SetupMetrics() error {
+	// when testing, use the noop exporter
+	if ref.metricExporter == "noop" {
+		slog.Warn("No metric exporter configured, use 'noop' for testing purposes only")
+
+		mp := noop.NewMeterProvider()
+
+		otel.SetMeterProvider(mp)
+		ref.Meter = mp.Meter(ref.name)
+		return nil
+	}
+
 	// Set up metric exporter.
 	mExp, err := ref.newMetricExporter(ref.ctx)
 	if err != nil {
@@ -85,8 +99,10 @@ func (ref *OpenTelemetryMeter) SetupMetrics() error {
 
 func (ref *OpenTelemetryMeter) Shutdown() {
 	if ref.mp != nil {
-		if err := ref.mp.Shutdown(ref.ctx); err != nil {
-			slog.Error("failed to shutdown meter provider", "error", err)
+		if ref.mp != nil {
+			if err := ref.mp.Shutdown(ref.ctx); err != nil {
+				slog.Error("failed to shutdown meter provider", "error", err)
+			}
 		}
 	}
 }
@@ -115,7 +131,6 @@ func (ref *OpenTelemetryMeter) newMetricExporter(ctx context.Context) (metric.Ex
 		if err != nil {
 			return nil, err
 		}
-
 	default:
 		return nil, fmt.Errorf("unknown metric exporter: %s", ref.metricExporter)
 	}

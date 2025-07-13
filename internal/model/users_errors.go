@@ -1,59 +1,79 @@
 package model
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/google/uuid"
+)
 
 type InvalidUserIDError struct {
-	ID      string
+	ID      uuid.UUID
 	Message string
 }
 
 func (e *InvalidUserIDError) Error() string {
+	if e.ID != uuid.Nil {
+		return fmt.Sprintf("invalid user ID: %s", e.ID.String())
+	}
 	if e.Message != "" {
-		return fmt.Sprintf("invalid user ID: %s, %s", e.ID, e.Message)
+		return fmt.Sprintf("invalid user ID: %s", e.Message)
 	}
 
-	return fmt.Sprintf("invalid user ID: %s", e.ID)
+	return "invalid user ID"
 }
 
-type InvalidUserFirstNameError struct {
+type UserDisabledError struct {
+	Username string
+}
+
+func (e *UserDisabledError) Error() string {
+	return fmt.Sprintf("user '%s' is disabled", e.Username)
+}
+
+type InvalidFirstNameError struct {
 	MinLength int
 	MaxLength int
 }
 
-func (e *InvalidUserFirstNameError) Error() string {
-	return fmt.Sprintf("invalid first name. Must be between %d and %d characters long", e.MinLength, e.MaxLength)
+func (e *InvalidFirstNameError) Error() string {
+	return fmt.Sprintf("invalid first name: must be between %d and %d characters", e.MinLength, e.MaxLength)
 }
 
-type InvalidUserLastNameError struct {
+type InvalidLastNameError struct {
 	MinLength int
 	MaxLength int
 }
 
-func (e *InvalidUserLastNameError) Error() string {
-	return fmt.Sprintf("invalid last name. Must be between %d and %d characters long", e.MinLength, e.MaxLength)
+func (e *InvalidLastNameError) Error() string {
+	return fmt.Sprintf("invalid last name: must be between %d and %d characters", e.MinLength, e.MaxLength)
 }
 
-type InvalidUserEmailError struct {
-	MinLength int
-	MaxLength int
-	Email     string
+type InvalidEmailError struct {
+	Email   string
+	Message string
 }
 
-func (e *InvalidUserEmailError) Error() string {
+func (e *InvalidEmailError) Error() string {
 	if e.Email != "" {
-		return fmt.Sprintf("invalid email address: %s. Must be between %d and %d characters long", e.Email, e.MinLength, e.MaxLength)
+		return fmt.Sprintf("invalid email '%s'", e.Email)
 	}
-
-	return fmt.Sprintf("invalid email address. Must be between %d and %d characters long", e.MinLength, e.MaxLength)
+	if e.Message != "" {
+		return fmt.Sprintf("invalid email: %s", e.Message)
+	}
+	return "invalid email"
 }
 
-type InvalidUserPasswordError struct {
+type InvalidPasswordError struct {
 	MinLength int
 	MaxLength int
+	Message   string
 }
 
-func (e *InvalidUserPasswordError) Error() string {
-	return fmt.Sprintf("invalid password. Must be between %d and %d characters long", e.MinLength, e.MaxLength)
+func (e *InvalidPasswordError) Error() string {
+	if e.Message != "" {
+		return fmt.Sprintf("invalid password: %s", e.Message)
+	}
+	return fmt.Sprintf("invalid password: must be between %d and %d characters", e.MinLength, e.MaxLength)
 }
 
 type UserNotFoundError struct {
@@ -63,13 +83,43 @@ type UserNotFoundError struct {
 
 func (e *UserNotFoundError) Error() string {
 	if e.ID != "" {
-		return fmt.Sprintf("user with ID %s not found", e.ID)
+		return fmt.Sprintf("user not found: %s", e.ID)
 	}
 	if e.Email != "" {
-		return fmt.Sprintf("user with email %s not found", e.Email)
+		return fmt.Sprintf("user not found: %s", e.Email)
 	}
-
 	return "user not found"
+}
+
+type UserExistsError struct {
+	ID    string
+	Email string
+}
+
+func (e *UserExistsError) Error() string {
+	if e.ID != "" {
+		return fmt.Sprintf("user already exists: %s", e.ID)
+	}
+	if e.Email != "" {
+		return fmt.Sprintf("user already exists: %s", e.Email)
+	}
+	return "user already exists"
+}
+
+type EmailExistsError struct {
+	Email string
+}
+
+func (e *EmailExistsError) Error() string {
+	return fmt.Sprintf("email already exists: %s", e.Email)
+}
+
+type InvalidUserUpdateError struct {
+	Message string
+}
+
+func (e *InvalidUserUpdateError) Error() string {
+	return fmt.Sprintf("invalid user update: %s", e.Message)
 }
 
 type UserAlreadyExistsError struct {
@@ -79,12 +129,11 @@ type UserAlreadyExistsError struct {
 
 func (e *UserAlreadyExistsError) Error() string {
 	if e.ID != "" {
-		return fmt.Sprintf("user with ID %s already exists", e.ID)
+		return fmt.Sprintf("user already exists: %s", e.ID)
 	}
 	if e.Email != "" {
-		return fmt.Sprintf("user with email %s already exists", e.Email)
+		return fmt.Sprintf("user already exists: %s", e.Email)
 	}
-
 	return "user already exists"
 }
 
@@ -93,5 +142,5 @@ type UserEmailAlreadyExistsError struct {
 }
 
 func (e *UserEmailAlreadyExistsError) Error() string {
-	return fmt.Sprintf("user with email %s already exists", e.Email)
+	return fmt.Sprintf("email already exists: %s", e.Email)
 }

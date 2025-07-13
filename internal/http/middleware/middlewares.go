@@ -1,6 +1,10 @@
+// Package middleware provides a set of HTTP middleware functions
+// that can be used to enhance the functionality of HTTP handlers.
+// It includes middlewares for logging, CORS, JWT validation, rate limiting, and more.
 package middleware
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log/slog"
@@ -9,8 +13,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/http/respond"
+	"github.com/p2p-b2b/go-rest-api-service-template/internal/jwtvalidator"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/model"
+	"github.com/p2p-b2b/go-rest-api-service-template/internal/service"
 	"github.com/p2p-b2b/ratelimiter"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/propagation"
@@ -32,6 +39,7 @@ const (
 type Middleware func(http.Handler) http.Handler
 
 // ThenFunc wraps an http.HandlerFunc with a middleware
+// This is a convenience method to allow chaining middlewares
 func (m Middleware) ThenFunc(h http.HandlerFunc) http.Handler {
 	return m(http.HandlerFunc(h))
 }
@@ -43,8 +51,8 @@ func (m Middleware) Then(h http.Handler) http.Handler {
 }
 
 // Apply applies the middleware to an http.Handler
-func (mws Middleware) Apply(h http.Handler) http.Handler {
-	return mws(h)
+func (m Middleware) Apply(h http.Handler) http.Handler {
+	return m(h)
 }
 
 // Chain applies middlewares to an http.Handler
@@ -210,6 +218,183 @@ func Cors(opts CorsOpts) Middleware {
 			// to handle OPTIONS requests
 			if r.Method == http.MethodOptions {
 				w.WriteHeader(http.StatusOK)
+				return
+			}
+
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+// CheckAccessToken checks the JWTs created and signed by the application
+// and validates the token_type claim
+// The token_type claim is used to identify the type of token
+// and this validate the "access" or "personal_access" token
+func CheckAccessToken(validator map[string]jwtvalidator.Validator) Middleware {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			authHeader := r.Header.Get("Authorization")
+			if authHeader == "" {
+				respond.WriteJSONMessage(w, r, http.StatusUnauthorized, "Missing header: Authorization")
+				return
+			}
+
+			// Extract Bearer from authHeader
+			token := authHeader[len("Bearer "):]
+			if token == "" {
+				respond.WriteJSONMessage(w, r, http.StatusUnauthorized, "Token is empty")
+				return
+			}
+
+			if validator == nil {
+				respond.WriteJSONMessage(w, r, http.StatusUnauthorized, "Unauthorized")
+				return
+			}
+
+			// check validator has the idp
+			validator, ok := validator["accessToken"]
+			if !ok {
+				respond.WriteJSONMessage(w, r, http.StatusUnauthorized, "Unauthorized")
+				return
+			}
+
+			claims, err := validator.Validate(r.Context(), token)
+			if err != nil {
+				respond.WriteJSONMessage(w, r, http.StatusUnauthorized, err.Error())
+				return
+			}
+
+			if len(claims) == 0 {
+				respond.WriteJSONMessage(w, r, http.StatusUnauthorized, "Claims is empty")
+				return
+			}
+
+			// validate the token_type claim
+			var tokenType any
+			if tokenType, ok = claims["token_type"]; !ok {
+				respond.WriteJSONMessage(w, r, http.StatusUnauthorized, "Token type field not found in claims")
+				return
+			}
+
+			// validate "access" or "personal_access" token
+			if tokenType != model.TokenTypeAccess.String() && tokenType != model.TokenTypePersonalAccess.String() {
+				respond.WriteJSONMessage(w, r, http.StatusUnauthorized, "invalid token type access or personal_access")
+				return
+			}
+
+			// Add the claims to the request context
+			r = r.WithContext(context.WithValue(r.Context(), JwtClaims, claims))
+
+			// Check if the provider ClientID is the same as the one in the token audience (aud) string
+			// if !strings.Contains(claims["aud"].([]string), validator.GetClientID()) {
+			// 	WriteJSONMessage(w, r, http.StatusUnauthorized, "Token audience does not match provider ClientID")
+			// 	return
+			// }
+
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+// CheckRefreshToken checks the JWTs created and signed by the application
+func CheckRefreshToken(validator map[string]jwtvalidator.Validator) Middleware {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			authHeader := r.Header.Get("Authorization")
+			if authHeader == "" {
+				respond.WriteJSONMessage(w, r, http.StatusUnauthorized, "Missing header: Authorization")
+				return
+			}
+
+			// Extract Bearer from authHeader
+			token := authHeader[len("Bearer "):]
+			if token == "" {
+				respond.WriteJSONMessage(w, r, http.StatusUnauthorized, "Token is empty")
+				return
+			}
+
+			if validator == nil {
+				respond.WriteJSONMessage(w, r, http.StatusUnauthorized, "Unauthorized")
+				return
+			}
+
+			// check validator has the idp
+			validator, ok := validator["refreshToken"]
+			if !ok {
+				respond.WriteJSONMessage(w, r, http.StatusUnauthorized, "Unauthorized")
+				return
+			}
+
+			claims, err := validator.Validate(r.Context(), token)
+			if err != nil {
+				respond.WriteJSONMessage(w, r, http.StatusUnauthorized, err.Error())
+				return
+			}
+
+			if len(claims) == 0 {
+				respond.WriteJSONMessage(w, r, http.StatusUnauthorized, "Claims is empty")
+				return
+			}
+
+			// validate the token_type claim
+			var tokenType any
+			if tokenType, ok = claims["token_type"]; !ok {
+				respond.WriteJSONMessage(w, r, http.StatusUnauthorized, "Token type field not found in claims")
+				return
+			}
+
+			if tokenType != model.TokenTypeRefresh.String() {
+				respond.WriteJSONMessage(w, r, http.StatusUnauthorized, "Token type is not refresh")
+				return
+			}
+
+			// Add the claims to the request context
+			r = r.WithContext(context.WithValue(r.Context(), JwtClaims, claims))
+
+			// Check if the provider ClientID is the same as the one in the token audience (aud) string
+			// if !strings.Contains(claims["aud"].([]string), validator.GetClientID()) {
+			// 	WriteJSONMessage(w, r, http.StatusUnauthorized, "Token audience does not match provider ClientID")
+			// 	return
+			// }
+
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+// CheckAuthz middleware checks if the user_id (sub) in the JWT is authorized to access the resource
+// through the OPA policy engine
+func CheckAuthz(service *service.AuthzService) Middleware {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// get the sub claim from the context
+			claims, ok := r.Context().Value(JwtClaims).(map[string]any)
+			if !ok {
+				respond.WriteJSONMessage(w, r, http.StatusForbidden, "Claims not found in context")
+				return
+			}
+
+			subStr, ok := claims["sub"].(string)
+			if !ok {
+				respond.WriteJSONMessage(w, r, http.StatusForbidden, "sub claim not found in claims")
+				return
+			}
+
+			// sub to uuid
+			sub, err := uuid.Parse(subStr)
+			if err != nil {
+				respond.WriteJSONMessage(w, r, http.StatusForbidden, "Invalid sub claim")
+				return
+			}
+
+			ok, err = service.IsAuthorized(r.Context(), sub, r.Method, r.URL.Path)
+			if err != nil {
+				respond.WriteJSONMessage(w, r, http.StatusForbidden, fmt.Sprintf("Unauthorized access to %s %s", r.Method, r.URL.Path))
+				return
+			}
+
+			if !ok {
+				respond.WriteJSONMessage(w, r, http.StatusForbidden, fmt.Sprintf("Unauthorized access to %s %s", r.Method, r.URL.Path))
 				return
 			}
 

@@ -1,0 +1,82 @@
+# Save the output of this file and use kubectl create -f to import
+# it into Kubernetes.
+#
+# Created with podman-5.0.1
+
+# NOTE: If you generated this yaml from an unprivileged and rootless podman container on an SELinux
+# enabled system, check the podman generate kube man page for steps to follow to ensure that your pod/container
+# has the right permissions to access the volumes added.
+# References:
+# https://developers.redhat.com/blog/2019/01/15/podman-managing-containers-pods#
+# https://www.redhat.com/sysadmin/podman-play-kube-updates
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  creationTimestamp: "2024-05-04T14:57:16Z"
+  labels:
+    app: integration-tests
+  name: integration-tests
+spec:
+  containers:
+    - name: postgres
+      image: docker.io/library/postgres:17
+      args:
+        - postgres
+      env:
+        - name: TZ
+          value: UTC
+        - name: PGTZ
+          value: UTC
+        - name: POSTGRES_PASSWORD
+          value: password
+        - name: POSTGRES_USER
+          value: username
+        - name: POSTGRES_DB
+          value: go-rest-api-service-template
+      ports:
+        - containerPort: 5432
+          hostPort: 5432
+
+    - name: valkey
+      image: docker.io/valkey/valkey:latest
+      ports:
+        - containerPort: 6379
+          hostPort: 6379
+          protocol: TCP
+    - name: go-rest-api-service-template
+      image: localhost/p2p-b2b/go-rest-api-service-template:test-integration
+      args:
+        - "-debug"
+        - "-log.add.source=true"
+        - "-opentelemetry.trace.exporter=noop"
+        - "-opentelemetry.metric.exporter=noop"
+        - "-authn.access.token.duration=24h"
+        - "-authn.refresh.token.duration=720h"
+        - "-authn.private.key.file=/app/certs/jwt.key"
+        - "-authn.public.key.file=/app/certs/jwt.pub"
+        - "-authn.symmetric.key.file=/app/certs/aes-256-symmetric-hex.key"
+        - "-http.server.cors.enabled=true"
+        - "-http.server.cors.allowed.origins=http://localhost:8080,http://localhost:5173"
+        - "-http.server.pprof.enabled=false"
+        - "-http.server.ip.rate.limiter.enabled=false"
+        - "-http.server.port=8080"
+        - "-http.server.address=0.0.0.0"
+      ports:
+        - containerPort: 8080
+          hostPort: 8080
+          protocol: TCP
+
+    # https://github.com/axllent/mailpit
+    - name: mailpit
+      image: axllent/mailpit
+      args:
+        - "--smtp-auth-allow-insecure"
+        - "--smtp-auth-accept-any"
+      ports:
+        - containerPort: 8025
+          hostPort: 8025
+          protocol: TCP
+        - containerPort: 1025
+          hostPort: 1025
+          protocol: TCP

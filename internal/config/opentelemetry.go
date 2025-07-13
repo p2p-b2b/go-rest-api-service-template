@@ -9,17 +9,17 @@ import (
 )
 
 var (
-	ErrInvalidTraceExporter  = errors.New("invalid trace exporter, must be one of [" + ValidTraceExporters + "]")
-	ErrInvalidMetricExporter = errors.New("invalid metric exporter, must be one of [" + ValidMetricExporters + "]")
-	ErrInvalidSampling       = errors.New("invalid sampling, must be between [" + strconv.Itoa(ValidTaceSamplingMin) + "] and [" + strconv.Itoa(ValidTaceSamplingMax) + "]")
-	ErrInvalidMetricInterval = errors.New("invalid metric interval, must be greater than [" + ValidMetricMinInterval.String() + "]")
-	ErrInvalidTracePort      = errors.New("invalid trace port, must be between [" + strconv.Itoa(ValidTraceMinPort) + "] and [" + strconv.Itoa(ValidTraceMaxPort) + "]")
-	ErrInvalidMetricPort     = errors.New("invalid metric port, must be between [" + strconv.Itoa(ValidMetricMinPort) + "] and [" + strconv.Itoa(ValidMetricMaxPort) + "]")
+	ErrTraceInvalidExporter  = errors.New("invalid trace exporter, must be one of [" + ValidTraceExporters + "]")
+	ErrMetricInvalidExporter = errors.New("invalid metric exporter, must be one of [" + ValidMetricExporters + "]")
+	ErrMetricInvalidSampling = errors.New("invalid sampling, must be between [" + strconv.Itoa(ValidTaceSamplingMin) + "] and [" + strconv.Itoa(ValidTaceSamplingMax) + "]")
+	ErrMetricInvalidInterval = errors.New("invalid metric interval, must be greater than [" + ValidMetricMinInterval.String() + "]")
+	ErrTraceInvalidPort      = errors.New("invalid trace port, must be between [" + strconv.Itoa(ValidTraceMinPort) + "] and [" + strconv.Itoa(ValidTraceMaxPort) + "]")
+	ErrMetricInvalidPort     = errors.New("invalid metric port, must be between [" + strconv.Itoa(ValidMetricMinPort) + "] and [" + strconv.Itoa(ValidMetricMaxPort) + "]")
 )
 
 const (
-	ValidTraceExporters    = "console|otlp-http"
-	ValidMetricExporters   = "console|otlp-http|prometheus"
+	ValidTraceExporters    = "console|otlp-http|noop"
+	ValidMetricExporters   = "console|otlp-http|prometheus|noop"
 	ValidTaceSamplingMin   = 0
 	ValidTaceSamplingMax   = 100
 	ValidMetricMinInterval = 1 * time.Second
@@ -92,27 +92,27 @@ func (c *OpenTelemetryConfig) ParseEnvVars() {
 // Validate validates the OpenTracing configuration values
 func (c *OpenTelemetryConfig) Validate() error {
 	if !slices.Contains(strings.Split(ValidTraceExporters, "|"), c.TraceExporter.Value) {
-		return ErrInvalidTraceExporter
+		return ErrTraceInvalidExporter
 	}
 
 	if !slices.Contains(strings.Split(ValidMetricExporters, "|"), c.MetricExporter.Value) {
-		return ErrInvalidMetricExporter
+		return ErrMetricInvalidExporter
 	}
 
 	if c.TraceSampling.Value < ValidTaceSamplingMin || c.TraceSampling.Value > ValidTaceSamplingMax {
-		return ErrInvalidSampling
+		return ErrMetricInvalidSampling
 	}
 
 	if c.MetricInterval.Value < ValidMetricMinInterval {
-		return ErrInvalidMetricInterval
+		return ErrMetricInvalidInterval
 	}
 
 	if c.MetricPort.Value < ValidMetricMinPort || c.MetricPort.Value > ValidMetricMaxPort {
-		return ErrInvalidMetricPort
+		return ErrMetricInvalidPort
 	}
 
 	if c.TracePort.Value < ValidTraceMinPort || c.TracePort.Value > ValidTraceMaxPort {
-		return ErrInvalidTracePort
+		return ErrTraceInvalidPort
 	}
 
 	return nil

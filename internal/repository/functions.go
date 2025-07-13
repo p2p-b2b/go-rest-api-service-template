@@ -6,35 +6,128 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/google/uuid"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/model"
 )
 
 // prettyPrint removes comments and extra spaces from a query.
-func prettyPrint(query string, arg ...string) string {
+// It also replaces parameter placeholders ($1, $2, etc.) with their respective values.
+func prettyPrint(query string, arg ...any) string {
+	// Check for empty query
+	if query == "" {
+		return ""
+	}
+
 	ws := regexp.MustCompile(`\s+`)
+
+	// Handle only comments case
+	if strings.TrimSpace(regexp.MustCompile(`--.*`).ReplaceAllString(query, "")) == "" {
+		// If the query contains only comments, return the last comment
+		commentLines := regexp.MustCompile(`--.*`).FindAllString(query, -1)
+		if len(commentLines) > 0 {
+			return strings.TrimSpace(commentLines[len(commentLines)-1])
+		}
+		return ""
+	}
 
 	out := regexp.MustCompile(`--.*\n`).ReplaceAllString(query, "")
 	out = strings.ReplaceAll(out, "\n", "")
 	out = ws.ReplaceAllString(out, " ")
 	out = strings.TrimSpace(out)
 
-	if len(arg) > 0 {
-		// replace the pattern $1,$2,...., $n by %v
+	if len(arg) > 0 && arg[0] != nil {
+		// Replace the pattern $1,$2,..., $n with the corresponding arguments
 		re := regexp.MustCompile(`\$\d{1,2}`)
-		out = re.ReplaceAllString(out, "%v")
 
-		// Convert []string to []any for fmt.Sprintf
-		args := make([]any, len(arg))
-		for i, a := range arg {
-			args[i] = a
+		for _, a := range arg {
+
+			if arg == nil {
+				continue
+			}
+
+			var placeholder string
+
+			loc := re.FindStringIndex(out)
+			if loc == nil {
+				break
+			}
+
+			switch v := a.(type) {
+			case nil:
+				placeholder = "NULL"
+			case string:
+				placeholder = fmt.Sprintf("'%s'", v)
+			case int, int64, int32, int16, int8, uint, uint64, uint32, uint16, uint8:
+				placeholder = fmt.Sprintf("%v", v)
+			case float64, float32:
+				placeholder = fmt.Sprintf("%v", v)
+			case bool:
+				placeholder = fmt.Sprintf("%v", v)
+			case uuid.UUID:
+				placeholder = fmt.Sprintf("'%s'", v.String())
+			default:
+				placeholder = fmt.Sprintf("%v", v)
+			}
+
+			out = out[:loc[0]] + placeholder + out[loc[1]:]
 		}
-
-		out = fmt.Sprintf(out, args...)
 	}
 
 	return out
+}
+
+// TrimLastSemicolon removes the last semicolon from a query string.
+// This string could be multiline.
+func TrimLastSemicolon(query string) string {
+	// Check if the query is empty
+	if len(query) == 0 {
+		return query
+	}
+
+	// Iterate runes in reverse
+	for i := len(query) - 1; i >= 0; i-- {
+		r, _ := utf8.DecodeLastRuneInString(query[:i+1])
+		if r == ';' {
+			return query[:i]
+		}
+	}
+
+	// No semicolon at the end, return the original query
+	return query
+}
+
+// createTableQuery returns a CREATE TABLE query for the given table name and columns.
+type createTableColumns struct {
+	Name        string
+	Type        string
+	Constraints []string
+}
+type createTable struct {
+	Schema  string
+	Table   string
+	Columns []createTableColumns
+}
+
+func createTableQuery(create createTable) string {
+	query := "CREATE TABLE " + create.Schema + "." + create.Table + " ("
+
+	for i, col := range create.Columns {
+		query += col.Name + " " + col.Type
+
+		if len(col.Constraints) > 0 {
+			query += " " + strings.Join(col.Constraints, " ")
+		}
+
+		if i < len(create.Columns)-1 {
+			query += ", "
+		}
+	}
+
+	query += ");"
+
+	return query
 }
 
 // getFieldValue returns the field value from the given fields slice.
@@ -92,17 +185,21 @@ func buildFieldSelection(
 
 	inputFields := strings.Split(requestedFields, ",")
 	fields := make([]string, 0)
-	var idIsPresent bool
+	var idIsPresent, serialIDIsPresent bool
 
 	for _, field := range inputFields {
 		field = strings.TrimSpace(field)
 
-		field := getFieldValue(sqlFieldsPrefix, field, fieldsArray)
-		fields = append(fields, field)
-
+		// Check if the original field name is "id" or "serial_id" before getting the field value
 		if field == "id" {
 			idIsPresent = true
 		}
+		if field == "serial_id" {
+			serialIDIsPresent = true
+		}
+
+		fieldValue := getFieldValue(sqlFieldsPrefix, field, fieldsArray)
+		fields = append(fields, fieldValue)
 	}
 
 	// ID and SerialID are required for pagination
@@ -110,7 +207,9 @@ func buildFieldSelection(
 		fields = append(fields, sqlFieldsPrefix+"id")
 	}
 
-	fields = append(fields, sqlFieldsPrefix+"serial_id")
+	if !serialIDIsPresent {
+		fields = append(fields, sqlFieldsPrefix+"serial_id")
+	}
 	return strings.Join(fields, ", ")
 }
 
@@ -128,14 +227,25 @@ func buildPaginationCriteria(
 	id uuid.UUID,
 	serial int64,
 	filterQuery string,
+	whereInQuery bool,
 ) (whereClause template.HTML, internalSort string) {
 	// Default sort order (newest to oldest)
 	internalSort = fmt.Sprintf("%s.serial_id DESC, %s.id DESC", tableAlias, tableAlias)
 
 	// If filter is empty, start with WHERE, otherwise AND
-	filterQueryJoiner := "WHERE"
-	if filterQuery != "" {
+	// filterQueryJoiner := "WHERE"
+	// if filterQuery != "" {
+	// 	filterQueryJoiner = "AND"
+	// }
+	var filterQueryJoiner string
+	if strings.Contains(filterQuery, "WHERE") {
 		filterQueryJoiner = "AND"
+	} else if strings.Contains(filterQuery, "AND") {
+		filterQueryJoiner = "AND"
+	} else if whereInQuery {
+		filterQueryJoiner = "AND"
+	} else {
+		filterQueryJoiner = "WHERE"
 	}
 
 	// Handle token directions
