@@ -32,7 +32,7 @@ const docTemplate = `{
                     "Auth"
                 ],
                 "summary": "Login user",
-                "operationId": "019791cc-06c7-7d8c-81e4-914dd89098e8",
+                "operationId": "0198042a-f9c5-7547-a6e7-567af5db26cd",
                 "parameters": [
                     {
                         "description": "The information of the user to login",
@@ -90,7 +90,7 @@ const docTemplate = `{
                     "Auth"
                 ],
                 "summary": "Logout user",
-                "operationId": "019791cc-06c7-7e4c-961c-b1bf5f40d633",
+                "operationId": "0198042a-f9c5-75d4-afa6-fe658744c80f",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -131,7 +131,7 @@ const docTemplate = `{
                     "Auth"
                 ],
                 "summary": "Refresh access token",
-                "operationId": "019791cc-06c7-7e50-a5b6-bd1c82d5c031",
+                "operationId": "0198042a-f9c5-75d8-aa7b-37524ea4f124",
                 "parameters": [
                     {
                         "description": "The refresh token to use",
@@ -190,7 +190,7 @@ const docTemplate = `{
                     "Auth"
                 ],
                 "summary": "Register user",
-                "operationId": "019791cc-06c7-7e38-ac82-6919df575ff7",
+                "operationId": "0198042a-f9c5-75c8-9231-ad5fc9e7b32e",
                 "parameters": [
                     {
                         "description": "The information of the user to register",
@@ -237,7 +237,7 @@ const docTemplate = `{
                     "Auth"
                 ],
                 "summary": "Resend verification",
-                "operationId": "019791cc-06c7-7e48-b046-99f072088c50",
+                "operationId": "0198042a-f9c5-75d0-8c20-fea31b65587f",
                 "parameters": [
                     {
                         "description": "The email of the user to re-verify",
@@ -293,7 +293,7 @@ const docTemplate = `{
                     "Auth"
                 ],
                 "summary": "Verify user",
-                "operationId": "019791cc-06c7-7e40-bcc3-149cd13bee44",
+                "operationId": "0198042a-f9c5-75cc-9dd2-e3ff9f6c1e3a",
                 "parameters": [
                     {
                         "type": "string",
@@ -348,7 +348,7 @@ const docTemplate = `{
                     "Health"
                 ],
                 "summary": "Check health",
-                "operationId": "019791cc-06c7-7e57-8be6-a6f650ad5431",
+                "operationId": "0198042a-f9c5-76be-ba9e-8186a69f48c4",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -380,7 +380,7 @@ const docTemplate = `{
                     "Policies"
                 ],
                 "summary": "List policies",
-                "operationId": "019791cc-06c7-7e73-96aa-7e0383caae0d",
+                "operationId": "0198042a-f9c5-76d2-a491-9cc989c1d59c",
                 "parameters": [
                     {
                         "type": "string",
@@ -463,7 +463,7 @@ const docTemplate = `{
                     "Policies"
                 ],
                 "summary": "Create policy",
-                "operationId": "019791cc-06c7-7e63-8ec9-de5b38235dbf",
+                "operationId": "0198042a-f9c5-76c6-9a07-0c8948640ac2",
                 "parameters": [
                     {
                         "description": "Create policy Request",
@@ -518,7 +518,7 @@ const docTemplate = `{
                     "Policies"
                 ],
                 "summary": "Get policy",
-                "operationId": "019791cc-06c7-7e5b-b363-1ef381f1e832",
+                "operationId": "0198042a-f9c5-76c2-96f2-d16b0674bcd9",
                 "parameters": [
                     {
                         "type": "string",
@@ -573,7 +573,7 @@ const docTemplate = `{
                     "Policies"
                 ],
                 "summary": "Update policy",
-                "operationId": "019791cc-06c7-7e67-9e1b-49a34edfe07c",
+                "operationId": "0198042a-f9c5-76ca-b40d-b1de1d359c22",
                 "parameters": [
                     {
                         "type": "string",
@@ -634,7 +634,7 @@ const docTemplate = `{
                     "Policies"
                 ],
                 "summary": "Delete policy",
-                "operationId": "019791cc-06c7-7e6b-b308-a2b2cbc2aaa1",
+                "operationId": "0198042a-f9c5-76ce-b208-2f58f7ccd177",
                 "parameters": [
                     {
                         "type": "string",
@@ -689,7 +689,7 @@ const docTemplate = `{
                     "Policies"
                 ],
                 "summary": "List roles by policy",
-                "operationId": "019791cc-06c7-7ecd-93da-d21bac8fd613",
+                "operationId": "0198042a-f9c5-7704-b73b-55e2ec093587",
                 "parameters": [
                     {
                         "type": "string",
@@ -781,7 +781,7 @@ const docTemplate = `{
                     "Roles"
                 ],
                 "summary": "Link roles to policy",
-                "operationId": "019791cc-06c7-7e77-a2c3-4ed693a2bcdd",
+                "operationId": "0198042a-f9c5-76d6-b1f3-0bfb57a9197f",
                 "parameters": [
                     {
                         "type": "string",
@@ -846,7 +846,7 @@ const docTemplate = `{
                     "Roles"
                 ],
                 "summary": "Unlink roles from policy",
-                "operationId": "019791cc-06c7-7e7b-bdfc-381b015c44e7",
+                "operationId": "0198042a-f9c5-76d9-8019-babd51a0c340",
                 "parameters": [
                     {
                         "type": "string",
@@ -909,7 +909,7 @@ const docTemplate = `{
                     "Products"
                 ],
                 "summary": "List products",
-                "operationId": "01979db7-f53f-73b5-a499-d6390831c94c",
+                "operationId": "0198042a-f9c5-7612-a055-58177eca0772",
                 "parameters": [
                     {
                         "type": "string",
@@ -991,7 +991,7 @@ const docTemplate = `{
                     "Projects"
                 ],
                 "summary": "List projects",
-                "operationId": "019797e6-138a-7cf1-b7bb-fa9c5e168c49",
+                "operationId": "0198042a-f9c5-76a7-a480-fbcb978b8501",
                 "parameters": [
                     {
                         "type": "string",
@@ -1074,7 +1074,7 @@ const docTemplate = `{
                     "Projects"
                 ],
                 "summary": "Create project",
-                "operationId": "019797e6-138a-7d00-98db-740f21794f11",
+                "operationId": "0198042a-f9c5-7622-9142-88fbaa727659",
                 "parameters": [
                     {
                         "description": "Create Project Request",
@@ -1129,7 +1129,7 @@ const docTemplate = `{
                     "Projects"
                 ],
                 "summary": "Get project",
-                "operationId": "019797e6-138a-7d04-8db3-1d4755b25db3",
+                "operationId": "0198042a-f9c5-761e-b1c2-66a3f8ab30d6",
                 "parameters": [
                     {
                         "type": "string",
@@ -1184,7 +1184,7 @@ const docTemplate = `{
                     "Projects"
                 ],
                 "summary": "Update project",
-                "operationId": "019797e6-138a-7cf8-9887-e4c44ad0ae19",
+                "operationId": "0198042a-f9c5-7626-be9f-996a2898ef07",
                 "parameters": [
                     {
                         "type": "string",
@@ -1245,7 +1245,7 @@ const docTemplate = `{
                     "Projects"
                 ],
                 "summary": "Delete project",
-                "operationId": "019797e6-138a-7cf4-8694-e4611baded39",
+                "operationId": "0198042a-f9c5-762a-8033-649a1526901d",
                 "parameters": [
                     {
                         "type": "string",
@@ -1294,7 +1294,7 @@ const docTemplate = `{
                     "Projects"
                 ],
                 "summary": "List products by project",
-                "operationId": "01979db7-f53f-73b1-993f-15f77e72c8cc",
+                "operationId": "0198042a-f9c5-760e-9d2f-94cce8243e5a",
                 "parameters": [
                     {
                         "type": "string",
@@ -1386,7 +1386,7 @@ const docTemplate = `{
                     "Projects"
                 ],
                 "summary": "Create product",
-                "operationId": "01979db7-f53f-73a5-b916-297c6db5b714",
+                "operationId": "0198042a-f9c5-7606-8aab-1c2db5b81a89",
                 "parameters": [
                     {
                         "type": "string",
@@ -1450,7 +1450,7 @@ const docTemplate = `{
                     "Projects"
                 ],
                 "summary": "Get product",
-                "operationId": "01979db7-f53f-73a1-aab2-74802b79be51",
+                "operationId": "0198042a-f9c5-7603-99b1-7c20ee58542b",
                 "parameters": [
                     {
                         "type": "string",
@@ -1514,7 +1514,7 @@ const docTemplate = `{
                     "Projects"
                 ],
                 "summary": "Update product",
-                "operationId": "01979db7-f53f-73a9-bd58-e1cd5d7df436",
+                "operationId": "0198042a-f9c5-7607-b75a-532912a6f35d",
                 "parameters": [
                     {
                         "type": "string",
@@ -1584,7 +1584,7 @@ const docTemplate = `{
                     "Projects"
                 ],
                 "summary": "Delete product",
-                "operationId": "01979db7-f53f-73ad-a84e-49bbdfe9e5c9",
+                "operationId": "0198042a-f9c5-760a-99c8-1f68d597d300",
                 "parameters": [
                     {
                         "type": "string",
@@ -1644,7 +1644,7 @@ const docTemplate = `{
                     "Projects"
                 ],
                 "summary": "Link product to payment processor",
-                "operationId": "01979db7-f53f-73bd-b6c0-4541a48549c2",
+                "operationId": "0198042a-f9c5-7616-8c3b-e4f19d83a033",
                 "parameters": [
                     {
                         "type": "string",
@@ -1711,7 +1711,7 @@ const docTemplate = `{
                     "Projects"
                 ],
                 "summary": "Unlink product from payment processor",
-                "operationId": "01979db7-f53f-73b9-818f-cdd1848f15d0",
+                "operationId": "0198042a-f9c5-761a-bd02-da039b52bea2",
                 "parameters": [
                     {
                         "type": "string",
@@ -1776,7 +1776,7 @@ const docTemplate = `{
                     "Resources"
                 ],
                 "summary": "List resources",
-                "operationId": "019791cc-06c7-7e8e-8d7e-cd3f9296e0fd",
+                "operationId": "0198042a-f9c5-76b6-bd55-f34dff7b0632",
                 "parameters": [
                     {
                         "type": "string",
@@ -1858,7 +1858,7 @@ const docTemplate = `{
                     "Resources"
                 ],
                 "summary": "Match resources",
-                "operationId": "019791cc-06c7-7e92-9152-cb35902f79c4",
+                "operationId": "0198042a-f9c5-76ba-bc87-6e9e32988407",
                 "parameters": [
                     {
                         "type": "string",
@@ -1949,7 +1949,7 @@ const docTemplate = `{
                     "Resources"
                 ],
                 "summary": "Get resource",
-                "operationId": "019791cc-06c7-7e86-ad42-b777bfcc9e40",
+                "operationId": "0198042a-f9c5-76b2-b8b1-bc0223a0f18d",
                 "parameters": [
                     {
                         "type": "string",
@@ -2003,7 +2003,7 @@ const docTemplate = `{
                     "Roles"
                 ],
                 "summary": "List roles",
-                "operationId": "019791cc-06c7-7ead-968a-2a457714a7ee",
+                "operationId": "0198042a-f9c5-76f1-9cf8-37e45b647fc0",
                 "parameters": [
                     {
                         "type": "string",
@@ -2086,7 +2086,7 @@ const docTemplate = `{
                     "Roles"
                 ],
                 "summary": "Create role",
-                "operationId": "019791cc-06c7-7e9e-87bf-dcedfa5aefa7",
+                "operationId": "0198042a-f9c5-76e5-8fe5-b93a07311c47",
                 "parameters": [
                     {
                         "description": "Create role request",
@@ -2141,7 +2141,7 @@ const docTemplate = `{
                     "Roles"
                 ],
                 "summary": "Get role",
-                "operationId": "019791cc-06c7-7e96-a284-ad37f86475bd",
+                "operationId": "0198042a-f9c5-76e1-a650-772c826f079e",
                 "parameters": [
                     {
                         "type": "string",
@@ -2196,7 +2196,7 @@ const docTemplate = `{
                     "Roles"
                 ],
                 "summary": "Update role",
-                "operationId": "019791cc-06c7-7ea2-8f0e-7b9f7cbc203a",
+                "operationId": "0198042a-f9c5-76e9-922d-2411530cd8f8",
                 "parameters": [
                     {
                         "type": "string",
@@ -2257,7 +2257,7 @@ const docTemplate = `{
                     "Roles"
                 ],
                 "summary": "Delete role",
-                "operationId": "019791cc-06c7-7ea6-9423-184c13540c26",
+                "operationId": "0198042a-f9c5-76ed-99a5-84923071fa6b",
                 "parameters": [
                     {
                         "type": "string",
@@ -2306,7 +2306,7 @@ const docTemplate = `{
                     "Roles"
                 ],
                 "summary": "List policies by role",
-                "operationId": "019791cc-06c7-7e82-967d-e13c399f5018",
+                "operationId": "0198042a-f9c5-76dd-8fa8-98df6be12d44",
                 "parameters": [
                     {
                         "type": "string",
@@ -2398,7 +2398,7 @@ const docTemplate = `{
                     "Policies"
                 ],
                 "summary": "Link policies to role",
-                "operationId": "019791cc-06c7-7ebd-b750-8c93b165d503",
+                "operationId": "0198042a-f9c5-76fd-8012-5c9a2957e289",
                 "parameters": [
                     {
                         "type": "string",
@@ -2463,7 +2463,7 @@ const docTemplate = `{
                     "Policies"
                 ],
                 "summary": "Unlink policies from role",
-                "operationId": "019791cc-06c7-7ec1-aca1-291132927db6",
+                "operationId": "0198042a-f9c5-7700-9e40-e64f7b8c947c",
                 "parameters": [
                     {
                         "type": "string",
@@ -2527,7 +2527,7 @@ const docTemplate = `{
                     "Roles"
                 ],
                 "summary": "List users by role",
-                "operationId": "019791cc-06c7-7efb-99c2-b25af11e600c",
+                "operationId": "0198042a-f9c5-75ff-bbfc-224bf4342886",
                 "parameters": [
                     {
                         "type": "string",
@@ -2619,7 +2619,7 @@ const docTemplate = `{
                     "Users"
                 ],
                 "summary": "Link users to role",
-                "operationId": "019791cc-06c7-7eb1-b10c-4fbcd5943885",
+                "operationId": "0198042a-f9c5-76f5-8ff6-b4479bdaa6b6",
                 "parameters": [
                     {
                         "type": "string",
@@ -2684,7 +2684,7 @@ const docTemplate = `{
                     "Users"
                 ],
                 "summary": "Unlink users from role",
-                "operationId": "019791cc-06c7-7eb5-9b74-ba394be221b4",
+                "operationId": "0198042a-f9c5-76f9-9394-170db55f62f4",
                 "parameters": [
                     {
                         "type": "string",
@@ -2747,7 +2747,7 @@ const docTemplate = `{
                     "Users"
                 ],
                 "summary": "List users",
-                "operationId": "019791cc-06c7-7ee4-8f2b-ea43720d520b",
+                "operationId": "0198042a-f9c5-75ef-8ea1-29ecbbe01a2e",
                 "parameters": [
                     {
                         "type": "string",
@@ -2830,7 +2830,7 @@ const docTemplate = `{
                     "Users"
                 ],
                 "summary": "Create user",
-                "operationId": "019791cc-06c7-7ed4-8f8b-2297e4565de3",
+                "operationId": "0198042a-f9c5-75e3-acf6-6901bb33ae65",
                 "parameters": [
                     {
                         "description": "Create user request",
@@ -2885,7 +2885,7 @@ const docTemplate = `{
                     "Users"
                 ],
                 "summary": "Get user",
-                "operationId": "019791cc-06c7-7ed0-9140-556f721c5749",
+                "operationId": "0198042a-f9c5-75df-b843-b92a4d5c590e",
                 "parameters": [
                     {
                         "type": "string",
@@ -2940,7 +2940,7 @@ const docTemplate = `{
                     "Users"
                 ],
                 "summary": "Update user",
-                "operationId": "019791cc-06c7-7edc-94d6-843e3f99e96f",
+                "operationId": "0198042a-f9c5-75e7-8cb9-231bee55c64e",
                 "parameters": [
                     {
                         "type": "string",
@@ -3001,7 +3001,7 @@ const docTemplate = `{
                     "Users"
                 ],
                 "summary": "Delete user",
-                "operationId": "019791cc-06c7-7ee0-85b7-45450ad476eb",
+                "operationId": "0198042a-f9c5-75eb-b683-6c1847af7108",
                 "parameters": [
                     {
                         "type": "string",
@@ -3050,7 +3050,7 @@ const docTemplate = `{
                     "Auth"
                 ],
                 "summary": "Get user authorization",
-                "operationId": "019791cc-06c7-7ef4-afa5-81125e9dcde9",
+                "operationId": "0198042a-f9c5-75fb-b324-ec962beb2277",
                 "parameters": [
                     {
                         "type": "string",
@@ -3106,7 +3106,7 @@ const docTemplate = `{
                     "Users"
                 ],
                 "summary": "List roles by user",
-                "operationId": "019791cc-06c7-7ec5-87fe-096d6d2760a9",
+                "operationId": "0198042a-f9c5-7704-b73b-55e2ec093586",
                 "parameters": [
                     {
                         "type": "string",
@@ -3198,7 +3198,7 @@ const docTemplate = `{
                     "Roles"
                 ],
                 "summary": "Link roles to user",
-                "operationId": "019791cc-06c7-7eec-83f3-bcaed0c4d46f",
+                "operationId": "0198042a-f9c5-75f3-985f-d30e67bb3688",
                 "parameters": [
                     {
                         "type": "string",
@@ -3263,7 +3263,7 @@ const docTemplate = `{
                     "Roles"
                 ],
                 "summary": "Unlink roles from user",
-                "operationId": "019791cc-06c7-7ef0-9394-d4ac3f52e94c",
+                "operationId": "0198042a-f9c5-75f7-b802-343518ee3788",
                 "parameters": [
                     {
                         "type": "string",
@@ -3321,7 +3321,7 @@ const docTemplate = `{
                     "Version"
                 ],
                 "summary": "Get version",
-                "operationId": "019791cc-06c7-7eff-a1df-fbc2ad0b27c9",
+                "operationId": "0198042a-f9c5-7704-b73b-55e2ec093588",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -3393,7 +3393,7 @@ const docTemplate = `{
                 "id": {
                     "type": "string",
                     "format": "uuid",
-                    "example": "01979cde-6d91-7733-8381-eaef585fad97"
+                    "example": "01980434-b7ff-7a9e-b343-668d79691032"
                 },
                 "name": {
                     "type": "string",
@@ -3414,7 +3414,7 @@ const docTemplate = `{
                 "id": {
                     "type": "string",
                     "format": "uuid",
-                    "example": "01979cde-6d91-7756-bd58-75b685419eb3"
+                    "example": "01980434-b7ff-7ac1-b7b0-13de306cc1cb"
                 },
                 "name": {
                     "type": "string",
@@ -3439,7 +3439,7 @@ const docTemplate = `{
                 "id": {
                     "type": "string",
                     "format": "uuid",
-                    "example": "01979cde-6d91-7720-aaa5-d45582f94ac4"
+                    "example": "01980434-b7ff-7aa6-a131-a7c3590a1ce1"
                 },
                 "name": {
                     "type": "string",
@@ -3464,7 +3464,7 @@ const docTemplate = `{
                 "id": {
                     "type": "string",
                     "format": "uuid",
-                    "example": "01979cde-6d91-7766-a529-ebe2a773d447"
+                    "example": "01980434-b7ff-7aba-a3ef-1b38309c9a1f"
                 },
                 "name": {
                     "type": "string",
@@ -3496,7 +3496,7 @@ const docTemplate = `{
                 "id": {
                     "type": "string",
                     "format": "uuid",
-                    "example": "01979cde-6d91-775e-b049-9627e2c6f848"
+                    "example": "01980434-b7ff-7ab2-b903-524ba1d47616"
                 },
                 "last_name": {
                     "type": "string",
@@ -3601,7 +3601,7 @@ const docTemplate = `{
                         "format": "uuid"
                     },
                     "example": [
-                        "01979cde-6d91-772b-ac5b-c7a2aa7512f5"
+                        "01980434-b7ff-7a96-b0c8-dbabed881cf5"
                     ]
                 }
             }
@@ -3772,7 +3772,7 @@ const docTemplate = `{
                 "user_id": {
                     "type": "string",
                     "format": "uuid",
-                    "example": "01979cde-6d91-773b-a03c-3779be3b55b3"
+                    "example": "01980434-b7ff-7a54-a71f-34868a34e51e"
                 }
             }
         },
@@ -3839,7 +3839,7 @@ const docTemplate = `{
                 "id": {
                     "type": "string",
                     "format": "uuid",
-                    "example": "01979cde-6d91-7728-bfbb-ec90edcd6767"
+                    "example": "01980434-b7ff-7a93-b5b4-ca4c73283131"
                 },
                 "name": {
                     "type": "string",
@@ -3878,7 +3878,7 @@ const docTemplate = `{
                 "id": {
                     "type": "string",
                     "format": "uuid",
-                    "example": "01979cde-6d91-7753-9b69-975f70601c14"
+                    "example": "01980434-b7ff-7abe-a45d-7311bc7011f5"
                 },
                 "name": {
                     "type": "string",
@@ -3917,7 +3917,7 @@ const docTemplate = `{
                 "id": {
                     "type": "string",
                     "format": "uuid",
-                    "example": "01979cde-6d91-769f-8d3e-b04eeb538a83"
+                    "example": "01980434-b7ff-7aa2-bfc2-d862a423985c"
                 },
                 "name": {
                     "type": "string",
@@ -3998,7 +3998,7 @@ const docTemplate = `{
                 "id": {
                     "type": "string",
                     "format": "uuid",
-                    "example": "01979cde-6d91-773f-a630-7eed93217f35"
+                    "example": "01980434-b7ff-7a8b-b8e9-144341357314"
                 },
                 "last_name": {
                     "type": "string",
@@ -4034,7 +4034,7 @@ const docTemplate = `{
                 "id": {
                     "type": "string",
                     "format": "uuid",
-                    "example": "01979cde-6d91-7743-a481-bfe67f26a3c2"
+                    "example": "01980434-b7ff-7aaa-a09c-d46077eff792"
                 },
                 "name": {
                     "type": "string",
@@ -4080,7 +4080,7 @@ const docTemplate = `{
                 "id": {
                     "type": "string",
                     "format": "uuid",
-                    "example": "01979cde-6d91-7762-aae3-871d5e5ee975"
+                    "example": "01980434-b7ff-7ab6-8c97-3e2f8905173a"
                 },
                 "name": {
                     "type": "string",
@@ -4141,7 +4141,7 @@ const docTemplate = `{
                         "format": "uuid"
                     },
                     "example": [
-                        "01979cde-6d91-772b-ac5b-c7a2aa7512f5"
+                        "01980434-b7ff-7a96-b0c8-dbabed881cf5"
                     ]
                 }
             }
@@ -4315,7 +4315,7 @@ const docTemplate = `{
                 "id": {
                     "type": "string",
                     "format": "uuid",
-                    "example": "01979cde-6d91-775a-ad3f-1a97b23ee649"
+                    "example": "01980434-b7ff-7aae-95c6-051c9895119c"
                 },
                 "last_name": {
                     "type": "string",

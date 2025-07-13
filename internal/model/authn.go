@@ -205,7 +205,7 @@ type LoginUserResponse struct {
 	AccessToken  string         `json:"access_token" format:"string"`
 	RefreshToken string         `json:"refresh_token" format:"string"`
 	TokenType    string         `json:"token_type" example:"Bearer" format:"string"`
-	UserID       uuid.UUID      `json:"user_id" example:"01979cde-6d91-773b-a03c-3779be3b55b3" format:"uuid"`
+	UserID       uuid.UUID      `json:"user_id" example:"01980434-b7ff-7a54-a71f-34868a34e51e" format:"uuid"`
 	Resources    map[string]any `json:"permissions" format:"object"`
 }
 
@@ -261,7 +261,7 @@ type RegisterUserRequest struct {
 	LastName  string    `json:"last_name" example:"Doe" format:"string" validate:"required"`
 	Email     string    `json:"email" example:"john.doe@email.com" format:"email" validate:"required"`
 	Password  string    `json:"password" example:"ThisIsApassw0rd.," format:"string" validate:"required"`
-	ID        uuid.UUID `json:"id" example:"01979cde-6d91-773f-a630-7eed93217f35" format:"uuid" validate:"optional"`
+	ID        uuid.UUID `json:"id" example:"01980434-b7ff-7a8b-b8e9-144341357314" format:"uuid" validate:"optional"`
 }
 
 // Validate validates the RegisterUserRequest.

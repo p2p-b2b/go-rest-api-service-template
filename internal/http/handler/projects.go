@@ -94,7 +94,7 @@ func (ref *ProjectsHandler) RegisterRoutes(mux *http.ServeMux, middlewares ...mi
 
 // getByID Get a project by ID
 //
-//	@ID				019797e6-138a-7d04-8db3-1d4755b25db3
+//	@ID				0198042a-f9c5-761e-b1c2-66a3f8ab30d6
 //	@Summary		Get project
 //	@Description	Retrieve a specific project by its unique identifier
 //	@Tags			Projects
@@ -144,7 +144,7 @@ func (ref *ProjectsHandler) getByID(w http.ResponseWriter, r *http.Request) {
 
 // create Create a project
 //
-//	@ID				019797e6-138a-7d00-98db-740f21794f11
+//	@ID				0198042a-f9c5-7622-9142-88fbaa727659
 //	@Summary		Create project
 //	@Description	Create a new project with specified configuration
 //	@Tags			Projects
@@ -236,7 +236,7 @@ func (ref *ProjectsHandler) create(w http.ResponseWriter, r *http.Request) {
 
 // updateByID Update a project by ID
 //
-//	@ID				019797e6-138a-7cf8-9887-e4c44ad0ae19
+//	@ID				0198042a-f9c5-7626-be9f-996a2898ef07
 //	@Summary		Update project
 //	@Description	Modify an existing project by its ID
 //	@Tags			Projects
@@ -314,7 +314,7 @@ func (ref *ProjectsHandler) updateByID(w http.ResponseWriter, r *http.Request) {
 
 // deleteByID Delete a project by id
 //
-//	@ID				019797e6-138a-7cf4-8694-e4611baded39
+//	@ID				0198042a-f9c5-762a-8033-649a1526901d
 //	@Summary		Delete project
 //	@Description	Remove a project permanently from the system
 //	@Tags			Projects
@@ -354,7 +354,7 @@ func (ref *ProjectsHandler) deleteByID(w http.ResponseWriter, r *http.Request) {
 
 // list Return a paginated list of Project
 //
-//	@ID				019797e6-138a-7cf1-b7bb-fa9c5e168c49
+//	@ID				0198042a-f9c5-76a7-a480-fbcb978b8501
 //	@Summary		List projects
 //	@Description	Retrieve paginated list of all projects in the system
 //	@Tags			Projects

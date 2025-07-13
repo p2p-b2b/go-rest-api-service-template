@@ -45,7 +45,7 @@ type Role struct {
 	Name        string    `json:"name,omitempty" example:"Role Name" format:"string"`
 	Description string    `json:"description,omitempty" example:"This is a role" format:"string"`
 	SerialID    int64     `json:"-"`
-	ID          uuid.UUID `json:"id,omitempty,omitzero" example:"01979cde-6d91-7762-aae3-871d5e5ee975" format:"uuid"`
+	ID          uuid.UUID `json:"id,omitempty,omitzero" example:"01980434-b7ff-7ab6-8c97-3e2f8905173a" format:"uuid"`
 }
 
 type InsertRoleInput struct {
@@ -357,7 +357,7 @@ type UnlinkPoliciesFromRoleInput = LinkPoliciesToRoleInput
 type CreateRoleRequest struct {
 	Name        string    `json:"name" example:"New role name" format:"string" validate:"required"`
 	Description string    `json:"description" example:"This is a role" format:"string" validate:"required"`
-	ID          uuid.UUID `json:"id" example:"01979cde-6d91-7766-a529-ebe2a773d447" format:"uuid" validate:"optional"`
+	ID          uuid.UUID `json:"id" example:"01980434-b7ff-7aba-a3ef-1b38309c9a1f" format:"uuid" validate:"optional"`
 }
 
 // Validate validates the CreateRoleRequest.

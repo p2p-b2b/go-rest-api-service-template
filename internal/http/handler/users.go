@@ -111,7 +111,7 @@ func (ref *UsersHandler) RegisterRoutes(mux *http.ServeMux, middlewares ...middl
 
 // getByID Get a user by ID
 //
-//	@ID				019791cc-06c7-7ed0-9140-556f721c5749
+//	@ID				0198042a-f9c5-75df-b843-b92a4d5c590e
 //	@Summary		Get user
 //	@Description	Retrieve a specific user account by its unique identifier
 //	@Tags			Users
@@ -163,7 +163,7 @@ func (ref *UsersHandler) getByID(w http.ResponseWriter, r *http.Request) {
 
 // create Create a new user
 //
-//	@ID				019791cc-06c7-7ed4-8f8b-2297e4565de3
+//	@ID				0198042a-f9c5-75e3-acf6-6901bb33ae65
 //	@Summary		Create user
 //	@Description	Create a new user account with specified configuration
 //	@Tags			Users
@@ -243,7 +243,7 @@ func (ref *UsersHandler) create(w http.ResponseWriter, r *http.Request) {
 
 // updateByID Update a user
 //
-//	@ID				019791cc-06c7-7edc-94d6-843e3f99e96f
+//	@ID				0198042a-f9c5-75e7-8cb9-231bee55c64e
 //	@Summary		Update user
 //	@Description	Modify an existing user account by its ID
 //	@Tags			Users
@@ -326,7 +326,7 @@ func (ref *UsersHandler) updateByID(w http.ResponseWriter, r *http.Request) {
 
 // deleteByID Delete a user
 //
-//	@ID				019791cc-06c7-7ee0-85b7-45450ad476eb
+//	@ID				0198042a-f9c5-75eb-b683-6c1847af7108
 //	@Summary		Delete user
 //	@Description	Remove a user account permanently from the system
 //	@Tags			Users
@@ -368,7 +368,7 @@ func (ref *UsersHandler) deleteByID(w http.ResponseWriter, r *http.Request) {
 
 // list Return a paginated list of users
 //
-//	@ID				019791cc-06c7-7ee4-8f2b-ea43720d520b
+//	@ID				0198042a-f9c5-75ef-8ea1-29ecbbe01a2e
 //	@Summary		List users
 //	@Description	Retrieve paginated list of all users in the system
 //	@Tags			Users
@@ -446,7 +446,7 @@ func (ref *UsersHandler) list(w http.ResponseWriter, r *http.Request) {
 
 // linkRoles Link roles to user
 //
-//	@ID				019791cc-06c7-7eec-83f3-bcaed0c4d46f
+//	@ID				0198042a-f9c5-75f3-985f-d30e67bb3688
 //	@Summary		Link roles to user
 //	@Description	Associate multiple roles with a user within a specific project
 //	@Tags			Users,Roles
@@ -516,7 +516,7 @@ func (ref *UsersHandler) linkRoles(w http.ResponseWriter, r *http.Request) {
 
 // unLinkRoles Unlink roles from user
 //
-//	@ID				019791cc-06c7-7ef0-9394-d4ac3f52e94c
+//	@ID				0198042a-f9c5-75f7-b802-343518ee3788
 //	@Summary		Unlink roles from user
 //	@Description	Remove role associations from a user within a specific project
 //	@Tags			Users,Roles
@@ -586,7 +586,7 @@ func (ref *UsersHandler) unLinkRoles(w http.ResponseWriter, r *http.Request) {
 
 // selectAuthz Get user authorization
 //
-//	@ID				019791cc-06c7-7ef4-afa5-81125e9dcde9
+//	@ID				0198042a-f9c5-75fb-b324-ec962beb2277
 //	@Summary		Get user authorization
 //	@Description	Retrieve user authorization permissions and roles for access control
 //	@Tags			Users,Auth
@@ -637,7 +637,7 @@ func (ref *UsersHandler) selectAuthz(w http.ResponseWriter, r *http.Request) {
 
 // listByRoleID List the users linked to a role
 //
-//	@ID				019791cc-06c7-7efb-99c2-b25af11e600c
+//	@ID				0198042a-f9c5-75ff-bbfc-224bf4342886
 //	@Summary		List users by role
 //	@Description	Retrieve paginated list of users associated with a specific role
 //	@Tags			Users,Roles

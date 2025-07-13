@@ -83,7 +83,7 @@ func ValidateResource(resource string) (validate string, error error) {
 //
 // @Description Policy represents a role.
 type Policy struct {
-	ID              uuid.UUID `json:"id,omitempty,omitzero" example:"01979cde-6d91-7728-bfbb-ec90edcd6767" format:"uuid"`
+	ID              uuid.UUID `json:"id,omitempty,omitzero" example:"01980434-b7ff-7a93-b5b4-ca4c73283131" format:"uuid"`
 	Name            string    `json:"name,omitempty" example:"Policy Name" format:"string"`
 	Description     string    `json:"description,omitempty" example:"This is a role" format:"string"`
 	System          *bool     `json:"system,omitempty,omitzero" example:"false" format:"boolean"`
@@ -144,7 +144,7 @@ type UnlinkRolesFromPolicyInput = LinkRolesToPolicyInput
 //
 // @Description Link roles to a policy.
 type LinkRolesToPolicyRequest struct {
-	RoleIDs []uuid.UUID `json:"role_ids" example:"01979cde-6d91-772b-ac5b-c7a2aa7512f5" format:"uuid" validate:"required"`
+	RoleIDs []uuid.UUID `json:"role_ids" example:"01980434-b7ff-7a96-b0c8-dbabed881cf5" format:"uuid" validate:"required"`
 }
 
 func (ref *LinkRolesToPolicyRequest) Validate() error {
@@ -417,7 +417,7 @@ func (ref *UpdatePolicyInput) Validate() error {
 }
 
 type DeletePolicyInput struct {
-	ID uuid.UUID `json:"id,omitempty,omitzero" example:"01979cde-6d91-772f-a334-3605cba0d6b1" format:"uuid" validate:"required"`
+	ID uuid.UUID `json:"id,omitempty,omitzero" example:"01980434-b7ff-7a9a-9145-07dd540fe352" format:"uuid" validate:"required"`
 }
 
 func (ref *DeletePolicyInput) Validate() error {
@@ -438,7 +438,7 @@ func (ref *DeletePolicyInput) Validate() error {
 //
 // @Description Create a policy.
 type CreatePolicyRequest struct {
-	ID              uuid.UUID `json:"id,omitempty,omitzero" example:"01979cde-6d91-7733-8381-eaef585fad97" format:"uuid" validate:"optional"`
+	ID              uuid.UUID `json:"id,omitempty,omitzero" example:"01980434-b7ff-7a9e-b343-668d79691032" format:"uuid" validate:"optional"`
 	Name            string    `json:"name" example:"List Policies for project" format:"string" validate:"required"`
 	Description     string    `json:"description,omitempty" example:"This allows to list all the policies of a specific project" format:"string" validate:"optional"`
 	AllowedAction   string    `json:"allowed_action,omitempty" example:"GET" format:"string" validate:"required"`

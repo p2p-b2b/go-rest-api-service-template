@@ -96,7 +96,7 @@ func (ref *AuthnHandler) RegisterRoutes(mux *http.ServeMux, accessTokenMiddlewar
 
 // loginUser login a user and return its JWT tokens.
 //
-//	@Id				019791cc-06c7-7d8c-81e4-914dd89098e8
+//	@Id				0198042a-f9c5-7547-a6e7-567af5db26cd
 //	@Summary		Login user
 //	@Description	Authenticate user credentials and return JWT access and refresh tokens
 //	@Tags			Auth
@@ -158,7 +158,7 @@ func (ref *AuthnHandler) loginUser(w http.ResponseWriter, r *http.Request) {
 
 // registerUser Register a new user and send a confirmation email.
 //
-//	@Id				019791cc-06c7-7e38-ac82-6919df575ff7
+//	@Id				0198042a-f9c5-75c8-9231-ad5fc9e7b32e
 //	@Summary		Register user
 //	@Description	Create a new user account and send email verification
 //	@Tags			Auth
@@ -236,7 +236,7 @@ func (ref *AuthnHandler) registerUser(w http.ResponseWriter, r *http.Request) {
 
 // verifyUser Verify a user using the JWT token.
 //
-//	@Id				019791cc-06c7-7e40-bcc3-149cd13bee44
+//	@Id				0198042a-f9c5-75cc-9dd2-e3ff9f6c1e3a
 //	@Summary		Verify user
 //	@Description	Verify user account using JWT verification token
 //	@Tags			Auth
@@ -290,7 +290,7 @@ func (ref *AuthnHandler) verifyUser(w http.ResponseWriter, r *http.Request) {
 
 // reVerifyUser Re-verify a user using the JWT token.
 //
-//	@Id				019791cc-06c7-7e48-b046-99f072088c50
+//	@Id				0198042a-f9c5-75d0-8c20-fea31b65587f
 //	@Summary		Resend verification
 //	@Description	Resend account verification email to user
 //	@Tags			Auth
@@ -355,7 +355,7 @@ func (ref *AuthnHandler) reVerifyUser(w http.ResponseWriter, r *http.Request) {
 
 // logout Log out the current user
 //
-//	@Id				019791cc-06c7-7e4c-961c-b1bf5f40d633
+//	@Id				0198042a-f9c5-75d4-afa6-fe658744c80f
 //	@Summary		Logout user
 //	@Description	Logout user and invalidate session tokens
 //	@Tags			Auth
@@ -401,7 +401,7 @@ func (ref *AuthnHandler) logout(w http.ResponseWriter, r *http.Request) {
 
 // refreshAccessToken Retrieve a new access token using the refresh token.
 //
-//	@Id				019791cc-06c7-7e50-a5b6-bd1c82d5c031
+//	@Id				0198042a-f9c5-75d8-aa7b-37524ea4f124
 //	@Summary		Refresh access token
 //	@Description	Generate new access token using valid refresh token
 //	@Tags			Auth

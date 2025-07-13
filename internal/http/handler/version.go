@@ -67,7 +67,7 @@ func (ref *VersionHandler) RegisterRoutes(mux *http.ServeMux, middlewares ...mid
 
 // get returns the version of the service
 //
-//	@ID				019791cc-06c7-7eff-a1df-fbc2ad0b27c9
+//	@ID				0198042a-f9c5-7704-b73b-55e2ec093588
 //	@Summary		Get version
 //	@Description	Retrieve the current version and build information of the service
 //	@Tags			Version

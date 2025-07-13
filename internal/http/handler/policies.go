@@ -107,7 +107,7 @@ func (ref *PoliciesHandler) RegisterRoutes(mux *http.ServeMux, middlewares ...mi
 
 // getByID Get a policy by ID
 //
-//	@ID				019791cc-06c7-7e5b-b363-1ef381f1e832
+//	@ID				0198042a-f9c5-76c2-96f2-d16b0674bcd9
 //	@Summary		Get policy
 //	@Description	Retrieve a specific policy by its unique identifier
 //	@Tags			Policies
@@ -157,7 +157,7 @@ func (ref *PoliciesHandler) getByID(w http.ResponseWriter, r *http.Request) {
 
 // create Create a new policy
 //
-//	@ID				019791cc-06c7-7e63-8ec9-de5b38235dbf
+//	@ID				0198042a-f9c5-76c6-9a07-0c8948640ac2
 //	@Summary		Create policy
 //	@Description	Create a new policy with specified permissions
 //	@Tags			Policies
@@ -237,7 +237,7 @@ func (ref *PoliciesHandler) create(w http.ResponseWriter, r *http.Request) {
 
 // updateByID Update a policy by ID
 //
-//	@ID				019791cc-06c7-7e67-9e1b-49a34edfe07c
+//	@ID				0198042a-f9c5-76ca-b40d-b1de1d359c22
 //	@Summary		Update policy
 //	@Description	Modify an existing policy by its ID
 //	@Tags			Policies
@@ -315,7 +315,7 @@ func (ref *PoliciesHandler) updateByID(w http.ResponseWriter, r *http.Request) {
 
 // deleteByID Delete a policy by ID
 //
-//	@ID				019791cc-06c7-7e6b-b308-a2b2cbc2aaa1
+//	@ID				0198042a-f9c5-76ce-b208-2f58f7ccd177
 //	@Summary		Delete policy
 //	@Description	Remove a policy permanently from the system
 //	@Tags			Policies
@@ -364,7 +364,7 @@ func (ref *PoliciesHandler) deleteByID(w http.ResponseWriter, r *http.Request) {
 
 // list Retrieves a paginated list of all the policies in the system
 //
-//	@ID				019791cc-06c7-7e73-96aa-7e0383caae0d
+//	@ID				0198042a-f9c5-76d2-a491-9cc989c1d59c
 //	@Summary		List policies
 //	@Description	Retrieve paginated list of all policies in the system
 //	@Tags			Policies
@@ -441,7 +441,7 @@ func (ref *PoliciesHandler) list(w http.ResponseWriter, r *http.Request) {
 
 // linkRoles Link roles to policy
 //
-//	@ID				019791cc-06c7-7e77-a2c3-4ed693a2bcdd
+//	@ID				0198042a-f9c5-76d6-b1f3-0bfb57a9197f
 //	@Summary		Link roles to policy
 //	@Description	Associate multiple roles with a specific policy for authorization
 //	@Tags			Policies,Roles
@@ -508,7 +508,7 @@ func (ref *PoliciesHandler) linkRoles(w http.ResponseWriter, r *http.Request) {
 
 // unlinkRoles Unlink roles from policy
 //
-//	@ID				019791cc-06c7-7e7b-bdfc-381b015c44e7
+//	@ID				0198042a-f9c5-76d9-8019-babd51a0c340
 //	@Summary		Unlink roles from policy
 //	@Description	Remove role associations from a specific policy
 //	@Tags			Policies,Roles
@@ -575,7 +575,7 @@ func (ref *PoliciesHandler) unlinkRoles(w http.ResponseWriter, r *http.Request) 
 
 // listByRoleID List policies by role ID
 //
-//	@ID				019791cc-06c7-7e82-967d-e13c399f5018
+//	@ID				0198042a-f9c5-76dd-8fa8-98df6be12d44
 //	@Summary		List policies by role
 //	@Description	Retrieve paginated list of policies associated with a specific role
 //	@Tags			Policies,Roles

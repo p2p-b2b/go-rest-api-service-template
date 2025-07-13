@@ -91,7 +91,7 @@ func (ref *ResourcesHandler) RegisterRoutes(mux *http.ServeMux, middlewares ...m
 
 // getByID Get a resources by id
 //
-//	@ID				019791cc-06c7-7e86-ad42-b777bfcc9e40
+//	@ID				0198042a-f9c5-76b2-b8b1-bc0223a0f18d
 //	@Summary		Get resource
 //	@Description	Retrieve a specific resource by its identifier
 //	@Tags			Resources
@@ -141,7 +141,7 @@ func (ref *ResourcesHandler) getByID(w http.ResponseWriter, r *http.Request) {
 
 // list Return a paginated list of resources
 //
-//	@ID				019791cc-06c7-7e8e-8d7e-cd3f9296e0fd
+//	@ID				0198042a-f9c5-76b6-bd55-f34dff7b0632
 //	@Summary		List resources
 //	@Description	Retrieve paginated list of all resources in the system
 //	@Tags			Resources
@@ -218,7 +218,7 @@ func (ref *ResourcesHandler) list(w http.ResponseWriter, r *http.Request) {
 
 // listMatches Return a paginated list of resources matching an action and resource policy pattern
 //
-//	@ID				019791cc-06c7-7e92-9152-cb35902f79c4
+//	@ID				0198042a-f9c5-76ba-bc87-6e9e32988407
 //	@Summary		Match resources
 //	@Description	Find resources that match specific action and resource policy patterns
 //	@Tags			Resources

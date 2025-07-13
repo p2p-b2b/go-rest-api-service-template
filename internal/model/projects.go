@@ -42,7 +42,7 @@ type Project struct {
 	Name        string    `json:"name,omitempty" example:"John" format:"string"`
 	Description string    `json:"description,omitempty" example:"This is a project" format:"string"`
 	SerialID    int64     `json:"-"`
-	ID          uuid.UUID `json:"id,omitempty,omitzero" example:"01979cde-6d91-769f-8d3e-b04eeb538a83" format:"uuid"`
+	ID          uuid.UUID `json:"id,omitempty,omitzero" example:"01980434-b7ff-7aa2-bfc2-d862a423985c" format:"uuid"`
 }
 
 type InsertProjectInput struct {
@@ -288,7 +288,7 @@ type ListProjectsOutput = SelectProjectsOutput
 type CreateProjectRequest struct {
 	Name        string    `json:"name" example:"New project name" format:"string" validate:"required"`
 	Description string    `json:"description" example:"This is a new project" format:"string" validate:"required"`
-	ID          uuid.UUID `json:"id" example:"01979cde-6d91-7720-aaa5-d45582f94ac4" format:"uuid" validate:"optional"`
+	ID          uuid.UUID `json:"id" example:"01980434-b7ff-7aa6-a131-a7c3590a1ce1" format:"uuid" validate:"optional"`
 }
 
 func (req *CreateProjectRequest) Validate() error {

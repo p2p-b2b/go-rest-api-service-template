@@ -51,7 +51,7 @@ type User struct {
 	Password     string    `json:"-"`
 	PasswordHash string    `json:"-"`
 	SerialID     int64     `json:"-"`
-	ID           uuid.UUID `json:"id,omitempty,omitzero" example:"01979cde-6d91-775a-ad3f-1a97b23ee649" format:"uuid"`
+	ID           uuid.UUID `json:"id,omitempty,omitzero" example:"01980434-b7ff-7aae-95c6-051c9895119c" format:"uuid"`
 }
 
 type InsertUserInput struct {
@@ -384,7 +384,7 @@ type CreateUserRequest struct {
 	LastName  string    `json:"last_name" example:"Doe" format:"string" validate:"required"`
 	Email     string    `json:"email" example:"my@email.com" format:"email" validate:"required"`
 	Password  string    `json:"password" example:"ThisIs4Passw0rd" format:"string" validate:"required"`
-	ID        uuid.UUID `json:"id" example:"01979cde-6d91-775e-b049-9627e2c6f848" format:"uuid" validate:"optional"`
+	ID        uuid.UUID `json:"id" example:"01980434-b7ff-7ab2-b903-524ba1d47616" format:"uuid" validate:"optional"`
 }
 
 // Validate validates the CreateUserRequest.

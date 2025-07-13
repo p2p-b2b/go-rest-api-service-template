@@ -103,7 +103,7 @@ func (ref *ProductsHandler) RegisterRoutes(mux *http.ServeMux, middlewares ...mi
 
 // getByIDByProjectID Get a product by its ID
 //
-//	@ID				01979db7-f53f-73a1-aab2-74802b79be51
+//	@ID				0198042a-f9c5-7603-99b1-7c20ee58542b
 //	@Summary		Get product
 //	@Description	Retrieve a specific product by its unique identifier
 //	@Tags			Products,Projects
@@ -161,7 +161,7 @@ func (ref *ProductsHandler) getByIDByProjectID(w http.ResponseWriter, r *http.Re
 
 // createByProjectID Create a product
 //
-//	@ID				01979db7-f53f-73a5-b916-297c6db5b714
+//	@ID				0198042a-f9c5-7606-8aab-1c2db5b81a89
 //	@Summary		Create product
 //	@Description	Create a new product with specified configuration
 //	@Tags			Products,Projects
@@ -249,7 +249,7 @@ func (ref *ProductsHandler) createByProjectID(w http.ResponseWriter, r *http.Req
 
 // updateByIDByProjectID Update a product
 //
-//	@ID				01979db7-f53f-73a9-bd58-e1cd5d7df436
+//	@ID				0198042a-f9c5-7607-b75a-532912a6f35d
 //	@Summary		Update product
 //	@Description	Modify an existing product by its ID
 //	@Tags			Products,Projects
@@ -342,7 +342,7 @@ func (ref *ProductsHandler) updateByIDByProjectID(w http.ResponseWriter, r *http
 
 // deleteByIDByProjectID Delete a product
 //
-//	@ID				01979db7-f53f-73ad-a84e-49bbdfe9e5c9
+//	@ID				0198042a-f9c5-760a-99c8-1f68d597d300
 //	@Summary		Delete product
 //	@Description	Remove a product permanently from the system
 //	@Tags			Products,Projects
@@ -398,7 +398,7 @@ func (ref *ProductsHandler) deleteByIDByProjectID(w http.ResponseWriter, r *http
 
 // listByProjectID Retrieves a paginated list of products by project ID
 //
-//	@ID				01979db7-f53f-73b1-993f-15f77e72c8cc
+//	@ID				0198042a-f9c5-760e-9d2f-94cce8243e5a
 //	@Summary		List products by project
 //	@Description	Retrieve paginated list of products for a specific project
 //	@Tags			Products,Projects
@@ -483,7 +483,7 @@ func (ref *ProductsHandler) listByProjectID(w http.ResponseWriter, r *http.Reque
 
 // list Retrieves a paginated list of all products
 //
-//	@ID				01979db7-f53f-73b5-a499-d6390831c94c
+//	@ID				0198042a-f9c5-7612-a055-58177eca0772
 //	@Summary		List products
 //	@Description	Retrieve paginated list of all products in the system
 //	@Tags			Products
@@ -560,7 +560,7 @@ func (ref *ProductsHandler) list(w http.ResponseWriter, r *http.Request) {
 
 // linkToPaymentProcessor Links a product to a payment processor
 //
-//	@ID				01979db7-f53f-73bd-b6c0-4541a48549c2
+//	@ID				0198042a-f9c5-7616-8c3b-e4f19d83a033
 //	@Summary		Link product to payment processor
 //	@Description	Associate a product with a payment processor to enable billing and invoicing
 //	@Tags			Products,Projects
@@ -615,7 +615,7 @@ func (ref *ProductsHandler) linkToPaymentProcessor(w http.ResponseWriter, r *htt
 
 // unlinkFromPaymentProcessor Unlinks a product from a payment processor
 //
-//	@ID				01979db7-f53f-73b9-818f-cdd1848f15d0
+//	@ID				0198042a-f9c5-761a-bd02-da039b52bea2
 //	@Summary		Unlink product from payment processor
 //	@Description	Remove the association between a product and a payment processor
 //	@Tags			Products,Projects

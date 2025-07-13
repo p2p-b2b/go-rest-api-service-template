@@ -82,7 +82,7 @@ func (ref *HealthHandler) RegisterRoutes(mux *http.ServeMux, middlewares ...midd
 
 // getStatus Get the health of the health service
 //
-//	@ID				019791cc-06c7-7e57-8be6-a6f650ad5431
+//	@ID				0198042a-f9c5-76be-ba9e-8186a69f48c4
 //	@Summary		Check health
 //	@Description	Check service health status including database connectivity and system metrics
 //	@Tags			Health

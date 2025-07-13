@@ -25,7 +25,7 @@ var (
 //
 // @Description Resource represents a permission.
 type Resource struct {
-	ID          uuid.UUID `json:"id,omitempty,omitzero" example:"01979cde-6d91-7743-a481-bfe67f26a3c2" format:"uuid"`
+	ID          uuid.UUID `json:"id,omitempty,omitzero" example:"01980434-b7ff-7aaa-a09c-d46077eff792" format:"uuid"`
 	Name        string    `json:"name,omitempty" example:"Read Users" format:"string"`
 	Description string    `json:"description,omitempty" example:"Allows reading of users" format:"string"`
 	Action      string    `json:"action,omitempty" example:"GET" format:"string"`

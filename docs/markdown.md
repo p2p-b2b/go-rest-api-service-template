@@ -39,12 +39,12 @@ API Support info@qu3ry.me https://qu3ry.me
 
 | Method  | URI     | Name   | Summary |
 |---------|---------|--------|---------|
-| POST | /auth/login | [019791cc 06c7 7d8c 81e4 914dd89098e8](#019791cc-06c7-7d8c-81e4-914dd89098e8) | Login user |
-| POST | /auth/register | [019791cc 06c7 7e38 ac82 6919df575ff7](#019791cc-06c7-7e38-ac82-6919df575ff7) | Register user |
-| GET | /auth/verify/{jwt} | [019791cc 06c7 7e40 bcc3 149cd13bee44](#019791cc-06c7-7e40-bcc3-149cd13bee44) | Verify user |
-| POST | /auth/verify | [019791cc 06c7 7e48 b046 99f072088c50](#019791cc-06c7-7e48-b046-99f072088c50) | Resend verification |
-| DELETE | /auth/logout | [019791cc 06c7 7e4c 961c b1bf5f40d633](#019791cc-06c7-7e4c-961c-b1bf5f40d633) | Logout user |
-| POST | /auth/refresh | [019791cc 06c7 7e50 a5b6 bd1c82d5c031](#019791cc-06c7-7e50-a5b6-bd1c82d5c031) | Refresh access token |
+| POST | /auth/login | [0198042a f9c5 7547 a6e7 567af5db26cd](#0198042a-f9c5-7547-a6e7-567af5db26cd) | Login user |
+| POST | /auth/register | [0198042a f9c5 75c8 9231 ad5fc9e7b32e](#0198042a-f9c5-75c8-9231-ad5fc9e7b32e) | Register user |
+| GET | /auth/verify/{jwt} | [0198042a f9c5 75cc 9dd2 e3ff9f6c1e3a](#0198042a-f9c5-75cc-9dd2-e3ff9f6c1e3a) | Verify user |
+| POST | /auth/verify | [0198042a f9c5 75d0 8c20 fea31b65587f](#0198042a-f9c5-75d0-8c20-fea31b65587f) | Resend verification |
+| DELETE | /auth/logout | [0198042a f9c5 75d4 afa6 fe658744c80f](#0198042a-f9c5-75d4-afa6-fe658744c80f) | Logout user |
+| POST | /auth/refresh | [0198042a f9c5 75d8 aa7b 37524ea4f124](#0198042a-f9c5-75d8-aa7b-37524ea4f124) | Refresh access token |
   
 
 
@@ -52,7 +52,7 @@ API Support info@qu3ry.me https://qu3ry.me
 
 | Method  | URI     | Name   | Summary |
 |---------|---------|--------|---------|
-| GET | /health/status | [019791cc 06c7 7e57 8be6 a6f650ad5431](#019791cc-06c7-7e57-8be6-a6f650ad5431) | Check health |
+| GET | /health/status | [0198042a f9c5 76be ba9e 8186a69f48c4](#0198042a-f9c5-76be-ba9e-8186a69f48c4) | Check health |
   
 
 
@@ -60,14 +60,14 @@ API Support info@qu3ry.me https://qu3ry.me
 
 | Method  | URI     | Name   | Summary |
 |---------|---------|--------|---------|
-| GET | /policies/{policy_id} | [019791cc 06c7 7e5b b363 1ef381f1e832](#019791cc-06c7-7e5b-b363-1ef381f1e832) | Get policy |
-| POST | /policies | [019791cc 06c7 7e63 8ec9 de5b38235dbf](#019791cc-06c7-7e63-8ec9-de5b38235dbf) | Create policy |
-| PUT | /policies/{policy_id} | [019791cc 06c7 7e67 9e1b 49a34edfe07c](#019791cc-06c7-7e67-9e1b-49a34edfe07c) | Update policy |
-| DELETE | /policies/{policy_id} | [019791cc 06c7 7e6b b308 a2b2cbc2aaa1](#019791cc-06c7-7e6b-b308-a2b2cbc2aaa1) | Delete policy |
-| GET | /policies | [019791cc 06c7 7e73 96aa 7e0383caae0d](#019791cc-06c7-7e73-96aa-7e0383caae0d) | List policies |
-| POST | /policies/{policy_id}/roles | [019791cc 06c7 7e77 a2c3 4ed693a2bcdd](#019791cc-06c7-7e77-a2c3-4ed693a2bcdd) | Link roles to policy |
-| DELETE | /policies/{policy_id}/roles | [019791cc 06c7 7e7b bdfc 381b015c44e7](#019791cc-06c7-7e7b-bdfc-381b015c44e7) | Unlink roles from policy |
-| GET | /roles/{role_id}/policies | [019791cc 06c7 7e82 967d e13c399f5018](#019791cc-06c7-7e82-967d-e13c399f5018) | List policies by role |
+| GET | /policies/{policy_id} | [0198042a f9c5 76c2 96f2 d16b0674bcd9](#0198042a-f9c5-76c2-96f2-d16b0674bcd9) | Get policy |
+| POST | /policies | [0198042a f9c5 76c6 9a07 0c8948640ac2](#0198042a-f9c5-76c6-9a07-0c8948640ac2) | Create policy |
+| PUT | /policies/{policy_id} | [0198042a f9c5 76ca b40d b1de1d359c22](#0198042a-f9c5-76ca-b40d-b1de1d359c22) | Update policy |
+| DELETE | /policies/{policy_id} | [0198042a f9c5 76ce b208 2f58f7ccd177](#0198042a-f9c5-76ce-b208-2f58f7ccd177) | Delete policy |
+| GET | /policies | [0198042a f9c5 76d2 a491 9cc989c1d59c](#0198042a-f9c5-76d2-a491-9cc989c1d59c) | List policies |
+| POST | /policies/{policy_id}/roles | [0198042a f9c5 76d6 b1f3 0bfb57a9197f](#0198042a-f9c5-76d6-b1f3-0bfb57a9197f) | Link roles to policy |
+| DELETE | /policies/{policy_id}/roles | [0198042a f9c5 76d9 8019 babd51a0c340](#0198042a-f9c5-76d9-8019-babd51a0c340) | Unlink roles from policy |
+| GET | /roles/{role_id}/policies | [0198042a f9c5 76dd 8fa8 98df6be12d44](#0198042a-f9c5-76dd-8fa8-98df6be12d44) | List policies by role |
   
 
 
@@ -75,14 +75,14 @@ API Support info@qu3ry.me https://qu3ry.me
 
 | Method  | URI     | Name   | Summary |
 |---------|---------|--------|---------|
-| GET | /projects/{project_id}/products/{product_id} | [01979db7 f53f 73a1 aab2 74802b79be51](#01979db7-f53f-73a1-aab2-74802b79be51) | Get product |
-| POST | /projects/{project_id}/products | [01979db7 f53f 73a5 b916 297c6db5b714](#01979db7-f53f-73a5-b916-297c6db5b714) | Create product |
-| PUT | /projects/{project_id}/products/{product_id} | [01979db7 f53f 73a9 bd58 e1cd5d7df436](#01979db7-f53f-73a9-bd58-e1cd5d7df436) | Update product |
-| DELETE | /projects/{project_id}/products/{product_id} | [01979db7 f53f 73ad a84e 49bbdfe9e5c9](#01979db7-f53f-73ad-a84e-49bbdfe9e5c9) | Delete product |
-| GET | /projects/{project_id}/products | [01979db7 f53f 73b1 993f 15f77e72c8cc](#01979db7-f53f-73b1-993f-15f77e72c8cc) | List products by project |
-| GET | /products | [01979db7 f53f 73b5 a499 d6390831c94c](#01979db7-f53f-73b5-a499-d6390831c94c) | List products |
-| DELETE | /projects/{project_id}/products/{product_id}/payment_processor | [01979db7 f53f 73b9 818f cdd1848f15d0](#01979db7-f53f-73b9-818f-cdd1848f15d0) | Unlink product from payment processor |
-| POST | /projects/{project_id}/products/{product_id}/payment_processor | [01979db7 f53f 73bd b6c0 4541a48549c2](#01979db7-f53f-73bd-b6c0-4541a48549c2) | Link product to payment processor |
+| GET | /projects/{project_id}/products/{product_id} | [0198042a f9c5 7603 99b1 7c20ee58542b](#0198042a-f9c5-7603-99b1-7c20ee58542b) | Get product |
+| POST | /projects/{project_id}/products | [0198042a f9c5 7606 8aab 1c2db5b81a89](#0198042a-f9c5-7606-8aab-1c2db5b81a89) | Create product |
+| PUT | /projects/{project_id}/products/{product_id} | [0198042a f9c5 7607 b75a 532912a6f35d](#0198042a-f9c5-7607-b75a-532912a6f35d) | Update product |
+| DELETE | /projects/{project_id}/products/{product_id} | [0198042a f9c5 760a 99c8 1f68d597d300](#0198042a-f9c5-760a-99c8-1f68d597d300) | Delete product |
+| GET | /projects/{project_id}/products | [0198042a f9c5 760e 9d2f 94cce8243e5a](#0198042a-f9c5-760e-9d2f-94cce8243e5a) | List products by project |
+| GET | /products | [0198042a f9c5 7612 a055 58177eca0772](#0198042a-f9c5-7612-a055-58177eca0772) | List products |
+| POST | /projects/{project_id}/products/{product_id}/payment_processor | [0198042a f9c5 7616 8c3b e4f19d83a033](#0198042a-f9c5-7616-8c3b-e4f19d83a033) | Link product to payment processor |
+| DELETE | /projects/{project_id}/products/{product_id}/payment_processor | [0198042a f9c5 761a bd02 da039b52bea2](#0198042a-f9c5-761a-bd02-da039b52bea2) | Unlink product from payment processor |
   
 
 
@@ -90,11 +90,11 @@ API Support info@qu3ry.me https://qu3ry.me
 
 | Method  | URI     | Name   | Summary |
 |---------|---------|--------|---------|
-| GET | /projects | [019797e6 138a 7cf1 b7bb fa9c5e168c49](#019797e6-138a-7cf1-b7bb-fa9c5e168c49) | List projects |
-| DELETE | /projects/{project_id} | [019797e6 138a 7cf4 8694 e4611baded39](#019797e6-138a-7cf4-8694-e4611baded39) | Delete project |
-| PUT | /projects/{project_id} | [019797e6 138a 7cf8 9887 e4c44ad0ae19](#019797e6-138a-7cf8-9887-e4c44ad0ae19) | Update project |
-| POST | /projects | [019797e6 138a 7d00 98db 740f21794f11](#019797e6-138a-7d00-98db-740f21794f11) | Create project |
-| GET | /projects/{project_id} | [019797e6 138a 7d04 8db3 1d4755b25db3](#019797e6-138a-7d04-8db3-1d4755b25db3) | Get project |
+| GET | /projects/{project_id} | [0198042a f9c5 761e b1c2 66a3f8ab30d6](#0198042a-f9c5-761e-b1c2-66a3f8ab30d6) | Get project |
+| POST | /projects | [0198042a f9c5 7622 9142 88fbaa727659](#0198042a-f9c5-7622-9142-88fbaa727659) | Create project |
+| PUT | /projects/{project_id} | [0198042a f9c5 7626 be9f 996a2898ef07](#0198042a-f9c5-7626-be9f-996a2898ef07) | Update project |
+| DELETE | /projects/{project_id} | [0198042a f9c5 762a 8033 649a1526901d](#0198042a-f9c5-762a-8033-649a1526901d) | Delete project |
+| GET | /projects | [0198042a f9c5 76a7 a480 fbcb978b8501](#0198042a-f9c5-76a7-a480-fbcb978b8501) | List projects |
   
 
 
@@ -102,9 +102,9 @@ API Support info@qu3ry.me https://qu3ry.me
 
 | Method  | URI     | Name   | Summary |
 |---------|---------|--------|---------|
-| GET | /resources/{resource_id} | [019791cc 06c7 7e86 ad42 b777bfcc9e40](#019791cc-06c7-7e86-ad42-b777bfcc9e40) | Get resource |
-| GET | /resources | [019791cc 06c7 7e8e 8d7e cd3f9296e0fd](#019791cc-06c7-7e8e-8d7e-cd3f9296e0fd) | List resources |
-| GET | /resources/matches | [019791cc 06c7 7e92 9152 cb35902f79c4](#019791cc-06c7-7e92-9152-cb35902f79c4) | Match resources |
+| GET | /resources/{resource_id} | [0198042a f9c5 76b2 b8b1 bc0223a0f18d](#0198042a-f9c5-76b2-b8b1-bc0223a0f18d) | Get resource |
+| GET | /resources | [0198042a f9c5 76b6 bd55 f34dff7b0632](#0198042a-f9c5-76b6-bd55-f34dff7b0632) | List resources |
+| GET | /resources/matches | [0198042a f9c5 76ba bc87 6e9e32988407](#0198042a-f9c5-76ba-bc87-6e9e32988407) | Match resources |
   
 
 
@@ -112,17 +112,17 @@ API Support info@qu3ry.me https://qu3ry.me
 
 | Method  | URI     | Name   | Summary |
 |---------|---------|--------|---------|
-| GET | /roles/{role_id} | [019791cc 06c7 7e96 a284 ad37f86475bd](#019791cc-06c7-7e96-a284-ad37f86475bd) | Get role |
-| POST | /roles | [019791cc 06c7 7e9e 87bf dcedfa5aefa7](#019791cc-06c7-7e9e-87bf-dcedfa5aefa7) | Create role |
-| PUT | /roles/{role_id} | [019791cc 06c7 7ea2 8f0e 7b9f7cbc203a](#019791cc-06c7-7ea2-8f0e-7b9f7cbc203a) | Update role |
-| DELETE | /roles/{role_id} | [019791cc 06c7 7ea6 9423 184c13540c26](#019791cc-06c7-7ea6-9423-184c13540c26) | Delete role |
-| GET | /roles | [019791cc 06c7 7ead 968a 2a457714a7ee](#019791cc-06c7-7ead-968a-2a457714a7ee) | List roles |
-| POST | /roles/{role_id}/users | [019791cc 06c7 7eb1 b10c 4fbcd5943885](#019791cc-06c7-7eb1-b10c-4fbcd5943885) | Link users to role |
-| DELETE | /roles/{role_id}/users | [019791cc 06c7 7eb5 9b74 ba394be221b4](#019791cc-06c7-7eb5-9b74-ba394be221b4) | Unlink users from role |
-| POST | /roles/{role_id}/policies | [019791cc 06c7 7ebd b750 8c93b165d503](#019791cc-06c7-7ebd-b750-8c93b165d503) | Link policies to role |
-| DELETE | /roles/{role_id}/policies | [019791cc 06c7 7ec1 aca1 291132927db6](#019791cc-06c7-7ec1-aca1-291132927db6) | Unlink policies from role |
-| GET | /users/{user_id}/roles | [019791cc 06c7 7ec5 87fe 096d6d2760a9](#019791cc-06c7-7ec5-87fe-096d6d2760a9) | List roles by user |
-| GET | /policies/{policy_id}/roles | [019791cc 06c7 7ecd 93da d21bac8fd613](#019791cc-06c7-7ecd-93da-d21bac8fd613) | List roles by policy |
+| GET | /roles/{role_id} | [0198042a f9c5 76e1 a650 772c826f079e](#0198042a-f9c5-76e1-a650-772c826f079e) | Get role |
+| POST | /roles | [0198042a f9c5 76e5 8fe5 b93a07311c47](#0198042a-f9c5-76e5-8fe5-b93a07311c47) | Create role |
+| PUT | /roles/{role_id} | [0198042a f9c5 76e9 922d 2411530cd8f8](#0198042a-f9c5-76e9-922d-2411530cd8f8) | Update role |
+| DELETE | /roles/{role_id} | [0198042a f9c5 76ed 99a5 84923071fa6b](#0198042a-f9c5-76ed-99a5-84923071fa6b) | Delete role |
+| GET | /roles | [0198042a f9c5 76f1 9cf8 37e45b647fc0](#0198042a-f9c5-76f1-9cf8-37e45b647fc0) | List roles |
+| POST | /roles/{role_id}/users | [0198042a f9c5 76f5 8ff6 b4479bdaa6b6](#0198042a-f9c5-76f5-8ff6-b4479bdaa6b6) | Link users to role |
+| DELETE | /roles/{role_id}/users | [0198042a f9c5 76f9 9394 170db55f62f4](#0198042a-f9c5-76f9-9394-170db55f62f4) | Unlink users from role |
+| POST | /roles/{role_id}/policies | [0198042a f9c5 76fd 8012 5c9a2957e289](#0198042a-f9c5-76fd-8012-5c9a2957e289) | Link policies to role |
+| DELETE | /roles/{role_id}/policies | [0198042a f9c5 7700 9e40 e64f7b8c947c](#0198042a-f9c5-7700-9e40-e64f7b8c947c) | Unlink policies from role |
+| GET | /users/{user_id}/roles | [0198042a f9c5 7704 b73b 55e2ec093586](#0198042a-f9c5-7704-b73b-55e2ec093586) | List roles by user |
+| GET | /policies/{policy_id}/roles | [0198042a f9c5 7704 b73b 55e2ec093587](#0198042a-f9c5-7704-b73b-55e2ec093587) | List roles by policy |
   
 
 
@@ -130,15 +130,15 @@ API Support info@qu3ry.me https://qu3ry.me
 
 | Method  | URI     | Name   | Summary |
 |---------|---------|--------|---------|
-| GET | /users/{user_id} | [019791cc 06c7 7ed0 9140 556f721c5749](#019791cc-06c7-7ed0-9140-556f721c5749) | Get user |
-| POST | /users | [019791cc 06c7 7ed4 8f8b 2297e4565de3](#019791cc-06c7-7ed4-8f8b-2297e4565de3) | Create user |
-| PUT | /users/{user_id} | [019791cc 06c7 7edc 94d6 843e3f99e96f](#019791cc-06c7-7edc-94d6-843e3f99e96f) | Update user |
-| DELETE | /users/{user_id} | [019791cc 06c7 7ee0 85b7 45450ad476eb](#019791cc-06c7-7ee0-85b7-45450ad476eb) | Delete user |
-| GET | /users | [019791cc 06c7 7ee4 8f2b ea43720d520b](#019791cc-06c7-7ee4-8f2b-ea43720d520b) | List users |
-| POST | /users/{user_id}/roles | [019791cc 06c7 7eec 83f3 bcaed0c4d46f](#019791cc-06c7-7eec-83f3-bcaed0c4d46f) | Link roles to user |
-| DELETE | /users/{user_id}/roles | [019791cc 06c7 7ef0 9394 d4ac3f52e94c](#019791cc-06c7-7ef0-9394-d4ac3f52e94c) | Unlink roles from user |
-| GET | /users/{user_id}/authz | [019791cc 06c7 7ef4 afa5 81125e9dcde9](#019791cc-06c7-7ef4-afa5-81125e9dcde9) | Get user authorization |
-| GET | /roles/{role_id}/users | [019791cc 06c7 7efb 99c2 b25af11e600c](#019791cc-06c7-7efb-99c2-b25af11e600c) | List users by role |
+| GET | /users/{user_id} | [0198042a f9c5 75df b843 b92a4d5c590e](#0198042a-f9c5-75df-b843-b92a4d5c590e) | Get user |
+| POST | /users | [0198042a f9c5 75e3 acf6 6901bb33ae65](#0198042a-f9c5-75e3-acf6-6901bb33ae65) | Create user |
+| PUT | /users/{user_id} | [0198042a f9c5 75e7 8cb9 231bee55c64e](#0198042a-f9c5-75e7-8cb9-231bee55c64e) | Update user |
+| DELETE | /users/{user_id} | [0198042a f9c5 75eb b683 6c1847af7108](#0198042a-f9c5-75eb-b683-6c1847af7108) | Delete user |
+| GET | /users | [0198042a f9c5 75ef 8ea1 29ecbbe01a2e](#0198042a-f9c5-75ef-8ea1-29ecbbe01a2e) | List users |
+| POST | /users/{user_id}/roles | [0198042a f9c5 75f3 985f d30e67bb3688](#0198042a-f9c5-75f3-985f-d30e67bb3688) | Link roles to user |
+| DELETE | /users/{user_id}/roles | [0198042a f9c5 75f7 b802 343518ee3788](#0198042a-f9c5-75f7-b802-343518ee3788) | Unlink roles from user |
+| GET | /users/{user_id}/authz | [0198042a f9c5 75fb b324 ec962beb2277](#0198042a-f9c5-75fb-b324-ec962beb2277) | Get user authorization |
+| GET | /roles/{role_id}/users | [0198042a f9c5 75ff bbfc 224bf4342886](#0198042a-f9c5-75ff-bbfc-224bf4342886) | List users by role |
   
 
 
@@ -146,13 +146,13 @@ API Support info@qu3ry.me https://qu3ry.me
 
 | Method  | URI     | Name   | Summary |
 |---------|---------|--------|---------|
-| GET | /version | [019791cc 06c7 7eff a1df fbc2ad0b27c9](#019791cc-06c7-7eff-a1df-fbc2ad0b27c9) | Get version |
+| GET | /version | [0198042a f9c5 7704 b73b 55e2ec093588](#0198042a-f9c5-7704-b73b-55e2ec093588) | Get version |
   
 
 
 ## Paths
 
-### <span id="019791cc-06c7-7d8c-81e4-914dd89098e8"></span> Login user (*019791cc-06c7-7d8c-81e4-914dd89098e8*)
+### <span id="0198042a-f9c5-7547-a6e7-567af5db26cd"></span> Login user (*0198042a-f9c5-7547-a6e7-567af5db26cd*)
 
 ```
 POST /auth/login
@@ -175,51 +175,51 @@ Authenticate user credentials and return JWT access and refresh tokens
 #### All responses
 | Code | Status | Description | Has headers | Schema |
 |------|--------|-------------|:-----------:|--------|
-| [200](#019791cc-06c7-7d8c-81e4-914dd89098e8-200) | OK | OK |  | [schema](#019791cc-06c7-7d8c-81e4-914dd89098e8-200-schema) |
-| [400](#019791cc-06c7-7d8c-81e4-914dd89098e8-400) | Bad Request | Bad Request |  | [schema](#019791cc-06c7-7d8c-81e4-914dd89098e8-400-schema) |
-| [401](#019791cc-06c7-7d8c-81e4-914dd89098e8-401) | Unauthorized | Unauthorized |  | [schema](#019791cc-06c7-7d8c-81e4-914dd89098e8-401-schema) |
-| [500](#019791cc-06c7-7d8c-81e4-914dd89098e8-500) | Internal Server Error | Internal Server Error |  | [schema](#019791cc-06c7-7d8c-81e4-914dd89098e8-500-schema) |
+| [200](#0198042a-f9c5-7547-a6e7-567af5db26cd-200) | OK | OK |  | [schema](#0198042a-f9c5-7547-a6e7-567af5db26cd-200-schema) |
+| [400](#0198042a-f9c5-7547-a6e7-567af5db26cd-400) | Bad Request | Bad Request |  | [schema](#0198042a-f9c5-7547-a6e7-567af5db26cd-400-schema) |
+| [401](#0198042a-f9c5-7547-a6e7-567af5db26cd-401) | Unauthorized | Unauthorized |  | [schema](#0198042a-f9c5-7547-a6e7-567af5db26cd-401-schema) |
+| [500](#0198042a-f9c5-7547-a6e7-567af5db26cd-500) | Internal Server Error | Internal Server Error |  | [schema](#0198042a-f9c5-7547-a6e7-567af5db26cd-500-schema) |
 
 #### Responses
 
 
-##### <span id="019791cc-06c7-7d8c-81e4-914dd89098e8-200"></span> 200 - OK
+##### <span id="0198042a-f9c5-7547-a6e7-567af5db26cd-200"></span> 200 - OK
 Status: OK
 
-###### <span id="019791cc-06c7-7d8c-81e4-914dd89098e8-200-schema"></span> Schema
+###### <span id="0198042a-f9c5-7547-a6e7-567af5db26cd-200-schema"></span> Schema
    
   
 
 [ModelLoginUserResponse](#model-login-user-response)
 
-##### <span id="019791cc-06c7-7d8c-81e4-914dd89098e8-400"></span> 400 - Bad Request
+##### <span id="0198042a-f9c5-7547-a6e7-567af5db26cd-400"></span> 400 - Bad Request
 Status: Bad Request
 
-###### <span id="019791cc-06c7-7d8c-81e4-914dd89098e8-400-schema"></span> Schema
+###### <span id="0198042a-f9c5-7547-a6e7-567af5db26cd-400-schema"></span> Schema
    
   
 
 [ModelHTTPMessage](#model-http-message)
 
-##### <span id="019791cc-06c7-7d8c-81e4-914dd89098e8-401"></span> 401 - Unauthorized
+##### <span id="0198042a-f9c5-7547-a6e7-567af5db26cd-401"></span> 401 - Unauthorized
 Status: Unauthorized
 
-###### <span id="019791cc-06c7-7d8c-81e4-914dd89098e8-401-schema"></span> Schema
+###### <span id="0198042a-f9c5-7547-a6e7-567af5db26cd-401-schema"></span> Schema
    
   
 
 [ModelHTTPMessage](#model-http-message)
 
-##### <span id="019791cc-06c7-7d8c-81e4-914dd89098e8-500"></span> 500 - Internal Server Error
+##### <span id="0198042a-f9c5-7547-a6e7-567af5db26cd-500"></span> 500 - Internal Server Error
 Status: Internal Server Error
 
-###### <span id="019791cc-06c7-7d8c-81e4-914dd89098e8-500-schema"></span> Schema
+###### <span id="0198042a-f9c5-7547-a6e7-567af5db26cd-500-schema"></span> Schema
    
   
 
 [ModelHTTPMessage](#model-http-message)
 
-### <span id="019791cc-06c7-7e38-ac82-6919df575ff7"></span> Register user (*019791cc-06c7-7e38-ac82-6919df575ff7*)
+### <span id="0198042a-f9c5-75c8-9231-ad5fc9e7b32e"></span> Register user (*0198042a-f9c5-75c8-9231-ad5fc9e7b32e*)
 
 ```
 POST /auth/register
@@ -242,41 +242,41 @@ Create a new user account and send email verification
 #### All responses
 | Code | Status | Description | Has headers | Schema |
 |------|--------|-------------|:-----------:|--------|
-| [201](#019791cc-06c7-7e38-ac82-6919df575ff7-201) | Created | Created |  | [schema](#019791cc-06c7-7e38-ac82-6919df575ff7-201-schema) |
-| [400](#019791cc-06c7-7e38-ac82-6919df575ff7-400) | Bad Request | Bad Request |  | [schema](#019791cc-06c7-7e38-ac82-6919df575ff7-400-schema) |
-| [500](#019791cc-06c7-7e38-ac82-6919df575ff7-500) | Internal Server Error | Internal Server Error |  | [schema](#019791cc-06c7-7e38-ac82-6919df575ff7-500-schema) |
+| [201](#0198042a-f9c5-75c8-9231-ad5fc9e7b32e-201) | Created | Created |  | [schema](#0198042a-f9c5-75c8-9231-ad5fc9e7b32e-201-schema) |
+| [400](#0198042a-f9c5-75c8-9231-ad5fc9e7b32e-400) | Bad Request | Bad Request |  | [schema](#0198042a-f9c5-75c8-9231-ad5fc9e7b32e-400-schema) |
+| [500](#0198042a-f9c5-75c8-9231-ad5fc9e7b32e-500) | Internal Server Error | Internal Server Error |  | [schema](#0198042a-f9c5-75c8-9231-ad5fc9e7b32e-500-schema) |
 
 #### Responses
 
 
-##### <span id="019791cc-06c7-7e38-ac82-6919df575ff7-201"></span> 201 - Created
+##### <span id="0198042a-f9c5-75c8-9231-ad5fc9e7b32e-201"></span> 201 - Created
 Status: Created
 
-###### <span id="019791cc-06c7-7e38-ac82-6919df575ff7-201-schema"></span> Schema
+###### <span id="0198042a-f9c5-75c8-9231-ad5fc9e7b32e-201-schema"></span> Schema
    
   
 
 [ModelHTTPMessage](#model-http-message)
 
-##### <span id="019791cc-06c7-7e38-ac82-6919df575ff7-400"></span> 400 - Bad Request
+##### <span id="0198042a-f9c5-75c8-9231-ad5fc9e7b32e-400"></span> 400 - Bad Request
 Status: Bad Request
 
-###### <span id="019791cc-06c7-7e38-ac82-6919df575ff7-400-schema"></span> Schema
+###### <span id="0198042a-f9c5-75c8-9231-ad5fc9e7b32e-400-schema"></span> Schema
    
   
 
 [ModelHTTPMessage](#model-http-message)
 
-##### <span id="019791cc-06c7-7e38-ac82-6919df575ff7-500"></span> 500 - Internal Server Error
+##### <span id="0198042a-f9c5-75c8-9231-ad5fc9e7b32e-500"></span> 500 - Internal Server Error
 Status: Internal Server Error
 
-###### <span id="019791cc-06c7-7e38-ac82-6919df575ff7-500-schema"></span> Schema
+###### <span id="0198042a-f9c5-75c8-9231-ad5fc9e7b32e-500-schema"></span> Schema
    
   
 
 [ModelHTTPMessage](#model-http-message)
 
-### <span id="019791cc-06c7-7e40-bcc3-149cd13bee44"></span> Verify user (*019791cc-06c7-7e40-bcc3-149cd13bee44*)
+### <span id="0198042a-f9c5-75cc-9dd2-e3ff9f6c1e3a"></span> Verify user (*0198042a-f9c5-75cc-9dd2-e3ff9f6c1e3a*)
 
 ```
 GET /auth/verify/{jwt}
@@ -296,61 +296,61 @@ Verify user account using JWT verification token
 #### All responses
 | Code | Status | Description | Has headers | Schema |
 |------|--------|-------------|:-----------:|--------|
-| [200](#019791cc-06c7-7e40-bcc3-149cd13bee44-200) | OK | OK |  | [schema](#019791cc-06c7-7e40-bcc3-149cd13bee44-200-schema) |
-| [400](#019791cc-06c7-7e40-bcc3-149cd13bee44-400) | Bad Request | Bad Request |  | [schema](#019791cc-06c7-7e40-bcc3-149cd13bee44-400-schema) |
-| [401](#019791cc-06c7-7e40-bcc3-149cd13bee44-401) | Unauthorized | Unauthorized |  | [schema](#019791cc-06c7-7e40-bcc3-149cd13bee44-401-schema) |
-| [404](#019791cc-06c7-7e40-bcc3-149cd13bee44-404) | Not Found | Not Found |  | [schema](#019791cc-06c7-7e40-bcc3-149cd13bee44-404-schema) |
-| [500](#019791cc-06c7-7e40-bcc3-149cd13bee44-500) | Internal Server Error | Internal Server Error |  | [schema](#019791cc-06c7-7e40-bcc3-149cd13bee44-500-schema) |
+| [200](#0198042a-f9c5-75cc-9dd2-e3ff9f6c1e3a-200) | OK | OK |  | [schema](#0198042a-f9c5-75cc-9dd2-e3ff9f6c1e3a-200-schema) |
+| [400](#0198042a-f9c5-75cc-9dd2-e3ff9f6c1e3a-400) | Bad Request | Bad Request |  | [schema](#0198042a-f9c5-75cc-9dd2-e3ff9f6c1e3a-400-schema) |
+| [401](#0198042a-f9c5-75cc-9dd2-e3ff9f6c1e3a-401) | Unauthorized | Unauthorized |  | [schema](#0198042a-f9c5-75cc-9dd2-e3ff9f6c1e3a-401-schema) |
+| [404](#0198042a-f9c5-75cc-9dd2-e3ff9f6c1e3a-404) | Not Found | Not Found |  | [schema](#0198042a-f9c5-75cc-9dd2-e3ff9f6c1e3a-404-schema) |
+| [500](#0198042a-f9c5-75cc-9dd2-e3ff9f6c1e3a-500) | Internal Server Error | Internal Server Error |  | [schema](#0198042a-f9c5-75cc-9dd2-e3ff9f6c1e3a-500-schema) |
 
 #### Responses
 
 
-##### <span id="019791cc-06c7-7e40-bcc3-149cd13bee44-200"></span> 200 - OK
+##### <span id="0198042a-f9c5-75cc-9dd2-e3ff9f6c1e3a-200"></span> 200 - OK
 Status: OK
 
-###### <span id="019791cc-06c7-7e40-bcc3-149cd13bee44-200-schema"></span> Schema
+###### <span id="0198042a-f9c5-75cc-9dd2-e3ff9f6c1e3a-200-schema"></span> Schema
    
   
 
 [ModelHTTPMessage](#model-http-message)
 
-##### <span id="019791cc-06c7-7e40-bcc3-149cd13bee44-400"></span> 400 - Bad Request
+##### <span id="0198042a-f9c5-75cc-9dd2-e3ff9f6c1e3a-400"></span> 400 - Bad Request
 Status: Bad Request
 
-###### <span id="019791cc-06c7-7e40-bcc3-149cd13bee44-400-schema"></span> Schema
+###### <span id="0198042a-f9c5-75cc-9dd2-e3ff9f6c1e3a-400-schema"></span> Schema
    
   
 
 [ModelHTTPMessage](#model-http-message)
 
-##### <span id="019791cc-06c7-7e40-bcc3-149cd13bee44-401"></span> 401 - Unauthorized
+##### <span id="0198042a-f9c5-75cc-9dd2-e3ff9f6c1e3a-401"></span> 401 - Unauthorized
 Status: Unauthorized
 
-###### <span id="019791cc-06c7-7e40-bcc3-149cd13bee44-401-schema"></span> Schema
+###### <span id="0198042a-f9c5-75cc-9dd2-e3ff9f6c1e3a-401-schema"></span> Schema
    
   
 
 [ModelHTTPMessage](#model-http-message)
 
-##### <span id="019791cc-06c7-7e40-bcc3-149cd13bee44-404"></span> 404 - Not Found
+##### <span id="0198042a-f9c5-75cc-9dd2-e3ff9f6c1e3a-404"></span> 404 - Not Found
 Status: Not Found
 
-###### <span id="019791cc-06c7-7e40-bcc3-149cd13bee44-404-schema"></span> Schema
+###### <span id="0198042a-f9c5-75cc-9dd2-e3ff9f6c1e3a-404-schema"></span> Schema
    
   
 
 [ModelHTTPMessage](#model-http-message)
 
-##### <span id="019791cc-06c7-7e40-bcc3-149cd13bee44-500"></span> 500 - Internal Server Error
+##### <span id="0198042a-f9c5-75cc-9dd2-e3ff9f6c1e3a-500"></span> 500 - Internal Server Error
 Status: Internal Server Error
 
-###### <span id="019791cc-06c7-7e40-bcc3-149cd13bee44-500-schema"></span> Schema
+###### <span id="0198042a-f9c5-75cc-9dd2-e3ff9f6c1e3a-500-schema"></span> Schema
    
   
 
 [ModelHTTPMessage](#model-http-message)
 
-### <span id="019791cc-06c7-7e48-b046-99f072088c50"></span> Resend verification (*019791cc-06c7-7e48-b046-99f072088c50*)
+### <span id="0198042a-f9c5-75d0-8c20-fea31b65587f"></span> Resend verification (*0198042a-f9c5-75d0-8c20-fea31b65587f*)
 
 ```
 POST /auth/verify
@@ -373,61 +373,61 @@ Resend account verification email to user
 #### All responses
 | Code | Status | Description | Has headers | Schema |
 |------|--------|-------------|:-----------:|--------|
-| [200](#019791cc-06c7-7e48-b046-99f072088c50-200) | OK | OK |  | [schema](#019791cc-06c7-7e48-b046-99f072088c50-200-schema) |
-| [400](#019791cc-06c7-7e48-b046-99f072088c50-400) | Bad Request | Bad Request |  | [schema](#019791cc-06c7-7e48-b046-99f072088c50-400-schema) |
-| [401](#019791cc-06c7-7e48-b046-99f072088c50-401) | Unauthorized | Unauthorized |  | [schema](#019791cc-06c7-7e48-b046-99f072088c50-401-schema) |
-| [404](#019791cc-06c7-7e48-b046-99f072088c50-404) | Not Found | Not Found |  | [schema](#019791cc-06c7-7e48-b046-99f072088c50-404-schema) |
-| [500](#019791cc-06c7-7e48-b046-99f072088c50-500) | Internal Server Error | Internal Server Error |  | [schema](#019791cc-06c7-7e48-b046-99f072088c50-500-schema) |
+| [200](#0198042a-f9c5-75d0-8c20-fea31b65587f-200) | OK | OK |  | [schema](#0198042a-f9c5-75d0-8c20-fea31b65587f-200-schema) |
+| [400](#0198042a-f9c5-75d0-8c20-fea31b65587f-400) | Bad Request | Bad Request |  | [schema](#0198042a-f9c5-75d0-8c20-fea31b65587f-400-schema) |
+| [401](#0198042a-f9c5-75d0-8c20-fea31b65587f-401) | Unauthorized | Unauthorized |  | [schema](#0198042a-f9c5-75d0-8c20-fea31b65587f-401-schema) |
+| [404](#0198042a-f9c5-75d0-8c20-fea31b65587f-404) | Not Found | Not Found |  | [schema](#0198042a-f9c5-75d0-8c20-fea31b65587f-404-schema) |
+| [500](#0198042a-f9c5-75d0-8c20-fea31b65587f-500) | Internal Server Error | Internal Server Error |  | [schema](#0198042a-f9c5-75d0-8c20-fea31b65587f-500-schema) |
 
 #### Responses
 
 
-##### <span id="019791cc-06c7-7e48-b046-99f072088c50-200"></span> 200 - OK
+##### <span id="0198042a-f9c5-75d0-8c20-fea31b65587f-200"></span> 200 - OK
 Status: OK
 
-###### <span id="019791cc-06c7-7e48-b046-99f072088c50-200-schema"></span> Schema
+###### <span id="0198042a-f9c5-75d0-8c20-fea31b65587f-200-schema"></span> Schema
    
   
 
 [ModelHTTPMessage](#model-http-message)
 
-##### <span id="019791cc-06c7-7e48-b046-99f072088c50-400"></span> 400 - Bad Request
+##### <span id="0198042a-f9c5-75d0-8c20-fea31b65587f-400"></span> 400 - Bad Request
 Status: Bad Request
 
-###### <span id="019791cc-06c7-7e48-b046-99f072088c50-400-schema"></span> Schema
+###### <span id="0198042a-f9c5-75d0-8c20-fea31b65587f-400-schema"></span> Schema
    
   
 
 [ModelHTTPMessage](#model-http-message)
 
-##### <span id="019791cc-06c7-7e48-b046-99f072088c50-401"></span> 401 - Unauthorized
+##### <span id="0198042a-f9c5-75d0-8c20-fea31b65587f-401"></span> 401 - Unauthorized
 Status: Unauthorized
 
-###### <span id="019791cc-06c7-7e48-b046-99f072088c50-401-schema"></span> Schema
+###### <span id="0198042a-f9c5-75d0-8c20-fea31b65587f-401-schema"></span> Schema
    
   
 
 [ModelHTTPMessage](#model-http-message)
 
-##### <span id="019791cc-06c7-7e48-b046-99f072088c50-404"></span> 404 - Not Found
+##### <span id="0198042a-f9c5-75d0-8c20-fea31b65587f-404"></span> 404 - Not Found
 Status: Not Found
 
-###### <span id="019791cc-06c7-7e48-b046-99f072088c50-404-schema"></span> Schema
+###### <span id="0198042a-f9c5-75d0-8c20-fea31b65587f-404-schema"></span> Schema
    
   
 
 [ModelHTTPMessage](#model-http-message)
 
-##### <span id="019791cc-06c7-7e48-b046-99f072088c50-500"></span> 500 - Internal Server Error
+##### <span id="0198042a-f9c5-75d0-8c20-fea31b65587f-500"></span> 500 - Internal Server Error
 Status: Internal Server Error
 
-###### <span id="019791cc-06c7-7e48-b046-99f072088c50-500-schema"></span> Schema
+###### <span id="0198042a-f9c5-75d0-8c20-fea31b65587f-500-schema"></span> Schema
    
   
 
 [ModelHTTPMessage](#model-http-message)
 
-### <span id="019791cc-06c7-7e4c-961c-b1bf5f40d633"></span> Logout user (*019791cc-06c7-7e4c-961c-b1bf5f40d633*)
+### <span id="0198042a-f9c5-75d4-afa6-fe658744c80f"></span> Logout user (*0198042a-f9c5-75d4-afa6-fe658744c80f*)
 
 ```
 DELETE /auth/logout
@@ -447,41 +447,41 @@ Logout user and invalidate session tokens
 #### All responses
 | Code | Status | Description | Has headers | Schema |
 |------|--------|-------------|:-----------:|--------|
-| [200](#019791cc-06c7-7e4c-961c-b1bf5f40d633-200) | OK | OK |  | [schema](#019791cc-06c7-7e4c-961c-b1bf5f40d633-200-schema) |
-| [401](#019791cc-06c7-7e4c-961c-b1bf5f40d633-401) | Unauthorized | Unauthorized |  | [schema](#019791cc-06c7-7e4c-961c-b1bf5f40d633-401-schema) |
-| [500](#019791cc-06c7-7e4c-961c-b1bf5f40d633-500) | Internal Server Error | Internal Server Error |  | [schema](#019791cc-06c7-7e4c-961c-b1bf5f40d633-500-schema) |
+| [200](#0198042a-f9c5-75d4-afa6-fe658744c80f-200) | OK | OK |  | [schema](#0198042a-f9c5-75d4-afa6-fe658744c80f-200-schema) |
+| [401](#0198042a-f9c5-75d4-afa6-fe658744c80f-401) | Unauthorized | Unauthorized |  | [schema](#0198042a-f9c5-75d4-afa6-fe658744c80f-401-schema) |
+| [500](#0198042a-f9c5-75d4-afa6-fe658744c80f-500) | Internal Server Error | Internal Server Error |  | [schema](#0198042a-f9c5-75d4-afa6-fe658744c80f-500-schema) |
 
 #### Responses
 
 
-##### <span id="019791cc-06c7-7e4c-961c-b1bf5f40d633-200"></span> 200 - OK
+##### <span id="0198042a-f9c5-75d4-afa6-fe658744c80f-200"></span> 200 - OK
 Status: OK
 
-###### <span id="019791cc-06c7-7e4c-961c-b1bf5f40d633-200-schema"></span> Schema
+###### <span id="0198042a-f9c5-75d4-afa6-fe658744c80f-200-schema"></span> Schema
    
   
 
 [ModelHTTPMessage](#model-http-message)
 
-##### <span id="019791cc-06c7-7e4c-961c-b1bf5f40d633-401"></span> 401 - Unauthorized
+##### <span id="0198042a-f9c5-75d4-afa6-fe658744c80f-401"></span> 401 - Unauthorized
 Status: Unauthorized
 
-###### <span id="019791cc-06c7-7e4c-961c-b1bf5f40d633-401-schema"></span> Schema
+###### <span id="0198042a-f9c5-75d4-afa6-fe658744c80f-401-schema"></span> Schema
    
   
 
 [ModelHTTPMessage](#model-http-message)
 
-##### <span id="019791cc-06c7-7e4c-961c-b1bf5f40d633-500"></span> 500 - Internal Server Error
+##### <span id="0198042a-f9c5-75d4-afa6-fe658744c80f-500"></span> 500 - Internal Server Error
 Status: Internal Server Error
 
-###### <span id="019791cc-06c7-7e4c-961c-b1bf5f40d633-500-schema"></span> Schema
+###### <span id="0198042a-f9c5-75d4-afa6-fe658744c80f-500-schema"></span> Schema
    
   
 
 [ModelHTTPMessage](#model-http-message)
 
-### <span id="019791cc-06c7-7e50-a5b6-bd1c82d5c031"></span> Refresh access token (*019791cc-06c7-7e50-a5b6-bd1c82d5c031*)
+### <span id="0198042a-f9c5-75d8-aa7b-37524ea4f124"></span> Refresh access token (*0198042a-f9c5-75d8-aa7b-37524ea4f124*)
 
 ```
 POST /auth/refresh
@@ -507,1570 +507,61 @@ Generate new access token using valid refresh token
 #### All responses
 | Code | Status | Description | Has headers | Schema |
 |------|--------|-------------|:-----------:|--------|
-| [200](#019791cc-06c7-7e50-a5b6-bd1c82d5c031-200) | OK | OK |  | [schema](#019791cc-06c7-7e50-a5b6-bd1c82d5c031-200-schema) |
-| [400](#019791cc-06c7-7e50-a5b6-bd1c82d5c031-400) | Bad Request | Bad Request |  | [schema](#019791cc-06c7-7e50-a5b6-bd1c82d5c031-400-schema) |
-| [401](#019791cc-06c7-7e50-a5b6-bd1c82d5c031-401) | Unauthorized | Unauthorized |  | [schema](#019791cc-06c7-7e50-a5b6-bd1c82d5c031-401-schema) |
-| [404](#019791cc-06c7-7e50-a5b6-bd1c82d5c031-404) | Not Found | Not Found |  | [schema](#019791cc-06c7-7e50-a5b6-bd1c82d5c031-404-schema) |
-| [500](#019791cc-06c7-7e50-a5b6-bd1c82d5c031-500) | Internal Server Error | Internal Server Error |  | [schema](#019791cc-06c7-7e50-a5b6-bd1c82d5c031-500-schema) |
+| [200](#0198042a-f9c5-75d8-aa7b-37524ea4f124-200) | OK | OK |  | [schema](#0198042a-f9c5-75d8-aa7b-37524ea4f124-200-schema) |
+| [400](#0198042a-f9c5-75d8-aa7b-37524ea4f124-400) | Bad Request | Bad Request |  | [schema](#0198042a-f9c5-75d8-aa7b-37524ea4f124-400-schema) |
+| [401](#0198042a-f9c5-75d8-aa7b-37524ea4f124-401) | Unauthorized | Unauthorized |  | [schema](#0198042a-f9c5-75d8-aa7b-37524ea4f124-401-schema) |
+| [404](#0198042a-f9c5-75d8-aa7b-37524ea4f124-404) | Not Found | Not Found |  | [schema](#0198042a-f9c5-75d8-aa7b-37524ea4f124-404-schema) |
+| [500](#0198042a-f9c5-75d8-aa7b-37524ea4f124-500) | Internal Server Error | Internal Server Error |  | [schema](#0198042a-f9c5-75d8-aa7b-37524ea4f124-500-schema) |
 
 #### Responses
 
 
-##### <span id="019791cc-06c7-7e50-a5b6-bd1c82d5c031-200"></span> 200 - OK
+##### <span id="0198042a-f9c5-75d8-aa7b-37524ea4f124-200"></span> 200 - OK
 Status: OK
 
-###### <span id="019791cc-06c7-7e50-a5b6-bd1c82d5c031-200-schema"></span> Schema
+###### <span id="0198042a-f9c5-75d8-aa7b-37524ea4f124-200-schema"></span> Schema
    
   
 
 [ModelRefreshTokenResponse](#model-refresh-token-response)
 
-##### <span id="019791cc-06c7-7e50-a5b6-bd1c82d5c031-400"></span> 400 - Bad Request
+##### <span id="0198042a-f9c5-75d8-aa7b-37524ea4f124-400"></span> 400 - Bad Request
 Status: Bad Request
 
-###### <span id="019791cc-06c7-7e50-a5b6-bd1c82d5c031-400-schema"></span> Schema
+###### <span id="0198042a-f9c5-75d8-aa7b-37524ea4f124-400-schema"></span> Schema
    
   
 
 [ModelHTTPMessage](#model-http-message)
 
-##### <span id="019791cc-06c7-7e50-a5b6-bd1c82d5c031-401"></span> 401 - Unauthorized
+##### <span id="0198042a-f9c5-75d8-aa7b-37524ea4f124-401"></span> 401 - Unauthorized
 Status: Unauthorized
 
-###### <span id="019791cc-06c7-7e50-a5b6-bd1c82d5c031-401-schema"></span> Schema
+###### <span id="0198042a-f9c5-75d8-aa7b-37524ea4f124-401-schema"></span> Schema
    
   
 
 [ModelHTTPMessage](#model-http-message)
 
-##### <span id="019791cc-06c7-7e50-a5b6-bd1c82d5c031-404"></span> 404 - Not Found
+##### <span id="0198042a-f9c5-75d8-aa7b-37524ea4f124-404"></span> 404 - Not Found
 Status: Not Found
 
-###### <span id="019791cc-06c7-7e50-a5b6-bd1c82d5c031-404-schema"></span> Schema
+###### <span id="0198042a-f9c5-75d8-aa7b-37524ea4f124-404-schema"></span> Schema
    
   
 
 [ModelHTTPMessage](#model-http-message)
 
-##### <span id="019791cc-06c7-7e50-a5b6-bd1c82d5c031-500"></span> 500 - Internal Server Error
+##### <span id="0198042a-f9c5-75d8-aa7b-37524ea4f124-500"></span> 500 - Internal Server Error
 Status: Internal Server Error
 
-###### <span id="019791cc-06c7-7e50-a5b6-bd1c82d5c031-500-schema"></span> Schema
+###### <span id="0198042a-f9c5-75d8-aa7b-37524ea4f124-500-schema"></span> Schema
    
   
 
 [ModelHTTPMessage](#model-http-message)
 
-### <span id="019791cc-06c7-7e57-8be6-a6f650ad5431"></span> Check health (*019791cc-06c7-7e57-8be6-a6f650ad5431*)
-
-```
-GET /health/status
-```
-
-Check service health status including database connectivity and system metrics
-
-#### Produces
-  * application/json
-
-#### All responses
-| Code | Status | Description | Has headers | Schema |
-|------|--------|-------------|:-----------:|--------|
-| [200](#019791cc-06c7-7e57-8be6-a6f650ad5431-200) | OK | OK |  | [schema](#019791cc-06c7-7e57-8be6-a6f650ad5431-200-schema) |
-| [500](#019791cc-06c7-7e57-8be6-a6f650ad5431-500) | Internal Server Error | Internal Server Error |  | [schema](#019791cc-06c7-7e57-8be6-a6f650ad5431-500-schema) |
-
-#### Responses
-
-
-##### <span id="019791cc-06c7-7e57-8be6-a6f650ad5431-200"></span> 200 - OK
-Status: OK
-
-###### <span id="019791cc-06c7-7e57-8be6-a6f650ad5431-200-schema"></span> Schema
-   
-  
-
-[ModelHealth](#model-health)
-
-##### <span id="019791cc-06c7-7e57-8be6-a6f650ad5431-500"></span> 500 - Internal Server Error
-Status: Internal Server Error
-
-###### <span id="019791cc-06c7-7e57-8be6-a6f650ad5431-500-schema"></span> Schema
-   
-  
-
-[ModelHTTPMessage](#model-http-message)
-
-### <span id="019791cc-06c7-7e5b-b363-1ef381f1e832"></span> Get policy (*019791cc-06c7-7e5b-b363-1ef381f1e832*)
-
-```
-GET /policies/{policy_id}
-```
-
-Retrieve a specific policy by its unique identifier
-
-#### Produces
-  * application/json
-
-#### Security Requirements
-  * AccessToken
-
-#### Parameters
-
-| Name | Source | Type | Go type | Separator | Required | Default | Description |
-|------|--------|------|---------|-----------| :------: |---------|-------------|
-| policy_id | `path` | uuid (formatted string) | `strfmt.UUID` |  | ✓ |  | The policy id in UUID format |
-
-#### All responses
-| Code | Status | Description | Has headers | Schema |
-|------|--------|-------------|:-----------:|--------|
-| [200](#019791cc-06c7-7e5b-b363-1ef381f1e832-200) | OK | OK |  | [schema](#019791cc-06c7-7e5b-b363-1ef381f1e832-200-schema) |
-| [400](#019791cc-06c7-7e5b-b363-1ef381f1e832-400) | Bad Request | Bad Request |  | [schema](#019791cc-06c7-7e5b-b363-1ef381f1e832-400-schema) |
-| [404](#019791cc-06c7-7e5b-b363-1ef381f1e832-404) | Not Found | Not Found |  | [schema](#019791cc-06c7-7e5b-b363-1ef381f1e832-404-schema) |
-| [500](#019791cc-06c7-7e5b-b363-1ef381f1e832-500) | Internal Server Error | Internal Server Error |  | [schema](#019791cc-06c7-7e5b-b363-1ef381f1e832-500-schema) |
-
-#### Responses
-
-
-##### <span id="019791cc-06c7-7e5b-b363-1ef381f1e832-200"></span> 200 - OK
-Status: OK
-
-###### <span id="019791cc-06c7-7e5b-b363-1ef381f1e832-200-schema"></span> Schema
-   
-  
-
-[ModelPolicy](#model-policy)
-
-##### <span id="019791cc-06c7-7e5b-b363-1ef381f1e832-400"></span> 400 - Bad Request
-Status: Bad Request
-
-###### <span id="019791cc-06c7-7e5b-b363-1ef381f1e832-400-schema"></span> Schema
-   
-  
-
-[ModelHTTPMessage](#model-http-message)
-
-##### <span id="019791cc-06c7-7e5b-b363-1ef381f1e832-404"></span> 404 - Not Found
-Status: Not Found
-
-###### <span id="019791cc-06c7-7e5b-b363-1ef381f1e832-404-schema"></span> Schema
-   
-  
-
-[ModelHTTPMessage](#model-http-message)
-
-##### <span id="019791cc-06c7-7e5b-b363-1ef381f1e832-500"></span> 500 - Internal Server Error
-Status: Internal Server Error
-
-###### <span id="019791cc-06c7-7e5b-b363-1ef381f1e832-500-schema"></span> Schema
-   
-  
-
-[ModelHTTPMessage](#model-http-message)
-
-### <span id="019791cc-06c7-7e63-8ec9-de5b38235dbf"></span> Create policy (*019791cc-06c7-7e63-8ec9-de5b38235dbf*)
-
-```
-POST /policies
-```
-
-Create a new policy with specified permissions
-
-#### Consumes
-  * application/json
-
-#### Produces
-  * application/json
-
-#### Security Requirements
-  * AccessToken
-
-#### Parameters
-
-| Name | Source | Type | Go type | Separator | Required | Default | Description |
-|------|--------|------|---------|-----------| :------: |---------|-------------|
-| body | `body` | [ModelCreatePolicyRequest](#model-create-policy-request) | `models.ModelCreatePolicyRequest` | | ✓ | | Create policy Request |
-
-#### All responses
-| Code | Status | Description | Has headers | Schema |
-|------|--------|-------------|:-----------:|--------|
-| [201](#019791cc-06c7-7e63-8ec9-de5b38235dbf-201) | Created | Created |  | [schema](#019791cc-06c7-7e63-8ec9-de5b38235dbf-201-schema) |
-| [400](#019791cc-06c7-7e63-8ec9-de5b38235dbf-400) | Bad Request | Bad Request |  | [schema](#019791cc-06c7-7e63-8ec9-de5b38235dbf-400-schema) |
-| [409](#019791cc-06c7-7e63-8ec9-de5b38235dbf-409) | Conflict | Conflict |  | [schema](#019791cc-06c7-7e63-8ec9-de5b38235dbf-409-schema) |
-| [500](#019791cc-06c7-7e63-8ec9-de5b38235dbf-500) | Internal Server Error | Internal Server Error |  | [schema](#019791cc-06c7-7e63-8ec9-de5b38235dbf-500-schema) |
-
-#### Responses
-
-
-##### <span id="019791cc-06c7-7e63-8ec9-de5b38235dbf-201"></span> 201 - Created
-Status: Created
-
-###### <span id="019791cc-06c7-7e63-8ec9-de5b38235dbf-201-schema"></span> Schema
-   
-  
-
-[ModelHTTPMessage](#model-http-message)
-
-##### <span id="019791cc-06c7-7e63-8ec9-de5b38235dbf-400"></span> 400 - Bad Request
-Status: Bad Request
-
-###### <span id="019791cc-06c7-7e63-8ec9-de5b38235dbf-400-schema"></span> Schema
-   
-  
-
-[ModelHTTPMessage](#model-http-message)
-
-##### <span id="019791cc-06c7-7e63-8ec9-de5b38235dbf-409"></span> 409 - Conflict
-Status: Conflict
-
-###### <span id="019791cc-06c7-7e63-8ec9-de5b38235dbf-409-schema"></span> Schema
-   
-  
-
-[ModelHTTPMessage](#model-http-message)
-
-##### <span id="019791cc-06c7-7e63-8ec9-de5b38235dbf-500"></span> 500 - Internal Server Error
-Status: Internal Server Error
-
-###### <span id="019791cc-06c7-7e63-8ec9-de5b38235dbf-500-schema"></span> Schema
-   
-  
-
-[ModelHTTPMessage](#model-http-message)
-
-### <span id="019791cc-06c7-7e67-9e1b-49a34edfe07c"></span> Update policy (*019791cc-06c7-7e67-9e1b-49a34edfe07c*)
-
-```
-PUT /policies/{policy_id}
-```
-
-Modify an existing policy by its ID
-
-#### Consumes
-  * application/json
-
-#### Produces
-  * application/json
-
-#### Security Requirements
-  * AccessToken
-
-#### Parameters
-
-| Name | Source | Type | Go type | Separator | Required | Default | Description |
-|------|--------|------|---------|-----------| :------: |---------|-------------|
-| policy_id | `path` | uuid (formatted string) | `strfmt.UUID` |  | ✓ |  | The policy id in UUID format |
-| body | `body` | [ModelUpdatePolicyRequest](#model-update-policy-request) | `models.ModelUpdatePolicyRequest` | | ✓ | | Update policy Request |
-
-#### All responses
-| Code | Status | Description | Has headers | Schema |
-|------|--------|-------------|:-----------:|--------|
-| [200](#019791cc-06c7-7e67-9e1b-49a34edfe07c-200) | OK | OK |  | [schema](#019791cc-06c7-7e67-9e1b-49a34edfe07c-200-schema) |
-| [400](#019791cc-06c7-7e67-9e1b-49a34edfe07c-400) | Bad Request | Bad Request |  | [schema](#019791cc-06c7-7e67-9e1b-49a34edfe07c-400-schema) |
-| [404](#019791cc-06c7-7e67-9e1b-49a34edfe07c-404) | Not Found | Not Found |  | [schema](#019791cc-06c7-7e67-9e1b-49a34edfe07c-404-schema) |
-| [500](#019791cc-06c7-7e67-9e1b-49a34edfe07c-500) | Internal Server Error | Internal Server Error |  | [schema](#019791cc-06c7-7e67-9e1b-49a34edfe07c-500-schema) |
-
-#### Responses
-
-
-##### <span id="019791cc-06c7-7e67-9e1b-49a34edfe07c-200"></span> 200 - OK
-Status: OK
-
-###### <span id="019791cc-06c7-7e67-9e1b-49a34edfe07c-200-schema"></span> Schema
-   
-  
-
-[ModelHTTPMessage](#model-http-message)
-
-##### <span id="019791cc-06c7-7e67-9e1b-49a34edfe07c-400"></span> 400 - Bad Request
-Status: Bad Request
-
-###### <span id="019791cc-06c7-7e67-9e1b-49a34edfe07c-400-schema"></span> Schema
-   
-  
-
-[ModelHTTPMessage](#model-http-message)
-
-##### <span id="019791cc-06c7-7e67-9e1b-49a34edfe07c-404"></span> 404 - Not Found
-Status: Not Found
-
-###### <span id="019791cc-06c7-7e67-9e1b-49a34edfe07c-404-schema"></span> Schema
-   
-  
-
-[ModelHTTPMessage](#model-http-message)
-
-##### <span id="019791cc-06c7-7e67-9e1b-49a34edfe07c-500"></span> 500 - Internal Server Error
-Status: Internal Server Error
-
-###### <span id="019791cc-06c7-7e67-9e1b-49a34edfe07c-500-schema"></span> Schema
-   
-  
-
-[ModelHTTPMessage](#model-http-message)
-
-### <span id="019791cc-06c7-7e6b-b308-a2b2cbc2aaa1"></span> Delete policy (*019791cc-06c7-7e6b-b308-a2b2cbc2aaa1*)
-
-```
-DELETE /policies/{policy_id}
-```
-
-Remove a policy permanently from the system
-
-#### Produces
-  * application/json
-
-#### Security Requirements
-  * AccessToken
-
-#### Parameters
-
-| Name | Source | Type | Go type | Separator | Required | Default | Description |
-|------|--------|------|---------|-----------| :------: |---------|-------------|
-| policy_id | `path` | uuid (formatted string) | `strfmt.UUID` |  | ✓ |  | The policy id in UUID format |
-
-#### All responses
-| Code | Status | Description | Has headers | Schema |
-|------|--------|-------------|:-----------:|--------|
-| [200](#019791cc-06c7-7e6b-b308-a2b2cbc2aaa1-200) | OK | OK |  | [schema](#019791cc-06c7-7e6b-b308-a2b2cbc2aaa1-200-schema) |
-| [400](#019791cc-06c7-7e6b-b308-a2b2cbc2aaa1-400) | Bad Request | Bad Request |  | [schema](#019791cc-06c7-7e6b-b308-a2b2cbc2aaa1-400-schema) |
-| [404](#019791cc-06c7-7e6b-b308-a2b2cbc2aaa1-404) | Not Found | Not Found |  | [schema](#019791cc-06c7-7e6b-b308-a2b2cbc2aaa1-404-schema) |
-| [500](#019791cc-06c7-7e6b-b308-a2b2cbc2aaa1-500) | Internal Server Error | Internal Server Error |  | [schema](#019791cc-06c7-7e6b-b308-a2b2cbc2aaa1-500-schema) |
-
-#### Responses
-
-
-##### <span id="019791cc-06c7-7e6b-b308-a2b2cbc2aaa1-200"></span> 200 - OK
-Status: OK
-
-###### <span id="019791cc-06c7-7e6b-b308-a2b2cbc2aaa1-200-schema"></span> Schema
-   
-  
-
-[ModelHTTPMessage](#model-http-message)
-
-##### <span id="019791cc-06c7-7e6b-b308-a2b2cbc2aaa1-400"></span> 400 - Bad Request
-Status: Bad Request
-
-###### <span id="019791cc-06c7-7e6b-b308-a2b2cbc2aaa1-400-schema"></span> Schema
-   
-  
-
-[ModelHTTPMessage](#model-http-message)
-
-##### <span id="019791cc-06c7-7e6b-b308-a2b2cbc2aaa1-404"></span> 404 - Not Found
-Status: Not Found
-
-###### <span id="019791cc-06c7-7e6b-b308-a2b2cbc2aaa1-404-schema"></span> Schema
-   
-  
-
-[ModelHTTPMessage](#model-http-message)
-
-##### <span id="019791cc-06c7-7e6b-b308-a2b2cbc2aaa1-500"></span> 500 - Internal Server Error
-Status: Internal Server Error
-
-###### <span id="019791cc-06c7-7e6b-b308-a2b2cbc2aaa1-500-schema"></span> Schema
-   
-  
-
-[ModelHTTPMessage](#model-http-message)
-
-### <span id="019791cc-06c7-7e73-96aa-7e0383caae0d"></span> List policies (*019791cc-06c7-7e73-96aa-7e0383caae0d*)
-
-```
-GET /policies
-```
-
-Retrieve paginated list of all policies in the system
-
-#### Produces
-  * application/json
-
-#### Security Requirements
-  * AccessToken
-
-#### Parameters
-
-| Name | Source | Type | Go type | Separator | Required | Default | Description |
-|------|--------|------|---------|-----------| :------: |---------|-------------|
-| fields | `query` | string (formatted string) | `string` |  |  |  | Fields to return. Example: id,first_name,last_name |
-| filter | `query` | string (formatted string) | `string` |  |  |  | Filter field. Example: id=1 AND first_name='John' |
-| limit | `query` | int (formatted integer) | `int64` |  |  |  | Limit |
-| next_token | `query` | string (formatted string) | `string` |  |  |  | Next cursor |
-| prev_token | `query` | string (formatted string) | `string` |  |  |  | Previous cursor |
-| sort | `query` | string (formatted string) | `string` |  |  |  | Comma-separated list of fields to sort by. Example: first_name ASC, created_at DESC |
-
-#### All responses
-| Code | Status | Description | Has headers | Schema |
-|------|--------|-------------|:-----------:|--------|
-| [200](#019791cc-06c7-7e73-96aa-7e0383caae0d-200) | OK | OK |  | [schema](#019791cc-06c7-7e73-96aa-7e0383caae0d-200-schema) |
-| [400](#019791cc-06c7-7e73-96aa-7e0383caae0d-400) | Bad Request | Bad Request |  | [schema](#019791cc-06c7-7e73-96aa-7e0383caae0d-400-schema) |
-| [500](#019791cc-06c7-7e73-96aa-7e0383caae0d-500) | Internal Server Error | Internal Server Error |  | [schema](#019791cc-06c7-7e73-96aa-7e0383caae0d-500-schema) |
-
-#### Responses
-
-
-##### <span id="019791cc-06c7-7e73-96aa-7e0383caae0d-200"></span> 200 - OK
-Status: OK
-
-###### <span id="019791cc-06c7-7e73-96aa-7e0383caae0d-200-schema"></span> Schema
-   
-  
-
-[ModelListPoliciesResponse](#model-list-policies-response)
-
-##### <span id="019791cc-06c7-7e73-96aa-7e0383caae0d-400"></span> 400 - Bad Request
-Status: Bad Request
-
-###### <span id="019791cc-06c7-7e73-96aa-7e0383caae0d-400-schema"></span> Schema
-   
-  
-
-[ModelHTTPMessage](#model-http-message)
-
-##### <span id="019791cc-06c7-7e73-96aa-7e0383caae0d-500"></span> 500 - Internal Server Error
-Status: Internal Server Error
-
-###### <span id="019791cc-06c7-7e73-96aa-7e0383caae0d-500-schema"></span> Schema
-   
-  
-
-[ModelHTTPMessage](#model-http-message)
-
-### <span id="019791cc-06c7-7e77-a2c3-4ed693a2bcdd"></span> Link roles to policy (*019791cc-06c7-7e77-a2c3-4ed693a2bcdd*)
-
-```
-POST /policies/{policy_id}/roles
-```
-
-Associate multiple roles with a specific policy for authorization
-
-#### Consumes
-  * application/json
-
-#### Produces
-  * application/json
-
-#### Security Requirements
-  * AccessToken
-
-#### Parameters
-
-| Name | Source | Type | Go type | Separator | Required | Default | Description |
-|------|--------|------|---------|-----------| :------: |---------|-------------|
-| policy_id | `path` | uuid (formatted string) | `strfmt.UUID` |  | ✓ |  | The policy id in UUID format |
-| body | `body` | [ModelLinkRolesToPolicyRequest](#model-link-roles-to-policy-request) | `models.ModelLinkRolesToPolicyRequest` | | ✓ | | Link policy to roles Request |
-
-#### All responses
-| Code | Status | Description | Has headers | Schema |
-|------|--------|-------------|:-----------:|--------|
-| [200](#019791cc-06c7-7e77-a2c3-4ed693a2bcdd-200) | OK | OK |  | [schema](#019791cc-06c7-7e77-a2c3-4ed693a2bcdd-200-schema) |
-| [400](#019791cc-06c7-7e77-a2c3-4ed693a2bcdd-400) | Bad Request | Bad Request |  | [schema](#019791cc-06c7-7e77-a2c3-4ed693a2bcdd-400-schema) |
-| [404](#019791cc-06c7-7e77-a2c3-4ed693a2bcdd-404) | Not Found | Not Found |  | [schema](#019791cc-06c7-7e77-a2c3-4ed693a2bcdd-404-schema) |
-| [500](#019791cc-06c7-7e77-a2c3-4ed693a2bcdd-500) | Internal Server Error | Internal Server Error |  | [schema](#019791cc-06c7-7e77-a2c3-4ed693a2bcdd-500-schema) |
-
-#### Responses
-
-
-##### <span id="019791cc-06c7-7e77-a2c3-4ed693a2bcdd-200"></span> 200 - OK
-Status: OK
-
-###### <span id="019791cc-06c7-7e77-a2c3-4ed693a2bcdd-200-schema"></span> Schema
-   
-  
-
-[ModelHTTPMessage](#model-http-message)
-
-##### <span id="019791cc-06c7-7e77-a2c3-4ed693a2bcdd-400"></span> 400 - Bad Request
-Status: Bad Request
-
-###### <span id="019791cc-06c7-7e77-a2c3-4ed693a2bcdd-400-schema"></span> Schema
-   
-  
-
-[ModelHTTPMessage](#model-http-message)
-
-##### <span id="019791cc-06c7-7e77-a2c3-4ed693a2bcdd-404"></span> 404 - Not Found
-Status: Not Found
-
-###### <span id="019791cc-06c7-7e77-a2c3-4ed693a2bcdd-404-schema"></span> Schema
-   
-  
-
-[ModelHTTPMessage](#model-http-message)
-
-##### <span id="019791cc-06c7-7e77-a2c3-4ed693a2bcdd-500"></span> 500 - Internal Server Error
-Status: Internal Server Error
-
-###### <span id="019791cc-06c7-7e77-a2c3-4ed693a2bcdd-500-schema"></span> Schema
-   
-  
-
-[ModelHTTPMessage](#model-http-message)
-
-### <span id="019791cc-06c7-7e7b-bdfc-381b015c44e7"></span> Unlink roles from policy (*019791cc-06c7-7e7b-bdfc-381b015c44e7*)
-
-```
-DELETE /policies/{policy_id}/roles
-```
-
-Remove role associations from a specific policy
-
-#### Consumes
-  * application/json
-
-#### Produces
-  * application/json
-
-#### Security Requirements
-  * AccessToken
-
-#### Parameters
-
-| Name | Source | Type | Go type | Separator | Required | Default | Description |
-|------|--------|------|---------|-----------| :------: |---------|-------------|
-| policy_id | `path` | uuid (formatted string) | `strfmt.UUID` |  | ✓ |  | The policy id in UUID format |
-| body | `body` | [ModelUnlinkRolesFromPolicyRequest](#model-unlink-roles-from-policy-request) | `models.ModelUnlinkRolesFromPolicyRequest` | | ✓ | | Unlink policy from roles Request |
-
-#### All responses
-| Code | Status | Description | Has headers | Schema |
-|------|--------|-------------|:-----------:|--------|
-| [200](#019791cc-06c7-7e7b-bdfc-381b015c44e7-200) | OK | OK |  | [schema](#019791cc-06c7-7e7b-bdfc-381b015c44e7-200-schema) |
-| [400](#019791cc-06c7-7e7b-bdfc-381b015c44e7-400) | Bad Request | Bad Request |  | [schema](#019791cc-06c7-7e7b-bdfc-381b015c44e7-400-schema) |
-| [404](#019791cc-06c7-7e7b-bdfc-381b015c44e7-404) | Not Found | Not Found |  | [schema](#019791cc-06c7-7e7b-bdfc-381b015c44e7-404-schema) |
-| [500](#019791cc-06c7-7e7b-bdfc-381b015c44e7-500) | Internal Server Error | Internal Server Error |  | [schema](#019791cc-06c7-7e7b-bdfc-381b015c44e7-500-schema) |
-
-#### Responses
-
-
-##### <span id="019791cc-06c7-7e7b-bdfc-381b015c44e7-200"></span> 200 - OK
-Status: OK
-
-###### <span id="019791cc-06c7-7e7b-bdfc-381b015c44e7-200-schema"></span> Schema
-   
-  
-
-[ModelHTTPMessage](#model-http-message)
-
-##### <span id="019791cc-06c7-7e7b-bdfc-381b015c44e7-400"></span> 400 - Bad Request
-Status: Bad Request
-
-###### <span id="019791cc-06c7-7e7b-bdfc-381b015c44e7-400-schema"></span> Schema
-   
-  
-
-[ModelHTTPMessage](#model-http-message)
-
-##### <span id="019791cc-06c7-7e7b-bdfc-381b015c44e7-404"></span> 404 - Not Found
-Status: Not Found
-
-###### <span id="019791cc-06c7-7e7b-bdfc-381b015c44e7-404-schema"></span> Schema
-   
-  
-
-[ModelHTTPMessage](#model-http-message)
-
-##### <span id="019791cc-06c7-7e7b-bdfc-381b015c44e7-500"></span> 500 - Internal Server Error
-Status: Internal Server Error
-
-###### <span id="019791cc-06c7-7e7b-bdfc-381b015c44e7-500-schema"></span> Schema
-   
-  
-
-[ModelHTTPMessage](#model-http-message)
-
-### <span id="019791cc-06c7-7e82-967d-e13c399f5018"></span> List policies by role (*019791cc-06c7-7e82-967d-e13c399f5018*)
-
-```
-GET /roles/{role_id}/policies
-```
-
-Retrieve paginated list of policies associated with a specific role
-
-#### Produces
-  * application/json
-
-#### Security Requirements
-  * AccessToken
-
-#### Parameters
-
-| Name | Source | Type | Go type | Separator | Required | Default | Description |
-|------|--------|------|---------|-----------| :------: |---------|-------------|
-| role_id | `path` | uuid (formatted string) | `strfmt.UUID` |  | ✓ |  | The role id in UUID format |
-| fields | `query` | string (formatted string) | `string` |  |  |  | Fields to return. Example: id,first_name,last_name |
-| filter | `query` | string (formatted string) | `string` |  |  |  | Filter field. Example: id=1 AND first_name='John' |
-| limit | `query` | int (formatted integer) | `int64` |  |  |  | Limit |
-| next_token | `query` | string (formatted string) | `string` |  |  |  | Next cursor |
-| prev_token | `query` | string (formatted string) | `string` |  |  |  | Previous cursor |
-| sort | `query` | string (formatted string) | `string` |  |  |  | Comma-separated list of fields to sort by. Example: first_name ASC, created_at DESC |
-
-#### All responses
-| Code | Status | Description | Has headers | Schema |
-|------|--------|-------------|:-----------:|--------|
-| [200](#019791cc-06c7-7e82-967d-e13c399f5018-200) | OK | OK |  | [schema](#019791cc-06c7-7e82-967d-e13c399f5018-200-schema) |
-| [400](#019791cc-06c7-7e82-967d-e13c399f5018-400) | Bad Request | Bad Request |  | [schema](#019791cc-06c7-7e82-967d-e13c399f5018-400-schema) |
-| [500](#019791cc-06c7-7e82-967d-e13c399f5018-500) | Internal Server Error | Internal Server Error |  | [schema](#019791cc-06c7-7e82-967d-e13c399f5018-500-schema) |
-
-#### Responses
-
-
-##### <span id="019791cc-06c7-7e82-967d-e13c399f5018-200"></span> 200 - OK
-Status: OK
-
-###### <span id="019791cc-06c7-7e82-967d-e13c399f5018-200-schema"></span> Schema
-   
-  
-
-[ModelListPoliciesResponse](#model-list-policies-response)
-
-##### <span id="019791cc-06c7-7e82-967d-e13c399f5018-400"></span> 400 - Bad Request
-Status: Bad Request
-
-###### <span id="019791cc-06c7-7e82-967d-e13c399f5018-400-schema"></span> Schema
-   
-  
-
-[ModelHTTPMessage](#model-http-message)
-
-##### <span id="019791cc-06c7-7e82-967d-e13c399f5018-500"></span> 500 - Internal Server Error
-Status: Internal Server Error
-
-###### <span id="019791cc-06c7-7e82-967d-e13c399f5018-500-schema"></span> Schema
-   
-  
-
-[ModelHTTPMessage](#model-http-message)
-
-### <span id="019791cc-06c7-7e86-ad42-b777bfcc9e40"></span> Get resource (*019791cc-06c7-7e86-ad42-b777bfcc9e40*)
-
-```
-GET /resources/{resource_id}
-```
-
-Retrieve a specific resource by its identifier
-
-#### Produces
-  * application/json
-
-#### Security Requirements
-  * AccessToken
-
-#### Parameters
-
-| Name | Source | Type | Go type | Separator | Required | Default | Description |
-|------|--------|------|---------|-----------| :------: |---------|-------------|
-| resource_id | `path` | uuid (formatted string) | `strfmt.UUID` |  | ✓ |  | The permission id in UUID format |
-
-#### All responses
-| Code | Status | Description | Has headers | Schema |
-|------|--------|-------------|:-----------:|--------|
-| [200](#019791cc-06c7-7e86-ad42-b777bfcc9e40-200) | OK | OK |  | [schema](#019791cc-06c7-7e86-ad42-b777bfcc9e40-200-schema) |
-| [400](#019791cc-06c7-7e86-ad42-b777bfcc9e40-400) | Bad Request | Bad Request |  | [schema](#019791cc-06c7-7e86-ad42-b777bfcc9e40-400-schema) |
-| [404](#019791cc-06c7-7e86-ad42-b777bfcc9e40-404) | Not Found | Not Found |  | [schema](#019791cc-06c7-7e86-ad42-b777bfcc9e40-404-schema) |
-| [500](#019791cc-06c7-7e86-ad42-b777bfcc9e40-500) | Internal Server Error | Internal Server Error |  | [schema](#019791cc-06c7-7e86-ad42-b777bfcc9e40-500-schema) |
-
-#### Responses
-
-
-##### <span id="019791cc-06c7-7e86-ad42-b777bfcc9e40-200"></span> 200 - OK
-Status: OK
-
-###### <span id="019791cc-06c7-7e86-ad42-b777bfcc9e40-200-schema"></span> Schema
-   
-  
-
-[ModelResource](#model-resource)
-
-##### <span id="019791cc-06c7-7e86-ad42-b777bfcc9e40-400"></span> 400 - Bad Request
-Status: Bad Request
-
-###### <span id="019791cc-06c7-7e86-ad42-b777bfcc9e40-400-schema"></span> Schema
-   
-  
-
-[ModelHTTPMessage](#model-http-message)
-
-##### <span id="019791cc-06c7-7e86-ad42-b777bfcc9e40-404"></span> 404 - Not Found
-Status: Not Found
-
-###### <span id="019791cc-06c7-7e86-ad42-b777bfcc9e40-404-schema"></span> Schema
-   
-  
-
-[ModelHTTPMessage](#model-http-message)
-
-##### <span id="019791cc-06c7-7e86-ad42-b777bfcc9e40-500"></span> 500 - Internal Server Error
-Status: Internal Server Error
-
-###### <span id="019791cc-06c7-7e86-ad42-b777bfcc9e40-500-schema"></span> Schema
-   
-  
-
-[ModelHTTPMessage](#model-http-message)
-
-### <span id="019791cc-06c7-7e8e-8d7e-cd3f9296e0fd"></span> List resources (*019791cc-06c7-7e8e-8d7e-cd3f9296e0fd*)
-
-```
-GET /resources
-```
-
-Retrieve paginated list of all resources in the system
-
-#### Produces
-  * application/json
-
-#### Security Requirements
-  * AccessToken
-
-#### Parameters
-
-| Name | Source | Type | Go type | Separator | Required | Default | Description |
-|------|--------|------|---------|-----------| :------: |---------|-------------|
-| fields | `query` | string (formatted string) | `string` |  |  |  | Fields to return. Example: id,first_name,last_name |
-| filter | `query` | string (formatted string) | `string` |  |  |  | Filter field. Example: id=1 AND first_name='John' |
-| limit | `query` | int (formatted integer) | `int64` |  |  |  | Limit |
-| next_token | `query` | string (formatted string) | `string` |  |  |  | Next cursor |
-| prev_token | `query` | string (formatted string) | `string` |  |  |  | Previous cursor |
-| sort | `query` | string (formatted string) | `string` |  |  |  | Comma-separated list of fields to sort by. Example: first_name ASC, created_at DESC |
-
-#### All responses
-| Code | Status | Description | Has headers | Schema |
-|------|--------|-------------|:-----------:|--------|
-| [200](#019791cc-06c7-7e8e-8d7e-cd3f9296e0fd-200) | OK | OK |  | [schema](#019791cc-06c7-7e8e-8d7e-cd3f9296e0fd-200-schema) |
-| [400](#019791cc-06c7-7e8e-8d7e-cd3f9296e0fd-400) | Bad Request | Bad Request |  | [schema](#019791cc-06c7-7e8e-8d7e-cd3f9296e0fd-400-schema) |
-| [500](#019791cc-06c7-7e8e-8d7e-cd3f9296e0fd-500) | Internal Server Error | Internal Server Error |  | [schema](#019791cc-06c7-7e8e-8d7e-cd3f9296e0fd-500-schema) |
-
-#### Responses
-
-
-##### <span id="019791cc-06c7-7e8e-8d7e-cd3f9296e0fd-200"></span> 200 - OK
-Status: OK
-
-###### <span id="019791cc-06c7-7e8e-8d7e-cd3f9296e0fd-200-schema"></span> Schema
-   
-  
-
-[ModelListResourcesResponse](#model-list-resources-response)
-
-##### <span id="019791cc-06c7-7e8e-8d7e-cd3f9296e0fd-400"></span> 400 - Bad Request
-Status: Bad Request
-
-###### <span id="019791cc-06c7-7e8e-8d7e-cd3f9296e0fd-400-schema"></span> Schema
-   
-  
-
-[ModelHTTPMessage](#model-http-message)
-
-##### <span id="019791cc-06c7-7e8e-8d7e-cd3f9296e0fd-500"></span> 500 - Internal Server Error
-Status: Internal Server Error
-
-###### <span id="019791cc-06c7-7e8e-8d7e-cd3f9296e0fd-500-schema"></span> Schema
-   
-  
-
-[ModelHTTPMessage](#model-http-message)
-
-### <span id="019791cc-06c7-7e92-9152-cb35902f79c4"></span> Match resources (*019791cc-06c7-7e92-9152-cb35902f79c4*)
-
-```
-GET /resources/matches
-```
-
-Find resources that match specific action and resource policy patterns
-
-#### Produces
-  * application/json
-
-#### Security Requirements
-  * AccessToken
-
-#### Parameters
-
-| Name | Source | Type | Go type | Separator | Required | Default | Description |
-|------|--------|------|---------|-----------| :------: |---------|-------------|
-| action | `query` | string (formatted string) | `string` |  | ✓ |  | Action to filter by |
-| fields | `query` | string (formatted string) | `string` |  |  |  | Fields to return. Example: id,first_name,last_name |
-| limit | `query` | int (formatted integer) | `int64` |  |  |  | Limit |
-| next_token | `query` | string (formatted string) | `string` |  |  |  | Next cursor |
-| prev_token | `query` | string (formatted string) | `string` |  |  |  | Previous cursor |
-| resource | `query` | string (formatted string) | `string` |  | ✓ |  | Resource to filter by |
-| sort | `query` | string (formatted string) | `string` |  |  |  | Comma-separated list of fields to sort by. Example: first_name ASC, created_at DESC |
-
-#### All responses
-| Code | Status | Description | Has headers | Schema |
-|------|--------|-------------|:-----------:|--------|
-| [200](#019791cc-06c7-7e92-9152-cb35902f79c4-200) | OK | OK |  | [schema](#019791cc-06c7-7e92-9152-cb35902f79c4-200-schema) |
-| [400](#019791cc-06c7-7e92-9152-cb35902f79c4-400) | Bad Request | Bad Request |  | [schema](#019791cc-06c7-7e92-9152-cb35902f79c4-400-schema) |
-| [500](#019791cc-06c7-7e92-9152-cb35902f79c4-500) | Internal Server Error | Internal Server Error |  | [schema](#019791cc-06c7-7e92-9152-cb35902f79c4-500-schema) |
-
-#### Responses
-
-
-##### <span id="019791cc-06c7-7e92-9152-cb35902f79c4-200"></span> 200 - OK
-Status: OK
-
-###### <span id="019791cc-06c7-7e92-9152-cb35902f79c4-200-schema"></span> Schema
-   
-  
-
-[ModelListResourcesResponse](#model-list-resources-response)
-
-##### <span id="019791cc-06c7-7e92-9152-cb35902f79c4-400"></span> 400 - Bad Request
-Status: Bad Request
-
-###### <span id="019791cc-06c7-7e92-9152-cb35902f79c4-400-schema"></span> Schema
-   
-  
-
-[ModelHTTPMessage](#model-http-message)
-
-##### <span id="019791cc-06c7-7e92-9152-cb35902f79c4-500"></span> 500 - Internal Server Error
-Status: Internal Server Error
-
-###### <span id="019791cc-06c7-7e92-9152-cb35902f79c4-500-schema"></span> Schema
-   
-  
-
-[ModelHTTPMessage](#model-http-message)
-
-### <span id="019791cc-06c7-7e96-a284-ad37f86475bd"></span> Get role (*019791cc-06c7-7e96-a284-ad37f86475bd*)
-
-```
-GET /roles/{role_id}
-```
-
-Retrieve a specific role by its unique identifier
-
-#### Produces
-  * application/json
-
-#### Security Requirements
-  * AccessToken
-
-#### Parameters
-
-| Name | Source | Type | Go type | Separator | Required | Default | Description |
-|------|--------|------|---------|-----------| :------: |---------|-------------|
-| role_id | `path` | uuid (formatted string) | `strfmt.UUID` |  | ✓ |  | The role id in UUID format |
-
-#### All responses
-| Code | Status | Description | Has headers | Schema |
-|------|--------|-------------|:-----------:|--------|
-| [200](#019791cc-06c7-7e96-a284-ad37f86475bd-200) | OK | OK |  | [schema](#019791cc-06c7-7e96-a284-ad37f86475bd-200-schema) |
-| [400](#019791cc-06c7-7e96-a284-ad37f86475bd-400) | Bad Request | Bad Request |  | [schema](#019791cc-06c7-7e96-a284-ad37f86475bd-400-schema) |
-| [404](#019791cc-06c7-7e96-a284-ad37f86475bd-404) | Not Found | Not Found |  | [schema](#019791cc-06c7-7e96-a284-ad37f86475bd-404-schema) |
-| [500](#019791cc-06c7-7e96-a284-ad37f86475bd-500) | Internal Server Error | Internal Server Error |  | [schema](#019791cc-06c7-7e96-a284-ad37f86475bd-500-schema) |
-
-#### Responses
-
-
-##### <span id="019791cc-06c7-7e96-a284-ad37f86475bd-200"></span> 200 - OK
-Status: OK
-
-###### <span id="019791cc-06c7-7e96-a284-ad37f86475bd-200-schema"></span> Schema
-   
-  
-
-[ModelRole](#model-role)
-
-##### <span id="019791cc-06c7-7e96-a284-ad37f86475bd-400"></span> 400 - Bad Request
-Status: Bad Request
-
-###### <span id="019791cc-06c7-7e96-a284-ad37f86475bd-400-schema"></span> Schema
-   
-  
-
-[ModelHTTPMessage](#model-http-message)
-
-##### <span id="019791cc-06c7-7e96-a284-ad37f86475bd-404"></span> 404 - Not Found
-Status: Not Found
-
-###### <span id="019791cc-06c7-7e96-a284-ad37f86475bd-404-schema"></span> Schema
-   
-  
-
-[ModelHTTPMessage](#model-http-message)
-
-##### <span id="019791cc-06c7-7e96-a284-ad37f86475bd-500"></span> 500 - Internal Server Error
-Status: Internal Server Error
-
-###### <span id="019791cc-06c7-7e96-a284-ad37f86475bd-500-schema"></span> Schema
-   
-  
-
-[ModelHTTPMessage](#model-http-message)
-
-### <span id="019791cc-06c7-7e9e-87bf-dcedfa5aefa7"></span> Create role (*019791cc-06c7-7e9e-87bf-dcedfa5aefa7*)
-
-```
-POST /roles
-```
-
-Create a new role with specified permissions and access levels
-
-#### Consumes
-  * application/json
-
-#### Produces
-  * application/json
-
-#### Security Requirements
-  * AccessToken
-
-#### Parameters
-
-| Name | Source | Type | Go type | Separator | Required | Default | Description |
-|------|--------|------|---------|-----------| :------: |---------|-------------|
-| body | `body` | [ModelCreateRoleRequest](#model-create-role-request) | `models.ModelCreateRoleRequest` | | ✓ | | Create role request |
-
-#### All responses
-| Code | Status | Description | Has headers | Schema |
-|------|--------|-------------|:-----------:|--------|
-| [201](#019791cc-06c7-7e9e-87bf-dcedfa5aefa7-201) | Created | Created |  | [schema](#019791cc-06c7-7e9e-87bf-dcedfa5aefa7-201-schema) |
-| [400](#019791cc-06c7-7e9e-87bf-dcedfa5aefa7-400) | Bad Request | Bad Request |  | [schema](#019791cc-06c7-7e9e-87bf-dcedfa5aefa7-400-schema) |
-| [409](#019791cc-06c7-7e9e-87bf-dcedfa5aefa7-409) | Conflict | Conflict |  | [schema](#019791cc-06c7-7e9e-87bf-dcedfa5aefa7-409-schema) |
-| [500](#019791cc-06c7-7e9e-87bf-dcedfa5aefa7-500) | Internal Server Error | Internal Server Error |  | [schema](#019791cc-06c7-7e9e-87bf-dcedfa5aefa7-500-schema) |
-
-#### Responses
-
-
-##### <span id="019791cc-06c7-7e9e-87bf-dcedfa5aefa7-201"></span> 201 - Created
-Status: Created
-
-###### <span id="019791cc-06c7-7e9e-87bf-dcedfa5aefa7-201-schema"></span> Schema
-   
-  
-
-[ModelHTTPMessage](#model-http-message)
-
-##### <span id="019791cc-06c7-7e9e-87bf-dcedfa5aefa7-400"></span> 400 - Bad Request
-Status: Bad Request
-
-###### <span id="019791cc-06c7-7e9e-87bf-dcedfa5aefa7-400-schema"></span> Schema
-   
-  
-
-[ModelHTTPMessage](#model-http-message)
-
-##### <span id="019791cc-06c7-7e9e-87bf-dcedfa5aefa7-409"></span> 409 - Conflict
-Status: Conflict
-
-###### <span id="019791cc-06c7-7e9e-87bf-dcedfa5aefa7-409-schema"></span> Schema
-   
-  
-
-[ModelHTTPMessage](#model-http-message)
-
-##### <span id="019791cc-06c7-7e9e-87bf-dcedfa5aefa7-500"></span> 500 - Internal Server Error
-Status: Internal Server Error
-
-###### <span id="019791cc-06c7-7e9e-87bf-dcedfa5aefa7-500-schema"></span> Schema
-   
-  
-
-[ModelHTTPMessage](#model-http-message)
-
-### <span id="019791cc-06c7-7ea2-8f0e-7b9f7cbc203a"></span> Update role (*019791cc-06c7-7ea2-8f0e-7b9f7cbc203a*)
-
-```
-PUT /roles/{role_id}
-```
-
-Modify an existing role by its ID
-
-#### Consumes
-  * application/json
-
-#### Produces
-  * application/json
-
-#### Security Requirements
-  * AccessToken
-
-#### Parameters
-
-| Name | Source | Type | Go type | Separator | Required | Default | Description |
-|------|--------|------|---------|-----------| :------: |---------|-------------|
-| role_id | `path` | uuid (formatted string) | `strfmt.UUID` |  | ✓ |  | The model id in UUID format |
-| body | `body` | [ModelUpdateRoleRequest](#model-update-role-request) | `models.ModelUpdateRoleRequest` | | ✓ | | Update role request |
-
-#### All responses
-| Code | Status | Description | Has headers | Schema |
-|------|--------|-------------|:-----------:|--------|
-| [200](#019791cc-06c7-7ea2-8f0e-7b9f7cbc203a-200) | OK | OK |  | [schema](#019791cc-06c7-7ea2-8f0e-7b9f7cbc203a-200-schema) |
-| [400](#019791cc-06c7-7ea2-8f0e-7b9f7cbc203a-400) | Bad Request | Bad Request |  | [schema](#019791cc-06c7-7ea2-8f0e-7b9f7cbc203a-400-schema) |
-| [409](#019791cc-06c7-7ea2-8f0e-7b9f7cbc203a-409) | Conflict | Conflict |  | [schema](#019791cc-06c7-7ea2-8f0e-7b9f7cbc203a-409-schema) |
-| [500](#019791cc-06c7-7ea2-8f0e-7b9f7cbc203a-500) | Internal Server Error | Internal Server Error |  | [schema](#019791cc-06c7-7ea2-8f0e-7b9f7cbc203a-500-schema) |
-
-#### Responses
-
-
-##### <span id="019791cc-06c7-7ea2-8f0e-7b9f7cbc203a-200"></span> 200 - OK
-Status: OK
-
-###### <span id="019791cc-06c7-7ea2-8f0e-7b9f7cbc203a-200-schema"></span> Schema
-   
-  
-
-[ModelHTTPMessage](#model-http-message)
-
-##### <span id="019791cc-06c7-7ea2-8f0e-7b9f7cbc203a-400"></span> 400 - Bad Request
-Status: Bad Request
-
-###### <span id="019791cc-06c7-7ea2-8f0e-7b9f7cbc203a-400-schema"></span> Schema
-   
-  
-
-[ModelHTTPMessage](#model-http-message)
-
-##### <span id="019791cc-06c7-7ea2-8f0e-7b9f7cbc203a-409"></span> 409 - Conflict
-Status: Conflict
-
-###### <span id="019791cc-06c7-7ea2-8f0e-7b9f7cbc203a-409-schema"></span> Schema
-   
-  
-
-[ModelHTTPMessage](#model-http-message)
-
-##### <span id="019791cc-06c7-7ea2-8f0e-7b9f7cbc203a-500"></span> 500 - Internal Server Error
-Status: Internal Server Error
-
-###### <span id="019791cc-06c7-7ea2-8f0e-7b9f7cbc203a-500-schema"></span> Schema
-   
-  
-
-[ModelHTTPMessage](#model-http-message)
-
-### <span id="019791cc-06c7-7ea6-9423-184c13540c26"></span> Delete role (*019791cc-06c7-7ea6-9423-184c13540c26*)
-
-```
-DELETE /roles/{role_id}
-```
-
-Remove a role permanently from the system
-
-#### Produces
-  * application/json
-
-#### Security Requirements
-  * AccessToken
-
-#### Parameters
-
-| Name | Source | Type | Go type | Separator | Required | Default | Description |
-|------|--------|------|---------|-----------| :------: |---------|-------------|
-| role_id | `path` | uuid (formatted string) | `strfmt.UUID` |  | ✓ |  | The role id in UUID format |
-
-#### All responses
-| Code | Status | Description | Has headers | Schema |
-|------|--------|-------------|:-----------:|--------|
-| [200](#019791cc-06c7-7ea6-9423-184c13540c26-200) | OK | OK |  | [schema](#019791cc-06c7-7ea6-9423-184c13540c26-200-schema) |
-| [400](#019791cc-06c7-7ea6-9423-184c13540c26-400) | Bad Request | Bad Request |  | [schema](#019791cc-06c7-7ea6-9423-184c13540c26-400-schema) |
-| [500](#019791cc-06c7-7ea6-9423-184c13540c26-500) | Internal Server Error | Internal Server Error |  | [schema](#019791cc-06c7-7ea6-9423-184c13540c26-500-schema) |
-
-#### Responses
-
-
-##### <span id="019791cc-06c7-7ea6-9423-184c13540c26-200"></span> 200 - OK
-Status: OK
-
-###### <span id="019791cc-06c7-7ea6-9423-184c13540c26-200-schema"></span> Schema
-   
-  
-
-[ModelHTTPMessage](#model-http-message)
-
-##### <span id="019791cc-06c7-7ea6-9423-184c13540c26-400"></span> 400 - Bad Request
-Status: Bad Request
-
-###### <span id="019791cc-06c7-7ea6-9423-184c13540c26-400-schema"></span> Schema
-   
-  
-
-[ModelHTTPMessage](#model-http-message)
-
-##### <span id="019791cc-06c7-7ea6-9423-184c13540c26-500"></span> 500 - Internal Server Error
-Status: Internal Server Error
-
-###### <span id="019791cc-06c7-7ea6-9423-184c13540c26-500-schema"></span> Schema
-   
-  
-
-[ModelHTTPMessage](#model-http-message)
-
-### <span id="019791cc-06c7-7ead-968a-2a457714a7ee"></span> List roles (*019791cc-06c7-7ead-968a-2a457714a7ee*)
-
-```
-GET /roles
-```
-
-Retrieve paginated list of all roles in the system
-
-#### Produces
-  * application/json
-
-#### Security Requirements
-  * AccessToken
-
-#### Parameters
-
-| Name | Source | Type | Go type | Separator | Required | Default | Description |
-|------|--------|------|---------|-----------| :------: |---------|-------------|
-| fields | `query` | string (formatted string) | `string` |  |  |  | Fields to return. Example: id,first_name,last_name |
-| filter | `query` | string (formatted string) | `string` |  |  |  | Filter field. Example: id=1 AND first_name='John' |
-| limit | `query` | int (formatted integer) | `int64` |  |  |  | Limit |
-| next_token | `query` | string (formatted string) | `string` |  |  |  | Next cursor |
-| prev_token | `query` | string (formatted string) | `string` |  |  |  | Previous cursor |
-| sort | `query` | string (formatted string) | `string` |  |  |  | Comma-separated list of fields to sort by. Example: first_name ASC, created_at DESC |
-
-#### All responses
-| Code | Status | Description | Has headers | Schema |
-|------|--------|-------------|:-----------:|--------|
-| [200](#019791cc-06c7-7ead-968a-2a457714a7ee-200) | OK | OK |  | [schema](#019791cc-06c7-7ead-968a-2a457714a7ee-200-schema) |
-| [400](#019791cc-06c7-7ead-968a-2a457714a7ee-400) | Bad Request | Bad Request |  | [schema](#019791cc-06c7-7ead-968a-2a457714a7ee-400-schema) |
-| [500](#019791cc-06c7-7ead-968a-2a457714a7ee-500) | Internal Server Error | Internal Server Error |  | [schema](#019791cc-06c7-7ead-968a-2a457714a7ee-500-schema) |
-
-#### Responses
-
-
-##### <span id="019791cc-06c7-7ead-968a-2a457714a7ee-200"></span> 200 - OK
-Status: OK
-
-###### <span id="019791cc-06c7-7ead-968a-2a457714a7ee-200-schema"></span> Schema
-   
-  
-
-[ModelListRolesResponse](#model-list-roles-response)
-
-##### <span id="019791cc-06c7-7ead-968a-2a457714a7ee-400"></span> 400 - Bad Request
-Status: Bad Request
-
-###### <span id="019791cc-06c7-7ead-968a-2a457714a7ee-400-schema"></span> Schema
-   
-  
-
-[ModelHTTPMessage](#model-http-message)
-
-##### <span id="019791cc-06c7-7ead-968a-2a457714a7ee-500"></span> 500 - Internal Server Error
-Status: Internal Server Error
-
-###### <span id="019791cc-06c7-7ead-968a-2a457714a7ee-500-schema"></span> Schema
-   
-  
-
-[ModelHTTPMessage](#model-http-message)
-
-### <span id="019791cc-06c7-7eb1-b10c-4fbcd5943885"></span> Link users to role (*019791cc-06c7-7eb1-b10c-4fbcd5943885*)
-
-```
-POST /roles/{role_id}/users
-```
-
-Associate multiple users with a specific role for authorization
-
-#### Consumes
-  * application/json
-
-#### Produces
-  * application/json
-
-#### Security Requirements
-  * AccessToken
-
-#### Parameters
-
-| Name | Source | Type | Go type | Separator | Required | Default | Description |
-|------|--------|------|---------|-----------| :------: |---------|-------------|
-| role_id | `path` | uuid (formatted string) | `strfmt.UUID` |  | ✓ |  | The role id in UUID format |
-| body | `body` | [ModelLinkUsersToRoleRequest](#model-link-users-to-role-request) | `models.ModelLinkUsersToRoleRequest` | | ✓ | | Link users to role request |
-
-#### All responses
-| Code | Status | Description | Has headers | Schema |
-|------|--------|-------------|:-----------:|--------|
-| [200](#019791cc-06c7-7eb1-b10c-4fbcd5943885-200) | OK | OK |  | [schema](#019791cc-06c7-7eb1-b10c-4fbcd5943885-200-schema) |
-| [400](#019791cc-06c7-7eb1-b10c-4fbcd5943885-400) | Bad Request | Bad Request |  | [schema](#019791cc-06c7-7eb1-b10c-4fbcd5943885-400-schema) |
-| [409](#019791cc-06c7-7eb1-b10c-4fbcd5943885-409) | Conflict | Conflict |  | [schema](#019791cc-06c7-7eb1-b10c-4fbcd5943885-409-schema) |
-| [500](#019791cc-06c7-7eb1-b10c-4fbcd5943885-500) | Internal Server Error | Internal Server Error |  | [schema](#019791cc-06c7-7eb1-b10c-4fbcd5943885-500-schema) |
-
-#### Responses
-
-
-##### <span id="019791cc-06c7-7eb1-b10c-4fbcd5943885-200"></span> 200 - OK
-Status: OK
-
-###### <span id="019791cc-06c7-7eb1-b10c-4fbcd5943885-200-schema"></span> Schema
-   
-  
-
-[ModelHTTPMessage](#model-http-message)
-
-##### <span id="019791cc-06c7-7eb1-b10c-4fbcd5943885-400"></span> 400 - Bad Request
-Status: Bad Request
-
-###### <span id="019791cc-06c7-7eb1-b10c-4fbcd5943885-400-schema"></span> Schema
-   
-  
-
-[ModelHTTPMessage](#model-http-message)
-
-##### <span id="019791cc-06c7-7eb1-b10c-4fbcd5943885-409"></span> 409 - Conflict
-Status: Conflict
-
-###### <span id="019791cc-06c7-7eb1-b10c-4fbcd5943885-409-schema"></span> Schema
-   
-  
-
-[ModelHTTPMessage](#model-http-message)
-
-##### <span id="019791cc-06c7-7eb1-b10c-4fbcd5943885-500"></span> 500 - Internal Server Error
-Status: Internal Server Error
-
-###### <span id="019791cc-06c7-7eb1-b10c-4fbcd5943885-500-schema"></span> Schema
-   
-  
-
-[ModelHTTPMessage](#model-http-message)
-
-### <span id="019791cc-06c7-7eb5-9b74-ba394be221b4"></span> Unlink users from role (*019791cc-06c7-7eb5-9b74-ba394be221b4*)
-
-```
-DELETE /roles/{role_id}/users
-```
-
-Remove user associations from a specific role
-
-#### Consumes
-  * application/json
-
-#### Produces
-  * application/json
-
-#### Security Requirements
-  * AccessToken
-
-#### Parameters
-
-| Name | Source | Type | Go type | Separator | Required | Default | Description |
-|------|--------|------|---------|-----------| :------: |---------|-------------|
-| role_id | `path` | uuid (formatted string) | `strfmt.UUID` |  | ✓ |  | The Embeddings Role ID in UUID format |
-| body | `body` | [ModelUnlinkUsersFromRoleRequest](#model-unlink-users-from-role-request) | `models.ModelUnlinkUsersFromRoleRequest` | | ✓ | | UnLink users from role request |
-
-#### All responses
-| Code | Status | Description | Has headers | Schema |
-|------|--------|-------------|:-----------:|--------|
-| [200](#019791cc-06c7-7eb5-9b74-ba394be221b4-200) | OK | OK |  | [schema](#019791cc-06c7-7eb5-9b74-ba394be221b4-200-schema) |
-| [400](#019791cc-06c7-7eb5-9b74-ba394be221b4-400) | Bad Request | Bad Request |  | [schema](#019791cc-06c7-7eb5-9b74-ba394be221b4-400-schema) |
-| [409](#019791cc-06c7-7eb5-9b74-ba394be221b4-409) | Conflict | Conflict |  | [schema](#019791cc-06c7-7eb5-9b74-ba394be221b4-409-schema) |
-| [500](#019791cc-06c7-7eb5-9b74-ba394be221b4-500) | Internal Server Error | Internal Server Error |  | [schema](#019791cc-06c7-7eb5-9b74-ba394be221b4-500-schema) |
-
-#### Responses
-
-
-##### <span id="019791cc-06c7-7eb5-9b74-ba394be221b4-200"></span> 200 - OK
-Status: OK
-
-###### <span id="019791cc-06c7-7eb5-9b74-ba394be221b4-200-schema"></span> Schema
-   
-  
-
-[ModelHTTPMessage](#model-http-message)
-
-##### <span id="019791cc-06c7-7eb5-9b74-ba394be221b4-400"></span> 400 - Bad Request
-Status: Bad Request
-
-###### <span id="019791cc-06c7-7eb5-9b74-ba394be221b4-400-schema"></span> Schema
-   
-  
-
-[ModelHTTPMessage](#model-http-message)
-
-##### <span id="019791cc-06c7-7eb5-9b74-ba394be221b4-409"></span> 409 - Conflict
-Status: Conflict
-
-###### <span id="019791cc-06c7-7eb5-9b74-ba394be221b4-409-schema"></span> Schema
-   
-  
-
-[ModelHTTPMessage](#model-http-message)
-
-##### <span id="019791cc-06c7-7eb5-9b74-ba394be221b4-500"></span> 500 - Internal Server Error
-Status: Internal Server Error
-
-###### <span id="019791cc-06c7-7eb5-9b74-ba394be221b4-500-schema"></span> Schema
-   
-  
-
-[ModelHTTPMessage](#model-http-message)
-
-### <span id="019791cc-06c7-7ebd-b750-8c93b165d503"></span> Link policies to role (*019791cc-06c7-7ebd-b750-8c93b165d503*)
-
-```
-POST /roles/{role_id}/policies
-```
-
-Associate multiple policies with a specific role for authorization
-
-#### Consumes
-  * application/json
-
-#### Produces
-  * application/json
-
-#### Security Requirements
-  * AccessToken
-
-#### Parameters
-
-| Name | Source | Type | Go type | Separator | Required | Default | Description |
-|------|--------|------|---------|-----------| :------: |---------|-------------|
-| role_id | `path` | uuid (formatted string) | `strfmt.UUID` |  | ✓ |  | The role id in UUID format |
-| body | `body` | [ModelLinkPoliciesToRoleRequest](#model-link-policies-to-role-request) | `models.ModelLinkPoliciesToRoleRequest` | | ✓ | | Link policies to role request |
-
-#### All responses
-| Code | Status | Description | Has headers | Schema |
-|------|--------|-------------|:-----------:|--------|
-| [200](#019791cc-06c7-7ebd-b750-8c93b165d503-200) | OK | OK |  | [schema](#019791cc-06c7-7ebd-b750-8c93b165d503-200-schema) |
-| [400](#019791cc-06c7-7ebd-b750-8c93b165d503-400) | Bad Request | Bad Request |  | [schema](#019791cc-06c7-7ebd-b750-8c93b165d503-400-schema) |
-| [409](#019791cc-06c7-7ebd-b750-8c93b165d503-409) | Conflict | Conflict |  | [schema](#019791cc-06c7-7ebd-b750-8c93b165d503-409-schema) |
-| [500](#019791cc-06c7-7ebd-b750-8c93b165d503-500) | Internal Server Error | Internal Server Error |  | [schema](#019791cc-06c7-7ebd-b750-8c93b165d503-500-schema) |
-
-#### Responses
-
-
-##### <span id="019791cc-06c7-7ebd-b750-8c93b165d503-200"></span> 200 - OK
-Status: OK
-
-###### <span id="019791cc-06c7-7ebd-b750-8c93b165d503-200-schema"></span> Schema
-   
-  
-
-[ModelHTTPMessage](#model-http-message)
-
-##### <span id="019791cc-06c7-7ebd-b750-8c93b165d503-400"></span> 400 - Bad Request
-Status: Bad Request
-
-###### <span id="019791cc-06c7-7ebd-b750-8c93b165d503-400-schema"></span> Schema
-   
-  
-
-[ModelHTTPMessage](#model-http-message)
-
-##### <span id="019791cc-06c7-7ebd-b750-8c93b165d503-409"></span> 409 - Conflict
-Status: Conflict
-
-###### <span id="019791cc-06c7-7ebd-b750-8c93b165d503-409-schema"></span> Schema
-   
-  
-
-[ModelHTTPMessage](#model-http-message)
-
-##### <span id="019791cc-06c7-7ebd-b750-8c93b165d503-500"></span> 500 - Internal Server Error
-Status: Internal Server Error
-
-###### <span id="019791cc-06c7-7ebd-b750-8c93b165d503-500-schema"></span> Schema
-   
-  
-
-[ModelHTTPMessage](#model-http-message)
-
-### <span id="019791cc-06c7-7ec1-aca1-291132927db6"></span> Unlink policies from role (*019791cc-06c7-7ec1-aca1-291132927db6*)
-
-```
-DELETE /roles/{role_id}/policies
-```
-
-Remove policy associations from a specific role
-
-#### Consumes
-  * application/json
-
-#### Produces
-  * application/json
-
-#### Security Requirements
-  * AccessToken
-
-#### Parameters
-
-| Name | Source | Type | Go type | Separator | Required | Default | Description |
-|------|--------|------|---------|-----------| :------: |---------|-------------|
-| role_id | `path` | uuid (formatted string) | `strfmt.UUID` |  | ✓ |  | The role id in UUID format |
-| body | `body` | [ModelUnlinkPoliciesFromRoleRequest](#model-unlink-policies-from-role-request) | `models.ModelUnlinkPoliciesFromRoleRequest` | | ✓ | | UnLink policies from role request |
-
-#### All responses
-| Code | Status | Description | Has headers | Schema |
-|------|--------|-------------|:-----------:|--------|
-| [200](#019791cc-06c7-7ec1-aca1-291132927db6-200) | OK | OK |  | [schema](#019791cc-06c7-7ec1-aca1-291132927db6-200-schema) |
-| [400](#019791cc-06c7-7ec1-aca1-291132927db6-400) | Bad Request | Bad Request |  | [schema](#019791cc-06c7-7ec1-aca1-291132927db6-400-schema) |
-| [409](#019791cc-06c7-7ec1-aca1-291132927db6-409) | Conflict | Conflict |  | [schema](#019791cc-06c7-7ec1-aca1-291132927db6-409-schema) |
-| [500](#019791cc-06c7-7ec1-aca1-291132927db6-500) | Internal Server Error | Internal Server Error |  | [schema](#019791cc-06c7-7ec1-aca1-291132927db6-500-schema) |
-
-#### Responses
-
-
-##### <span id="019791cc-06c7-7ec1-aca1-291132927db6-200"></span> 200 - OK
-Status: OK
-
-###### <span id="019791cc-06c7-7ec1-aca1-291132927db6-200-schema"></span> Schema
-   
-  
-
-[ModelHTTPMessage](#model-http-message)
-
-##### <span id="019791cc-06c7-7ec1-aca1-291132927db6-400"></span> 400 - Bad Request
-Status: Bad Request
-
-###### <span id="019791cc-06c7-7ec1-aca1-291132927db6-400-schema"></span> Schema
-   
-  
-
-[ModelHTTPMessage](#model-http-message)
-
-##### <span id="019791cc-06c7-7ec1-aca1-291132927db6-409"></span> 409 - Conflict
-Status: Conflict
-
-###### <span id="019791cc-06c7-7ec1-aca1-291132927db6-409-schema"></span> Schema
-   
-  
-
-[ModelHTTPMessage](#model-http-message)
-
-##### <span id="019791cc-06c7-7ec1-aca1-291132927db6-500"></span> 500 - Internal Server Error
-Status: Internal Server Error
-
-###### <span id="019791cc-06c7-7ec1-aca1-291132927db6-500-schema"></span> Schema
-   
-  
-
-[ModelHTTPMessage](#model-http-message)
-
-### <span id="019791cc-06c7-7ec5-87fe-096d6d2760a9"></span> List roles by user (*019791cc-06c7-7ec5-87fe-096d6d2760a9*)
-
-```
-GET /users/{user_id}/roles
-```
-
-Retrieve paginated list of roles assigned to a specific user
-
-#### Produces
-  * application/json
-
-#### Security Requirements
-  * AccessToken
-
-#### Parameters
-
-| Name | Source | Type | Go type | Separator | Required | Default | Description |
-|------|--------|------|---------|-----------| :------: |---------|-------------|
-| user_id | `path` | uuid (formatted string) | `strfmt.UUID` |  | ✓ |  | The user id in UUID format |
-| fields | `query` | string (formatted string) | `string` |  |  |  | Fields to return. Example: id,first_name,last_name |
-| filter | `query` | string (formatted string) | `string` |  |  |  | Filter field. Example: id=1 AND first_name='John' |
-| limit | `query` | int (formatted integer) | `int64` |  |  |  | Limit |
-| next_token | `query` | string (formatted string) | `string` |  |  |  | Next cursor |
-| prev_token | `query` | string (formatted string) | `string` |  |  |  | Previous cursor |
-| sort | `query` | string (formatted string) | `string` |  |  |  | Comma-separated list of fields to sort by. Example: first_name ASC, created_at DESC |
-
-#### All responses
-| Code | Status | Description | Has headers | Schema |
-|------|--------|-------------|:-----------:|--------|
-| [200](#019791cc-06c7-7ec5-87fe-096d6d2760a9-200) | OK | OK |  | [schema](#019791cc-06c7-7ec5-87fe-096d6d2760a9-200-schema) |
-| [400](#019791cc-06c7-7ec5-87fe-096d6d2760a9-400) | Bad Request | Bad Request |  | [schema](#019791cc-06c7-7ec5-87fe-096d6d2760a9-400-schema) |
-| [500](#019791cc-06c7-7ec5-87fe-096d6d2760a9-500) | Internal Server Error | Internal Server Error |  | [schema](#019791cc-06c7-7ec5-87fe-096d6d2760a9-500-schema) |
-
-#### Responses
-
-
-##### <span id="019791cc-06c7-7ec5-87fe-096d6d2760a9-200"></span> 200 - OK
-Status: OK
-
-###### <span id="019791cc-06c7-7ec5-87fe-096d6d2760a9-200-schema"></span> Schema
-   
-  
-
-[ModelListRolesResponse](#model-list-roles-response)
-
-##### <span id="019791cc-06c7-7ec5-87fe-096d6d2760a9-400"></span> 400 - Bad Request
-Status: Bad Request
-
-###### <span id="019791cc-06c7-7ec5-87fe-096d6d2760a9-400-schema"></span> Schema
-   
-  
-
-[ModelHTTPMessage](#model-http-message)
-
-##### <span id="019791cc-06c7-7ec5-87fe-096d6d2760a9-500"></span> 500 - Internal Server Error
-Status: Internal Server Error
-
-###### <span id="019791cc-06c7-7ec5-87fe-096d6d2760a9-500-schema"></span> Schema
-   
-  
-
-[ModelHTTPMessage](#model-http-message)
-
-### <span id="019791cc-06c7-7ecd-93da-d21bac8fd613"></span> List roles by policy (*019791cc-06c7-7ecd-93da-d21bac8fd613*)
-
-```
-GET /policies/{policy_id}/roles
-```
-
-Retrieve paginated list of roles associated with a specific policy
-
-#### Produces
-  * application/json
-
-#### Security Requirements
-  * AccessToken
-
-#### Parameters
-
-| Name | Source | Type | Go type | Separator | Required | Default | Description |
-|------|--------|------|---------|-----------| :------: |---------|-------------|
-| policy_id | `path` | uuid (formatted string) | `strfmt.UUID` |  | ✓ |  | The policy id in UUID format |
-| fields | `query` | string (formatted string) | `string` |  |  |  | Fields to return. Example: id,first_name,last_name |
-| filter | `query` | string (formatted string) | `string` |  |  |  | Filter field. Example: id=1 AND first_name='John' |
-| limit | `query` | int (formatted integer) | `int64` |  |  |  | Limit |
-| next_token | `query` | string (formatted string) | `string` |  |  |  | Next cursor |
-| prev_token | `query` | string (formatted string) | `string` |  |  |  | Previous cursor |
-| sort | `query` | string (formatted string) | `string` |  |  |  | Comma-separated list of fields to sort by. Example: first_name ASC, created_at DESC |
-
-#### All responses
-| Code | Status | Description | Has headers | Schema |
-|------|--------|-------------|:-----------:|--------|
-| [200](#019791cc-06c7-7ecd-93da-d21bac8fd613-200) | OK | OK |  | [schema](#019791cc-06c7-7ecd-93da-d21bac8fd613-200-schema) |
-| [400](#019791cc-06c7-7ecd-93da-d21bac8fd613-400) | Bad Request | Bad Request |  | [schema](#019791cc-06c7-7ecd-93da-d21bac8fd613-400-schema) |
-| [500](#019791cc-06c7-7ecd-93da-d21bac8fd613-500) | Internal Server Error | Internal Server Error |  | [schema](#019791cc-06c7-7ecd-93da-d21bac8fd613-500-schema) |
-
-#### Responses
-
-
-##### <span id="019791cc-06c7-7ecd-93da-d21bac8fd613-200"></span> 200 - OK
-Status: OK
-
-###### <span id="019791cc-06c7-7ecd-93da-d21bac8fd613-200-schema"></span> Schema
-   
-  
-
-[ModelListRolesResponse](#model-list-roles-response)
-
-##### <span id="019791cc-06c7-7ecd-93da-d21bac8fd613-400"></span> 400 - Bad Request
-Status: Bad Request
-
-###### <span id="019791cc-06c7-7ecd-93da-d21bac8fd613-400-schema"></span> Schema
-   
-  
-
-[ModelHTTPMessage](#model-http-message)
-
-##### <span id="019791cc-06c7-7ecd-93da-d21bac8fd613-500"></span> 500 - Internal Server Error
-Status: Internal Server Error
-
-###### <span id="019791cc-06c7-7ecd-93da-d21bac8fd613-500-schema"></span> Schema
-   
-  
-
-[ModelHTTPMessage](#model-http-message)
-
-### <span id="019791cc-06c7-7ed0-9140-556f721c5749"></span> Get user (*019791cc-06c7-7ed0-9140-556f721c5749*)
+### <span id="0198042a-f9c5-75df-b843-b92a4d5c590e"></span> Get user (*0198042a-f9c5-75df-b843-b92a4d5c590e*)
 
 ```
 GET /users/{user_id}
@@ -2093,51 +584,51 @@ Retrieve a specific user account by its unique identifier
 #### All responses
 | Code | Status | Description | Has headers | Schema |
 |------|--------|-------------|:-----------:|--------|
-| [200](#019791cc-06c7-7ed0-9140-556f721c5749-200) | OK | OK |  | [schema](#019791cc-06c7-7ed0-9140-556f721c5749-200-schema) |
-| [400](#019791cc-06c7-7ed0-9140-556f721c5749-400) | Bad Request | Bad Request |  | [schema](#019791cc-06c7-7ed0-9140-556f721c5749-400-schema) |
-| [404](#019791cc-06c7-7ed0-9140-556f721c5749-404) | Not Found | Not Found |  | [schema](#019791cc-06c7-7ed0-9140-556f721c5749-404-schema) |
-| [500](#019791cc-06c7-7ed0-9140-556f721c5749-500) | Internal Server Error | Internal Server Error |  | [schema](#019791cc-06c7-7ed0-9140-556f721c5749-500-schema) |
+| [200](#0198042a-f9c5-75df-b843-b92a4d5c590e-200) | OK | OK |  | [schema](#0198042a-f9c5-75df-b843-b92a4d5c590e-200-schema) |
+| [400](#0198042a-f9c5-75df-b843-b92a4d5c590e-400) | Bad Request | Bad Request |  | [schema](#0198042a-f9c5-75df-b843-b92a4d5c590e-400-schema) |
+| [404](#0198042a-f9c5-75df-b843-b92a4d5c590e-404) | Not Found | Not Found |  | [schema](#0198042a-f9c5-75df-b843-b92a4d5c590e-404-schema) |
+| [500](#0198042a-f9c5-75df-b843-b92a4d5c590e-500) | Internal Server Error | Internal Server Error |  | [schema](#0198042a-f9c5-75df-b843-b92a4d5c590e-500-schema) |
 
 #### Responses
 
 
-##### <span id="019791cc-06c7-7ed0-9140-556f721c5749-200"></span> 200 - OK
+##### <span id="0198042a-f9c5-75df-b843-b92a4d5c590e-200"></span> 200 - OK
 Status: OK
 
-###### <span id="019791cc-06c7-7ed0-9140-556f721c5749-200-schema"></span> Schema
+###### <span id="0198042a-f9c5-75df-b843-b92a4d5c590e-200-schema"></span> Schema
    
   
 
 [ModelUser](#model-user)
 
-##### <span id="019791cc-06c7-7ed0-9140-556f721c5749-400"></span> 400 - Bad Request
+##### <span id="0198042a-f9c5-75df-b843-b92a4d5c590e-400"></span> 400 - Bad Request
 Status: Bad Request
 
-###### <span id="019791cc-06c7-7ed0-9140-556f721c5749-400-schema"></span> Schema
+###### <span id="0198042a-f9c5-75df-b843-b92a4d5c590e-400-schema"></span> Schema
    
   
 
 [ModelHTTPMessage](#model-http-message)
 
-##### <span id="019791cc-06c7-7ed0-9140-556f721c5749-404"></span> 404 - Not Found
+##### <span id="0198042a-f9c5-75df-b843-b92a4d5c590e-404"></span> 404 - Not Found
 Status: Not Found
 
-###### <span id="019791cc-06c7-7ed0-9140-556f721c5749-404-schema"></span> Schema
+###### <span id="0198042a-f9c5-75df-b843-b92a4d5c590e-404-schema"></span> Schema
    
   
 
 [ModelHTTPMessage](#model-http-message)
 
-##### <span id="019791cc-06c7-7ed0-9140-556f721c5749-500"></span> 500 - Internal Server Error
+##### <span id="0198042a-f9c5-75df-b843-b92a4d5c590e-500"></span> 500 - Internal Server Error
 Status: Internal Server Error
 
-###### <span id="019791cc-06c7-7ed0-9140-556f721c5749-500-schema"></span> Schema
+###### <span id="0198042a-f9c5-75df-b843-b92a4d5c590e-500-schema"></span> Schema
    
   
 
 [ModelHTTPMessage](#model-http-message)
 
-### <span id="019791cc-06c7-7ed4-8f8b-2297e4565de3"></span> Create user (*019791cc-06c7-7ed4-8f8b-2297e4565de3*)
+### <span id="0198042a-f9c5-75e3-acf6-6901bb33ae65"></span> Create user (*0198042a-f9c5-75e3-acf6-6901bb33ae65*)
 
 ```
 POST /users
@@ -2163,51 +654,51 @@ Create a new user account with specified configuration
 #### All responses
 | Code | Status | Description | Has headers | Schema |
 |------|--------|-------------|:-----------:|--------|
-| [201](#019791cc-06c7-7ed4-8f8b-2297e4565de3-201) | Created | Created |  | [schema](#019791cc-06c7-7ed4-8f8b-2297e4565de3-201-schema) |
-| [400](#019791cc-06c7-7ed4-8f8b-2297e4565de3-400) | Bad Request | Bad Request |  | [schema](#019791cc-06c7-7ed4-8f8b-2297e4565de3-400-schema) |
-| [409](#019791cc-06c7-7ed4-8f8b-2297e4565de3-409) | Conflict | Conflict |  | [schema](#019791cc-06c7-7ed4-8f8b-2297e4565de3-409-schema) |
-| [500](#019791cc-06c7-7ed4-8f8b-2297e4565de3-500) | Internal Server Error | Internal Server Error |  | [schema](#019791cc-06c7-7ed4-8f8b-2297e4565de3-500-schema) |
+| [201](#0198042a-f9c5-75e3-acf6-6901bb33ae65-201) | Created | Created |  | [schema](#0198042a-f9c5-75e3-acf6-6901bb33ae65-201-schema) |
+| [400](#0198042a-f9c5-75e3-acf6-6901bb33ae65-400) | Bad Request | Bad Request |  | [schema](#0198042a-f9c5-75e3-acf6-6901bb33ae65-400-schema) |
+| [409](#0198042a-f9c5-75e3-acf6-6901bb33ae65-409) | Conflict | Conflict |  | [schema](#0198042a-f9c5-75e3-acf6-6901bb33ae65-409-schema) |
+| [500](#0198042a-f9c5-75e3-acf6-6901bb33ae65-500) | Internal Server Error | Internal Server Error |  | [schema](#0198042a-f9c5-75e3-acf6-6901bb33ae65-500-schema) |
 
 #### Responses
 
 
-##### <span id="019791cc-06c7-7ed4-8f8b-2297e4565de3-201"></span> 201 - Created
+##### <span id="0198042a-f9c5-75e3-acf6-6901bb33ae65-201"></span> 201 - Created
 Status: Created
 
-###### <span id="019791cc-06c7-7ed4-8f8b-2297e4565de3-201-schema"></span> Schema
+###### <span id="0198042a-f9c5-75e3-acf6-6901bb33ae65-201-schema"></span> Schema
    
   
 
 [ModelHTTPMessage](#model-http-message)
 
-##### <span id="019791cc-06c7-7ed4-8f8b-2297e4565de3-400"></span> 400 - Bad Request
+##### <span id="0198042a-f9c5-75e3-acf6-6901bb33ae65-400"></span> 400 - Bad Request
 Status: Bad Request
 
-###### <span id="019791cc-06c7-7ed4-8f8b-2297e4565de3-400-schema"></span> Schema
+###### <span id="0198042a-f9c5-75e3-acf6-6901bb33ae65-400-schema"></span> Schema
    
   
 
 [ModelHTTPMessage](#model-http-message)
 
-##### <span id="019791cc-06c7-7ed4-8f8b-2297e4565de3-409"></span> 409 - Conflict
+##### <span id="0198042a-f9c5-75e3-acf6-6901bb33ae65-409"></span> 409 - Conflict
 Status: Conflict
 
-###### <span id="019791cc-06c7-7ed4-8f8b-2297e4565de3-409-schema"></span> Schema
+###### <span id="0198042a-f9c5-75e3-acf6-6901bb33ae65-409-schema"></span> Schema
    
   
 
 [ModelHTTPMessage](#model-http-message)
 
-##### <span id="019791cc-06c7-7ed4-8f8b-2297e4565de3-500"></span> 500 - Internal Server Error
+##### <span id="0198042a-f9c5-75e3-acf6-6901bb33ae65-500"></span> 500 - Internal Server Error
 Status: Internal Server Error
 
-###### <span id="019791cc-06c7-7ed4-8f8b-2297e4565de3-500-schema"></span> Schema
+###### <span id="0198042a-f9c5-75e3-acf6-6901bb33ae65-500-schema"></span> Schema
    
   
 
 [ModelHTTPMessage](#model-http-message)
 
-### <span id="019791cc-06c7-7edc-94d6-843e3f99e96f"></span> Update user (*019791cc-06c7-7edc-94d6-843e3f99e96f*)
+### <span id="0198042a-f9c5-75e7-8cb9-231bee55c64e"></span> Update user (*0198042a-f9c5-75e7-8cb9-231bee55c64e*)
 
 ```
 PUT /users/{user_id}
@@ -2234,51 +725,51 @@ Modify an existing user account by its ID
 #### All responses
 | Code | Status | Description | Has headers | Schema |
 |------|--------|-------------|:-----------:|--------|
-| [200](#019791cc-06c7-7edc-94d6-843e3f99e96f-200) | OK | OK |  | [schema](#019791cc-06c7-7edc-94d6-843e3f99e96f-200-schema) |
-| [400](#019791cc-06c7-7edc-94d6-843e3f99e96f-400) | Bad Request | Bad Request |  | [schema](#019791cc-06c7-7edc-94d6-843e3f99e96f-400-schema) |
-| [409](#019791cc-06c7-7edc-94d6-843e3f99e96f-409) | Conflict | Conflict |  | [schema](#019791cc-06c7-7edc-94d6-843e3f99e96f-409-schema) |
-| [500](#019791cc-06c7-7edc-94d6-843e3f99e96f-500) | Internal Server Error | Internal Server Error |  | [schema](#019791cc-06c7-7edc-94d6-843e3f99e96f-500-schema) |
+| [200](#0198042a-f9c5-75e7-8cb9-231bee55c64e-200) | OK | OK |  | [schema](#0198042a-f9c5-75e7-8cb9-231bee55c64e-200-schema) |
+| [400](#0198042a-f9c5-75e7-8cb9-231bee55c64e-400) | Bad Request | Bad Request |  | [schema](#0198042a-f9c5-75e7-8cb9-231bee55c64e-400-schema) |
+| [409](#0198042a-f9c5-75e7-8cb9-231bee55c64e-409) | Conflict | Conflict |  | [schema](#0198042a-f9c5-75e7-8cb9-231bee55c64e-409-schema) |
+| [500](#0198042a-f9c5-75e7-8cb9-231bee55c64e-500) | Internal Server Error | Internal Server Error |  | [schema](#0198042a-f9c5-75e7-8cb9-231bee55c64e-500-schema) |
 
 #### Responses
 
 
-##### <span id="019791cc-06c7-7edc-94d6-843e3f99e96f-200"></span> 200 - OK
+##### <span id="0198042a-f9c5-75e7-8cb9-231bee55c64e-200"></span> 200 - OK
 Status: OK
 
-###### <span id="019791cc-06c7-7edc-94d6-843e3f99e96f-200-schema"></span> Schema
+###### <span id="0198042a-f9c5-75e7-8cb9-231bee55c64e-200-schema"></span> Schema
    
   
 
 [ModelHTTPMessage](#model-http-message)
 
-##### <span id="019791cc-06c7-7edc-94d6-843e3f99e96f-400"></span> 400 - Bad Request
+##### <span id="0198042a-f9c5-75e7-8cb9-231bee55c64e-400"></span> 400 - Bad Request
 Status: Bad Request
 
-###### <span id="019791cc-06c7-7edc-94d6-843e3f99e96f-400-schema"></span> Schema
+###### <span id="0198042a-f9c5-75e7-8cb9-231bee55c64e-400-schema"></span> Schema
    
   
 
 [ModelHTTPMessage](#model-http-message)
 
-##### <span id="019791cc-06c7-7edc-94d6-843e3f99e96f-409"></span> 409 - Conflict
+##### <span id="0198042a-f9c5-75e7-8cb9-231bee55c64e-409"></span> 409 - Conflict
 Status: Conflict
 
-###### <span id="019791cc-06c7-7edc-94d6-843e3f99e96f-409-schema"></span> Schema
+###### <span id="0198042a-f9c5-75e7-8cb9-231bee55c64e-409-schema"></span> Schema
    
   
 
 [ModelHTTPMessage](#model-http-message)
 
-##### <span id="019791cc-06c7-7edc-94d6-843e3f99e96f-500"></span> 500 - Internal Server Error
+##### <span id="0198042a-f9c5-75e7-8cb9-231bee55c64e-500"></span> 500 - Internal Server Error
 Status: Internal Server Error
 
-###### <span id="019791cc-06c7-7edc-94d6-843e3f99e96f-500-schema"></span> Schema
+###### <span id="0198042a-f9c5-75e7-8cb9-231bee55c64e-500-schema"></span> Schema
    
   
 
 [ModelHTTPMessage](#model-http-message)
 
-### <span id="019791cc-06c7-7ee0-85b7-45450ad476eb"></span> Delete user (*019791cc-06c7-7ee0-85b7-45450ad476eb*)
+### <span id="0198042a-f9c5-75eb-b683-6c1847af7108"></span> Delete user (*0198042a-f9c5-75eb-b683-6c1847af7108*)
 
 ```
 DELETE /users/{user_id}
@@ -2301,41 +792,41 @@ Remove a user account permanently from the system
 #### All responses
 | Code | Status | Description | Has headers | Schema |
 |------|--------|-------------|:-----------:|--------|
-| [200](#019791cc-06c7-7ee0-85b7-45450ad476eb-200) | OK | OK |  | [schema](#019791cc-06c7-7ee0-85b7-45450ad476eb-200-schema) |
-| [400](#019791cc-06c7-7ee0-85b7-45450ad476eb-400) | Bad Request | Bad Request |  | [schema](#019791cc-06c7-7ee0-85b7-45450ad476eb-400-schema) |
-| [500](#019791cc-06c7-7ee0-85b7-45450ad476eb-500) | Internal Server Error | Internal Server Error |  | [schema](#019791cc-06c7-7ee0-85b7-45450ad476eb-500-schema) |
+| [200](#0198042a-f9c5-75eb-b683-6c1847af7108-200) | OK | OK |  | [schema](#0198042a-f9c5-75eb-b683-6c1847af7108-200-schema) |
+| [400](#0198042a-f9c5-75eb-b683-6c1847af7108-400) | Bad Request | Bad Request |  | [schema](#0198042a-f9c5-75eb-b683-6c1847af7108-400-schema) |
+| [500](#0198042a-f9c5-75eb-b683-6c1847af7108-500) | Internal Server Error | Internal Server Error |  | [schema](#0198042a-f9c5-75eb-b683-6c1847af7108-500-schema) |
 
 #### Responses
 
 
-##### <span id="019791cc-06c7-7ee0-85b7-45450ad476eb-200"></span> 200 - OK
+##### <span id="0198042a-f9c5-75eb-b683-6c1847af7108-200"></span> 200 - OK
 Status: OK
 
-###### <span id="019791cc-06c7-7ee0-85b7-45450ad476eb-200-schema"></span> Schema
+###### <span id="0198042a-f9c5-75eb-b683-6c1847af7108-200-schema"></span> Schema
    
   
 
 [ModelHTTPMessage](#model-http-message)
 
-##### <span id="019791cc-06c7-7ee0-85b7-45450ad476eb-400"></span> 400 - Bad Request
+##### <span id="0198042a-f9c5-75eb-b683-6c1847af7108-400"></span> 400 - Bad Request
 Status: Bad Request
 
-###### <span id="019791cc-06c7-7ee0-85b7-45450ad476eb-400-schema"></span> Schema
+###### <span id="0198042a-f9c5-75eb-b683-6c1847af7108-400-schema"></span> Schema
    
   
 
 [ModelHTTPMessage](#model-http-message)
 
-##### <span id="019791cc-06c7-7ee0-85b7-45450ad476eb-500"></span> 500 - Internal Server Error
+##### <span id="0198042a-f9c5-75eb-b683-6c1847af7108-500"></span> 500 - Internal Server Error
 Status: Internal Server Error
 
-###### <span id="019791cc-06c7-7ee0-85b7-45450ad476eb-500-schema"></span> Schema
+###### <span id="0198042a-f9c5-75eb-b683-6c1847af7108-500-schema"></span> Schema
    
   
 
 [ModelHTTPMessage](#model-http-message)
 
-### <span id="019791cc-06c7-7ee4-8f2b-ea43720d520b"></span> List users (*019791cc-06c7-7ee4-8f2b-ea43720d520b*)
+### <span id="0198042a-f9c5-75ef-8ea1-29ecbbe01a2e"></span> List users (*0198042a-f9c5-75ef-8ea1-29ecbbe01a2e*)
 
 ```
 GET /users
@@ -2363,41 +854,41 @@ Retrieve paginated list of all users in the system
 #### All responses
 | Code | Status | Description | Has headers | Schema |
 |------|--------|-------------|:-----------:|--------|
-| [200](#019791cc-06c7-7ee4-8f2b-ea43720d520b-200) | OK | OK |  | [schema](#019791cc-06c7-7ee4-8f2b-ea43720d520b-200-schema) |
-| [400](#019791cc-06c7-7ee4-8f2b-ea43720d520b-400) | Bad Request | Bad Request |  | [schema](#019791cc-06c7-7ee4-8f2b-ea43720d520b-400-schema) |
-| [500](#019791cc-06c7-7ee4-8f2b-ea43720d520b-500) | Internal Server Error | Internal Server Error |  | [schema](#019791cc-06c7-7ee4-8f2b-ea43720d520b-500-schema) |
+| [200](#0198042a-f9c5-75ef-8ea1-29ecbbe01a2e-200) | OK | OK |  | [schema](#0198042a-f9c5-75ef-8ea1-29ecbbe01a2e-200-schema) |
+| [400](#0198042a-f9c5-75ef-8ea1-29ecbbe01a2e-400) | Bad Request | Bad Request |  | [schema](#0198042a-f9c5-75ef-8ea1-29ecbbe01a2e-400-schema) |
+| [500](#0198042a-f9c5-75ef-8ea1-29ecbbe01a2e-500) | Internal Server Error | Internal Server Error |  | [schema](#0198042a-f9c5-75ef-8ea1-29ecbbe01a2e-500-schema) |
 
 #### Responses
 
 
-##### <span id="019791cc-06c7-7ee4-8f2b-ea43720d520b-200"></span> 200 - OK
+##### <span id="0198042a-f9c5-75ef-8ea1-29ecbbe01a2e-200"></span> 200 - OK
 Status: OK
 
-###### <span id="019791cc-06c7-7ee4-8f2b-ea43720d520b-200-schema"></span> Schema
+###### <span id="0198042a-f9c5-75ef-8ea1-29ecbbe01a2e-200-schema"></span> Schema
    
   
 
 [ModelListUsersResponse](#model-list-users-response)
 
-##### <span id="019791cc-06c7-7ee4-8f2b-ea43720d520b-400"></span> 400 - Bad Request
+##### <span id="0198042a-f9c5-75ef-8ea1-29ecbbe01a2e-400"></span> 400 - Bad Request
 Status: Bad Request
 
-###### <span id="019791cc-06c7-7ee4-8f2b-ea43720d520b-400-schema"></span> Schema
+###### <span id="0198042a-f9c5-75ef-8ea1-29ecbbe01a2e-400-schema"></span> Schema
    
   
 
 [ModelHTTPMessage](#model-http-message)
 
-##### <span id="019791cc-06c7-7ee4-8f2b-ea43720d520b-500"></span> 500 - Internal Server Error
+##### <span id="0198042a-f9c5-75ef-8ea1-29ecbbe01a2e-500"></span> 500 - Internal Server Error
 Status: Internal Server Error
 
-###### <span id="019791cc-06c7-7ee4-8f2b-ea43720d520b-500-schema"></span> Schema
+###### <span id="0198042a-f9c5-75ef-8ea1-29ecbbe01a2e-500-schema"></span> Schema
    
   
 
 [ModelHTTPMessage](#model-http-message)
 
-### <span id="019791cc-06c7-7eec-83f3-bcaed0c4d46f"></span> Link roles to user (*019791cc-06c7-7eec-83f3-bcaed0c4d46f*)
+### <span id="0198042a-f9c5-75f3-985f-d30e67bb3688"></span> Link roles to user (*0198042a-f9c5-75f3-985f-d30e67bb3688*)
 
 ```
 POST /users/{user_id}/roles
@@ -2424,51 +915,51 @@ Associate multiple roles with a user within a specific project
 #### All responses
 | Code | Status | Description | Has headers | Schema |
 |------|--------|-------------|:-----------:|--------|
-| [200](#019791cc-06c7-7eec-83f3-bcaed0c4d46f-200) | OK | OK |  | [schema](#019791cc-06c7-7eec-83f3-bcaed0c4d46f-200-schema) |
-| [400](#019791cc-06c7-7eec-83f3-bcaed0c4d46f-400) | Bad Request | Bad Request |  | [schema](#019791cc-06c7-7eec-83f3-bcaed0c4d46f-400-schema) |
-| [409](#019791cc-06c7-7eec-83f3-bcaed0c4d46f-409) | Conflict | Conflict |  | [schema](#019791cc-06c7-7eec-83f3-bcaed0c4d46f-409-schema) |
-| [500](#019791cc-06c7-7eec-83f3-bcaed0c4d46f-500) | Internal Server Error | Internal Server Error |  | [schema](#019791cc-06c7-7eec-83f3-bcaed0c4d46f-500-schema) |
+| [200](#0198042a-f9c5-75f3-985f-d30e67bb3688-200) | OK | OK |  | [schema](#0198042a-f9c5-75f3-985f-d30e67bb3688-200-schema) |
+| [400](#0198042a-f9c5-75f3-985f-d30e67bb3688-400) | Bad Request | Bad Request |  | [schema](#0198042a-f9c5-75f3-985f-d30e67bb3688-400-schema) |
+| [409](#0198042a-f9c5-75f3-985f-d30e67bb3688-409) | Conflict | Conflict |  | [schema](#0198042a-f9c5-75f3-985f-d30e67bb3688-409-schema) |
+| [500](#0198042a-f9c5-75f3-985f-d30e67bb3688-500) | Internal Server Error | Internal Server Error |  | [schema](#0198042a-f9c5-75f3-985f-d30e67bb3688-500-schema) |
 
 #### Responses
 
 
-##### <span id="019791cc-06c7-7eec-83f3-bcaed0c4d46f-200"></span> 200 - OK
+##### <span id="0198042a-f9c5-75f3-985f-d30e67bb3688-200"></span> 200 - OK
 Status: OK
 
-###### <span id="019791cc-06c7-7eec-83f3-bcaed0c4d46f-200-schema"></span> Schema
+###### <span id="0198042a-f9c5-75f3-985f-d30e67bb3688-200-schema"></span> Schema
    
   
 
 [ModelHTTPMessage](#model-http-message)
 
-##### <span id="019791cc-06c7-7eec-83f3-bcaed0c4d46f-400"></span> 400 - Bad Request
+##### <span id="0198042a-f9c5-75f3-985f-d30e67bb3688-400"></span> 400 - Bad Request
 Status: Bad Request
 
-###### <span id="019791cc-06c7-7eec-83f3-bcaed0c4d46f-400-schema"></span> Schema
+###### <span id="0198042a-f9c5-75f3-985f-d30e67bb3688-400-schema"></span> Schema
    
   
 
 [ModelHTTPMessage](#model-http-message)
 
-##### <span id="019791cc-06c7-7eec-83f3-bcaed0c4d46f-409"></span> 409 - Conflict
+##### <span id="0198042a-f9c5-75f3-985f-d30e67bb3688-409"></span> 409 - Conflict
 Status: Conflict
 
-###### <span id="019791cc-06c7-7eec-83f3-bcaed0c4d46f-409-schema"></span> Schema
+###### <span id="0198042a-f9c5-75f3-985f-d30e67bb3688-409-schema"></span> Schema
    
   
 
 [ModelHTTPMessage](#model-http-message)
 
-##### <span id="019791cc-06c7-7eec-83f3-bcaed0c4d46f-500"></span> 500 - Internal Server Error
+##### <span id="0198042a-f9c5-75f3-985f-d30e67bb3688-500"></span> 500 - Internal Server Error
 Status: Internal Server Error
 
-###### <span id="019791cc-06c7-7eec-83f3-bcaed0c4d46f-500-schema"></span> Schema
+###### <span id="0198042a-f9c5-75f3-985f-d30e67bb3688-500-schema"></span> Schema
    
   
 
 [ModelHTTPMessage](#model-http-message)
 
-### <span id="019791cc-06c7-7ef0-9394-d4ac3f52e94c"></span> Unlink roles from user (*019791cc-06c7-7ef0-9394-d4ac3f52e94c*)
+### <span id="0198042a-f9c5-75f7-b802-343518ee3788"></span> Unlink roles from user (*0198042a-f9c5-75f7-b802-343518ee3788*)
 
 ```
 DELETE /users/{user_id}/roles
@@ -2495,51 +986,51 @@ Remove role associations from a user within a specific project
 #### All responses
 | Code | Status | Description | Has headers | Schema |
 |------|--------|-------------|:-----------:|--------|
-| [200](#019791cc-06c7-7ef0-9394-d4ac3f52e94c-200) | OK | OK |  | [schema](#019791cc-06c7-7ef0-9394-d4ac3f52e94c-200-schema) |
-| [400](#019791cc-06c7-7ef0-9394-d4ac3f52e94c-400) | Bad Request | Bad Request |  | [schema](#019791cc-06c7-7ef0-9394-d4ac3f52e94c-400-schema) |
-| [409](#019791cc-06c7-7ef0-9394-d4ac3f52e94c-409) | Conflict | Conflict |  | [schema](#019791cc-06c7-7ef0-9394-d4ac3f52e94c-409-schema) |
-| [500](#019791cc-06c7-7ef0-9394-d4ac3f52e94c-500) | Internal Server Error | Internal Server Error |  | [schema](#019791cc-06c7-7ef0-9394-d4ac3f52e94c-500-schema) |
+| [200](#0198042a-f9c5-75f7-b802-343518ee3788-200) | OK | OK |  | [schema](#0198042a-f9c5-75f7-b802-343518ee3788-200-schema) |
+| [400](#0198042a-f9c5-75f7-b802-343518ee3788-400) | Bad Request | Bad Request |  | [schema](#0198042a-f9c5-75f7-b802-343518ee3788-400-schema) |
+| [409](#0198042a-f9c5-75f7-b802-343518ee3788-409) | Conflict | Conflict |  | [schema](#0198042a-f9c5-75f7-b802-343518ee3788-409-schema) |
+| [500](#0198042a-f9c5-75f7-b802-343518ee3788-500) | Internal Server Error | Internal Server Error |  | [schema](#0198042a-f9c5-75f7-b802-343518ee3788-500-schema) |
 
 #### Responses
 
 
-##### <span id="019791cc-06c7-7ef0-9394-d4ac3f52e94c-200"></span> 200 - OK
+##### <span id="0198042a-f9c5-75f7-b802-343518ee3788-200"></span> 200 - OK
 Status: OK
 
-###### <span id="019791cc-06c7-7ef0-9394-d4ac3f52e94c-200-schema"></span> Schema
+###### <span id="0198042a-f9c5-75f7-b802-343518ee3788-200-schema"></span> Schema
    
   
 
 [ModelHTTPMessage](#model-http-message)
 
-##### <span id="019791cc-06c7-7ef0-9394-d4ac3f52e94c-400"></span> 400 - Bad Request
+##### <span id="0198042a-f9c5-75f7-b802-343518ee3788-400"></span> 400 - Bad Request
 Status: Bad Request
 
-###### <span id="019791cc-06c7-7ef0-9394-d4ac3f52e94c-400-schema"></span> Schema
+###### <span id="0198042a-f9c5-75f7-b802-343518ee3788-400-schema"></span> Schema
    
   
 
 [ModelHTTPMessage](#model-http-message)
 
-##### <span id="019791cc-06c7-7ef0-9394-d4ac3f52e94c-409"></span> 409 - Conflict
+##### <span id="0198042a-f9c5-75f7-b802-343518ee3788-409"></span> 409 - Conflict
 Status: Conflict
 
-###### <span id="019791cc-06c7-7ef0-9394-d4ac3f52e94c-409-schema"></span> Schema
+###### <span id="0198042a-f9c5-75f7-b802-343518ee3788-409-schema"></span> Schema
    
   
 
 [ModelHTTPMessage](#model-http-message)
 
-##### <span id="019791cc-06c7-7ef0-9394-d4ac3f52e94c-500"></span> 500 - Internal Server Error
+##### <span id="0198042a-f9c5-75f7-b802-343518ee3788-500"></span> 500 - Internal Server Error
 Status: Internal Server Error
 
-###### <span id="019791cc-06c7-7ef0-9394-d4ac3f52e94c-500-schema"></span> Schema
+###### <span id="0198042a-f9c5-75f7-b802-343518ee3788-500-schema"></span> Schema
    
   
 
 [ModelHTTPMessage](#model-http-message)
 
-### <span id="019791cc-06c7-7ef4-afa5-81125e9dcde9"></span> Get user authorization (*019791cc-06c7-7ef4-afa5-81125e9dcde9*)
+### <span id="0198042a-f9c5-75fb-b324-ec962beb2277"></span> Get user authorization (*0198042a-f9c5-75fb-b324-ec962beb2277*)
 
 ```
 GET /users/{user_id}/authz
@@ -2562,51 +1053,51 @@ Retrieve user authorization permissions and roles for access control
 #### All responses
 | Code | Status | Description | Has headers | Schema |
 |------|--------|-------------|:-----------:|--------|
-| [200](#019791cc-06c7-7ef4-afa5-81125e9dcde9-200) | OK | OK |  | [schema](#019791cc-06c7-7ef4-afa5-81125e9dcde9-200-schema) |
-| [400](#019791cc-06c7-7ef4-afa5-81125e9dcde9-400) | Bad Request | Bad Request |  | [schema](#019791cc-06c7-7ef4-afa5-81125e9dcde9-400-schema) |
-| [404](#019791cc-06c7-7ef4-afa5-81125e9dcde9-404) | Not Found | Not Found |  | [schema](#019791cc-06c7-7ef4-afa5-81125e9dcde9-404-schema) |
-| [500](#019791cc-06c7-7ef4-afa5-81125e9dcde9-500) | Internal Server Error | Internal Server Error |  | [schema](#019791cc-06c7-7ef4-afa5-81125e9dcde9-500-schema) |
+| [200](#0198042a-f9c5-75fb-b324-ec962beb2277-200) | OK | OK |  | [schema](#0198042a-f9c5-75fb-b324-ec962beb2277-200-schema) |
+| [400](#0198042a-f9c5-75fb-b324-ec962beb2277-400) | Bad Request | Bad Request |  | [schema](#0198042a-f9c5-75fb-b324-ec962beb2277-400-schema) |
+| [404](#0198042a-f9c5-75fb-b324-ec962beb2277-404) | Not Found | Not Found |  | [schema](#0198042a-f9c5-75fb-b324-ec962beb2277-404-schema) |
+| [500](#0198042a-f9c5-75fb-b324-ec962beb2277-500) | Internal Server Error | Internal Server Error |  | [schema](#0198042a-f9c5-75fb-b324-ec962beb2277-500-schema) |
 
 #### Responses
 
 
-##### <span id="019791cc-06c7-7ef4-afa5-81125e9dcde9-200"></span> 200 - OK
+##### <span id="0198042a-f9c5-75fb-b324-ec962beb2277-200"></span> 200 - OK
 Status: OK
 
-###### <span id="019791cc-06c7-7ef4-afa5-81125e9dcde9-200-schema"></span> Schema
+###### <span id="0198042a-f9c5-75fb-b324-ec962beb2277-200-schema"></span> Schema
    
   
 
 any
 
-##### <span id="019791cc-06c7-7ef4-afa5-81125e9dcde9-400"></span> 400 - Bad Request
+##### <span id="0198042a-f9c5-75fb-b324-ec962beb2277-400"></span> 400 - Bad Request
 Status: Bad Request
 
-###### <span id="019791cc-06c7-7ef4-afa5-81125e9dcde9-400-schema"></span> Schema
+###### <span id="0198042a-f9c5-75fb-b324-ec962beb2277-400-schema"></span> Schema
    
   
 
 [ModelHTTPMessage](#model-http-message)
 
-##### <span id="019791cc-06c7-7ef4-afa5-81125e9dcde9-404"></span> 404 - Not Found
+##### <span id="0198042a-f9c5-75fb-b324-ec962beb2277-404"></span> 404 - Not Found
 Status: Not Found
 
-###### <span id="019791cc-06c7-7ef4-afa5-81125e9dcde9-404-schema"></span> Schema
+###### <span id="0198042a-f9c5-75fb-b324-ec962beb2277-404-schema"></span> Schema
    
   
 
 [ModelHTTPMessage](#model-http-message)
 
-##### <span id="019791cc-06c7-7ef4-afa5-81125e9dcde9-500"></span> 500 - Internal Server Error
+##### <span id="0198042a-f9c5-75fb-b324-ec962beb2277-500"></span> 500 - Internal Server Error
 Status: Internal Server Error
 
-###### <span id="019791cc-06c7-7ef4-afa5-81125e9dcde9-500-schema"></span> Schema
+###### <span id="0198042a-f9c5-75fb-b324-ec962beb2277-500-schema"></span> Schema
    
   
 
 [ModelHTTPMessage](#model-http-message)
 
-### <span id="019791cc-06c7-7efb-99c2-b25af11e600c"></span> List users by role (*019791cc-06c7-7efb-99c2-b25af11e600c*)
+### <span id="0198042a-f9c5-75ff-bbfc-224bf4342886"></span> List users by role (*0198042a-f9c5-75ff-bbfc-224bf4342886*)
 
 ```
 GET /roles/{role_id}/users
@@ -2635,406 +1126,41 @@ Retrieve paginated list of users associated with a specific role
 #### All responses
 | Code | Status | Description | Has headers | Schema |
 |------|--------|-------------|:-----------:|--------|
-| [200](#019791cc-06c7-7efb-99c2-b25af11e600c-200) | OK | OK |  | [schema](#019791cc-06c7-7efb-99c2-b25af11e600c-200-schema) |
-| [400](#019791cc-06c7-7efb-99c2-b25af11e600c-400) | Bad Request | Bad Request |  | [schema](#019791cc-06c7-7efb-99c2-b25af11e600c-400-schema) |
-| [500](#019791cc-06c7-7efb-99c2-b25af11e600c-500) | Internal Server Error | Internal Server Error |  | [schema](#019791cc-06c7-7efb-99c2-b25af11e600c-500-schema) |
+| [200](#0198042a-f9c5-75ff-bbfc-224bf4342886-200) | OK | OK |  | [schema](#0198042a-f9c5-75ff-bbfc-224bf4342886-200-schema) |
+| [400](#0198042a-f9c5-75ff-bbfc-224bf4342886-400) | Bad Request | Bad Request |  | [schema](#0198042a-f9c5-75ff-bbfc-224bf4342886-400-schema) |
+| [500](#0198042a-f9c5-75ff-bbfc-224bf4342886-500) | Internal Server Error | Internal Server Error |  | [schema](#0198042a-f9c5-75ff-bbfc-224bf4342886-500-schema) |
 
 #### Responses
 
 
-##### <span id="019791cc-06c7-7efb-99c2-b25af11e600c-200"></span> 200 - OK
+##### <span id="0198042a-f9c5-75ff-bbfc-224bf4342886-200"></span> 200 - OK
 Status: OK
 
-###### <span id="019791cc-06c7-7efb-99c2-b25af11e600c-200-schema"></span> Schema
+###### <span id="0198042a-f9c5-75ff-bbfc-224bf4342886-200-schema"></span> Schema
    
   
 
 [ModelListUsersResponse](#model-list-users-response)
 
-##### <span id="019791cc-06c7-7efb-99c2-b25af11e600c-400"></span> 400 - Bad Request
+##### <span id="0198042a-f9c5-75ff-bbfc-224bf4342886-400"></span> 400 - Bad Request
 Status: Bad Request
 
-###### <span id="019791cc-06c7-7efb-99c2-b25af11e600c-400-schema"></span> Schema
+###### <span id="0198042a-f9c5-75ff-bbfc-224bf4342886-400-schema"></span> Schema
    
   
 
 [ModelHTTPMessage](#model-http-message)
 
-##### <span id="019791cc-06c7-7efb-99c2-b25af11e600c-500"></span> 500 - Internal Server Error
+##### <span id="0198042a-f9c5-75ff-bbfc-224bf4342886-500"></span> 500 - Internal Server Error
 Status: Internal Server Error
 
-###### <span id="019791cc-06c7-7efb-99c2-b25af11e600c-500-schema"></span> Schema
+###### <span id="0198042a-f9c5-75ff-bbfc-224bf4342886-500-schema"></span> Schema
    
   
 
 [ModelHTTPMessage](#model-http-message)
 
-### <span id="019791cc-06c7-7eff-a1df-fbc2ad0b27c9"></span> Get version (*019791cc-06c7-7eff-a1df-fbc2ad0b27c9*)
-
-```
-GET /version
-```
-
-Retrieve the current version and build information of the service
-
-#### Produces
-  * application/json
-
-#### All responses
-| Code | Status | Description | Has headers | Schema |
-|------|--------|-------------|:-----------:|--------|
-| [200](#019791cc-06c7-7eff-a1df-fbc2ad0b27c9-200) | OK | OK |  | [schema](#019791cc-06c7-7eff-a1df-fbc2ad0b27c9-200-schema) |
-| [500](#019791cc-06c7-7eff-a1df-fbc2ad0b27c9-500) | Internal Server Error | Internal Server Error |  | [schema](#019791cc-06c7-7eff-a1df-fbc2ad0b27c9-500-schema) |
-
-#### Responses
-
-
-##### <span id="019791cc-06c7-7eff-a1df-fbc2ad0b27c9-200"></span> 200 - OK
-Status: OK
-
-###### <span id="019791cc-06c7-7eff-a1df-fbc2ad0b27c9-200-schema"></span> Schema
-   
-  
-
-[ModelVersion](#model-version)
-
-##### <span id="019791cc-06c7-7eff-a1df-fbc2ad0b27c9-500"></span> 500 - Internal Server Error
-Status: Internal Server Error
-
-###### <span id="019791cc-06c7-7eff-a1df-fbc2ad0b27c9-500-schema"></span> Schema
-   
-  
-
-[ModelHTTPMessage](#model-http-message)
-
-### <span id="019797e6-138a-7cf1-b7bb-fa9c5e168c49"></span> List projects (*019797e6-138a-7cf1-b7bb-fa9c5e168c49*)
-
-```
-GET /projects
-```
-
-Retrieve paginated list of all projects in the system
-
-#### Produces
-  * application/json
-
-#### Security Requirements
-  * AccessToken
-
-#### Parameters
-
-| Name | Source | Type | Go type | Separator | Required | Default | Description |
-|------|--------|------|---------|-----------| :------: |---------|-------------|
-| fields | `query` | string (formatted string) | `string` |  |  |  | Fields to return. Example: id,first_name,last_name |
-| filter | `query` | string (formatted string) | `string` |  |  |  | Filter field. Example: id=1 AND first_name='John' |
-| limit | `query` | int (formatted integer) | `int64` |  |  |  | Limit |
-| next_token | `query` | string (formatted string) | `string` |  |  |  | Next cursor |
-| prev_token | `query` | string (formatted string) | `string` |  |  |  | Previous cursor |
-| sort | `query` | string (formatted string) | `string` |  |  |  | Comma-separated list of fields to sort by. Example: first_name ASC, created_at DESC |
-
-#### All responses
-| Code | Status | Description | Has headers | Schema |
-|------|--------|-------------|:-----------:|--------|
-| [200](#019797e6-138a-7cf1-b7bb-fa9c5e168c49-200) | OK | OK |  | [schema](#019797e6-138a-7cf1-b7bb-fa9c5e168c49-200-schema) |
-| [400](#019797e6-138a-7cf1-b7bb-fa9c5e168c49-400) | Bad Request | Bad Request |  | [schema](#019797e6-138a-7cf1-b7bb-fa9c5e168c49-400-schema) |
-| [500](#019797e6-138a-7cf1-b7bb-fa9c5e168c49-500) | Internal Server Error | Internal Server Error |  | [schema](#019797e6-138a-7cf1-b7bb-fa9c5e168c49-500-schema) |
-
-#### Responses
-
-
-##### <span id="019797e6-138a-7cf1-b7bb-fa9c5e168c49-200"></span> 200 - OK
-Status: OK
-
-###### <span id="019797e6-138a-7cf1-b7bb-fa9c5e168c49-200-schema"></span> Schema
-   
-  
-
-[ModelListProjectsResponse](#model-list-projects-response)
-
-##### <span id="019797e6-138a-7cf1-b7bb-fa9c5e168c49-400"></span> 400 - Bad Request
-Status: Bad Request
-
-###### <span id="019797e6-138a-7cf1-b7bb-fa9c5e168c49-400-schema"></span> Schema
-   
-  
-
-[ModelHTTPMessage](#model-http-message)
-
-##### <span id="019797e6-138a-7cf1-b7bb-fa9c5e168c49-500"></span> 500 - Internal Server Error
-Status: Internal Server Error
-
-###### <span id="019797e6-138a-7cf1-b7bb-fa9c5e168c49-500-schema"></span> Schema
-   
-  
-
-[ModelHTTPMessage](#model-http-message)
-
-### <span id="019797e6-138a-7cf4-8694-e4611baded39"></span> Delete project (*019797e6-138a-7cf4-8694-e4611baded39*)
-
-```
-DELETE /projects/{project_id}
-```
-
-Remove a project permanently from the system
-
-#### Produces
-  * application/json
-
-#### Security Requirements
-  * AccessToken
-
-#### Parameters
-
-| Name | Source | Type | Go type | Separator | Required | Default | Description |
-|------|--------|------|---------|-----------| :------: |---------|-------------|
-| project_id | `path` | uuid (formatted string) | `strfmt.UUID` |  | ✓ |  | The project id in UUID format |
-
-#### All responses
-| Code | Status | Description | Has headers | Schema |
-|------|--------|-------------|:-----------:|--------|
-| [200](#019797e6-138a-7cf4-8694-e4611baded39-200) | OK | OK |  | [schema](#019797e6-138a-7cf4-8694-e4611baded39-200-schema) |
-| [400](#019797e6-138a-7cf4-8694-e4611baded39-400) | Bad Request | Bad Request |  | [schema](#019797e6-138a-7cf4-8694-e4611baded39-400-schema) |
-| [500](#019797e6-138a-7cf4-8694-e4611baded39-500) | Internal Server Error | Internal Server Error |  | [schema](#019797e6-138a-7cf4-8694-e4611baded39-500-schema) |
-
-#### Responses
-
-
-##### <span id="019797e6-138a-7cf4-8694-e4611baded39-200"></span> 200 - OK
-Status: OK
-
-###### <span id="019797e6-138a-7cf4-8694-e4611baded39-200-schema"></span> Schema
-   
-  
-
-[ModelHTTPMessage](#model-http-message)
-
-##### <span id="019797e6-138a-7cf4-8694-e4611baded39-400"></span> 400 - Bad Request
-Status: Bad Request
-
-###### <span id="019797e6-138a-7cf4-8694-e4611baded39-400-schema"></span> Schema
-   
-  
-
-[ModelHTTPMessage](#model-http-message)
-
-##### <span id="019797e6-138a-7cf4-8694-e4611baded39-500"></span> 500 - Internal Server Error
-Status: Internal Server Error
-
-###### <span id="019797e6-138a-7cf4-8694-e4611baded39-500-schema"></span> Schema
-   
-  
-
-[ModelHTTPMessage](#model-http-message)
-
-### <span id="019797e6-138a-7cf8-9887-e4c44ad0ae19"></span> Update project (*019797e6-138a-7cf8-9887-e4c44ad0ae19*)
-
-```
-PUT /projects/{project_id}
-```
-
-Modify an existing project by its ID
-
-#### Consumes
-  * application/json
-
-#### Produces
-  * application/json
-
-#### Security Requirements
-  * AccessToken
-
-#### Parameters
-
-| Name | Source | Type | Go type | Separator | Required | Default | Description |
-|------|--------|------|---------|-----------| :------: |---------|-------------|
-| project_id | `path` | uuid (formatted string) | `strfmt.UUID` |  | ✓ |  | The project id in UUID format |
-| body | `body` | [ModelUpdateProjectRequest](#model-update-project-request) | `models.ModelUpdateProjectRequest` | | ✓ | | Update Project Request |
-
-#### All responses
-| Code | Status | Description | Has headers | Schema |
-|------|--------|-------------|:-----------:|--------|
-| [200](#019797e6-138a-7cf8-9887-e4c44ad0ae19-200) | OK | OK |  | [schema](#019797e6-138a-7cf8-9887-e4c44ad0ae19-200-schema) |
-| [400](#019797e6-138a-7cf8-9887-e4c44ad0ae19-400) | Bad Request | Bad Request |  | [schema](#019797e6-138a-7cf8-9887-e4c44ad0ae19-400-schema) |
-| [409](#019797e6-138a-7cf8-9887-e4c44ad0ae19-409) | Conflict | Conflict |  | [schema](#019797e6-138a-7cf8-9887-e4c44ad0ae19-409-schema) |
-| [500](#019797e6-138a-7cf8-9887-e4c44ad0ae19-500) | Internal Server Error | Internal Server Error |  | [schema](#019797e6-138a-7cf8-9887-e4c44ad0ae19-500-schema) |
-
-#### Responses
-
-
-##### <span id="019797e6-138a-7cf8-9887-e4c44ad0ae19-200"></span> 200 - OK
-Status: OK
-
-###### <span id="019797e6-138a-7cf8-9887-e4c44ad0ae19-200-schema"></span> Schema
-   
-  
-
-[ModelHTTPMessage](#model-http-message)
-
-##### <span id="019797e6-138a-7cf8-9887-e4c44ad0ae19-400"></span> 400 - Bad Request
-Status: Bad Request
-
-###### <span id="019797e6-138a-7cf8-9887-e4c44ad0ae19-400-schema"></span> Schema
-   
-  
-
-[ModelHTTPMessage](#model-http-message)
-
-##### <span id="019797e6-138a-7cf8-9887-e4c44ad0ae19-409"></span> 409 - Conflict
-Status: Conflict
-
-###### <span id="019797e6-138a-7cf8-9887-e4c44ad0ae19-409-schema"></span> Schema
-   
-  
-
-[ModelHTTPMessage](#model-http-message)
-
-##### <span id="019797e6-138a-7cf8-9887-e4c44ad0ae19-500"></span> 500 - Internal Server Error
-Status: Internal Server Error
-
-###### <span id="019797e6-138a-7cf8-9887-e4c44ad0ae19-500-schema"></span> Schema
-   
-  
-
-[ModelHTTPMessage](#model-http-message)
-
-### <span id="019797e6-138a-7d00-98db-740f21794f11"></span> Create project (*019797e6-138a-7d00-98db-740f21794f11*)
-
-```
-POST /projects
-```
-
-Create a new project with specified configuration
-
-#### Consumes
-  * application/json
-
-#### Produces
-  * application/json
-
-#### Security Requirements
-  * AccessToken
-
-#### Parameters
-
-| Name | Source | Type | Go type | Separator | Required | Default | Description |
-|------|--------|------|---------|-----------| :------: |---------|-------------|
-| body | `body` | [ModelCreateProjectRequest](#model-create-project-request) | `models.ModelCreateProjectRequest` | | ✓ | | Create Project Request |
-
-#### All responses
-| Code | Status | Description | Has headers | Schema |
-|------|--------|-------------|:-----------:|--------|
-| [201](#019797e6-138a-7d00-98db-740f21794f11-201) | Created | Created |  | [schema](#019797e6-138a-7d00-98db-740f21794f11-201-schema) |
-| [400](#019797e6-138a-7d00-98db-740f21794f11-400) | Bad Request | Bad Request |  | [schema](#019797e6-138a-7d00-98db-740f21794f11-400-schema) |
-| [409](#019797e6-138a-7d00-98db-740f21794f11-409) | Conflict | Conflict |  | [schema](#019797e6-138a-7d00-98db-740f21794f11-409-schema) |
-| [500](#019797e6-138a-7d00-98db-740f21794f11-500) | Internal Server Error | Internal Server Error |  | [schema](#019797e6-138a-7d00-98db-740f21794f11-500-schema) |
-
-#### Responses
-
-
-##### <span id="019797e6-138a-7d00-98db-740f21794f11-201"></span> 201 - Created
-Status: Created
-
-###### <span id="019797e6-138a-7d00-98db-740f21794f11-201-schema"></span> Schema
-   
-  
-
-[ModelHTTPMessage](#model-http-message)
-
-##### <span id="019797e6-138a-7d00-98db-740f21794f11-400"></span> 400 - Bad Request
-Status: Bad Request
-
-###### <span id="019797e6-138a-7d00-98db-740f21794f11-400-schema"></span> Schema
-   
-  
-
-[ModelHTTPMessage](#model-http-message)
-
-##### <span id="019797e6-138a-7d00-98db-740f21794f11-409"></span> 409 - Conflict
-Status: Conflict
-
-###### <span id="019797e6-138a-7d00-98db-740f21794f11-409-schema"></span> Schema
-   
-  
-
-[ModelHTTPMessage](#model-http-message)
-
-##### <span id="019797e6-138a-7d00-98db-740f21794f11-500"></span> 500 - Internal Server Error
-Status: Internal Server Error
-
-###### <span id="019797e6-138a-7d00-98db-740f21794f11-500-schema"></span> Schema
-   
-  
-
-[ModelHTTPMessage](#model-http-message)
-
-### <span id="019797e6-138a-7d04-8db3-1d4755b25db3"></span> Get project (*019797e6-138a-7d04-8db3-1d4755b25db3*)
-
-```
-GET /projects/{project_id}
-```
-
-Retrieve a specific project by its unique identifier
-
-#### Produces
-  * application/json
-
-#### Security Requirements
-  * AccessToken
-
-#### Parameters
-
-| Name | Source | Type | Go type | Separator | Required | Default | Description |
-|------|--------|------|---------|-----------| :------: |---------|-------------|
-| project_id | `path` | uuid (formatted string) | `strfmt.UUID` |  | ✓ |  | The project id in UUID format |
-
-#### All responses
-| Code | Status | Description | Has headers | Schema |
-|------|--------|-------------|:-----------:|--------|
-| [200](#019797e6-138a-7d04-8db3-1d4755b25db3-200) | OK | OK |  | [schema](#019797e6-138a-7d04-8db3-1d4755b25db3-200-schema) |
-| [400](#019797e6-138a-7d04-8db3-1d4755b25db3-400) | Bad Request | Bad Request |  | [schema](#019797e6-138a-7d04-8db3-1d4755b25db3-400-schema) |
-| [404](#019797e6-138a-7d04-8db3-1d4755b25db3-404) | Not Found | Not Found |  | [schema](#019797e6-138a-7d04-8db3-1d4755b25db3-404-schema) |
-| [500](#019797e6-138a-7d04-8db3-1d4755b25db3-500) | Internal Server Error | Internal Server Error |  | [schema](#019797e6-138a-7d04-8db3-1d4755b25db3-500-schema) |
-
-#### Responses
-
-
-##### <span id="019797e6-138a-7d04-8db3-1d4755b25db3-200"></span> 200 - OK
-Status: OK
-
-###### <span id="019797e6-138a-7d04-8db3-1d4755b25db3-200-schema"></span> Schema
-   
-  
-
-[ModelProject](#model-project)
-
-##### <span id="019797e6-138a-7d04-8db3-1d4755b25db3-400"></span> 400 - Bad Request
-Status: Bad Request
-
-###### <span id="019797e6-138a-7d04-8db3-1d4755b25db3-400-schema"></span> Schema
-   
-  
-
-[ModelHTTPMessage](#model-http-message)
-
-##### <span id="019797e6-138a-7d04-8db3-1d4755b25db3-404"></span> 404 - Not Found
-Status: Not Found
-
-###### <span id="019797e6-138a-7d04-8db3-1d4755b25db3-404-schema"></span> Schema
-   
-  
-
-[ModelHTTPMessage](#model-http-message)
-
-##### <span id="019797e6-138a-7d04-8db3-1d4755b25db3-500"></span> 500 - Internal Server Error
-Status: Internal Server Error
-
-###### <span id="019797e6-138a-7d04-8db3-1d4755b25db3-500-schema"></span> Schema
-   
-  
-
-[ModelHTTPMessage](#model-http-message)
-
-### <span id="01979db7-f53f-73a1-aab2-74802b79be51"></span> Get product (*01979db7-f53f-73a1-aab2-74802b79be51*)
+### <span id="0198042a-f9c5-7603-99b1-7c20ee58542b"></span> Get product (*0198042a-f9c5-7603-99b1-7c20ee58542b*)
 
 ```
 GET /projects/{project_id}/products/{product_id}
@@ -3058,51 +1184,51 @@ Retrieve a specific product by its unique identifier
 #### All responses
 | Code | Status | Description | Has headers | Schema |
 |------|--------|-------------|:-----------:|--------|
-| [200](#01979db7-f53f-73a1-aab2-74802b79be51-200) | OK | OK |  | [schema](#01979db7-f53f-73a1-aab2-74802b79be51-200-schema) |
-| [400](#01979db7-f53f-73a1-aab2-74802b79be51-400) | Bad Request | Bad Request |  | [schema](#01979db7-f53f-73a1-aab2-74802b79be51-400-schema) |
-| [404](#01979db7-f53f-73a1-aab2-74802b79be51-404) | Not Found | Not Found |  | [schema](#01979db7-f53f-73a1-aab2-74802b79be51-404-schema) |
-| [500](#01979db7-f53f-73a1-aab2-74802b79be51-500) | Internal Server Error | Internal Server Error |  | [schema](#01979db7-f53f-73a1-aab2-74802b79be51-500-schema) |
+| [200](#0198042a-f9c5-7603-99b1-7c20ee58542b-200) | OK | OK |  | [schema](#0198042a-f9c5-7603-99b1-7c20ee58542b-200-schema) |
+| [400](#0198042a-f9c5-7603-99b1-7c20ee58542b-400) | Bad Request | Bad Request |  | [schema](#0198042a-f9c5-7603-99b1-7c20ee58542b-400-schema) |
+| [404](#0198042a-f9c5-7603-99b1-7c20ee58542b-404) | Not Found | Not Found |  | [schema](#0198042a-f9c5-7603-99b1-7c20ee58542b-404-schema) |
+| [500](#0198042a-f9c5-7603-99b1-7c20ee58542b-500) | Internal Server Error | Internal Server Error |  | [schema](#0198042a-f9c5-7603-99b1-7c20ee58542b-500-schema) |
 
 #### Responses
 
 
-##### <span id="01979db7-f53f-73a1-aab2-74802b79be51-200"></span> 200 - OK
+##### <span id="0198042a-f9c5-7603-99b1-7c20ee58542b-200"></span> 200 - OK
 Status: OK
 
-###### <span id="01979db7-f53f-73a1-aab2-74802b79be51-200-schema"></span> Schema
+###### <span id="0198042a-f9c5-7603-99b1-7c20ee58542b-200-schema"></span> Schema
    
   
 
 [ModelProduct](#model-product)
 
-##### <span id="01979db7-f53f-73a1-aab2-74802b79be51-400"></span> 400 - Bad Request
+##### <span id="0198042a-f9c5-7603-99b1-7c20ee58542b-400"></span> 400 - Bad Request
 Status: Bad Request
 
-###### <span id="01979db7-f53f-73a1-aab2-74802b79be51-400-schema"></span> Schema
+###### <span id="0198042a-f9c5-7603-99b1-7c20ee58542b-400-schema"></span> Schema
    
   
 
 [ModelHTTPMessage](#model-http-message)
 
-##### <span id="01979db7-f53f-73a1-aab2-74802b79be51-404"></span> 404 - Not Found
+##### <span id="0198042a-f9c5-7603-99b1-7c20ee58542b-404"></span> 404 - Not Found
 Status: Not Found
 
-###### <span id="01979db7-f53f-73a1-aab2-74802b79be51-404-schema"></span> Schema
+###### <span id="0198042a-f9c5-7603-99b1-7c20ee58542b-404-schema"></span> Schema
    
   
 
 [ModelHTTPMessage](#model-http-message)
 
-##### <span id="01979db7-f53f-73a1-aab2-74802b79be51-500"></span> 500 - Internal Server Error
+##### <span id="0198042a-f9c5-7603-99b1-7c20ee58542b-500"></span> 500 - Internal Server Error
 Status: Internal Server Error
 
-###### <span id="01979db7-f53f-73a1-aab2-74802b79be51-500-schema"></span> Schema
+###### <span id="0198042a-f9c5-7603-99b1-7c20ee58542b-500-schema"></span> Schema
    
   
 
 [ModelHTTPMessage](#model-http-message)
 
-### <span id="01979db7-f53f-73a5-b916-297c6db5b714"></span> Create product (*01979db7-f53f-73a5-b916-297c6db5b714*)
+### <span id="0198042a-f9c5-7606-8aab-1c2db5b81a89"></span> Create product (*0198042a-f9c5-7606-8aab-1c2db5b81a89*)
 
 ```
 POST /projects/{project_id}/products
@@ -3129,51 +1255,51 @@ Create a new product with specified configuration
 #### All responses
 | Code | Status | Description | Has headers | Schema |
 |------|--------|-------------|:-----------:|--------|
-| [201](#01979db7-f53f-73a5-b916-297c6db5b714-201) | Created | Created |  | [schema](#01979db7-f53f-73a5-b916-297c6db5b714-201-schema) |
-| [400](#01979db7-f53f-73a5-b916-297c6db5b714-400) | Bad Request | Bad Request |  | [schema](#01979db7-f53f-73a5-b916-297c6db5b714-400-schema) |
-| [409](#01979db7-f53f-73a5-b916-297c6db5b714-409) | Conflict | Conflict |  | [schema](#01979db7-f53f-73a5-b916-297c6db5b714-409-schema) |
-| [500](#01979db7-f53f-73a5-b916-297c6db5b714-500) | Internal Server Error | Internal Server Error |  | [schema](#01979db7-f53f-73a5-b916-297c6db5b714-500-schema) |
+| [201](#0198042a-f9c5-7606-8aab-1c2db5b81a89-201) | Created | Created |  | [schema](#0198042a-f9c5-7606-8aab-1c2db5b81a89-201-schema) |
+| [400](#0198042a-f9c5-7606-8aab-1c2db5b81a89-400) | Bad Request | Bad Request |  | [schema](#0198042a-f9c5-7606-8aab-1c2db5b81a89-400-schema) |
+| [409](#0198042a-f9c5-7606-8aab-1c2db5b81a89-409) | Conflict | Conflict |  | [schema](#0198042a-f9c5-7606-8aab-1c2db5b81a89-409-schema) |
+| [500](#0198042a-f9c5-7606-8aab-1c2db5b81a89-500) | Internal Server Error | Internal Server Error |  | [schema](#0198042a-f9c5-7606-8aab-1c2db5b81a89-500-schema) |
 
 #### Responses
 
 
-##### <span id="01979db7-f53f-73a5-b916-297c6db5b714-201"></span> 201 - Created
+##### <span id="0198042a-f9c5-7606-8aab-1c2db5b81a89-201"></span> 201 - Created
 Status: Created
 
-###### <span id="01979db7-f53f-73a5-b916-297c6db5b714-201-schema"></span> Schema
+###### <span id="0198042a-f9c5-7606-8aab-1c2db5b81a89-201-schema"></span> Schema
    
   
 
 [ModelHTTPMessage](#model-http-message)
 
-##### <span id="01979db7-f53f-73a5-b916-297c6db5b714-400"></span> 400 - Bad Request
+##### <span id="0198042a-f9c5-7606-8aab-1c2db5b81a89-400"></span> 400 - Bad Request
 Status: Bad Request
 
-###### <span id="01979db7-f53f-73a5-b916-297c6db5b714-400-schema"></span> Schema
+###### <span id="0198042a-f9c5-7606-8aab-1c2db5b81a89-400-schema"></span> Schema
    
   
 
 [ModelHTTPMessage](#model-http-message)
 
-##### <span id="01979db7-f53f-73a5-b916-297c6db5b714-409"></span> 409 - Conflict
+##### <span id="0198042a-f9c5-7606-8aab-1c2db5b81a89-409"></span> 409 - Conflict
 Status: Conflict
 
-###### <span id="01979db7-f53f-73a5-b916-297c6db5b714-409-schema"></span> Schema
+###### <span id="0198042a-f9c5-7606-8aab-1c2db5b81a89-409-schema"></span> Schema
    
   
 
 [ModelHTTPMessage](#model-http-message)
 
-##### <span id="01979db7-f53f-73a5-b916-297c6db5b714-500"></span> 500 - Internal Server Error
+##### <span id="0198042a-f9c5-7606-8aab-1c2db5b81a89-500"></span> 500 - Internal Server Error
 Status: Internal Server Error
 
-###### <span id="01979db7-f53f-73a5-b916-297c6db5b714-500-schema"></span> Schema
+###### <span id="0198042a-f9c5-7606-8aab-1c2db5b81a89-500-schema"></span> Schema
    
   
 
 [ModelHTTPMessage](#model-http-message)
 
-### <span id="01979db7-f53f-73a9-bd58-e1cd5d7df436"></span> Update product (*01979db7-f53f-73a9-bd58-e1cd5d7df436*)
+### <span id="0198042a-f9c5-7607-b75a-532912a6f35d"></span> Update product (*0198042a-f9c5-7607-b75a-532912a6f35d*)
 
 ```
 PUT /projects/{project_id}/products/{product_id}
@@ -3201,51 +1327,51 @@ Modify an existing product by its ID
 #### All responses
 | Code | Status | Description | Has headers | Schema |
 |------|--------|-------------|:-----------:|--------|
-| [200](#01979db7-f53f-73a9-bd58-e1cd5d7df436-200) | OK | OK |  | [schema](#01979db7-f53f-73a9-bd58-e1cd5d7df436-200-schema) |
-| [400](#01979db7-f53f-73a9-bd58-e1cd5d7df436-400) | Bad Request | Bad Request |  | [schema](#01979db7-f53f-73a9-bd58-e1cd5d7df436-400-schema) |
-| [409](#01979db7-f53f-73a9-bd58-e1cd5d7df436-409) | Conflict | Conflict |  | [schema](#01979db7-f53f-73a9-bd58-e1cd5d7df436-409-schema) |
-| [500](#01979db7-f53f-73a9-bd58-e1cd5d7df436-500) | Internal Server Error | Internal Server Error |  | [schema](#01979db7-f53f-73a9-bd58-e1cd5d7df436-500-schema) |
+| [200](#0198042a-f9c5-7607-b75a-532912a6f35d-200) | OK | OK |  | [schema](#0198042a-f9c5-7607-b75a-532912a6f35d-200-schema) |
+| [400](#0198042a-f9c5-7607-b75a-532912a6f35d-400) | Bad Request | Bad Request |  | [schema](#0198042a-f9c5-7607-b75a-532912a6f35d-400-schema) |
+| [409](#0198042a-f9c5-7607-b75a-532912a6f35d-409) | Conflict | Conflict |  | [schema](#0198042a-f9c5-7607-b75a-532912a6f35d-409-schema) |
+| [500](#0198042a-f9c5-7607-b75a-532912a6f35d-500) | Internal Server Error | Internal Server Error |  | [schema](#0198042a-f9c5-7607-b75a-532912a6f35d-500-schema) |
 
 #### Responses
 
 
-##### <span id="01979db7-f53f-73a9-bd58-e1cd5d7df436-200"></span> 200 - OK
+##### <span id="0198042a-f9c5-7607-b75a-532912a6f35d-200"></span> 200 - OK
 Status: OK
 
-###### <span id="01979db7-f53f-73a9-bd58-e1cd5d7df436-200-schema"></span> Schema
+###### <span id="0198042a-f9c5-7607-b75a-532912a6f35d-200-schema"></span> Schema
    
   
 
 [ModelHTTPMessage](#model-http-message)
 
-##### <span id="01979db7-f53f-73a9-bd58-e1cd5d7df436-400"></span> 400 - Bad Request
+##### <span id="0198042a-f9c5-7607-b75a-532912a6f35d-400"></span> 400 - Bad Request
 Status: Bad Request
 
-###### <span id="01979db7-f53f-73a9-bd58-e1cd5d7df436-400-schema"></span> Schema
+###### <span id="0198042a-f9c5-7607-b75a-532912a6f35d-400-schema"></span> Schema
    
   
 
 [ModelHTTPMessage](#model-http-message)
 
-##### <span id="01979db7-f53f-73a9-bd58-e1cd5d7df436-409"></span> 409 - Conflict
+##### <span id="0198042a-f9c5-7607-b75a-532912a6f35d-409"></span> 409 - Conflict
 Status: Conflict
 
-###### <span id="01979db7-f53f-73a9-bd58-e1cd5d7df436-409-schema"></span> Schema
+###### <span id="0198042a-f9c5-7607-b75a-532912a6f35d-409-schema"></span> Schema
    
   
 
 [ModelHTTPMessage](#model-http-message)
 
-##### <span id="01979db7-f53f-73a9-bd58-e1cd5d7df436-500"></span> 500 - Internal Server Error
+##### <span id="0198042a-f9c5-7607-b75a-532912a6f35d-500"></span> 500 - Internal Server Error
 Status: Internal Server Error
 
-###### <span id="01979db7-f53f-73a9-bd58-e1cd5d7df436-500-schema"></span> Schema
+###### <span id="0198042a-f9c5-7607-b75a-532912a6f35d-500-schema"></span> Schema
    
   
 
 [ModelHTTPMessage](#model-http-message)
 
-### <span id="01979db7-f53f-73ad-a84e-49bbdfe9e5c9"></span> Delete product (*01979db7-f53f-73ad-a84e-49bbdfe9e5c9*)
+### <span id="0198042a-f9c5-760a-99c8-1f68d597d300"></span> Delete product (*0198042a-f9c5-760a-99c8-1f68d597d300*)
 
 ```
 DELETE /projects/{project_id}/products/{product_id}
@@ -3269,41 +1395,41 @@ Remove a product permanently from the system
 #### All responses
 | Code | Status | Description | Has headers | Schema |
 |------|--------|-------------|:-----------:|--------|
-| [200](#01979db7-f53f-73ad-a84e-49bbdfe9e5c9-200) | OK | OK |  | [schema](#01979db7-f53f-73ad-a84e-49bbdfe9e5c9-200-schema) |
-| [400](#01979db7-f53f-73ad-a84e-49bbdfe9e5c9-400) | Bad Request | Bad Request |  | [schema](#01979db7-f53f-73ad-a84e-49bbdfe9e5c9-400-schema) |
-| [500](#01979db7-f53f-73ad-a84e-49bbdfe9e5c9-500) | Internal Server Error | Internal Server Error |  | [schema](#01979db7-f53f-73ad-a84e-49bbdfe9e5c9-500-schema) |
+| [200](#0198042a-f9c5-760a-99c8-1f68d597d300-200) | OK | OK |  | [schema](#0198042a-f9c5-760a-99c8-1f68d597d300-200-schema) |
+| [400](#0198042a-f9c5-760a-99c8-1f68d597d300-400) | Bad Request | Bad Request |  | [schema](#0198042a-f9c5-760a-99c8-1f68d597d300-400-schema) |
+| [500](#0198042a-f9c5-760a-99c8-1f68d597d300-500) | Internal Server Error | Internal Server Error |  | [schema](#0198042a-f9c5-760a-99c8-1f68d597d300-500-schema) |
 
 #### Responses
 
 
-##### <span id="01979db7-f53f-73ad-a84e-49bbdfe9e5c9-200"></span> 200 - OK
+##### <span id="0198042a-f9c5-760a-99c8-1f68d597d300-200"></span> 200 - OK
 Status: OK
 
-###### <span id="01979db7-f53f-73ad-a84e-49bbdfe9e5c9-200-schema"></span> Schema
+###### <span id="0198042a-f9c5-760a-99c8-1f68d597d300-200-schema"></span> Schema
    
   
 
 [ModelHTTPMessage](#model-http-message)
 
-##### <span id="01979db7-f53f-73ad-a84e-49bbdfe9e5c9-400"></span> 400 - Bad Request
+##### <span id="0198042a-f9c5-760a-99c8-1f68d597d300-400"></span> 400 - Bad Request
 Status: Bad Request
 
-###### <span id="01979db7-f53f-73ad-a84e-49bbdfe9e5c9-400-schema"></span> Schema
+###### <span id="0198042a-f9c5-760a-99c8-1f68d597d300-400-schema"></span> Schema
    
   
 
 [ModelHTTPMessage](#model-http-message)
 
-##### <span id="01979db7-f53f-73ad-a84e-49bbdfe9e5c9-500"></span> 500 - Internal Server Error
+##### <span id="0198042a-f9c5-760a-99c8-1f68d597d300-500"></span> 500 - Internal Server Error
 Status: Internal Server Error
 
-###### <span id="01979db7-f53f-73ad-a84e-49bbdfe9e5c9-500-schema"></span> Schema
+###### <span id="0198042a-f9c5-760a-99c8-1f68d597d300-500-schema"></span> Schema
    
   
 
 [ModelHTTPMessage](#model-http-message)
 
-### <span id="01979db7-f53f-73b1-993f-15f77e72c8cc"></span> List products by project (*01979db7-f53f-73b1-993f-15f77e72c8cc*)
+### <span id="0198042a-f9c5-760e-9d2f-94cce8243e5a"></span> List products by project (*0198042a-f9c5-760e-9d2f-94cce8243e5a*)
 
 ```
 GET /projects/{project_id}/products
@@ -3332,41 +1458,41 @@ Retrieve paginated list of products for a specific project
 #### All responses
 | Code | Status | Description | Has headers | Schema |
 |------|--------|-------------|:-----------:|--------|
-| [200](#01979db7-f53f-73b1-993f-15f77e72c8cc-200) | OK | OK |  | [schema](#01979db7-f53f-73b1-993f-15f77e72c8cc-200-schema) |
-| [400](#01979db7-f53f-73b1-993f-15f77e72c8cc-400) | Bad Request | Bad Request |  | [schema](#01979db7-f53f-73b1-993f-15f77e72c8cc-400-schema) |
-| [500](#01979db7-f53f-73b1-993f-15f77e72c8cc-500) | Internal Server Error | Internal Server Error |  | [schema](#01979db7-f53f-73b1-993f-15f77e72c8cc-500-schema) |
+| [200](#0198042a-f9c5-760e-9d2f-94cce8243e5a-200) | OK | OK |  | [schema](#0198042a-f9c5-760e-9d2f-94cce8243e5a-200-schema) |
+| [400](#0198042a-f9c5-760e-9d2f-94cce8243e5a-400) | Bad Request | Bad Request |  | [schema](#0198042a-f9c5-760e-9d2f-94cce8243e5a-400-schema) |
+| [500](#0198042a-f9c5-760e-9d2f-94cce8243e5a-500) | Internal Server Error | Internal Server Error |  | [schema](#0198042a-f9c5-760e-9d2f-94cce8243e5a-500-schema) |
 
 #### Responses
 
 
-##### <span id="01979db7-f53f-73b1-993f-15f77e72c8cc-200"></span> 200 - OK
+##### <span id="0198042a-f9c5-760e-9d2f-94cce8243e5a-200"></span> 200 - OK
 Status: OK
 
-###### <span id="01979db7-f53f-73b1-993f-15f77e72c8cc-200-schema"></span> Schema
+###### <span id="0198042a-f9c5-760e-9d2f-94cce8243e5a-200-schema"></span> Schema
    
   
 
 [ModelListProductsResponse](#model-list-products-response)
 
-##### <span id="01979db7-f53f-73b1-993f-15f77e72c8cc-400"></span> 400 - Bad Request
+##### <span id="0198042a-f9c5-760e-9d2f-94cce8243e5a-400"></span> 400 - Bad Request
 Status: Bad Request
 
-###### <span id="01979db7-f53f-73b1-993f-15f77e72c8cc-400-schema"></span> Schema
+###### <span id="0198042a-f9c5-760e-9d2f-94cce8243e5a-400-schema"></span> Schema
    
   
 
 [ModelHTTPMessage](#model-http-message)
 
-##### <span id="01979db7-f53f-73b1-993f-15f77e72c8cc-500"></span> 500 - Internal Server Error
+##### <span id="0198042a-f9c5-760e-9d2f-94cce8243e5a-500"></span> 500 - Internal Server Error
 Status: Internal Server Error
 
-###### <span id="01979db7-f53f-73b1-993f-15f77e72c8cc-500-schema"></span> Schema
+###### <span id="0198042a-f9c5-760e-9d2f-94cce8243e5a-500-schema"></span> Schema
    
   
 
 [ModelHTTPMessage](#model-http-message)
 
-### <span id="01979db7-f53f-73b5-a499-d6390831c94c"></span> List products (*01979db7-f53f-73b5-a499-d6390831c94c*)
+### <span id="0198042a-f9c5-7612-a055-58177eca0772"></span> List products (*0198042a-f9c5-7612-a055-58177eca0772*)
 
 ```
 GET /products
@@ -3394,103 +1520,41 @@ Retrieve paginated list of all products in the system
 #### All responses
 | Code | Status | Description | Has headers | Schema |
 |------|--------|-------------|:-----------:|--------|
-| [200](#01979db7-f53f-73b5-a499-d6390831c94c-200) | OK | OK |  | [schema](#01979db7-f53f-73b5-a499-d6390831c94c-200-schema) |
-| [400](#01979db7-f53f-73b5-a499-d6390831c94c-400) | Bad Request | Bad Request |  | [schema](#01979db7-f53f-73b5-a499-d6390831c94c-400-schema) |
-| [500](#01979db7-f53f-73b5-a499-d6390831c94c-500) | Internal Server Error | Internal Server Error |  | [schema](#01979db7-f53f-73b5-a499-d6390831c94c-500-schema) |
+| [200](#0198042a-f9c5-7612-a055-58177eca0772-200) | OK | OK |  | [schema](#0198042a-f9c5-7612-a055-58177eca0772-200-schema) |
+| [400](#0198042a-f9c5-7612-a055-58177eca0772-400) | Bad Request | Bad Request |  | [schema](#0198042a-f9c5-7612-a055-58177eca0772-400-schema) |
+| [500](#0198042a-f9c5-7612-a055-58177eca0772-500) | Internal Server Error | Internal Server Error |  | [schema](#0198042a-f9c5-7612-a055-58177eca0772-500-schema) |
 
 #### Responses
 
 
-##### <span id="01979db7-f53f-73b5-a499-d6390831c94c-200"></span> 200 - OK
+##### <span id="0198042a-f9c5-7612-a055-58177eca0772-200"></span> 200 - OK
 Status: OK
 
-###### <span id="01979db7-f53f-73b5-a499-d6390831c94c-200-schema"></span> Schema
+###### <span id="0198042a-f9c5-7612-a055-58177eca0772-200-schema"></span> Schema
    
   
 
 [ModelListProductsResponse](#model-list-products-response)
 
-##### <span id="01979db7-f53f-73b5-a499-d6390831c94c-400"></span> 400 - Bad Request
+##### <span id="0198042a-f9c5-7612-a055-58177eca0772-400"></span> 400 - Bad Request
 Status: Bad Request
 
-###### <span id="01979db7-f53f-73b5-a499-d6390831c94c-400-schema"></span> Schema
+###### <span id="0198042a-f9c5-7612-a055-58177eca0772-400-schema"></span> Schema
    
   
 
 [ModelHTTPMessage](#model-http-message)
 
-##### <span id="01979db7-f53f-73b5-a499-d6390831c94c-500"></span> 500 - Internal Server Error
+##### <span id="0198042a-f9c5-7612-a055-58177eca0772-500"></span> 500 - Internal Server Error
 Status: Internal Server Error
 
-###### <span id="01979db7-f53f-73b5-a499-d6390831c94c-500-schema"></span> Schema
+###### <span id="0198042a-f9c5-7612-a055-58177eca0772-500-schema"></span> Schema
    
   
 
 [ModelHTTPMessage](#model-http-message)
 
-### <span id="01979db7-f53f-73b9-818f-cdd1848f15d0"></span> Unlink product from payment processor (*01979db7-f53f-73b9-818f-cdd1848f15d0*)
-
-```
-DELETE /projects/{project_id}/products/{product_id}/payment_processor
-```
-
-Remove the association between a product and a payment processor
-
-#### Consumes
-  * application/json
-
-#### Produces
-  * application/json
-
-#### Security Requirements
-  * AccessToken
-
-#### Parameters
-
-| Name | Source | Type | Go type | Separator | Required | Default | Description |
-|------|--------|------|---------|-----------| :------: |---------|-------------|
-| product_id | `path` | uuid (formatted string) | `strfmt.UUID` |  | ✓ |  | The product id in UUID format |
-| project_id | `path` | uuid (formatted string) | `strfmt.UUID` |  | ✓ |  | The project id in UUID format |
-| body | `body` | [ModelUnlinkProductFromPaymentProcessorRequest](#model-unlink-product-from-payment-processor-request) | `models.ModelUnlinkProductFromPaymentProcessorRequest` | | ✓ | | Unlink product from payment processor request |
-
-#### All responses
-| Code | Status | Description | Has headers | Schema |
-|------|--------|-------------|:-----------:|--------|
-| [200](#01979db7-f53f-73b9-818f-cdd1848f15d0-200) | OK | OK |  | [schema](#01979db7-f53f-73b9-818f-cdd1848f15d0-200-schema) |
-| [400](#01979db7-f53f-73b9-818f-cdd1848f15d0-400) | Bad Request | Bad Request |  | [schema](#01979db7-f53f-73b9-818f-cdd1848f15d0-400-schema) |
-| [500](#01979db7-f53f-73b9-818f-cdd1848f15d0-500) | Internal Server Error | Internal Server Error |  | [schema](#01979db7-f53f-73b9-818f-cdd1848f15d0-500-schema) |
-
-#### Responses
-
-
-##### <span id="01979db7-f53f-73b9-818f-cdd1848f15d0-200"></span> 200 - OK
-Status: OK
-
-###### <span id="01979db7-f53f-73b9-818f-cdd1848f15d0-200-schema"></span> Schema
-   
-  
-
-[ModelHTTPMessage](#model-http-message)
-
-##### <span id="01979db7-f53f-73b9-818f-cdd1848f15d0-400"></span> 400 - Bad Request
-Status: Bad Request
-
-###### <span id="01979db7-f53f-73b9-818f-cdd1848f15d0-400-schema"></span> Schema
-   
-  
-
-[ModelHTTPMessage](#model-http-message)
-
-##### <span id="01979db7-f53f-73b9-818f-cdd1848f15d0-500"></span> 500 - Internal Server Error
-Status: Internal Server Error
-
-###### <span id="01979db7-f53f-73b9-818f-cdd1848f15d0-500-schema"></span> Schema
-   
-  
-
-[ModelHTTPMessage](#model-http-message)
-
-### <span id="01979db7-f53f-73bd-b6c0-4541a48549c2"></span> Link product to payment processor (*01979db7-f53f-73bd-b6c0-4541a48549c2*)
+### <span id="0198042a-f9c5-7616-8c3b-e4f19d83a033"></span> Link product to payment processor (*0198042a-f9c5-7616-8c3b-e4f19d83a033*)
 
 ```
 POST /projects/{project_id}/products/{product_id}/payment_processor
@@ -3518,35 +1582,1971 @@ Associate a product with a payment processor to enable billing and invoicing
 #### All responses
 | Code | Status | Description | Has headers | Schema |
 |------|--------|-------------|:-----------:|--------|
-| [200](#01979db7-f53f-73bd-b6c0-4541a48549c2-200) | OK | OK |  | [schema](#01979db7-f53f-73bd-b6c0-4541a48549c2-200-schema) |
-| [400](#01979db7-f53f-73bd-b6c0-4541a48549c2-400) | Bad Request | Bad Request |  | [schema](#01979db7-f53f-73bd-b6c0-4541a48549c2-400-schema) |
-| [500](#01979db7-f53f-73bd-b6c0-4541a48549c2-500) | Internal Server Error | Internal Server Error |  | [schema](#01979db7-f53f-73bd-b6c0-4541a48549c2-500-schema) |
+| [200](#0198042a-f9c5-7616-8c3b-e4f19d83a033-200) | OK | OK |  | [schema](#0198042a-f9c5-7616-8c3b-e4f19d83a033-200-schema) |
+| [400](#0198042a-f9c5-7616-8c3b-e4f19d83a033-400) | Bad Request | Bad Request |  | [schema](#0198042a-f9c5-7616-8c3b-e4f19d83a033-400-schema) |
+| [500](#0198042a-f9c5-7616-8c3b-e4f19d83a033-500) | Internal Server Error | Internal Server Error |  | [schema](#0198042a-f9c5-7616-8c3b-e4f19d83a033-500-schema) |
 
 #### Responses
 
 
-##### <span id="01979db7-f53f-73bd-b6c0-4541a48549c2-200"></span> 200 - OK
+##### <span id="0198042a-f9c5-7616-8c3b-e4f19d83a033-200"></span> 200 - OK
 Status: OK
 
-###### <span id="01979db7-f53f-73bd-b6c0-4541a48549c2-200-schema"></span> Schema
+###### <span id="0198042a-f9c5-7616-8c3b-e4f19d83a033-200-schema"></span> Schema
    
   
 
 [ModelHTTPMessage](#model-http-message)
 
-##### <span id="01979db7-f53f-73bd-b6c0-4541a48549c2-400"></span> 400 - Bad Request
+##### <span id="0198042a-f9c5-7616-8c3b-e4f19d83a033-400"></span> 400 - Bad Request
 Status: Bad Request
 
-###### <span id="01979db7-f53f-73bd-b6c0-4541a48549c2-400-schema"></span> Schema
+###### <span id="0198042a-f9c5-7616-8c3b-e4f19d83a033-400-schema"></span> Schema
    
   
 
 [ModelHTTPMessage](#model-http-message)
 
-##### <span id="01979db7-f53f-73bd-b6c0-4541a48549c2-500"></span> 500 - Internal Server Error
+##### <span id="0198042a-f9c5-7616-8c3b-e4f19d83a033-500"></span> 500 - Internal Server Error
 Status: Internal Server Error
 
-###### <span id="01979db7-f53f-73bd-b6c0-4541a48549c2-500-schema"></span> Schema
+###### <span id="0198042a-f9c5-7616-8c3b-e4f19d83a033-500-schema"></span> Schema
+   
+  
+
+[ModelHTTPMessage](#model-http-message)
+
+### <span id="0198042a-f9c5-761a-bd02-da039b52bea2"></span> Unlink product from payment processor (*0198042a-f9c5-761a-bd02-da039b52bea2*)
+
+```
+DELETE /projects/{project_id}/products/{product_id}/payment_processor
+```
+
+Remove the association between a product and a payment processor
+
+#### Consumes
+  * application/json
+
+#### Produces
+  * application/json
+
+#### Security Requirements
+  * AccessToken
+
+#### Parameters
+
+| Name | Source | Type | Go type | Separator | Required | Default | Description |
+|------|--------|------|---------|-----------| :------: |---------|-------------|
+| product_id | `path` | uuid (formatted string) | `strfmt.UUID` |  | ✓ |  | The product id in UUID format |
+| project_id | `path` | uuid (formatted string) | `strfmt.UUID` |  | ✓ |  | The project id in UUID format |
+| body | `body` | [ModelUnlinkProductFromPaymentProcessorRequest](#model-unlink-product-from-payment-processor-request) | `models.ModelUnlinkProductFromPaymentProcessorRequest` | | ✓ | | Unlink product from payment processor request |
+
+#### All responses
+| Code | Status | Description | Has headers | Schema |
+|------|--------|-------------|:-----------:|--------|
+| [200](#0198042a-f9c5-761a-bd02-da039b52bea2-200) | OK | OK |  | [schema](#0198042a-f9c5-761a-bd02-da039b52bea2-200-schema) |
+| [400](#0198042a-f9c5-761a-bd02-da039b52bea2-400) | Bad Request | Bad Request |  | [schema](#0198042a-f9c5-761a-bd02-da039b52bea2-400-schema) |
+| [500](#0198042a-f9c5-761a-bd02-da039b52bea2-500) | Internal Server Error | Internal Server Error |  | [schema](#0198042a-f9c5-761a-bd02-da039b52bea2-500-schema) |
+
+#### Responses
+
+
+##### <span id="0198042a-f9c5-761a-bd02-da039b52bea2-200"></span> 200 - OK
+Status: OK
+
+###### <span id="0198042a-f9c5-761a-bd02-da039b52bea2-200-schema"></span> Schema
+   
+  
+
+[ModelHTTPMessage](#model-http-message)
+
+##### <span id="0198042a-f9c5-761a-bd02-da039b52bea2-400"></span> 400 - Bad Request
+Status: Bad Request
+
+###### <span id="0198042a-f9c5-761a-bd02-da039b52bea2-400-schema"></span> Schema
+   
+  
+
+[ModelHTTPMessage](#model-http-message)
+
+##### <span id="0198042a-f9c5-761a-bd02-da039b52bea2-500"></span> 500 - Internal Server Error
+Status: Internal Server Error
+
+###### <span id="0198042a-f9c5-761a-bd02-da039b52bea2-500-schema"></span> Schema
+   
+  
+
+[ModelHTTPMessage](#model-http-message)
+
+### <span id="0198042a-f9c5-761e-b1c2-66a3f8ab30d6"></span> Get project (*0198042a-f9c5-761e-b1c2-66a3f8ab30d6*)
+
+```
+GET /projects/{project_id}
+```
+
+Retrieve a specific project by its unique identifier
+
+#### Produces
+  * application/json
+
+#### Security Requirements
+  * AccessToken
+
+#### Parameters
+
+| Name | Source | Type | Go type | Separator | Required | Default | Description |
+|------|--------|------|---------|-----------| :------: |---------|-------------|
+| project_id | `path` | uuid (formatted string) | `strfmt.UUID` |  | ✓ |  | The project id in UUID format |
+
+#### All responses
+| Code | Status | Description | Has headers | Schema |
+|------|--------|-------------|:-----------:|--------|
+| [200](#0198042a-f9c5-761e-b1c2-66a3f8ab30d6-200) | OK | OK |  | [schema](#0198042a-f9c5-761e-b1c2-66a3f8ab30d6-200-schema) |
+| [400](#0198042a-f9c5-761e-b1c2-66a3f8ab30d6-400) | Bad Request | Bad Request |  | [schema](#0198042a-f9c5-761e-b1c2-66a3f8ab30d6-400-schema) |
+| [404](#0198042a-f9c5-761e-b1c2-66a3f8ab30d6-404) | Not Found | Not Found |  | [schema](#0198042a-f9c5-761e-b1c2-66a3f8ab30d6-404-schema) |
+| [500](#0198042a-f9c5-761e-b1c2-66a3f8ab30d6-500) | Internal Server Error | Internal Server Error |  | [schema](#0198042a-f9c5-761e-b1c2-66a3f8ab30d6-500-schema) |
+
+#### Responses
+
+
+##### <span id="0198042a-f9c5-761e-b1c2-66a3f8ab30d6-200"></span> 200 - OK
+Status: OK
+
+###### <span id="0198042a-f9c5-761e-b1c2-66a3f8ab30d6-200-schema"></span> Schema
+   
+  
+
+[ModelProject](#model-project)
+
+##### <span id="0198042a-f9c5-761e-b1c2-66a3f8ab30d6-400"></span> 400 - Bad Request
+Status: Bad Request
+
+###### <span id="0198042a-f9c5-761e-b1c2-66a3f8ab30d6-400-schema"></span> Schema
+   
+  
+
+[ModelHTTPMessage](#model-http-message)
+
+##### <span id="0198042a-f9c5-761e-b1c2-66a3f8ab30d6-404"></span> 404 - Not Found
+Status: Not Found
+
+###### <span id="0198042a-f9c5-761e-b1c2-66a3f8ab30d6-404-schema"></span> Schema
+   
+  
+
+[ModelHTTPMessage](#model-http-message)
+
+##### <span id="0198042a-f9c5-761e-b1c2-66a3f8ab30d6-500"></span> 500 - Internal Server Error
+Status: Internal Server Error
+
+###### <span id="0198042a-f9c5-761e-b1c2-66a3f8ab30d6-500-schema"></span> Schema
+   
+  
+
+[ModelHTTPMessage](#model-http-message)
+
+### <span id="0198042a-f9c5-7622-9142-88fbaa727659"></span> Create project (*0198042a-f9c5-7622-9142-88fbaa727659*)
+
+```
+POST /projects
+```
+
+Create a new project with specified configuration
+
+#### Consumes
+  * application/json
+
+#### Produces
+  * application/json
+
+#### Security Requirements
+  * AccessToken
+
+#### Parameters
+
+| Name | Source | Type | Go type | Separator | Required | Default | Description |
+|------|--------|------|---------|-----------| :------: |---------|-------------|
+| body | `body` | [ModelCreateProjectRequest](#model-create-project-request) | `models.ModelCreateProjectRequest` | | ✓ | | Create Project Request |
+
+#### All responses
+| Code | Status | Description | Has headers | Schema |
+|------|--------|-------------|:-----------:|--------|
+| [201](#0198042a-f9c5-7622-9142-88fbaa727659-201) | Created | Created |  | [schema](#0198042a-f9c5-7622-9142-88fbaa727659-201-schema) |
+| [400](#0198042a-f9c5-7622-9142-88fbaa727659-400) | Bad Request | Bad Request |  | [schema](#0198042a-f9c5-7622-9142-88fbaa727659-400-schema) |
+| [409](#0198042a-f9c5-7622-9142-88fbaa727659-409) | Conflict | Conflict |  | [schema](#0198042a-f9c5-7622-9142-88fbaa727659-409-schema) |
+| [500](#0198042a-f9c5-7622-9142-88fbaa727659-500) | Internal Server Error | Internal Server Error |  | [schema](#0198042a-f9c5-7622-9142-88fbaa727659-500-schema) |
+
+#### Responses
+
+
+##### <span id="0198042a-f9c5-7622-9142-88fbaa727659-201"></span> 201 - Created
+Status: Created
+
+###### <span id="0198042a-f9c5-7622-9142-88fbaa727659-201-schema"></span> Schema
+   
+  
+
+[ModelHTTPMessage](#model-http-message)
+
+##### <span id="0198042a-f9c5-7622-9142-88fbaa727659-400"></span> 400 - Bad Request
+Status: Bad Request
+
+###### <span id="0198042a-f9c5-7622-9142-88fbaa727659-400-schema"></span> Schema
+   
+  
+
+[ModelHTTPMessage](#model-http-message)
+
+##### <span id="0198042a-f9c5-7622-9142-88fbaa727659-409"></span> 409 - Conflict
+Status: Conflict
+
+###### <span id="0198042a-f9c5-7622-9142-88fbaa727659-409-schema"></span> Schema
+   
+  
+
+[ModelHTTPMessage](#model-http-message)
+
+##### <span id="0198042a-f9c5-7622-9142-88fbaa727659-500"></span> 500 - Internal Server Error
+Status: Internal Server Error
+
+###### <span id="0198042a-f9c5-7622-9142-88fbaa727659-500-schema"></span> Schema
+   
+  
+
+[ModelHTTPMessage](#model-http-message)
+
+### <span id="0198042a-f9c5-7626-be9f-996a2898ef07"></span> Update project (*0198042a-f9c5-7626-be9f-996a2898ef07*)
+
+```
+PUT /projects/{project_id}
+```
+
+Modify an existing project by its ID
+
+#### Consumes
+  * application/json
+
+#### Produces
+  * application/json
+
+#### Security Requirements
+  * AccessToken
+
+#### Parameters
+
+| Name | Source | Type | Go type | Separator | Required | Default | Description |
+|------|--------|------|---------|-----------| :------: |---------|-------------|
+| project_id | `path` | uuid (formatted string) | `strfmt.UUID` |  | ✓ |  | The project id in UUID format |
+| body | `body` | [ModelUpdateProjectRequest](#model-update-project-request) | `models.ModelUpdateProjectRequest` | | ✓ | | Update Project Request |
+
+#### All responses
+| Code | Status | Description | Has headers | Schema |
+|------|--------|-------------|:-----------:|--------|
+| [200](#0198042a-f9c5-7626-be9f-996a2898ef07-200) | OK | OK |  | [schema](#0198042a-f9c5-7626-be9f-996a2898ef07-200-schema) |
+| [400](#0198042a-f9c5-7626-be9f-996a2898ef07-400) | Bad Request | Bad Request |  | [schema](#0198042a-f9c5-7626-be9f-996a2898ef07-400-schema) |
+| [409](#0198042a-f9c5-7626-be9f-996a2898ef07-409) | Conflict | Conflict |  | [schema](#0198042a-f9c5-7626-be9f-996a2898ef07-409-schema) |
+| [500](#0198042a-f9c5-7626-be9f-996a2898ef07-500) | Internal Server Error | Internal Server Error |  | [schema](#0198042a-f9c5-7626-be9f-996a2898ef07-500-schema) |
+
+#### Responses
+
+
+##### <span id="0198042a-f9c5-7626-be9f-996a2898ef07-200"></span> 200 - OK
+Status: OK
+
+###### <span id="0198042a-f9c5-7626-be9f-996a2898ef07-200-schema"></span> Schema
+   
+  
+
+[ModelHTTPMessage](#model-http-message)
+
+##### <span id="0198042a-f9c5-7626-be9f-996a2898ef07-400"></span> 400 - Bad Request
+Status: Bad Request
+
+###### <span id="0198042a-f9c5-7626-be9f-996a2898ef07-400-schema"></span> Schema
+   
+  
+
+[ModelHTTPMessage](#model-http-message)
+
+##### <span id="0198042a-f9c5-7626-be9f-996a2898ef07-409"></span> 409 - Conflict
+Status: Conflict
+
+###### <span id="0198042a-f9c5-7626-be9f-996a2898ef07-409-schema"></span> Schema
+   
+  
+
+[ModelHTTPMessage](#model-http-message)
+
+##### <span id="0198042a-f9c5-7626-be9f-996a2898ef07-500"></span> 500 - Internal Server Error
+Status: Internal Server Error
+
+###### <span id="0198042a-f9c5-7626-be9f-996a2898ef07-500-schema"></span> Schema
+   
+  
+
+[ModelHTTPMessage](#model-http-message)
+
+### <span id="0198042a-f9c5-762a-8033-649a1526901d"></span> Delete project (*0198042a-f9c5-762a-8033-649a1526901d*)
+
+```
+DELETE /projects/{project_id}
+```
+
+Remove a project permanently from the system
+
+#### Produces
+  * application/json
+
+#### Security Requirements
+  * AccessToken
+
+#### Parameters
+
+| Name | Source | Type | Go type | Separator | Required | Default | Description |
+|------|--------|------|---------|-----------| :------: |---------|-------------|
+| project_id | `path` | uuid (formatted string) | `strfmt.UUID` |  | ✓ |  | The project id in UUID format |
+
+#### All responses
+| Code | Status | Description | Has headers | Schema |
+|------|--------|-------------|:-----------:|--------|
+| [200](#0198042a-f9c5-762a-8033-649a1526901d-200) | OK | OK |  | [schema](#0198042a-f9c5-762a-8033-649a1526901d-200-schema) |
+| [400](#0198042a-f9c5-762a-8033-649a1526901d-400) | Bad Request | Bad Request |  | [schema](#0198042a-f9c5-762a-8033-649a1526901d-400-schema) |
+| [500](#0198042a-f9c5-762a-8033-649a1526901d-500) | Internal Server Error | Internal Server Error |  | [schema](#0198042a-f9c5-762a-8033-649a1526901d-500-schema) |
+
+#### Responses
+
+
+##### <span id="0198042a-f9c5-762a-8033-649a1526901d-200"></span> 200 - OK
+Status: OK
+
+###### <span id="0198042a-f9c5-762a-8033-649a1526901d-200-schema"></span> Schema
+   
+  
+
+[ModelHTTPMessage](#model-http-message)
+
+##### <span id="0198042a-f9c5-762a-8033-649a1526901d-400"></span> 400 - Bad Request
+Status: Bad Request
+
+###### <span id="0198042a-f9c5-762a-8033-649a1526901d-400-schema"></span> Schema
+   
+  
+
+[ModelHTTPMessage](#model-http-message)
+
+##### <span id="0198042a-f9c5-762a-8033-649a1526901d-500"></span> 500 - Internal Server Error
+Status: Internal Server Error
+
+###### <span id="0198042a-f9c5-762a-8033-649a1526901d-500-schema"></span> Schema
+   
+  
+
+[ModelHTTPMessage](#model-http-message)
+
+### <span id="0198042a-f9c5-76a7-a480-fbcb978b8501"></span> List projects (*0198042a-f9c5-76a7-a480-fbcb978b8501*)
+
+```
+GET /projects
+```
+
+Retrieve paginated list of all projects in the system
+
+#### Produces
+  * application/json
+
+#### Security Requirements
+  * AccessToken
+
+#### Parameters
+
+| Name | Source | Type | Go type | Separator | Required | Default | Description |
+|------|--------|------|---------|-----------| :------: |---------|-------------|
+| fields | `query` | string (formatted string) | `string` |  |  |  | Fields to return. Example: id,first_name,last_name |
+| filter | `query` | string (formatted string) | `string` |  |  |  | Filter field. Example: id=1 AND first_name='John' |
+| limit | `query` | int (formatted integer) | `int64` |  |  |  | Limit |
+| next_token | `query` | string (formatted string) | `string` |  |  |  | Next cursor |
+| prev_token | `query` | string (formatted string) | `string` |  |  |  | Previous cursor |
+| sort | `query` | string (formatted string) | `string` |  |  |  | Comma-separated list of fields to sort by. Example: first_name ASC, created_at DESC |
+
+#### All responses
+| Code | Status | Description | Has headers | Schema |
+|------|--------|-------------|:-----------:|--------|
+| [200](#0198042a-f9c5-76a7-a480-fbcb978b8501-200) | OK | OK |  | [schema](#0198042a-f9c5-76a7-a480-fbcb978b8501-200-schema) |
+| [400](#0198042a-f9c5-76a7-a480-fbcb978b8501-400) | Bad Request | Bad Request |  | [schema](#0198042a-f9c5-76a7-a480-fbcb978b8501-400-schema) |
+| [500](#0198042a-f9c5-76a7-a480-fbcb978b8501-500) | Internal Server Error | Internal Server Error |  | [schema](#0198042a-f9c5-76a7-a480-fbcb978b8501-500-schema) |
+
+#### Responses
+
+
+##### <span id="0198042a-f9c5-76a7-a480-fbcb978b8501-200"></span> 200 - OK
+Status: OK
+
+###### <span id="0198042a-f9c5-76a7-a480-fbcb978b8501-200-schema"></span> Schema
+   
+  
+
+[ModelListProjectsResponse](#model-list-projects-response)
+
+##### <span id="0198042a-f9c5-76a7-a480-fbcb978b8501-400"></span> 400 - Bad Request
+Status: Bad Request
+
+###### <span id="0198042a-f9c5-76a7-a480-fbcb978b8501-400-schema"></span> Schema
+   
+  
+
+[ModelHTTPMessage](#model-http-message)
+
+##### <span id="0198042a-f9c5-76a7-a480-fbcb978b8501-500"></span> 500 - Internal Server Error
+Status: Internal Server Error
+
+###### <span id="0198042a-f9c5-76a7-a480-fbcb978b8501-500-schema"></span> Schema
+   
+  
+
+[ModelHTTPMessage](#model-http-message)
+
+### <span id="0198042a-f9c5-76b2-b8b1-bc0223a0f18d"></span> Get resource (*0198042a-f9c5-76b2-b8b1-bc0223a0f18d*)
+
+```
+GET /resources/{resource_id}
+```
+
+Retrieve a specific resource by its identifier
+
+#### Produces
+  * application/json
+
+#### Security Requirements
+  * AccessToken
+
+#### Parameters
+
+| Name | Source | Type | Go type | Separator | Required | Default | Description |
+|------|--------|------|---------|-----------| :------: |---------|-------------|
+| resource_id | `path` | uuid (formatted string) | `strfmt.UUID` |  | ✓ |  | The permission id in UUID format |
+
+#### All responses
+| Code | Status | Description | Has headers | Schema |
+|------|--------|-------------|:-----------:|--------|
+| [200](#0198042a-f9c5-76b2-b8b1-bc0223a0f18d-200) | OK | OK |  | [schema](#0198042a-f9c5-76b2-b8b1-bc0223a0f18d-200-schema) |
+| [400](#0198042a-f9c5-76b2-b8b1-bc0223a0f18d-400) | Bad Request | Bad Request |  | [schema](#0198042a-f9c5-76b2-b8b1-bc0223a0f18d-400-schema) |
+| [404](#0198042a-f9c5-76b2-b8b1-bc0223a0f18d-404) | Not Found | Not Found |  | [schema](#0198042a-f9c5-76b2-b8b1-bc0223a0f18d-404-schema) |
+| [500](#0198042a-f9c5-76b2-b8b1-bc0223a0f18d-500) | Internal Server Error | Internal Server Error |  | [schema](#0198042a-f9c5-76b2-b8b1-bc0223a0f18d-500-schema) |
+
+#### Responses
+
+
+##### <span id="0198042a-f9c5-76b2-b8b1-bc0223a0f18d-200"></span> 200 - OK
+Status: OK
+
+###### <span id="0198042a-f9c5-76b2-b8b1-bc0223a0f18d-200-schema"></span> Schema
+   
+  
+
+[ModelResource](#model-resource)
+
+##### <span id="0198042a-f9c5-76b2-b8b1-bc0223a0f18d-400"></span> 400 - Bad Request
+Status: Bad Request
+
+###### <span id="0198042a-f9c5-76b2-b8b1-bc0223a0f18d-400-schema"></span> Schema
+   
+  
+
+[ModelHTTPMessage](#model-http-message)
+
+##### <span id="0198042a-f9c5-76b2-b8b1-bc0223a0f18d-404"></span> 404 - Not Found
+Status: Not Found
+
+###### <span id="0198042a-f9c5-76b2-b8b1-bc0223a0f18d-404-schema"></span> Schema
+   
+  
+
+[ModelHTTPMessage](#model-http-message)
+
+##### <span id="0198042a-f9c5-76b2-b8b1-bc0223a0f18d-500"></span> 500 - Internal Server Error
+Status: Internal Server Error
+
+###### <span id="0198042a-f9c5-76b2-b8b1-bc0223a0f18d-500-schema"></span> Schema
+   
+  
+
+[ModelHTTPMessage](#model-http-message)
+
+### <span id="0198042a-f9c5-76b6-bd55-f34dff7b0632"></span> List resources (*0198042a-f9c5-76b6-bd55-f34dff7b0632*)
+
+```
+GET /resources
+```
+
+Retrieve paginated list of all resources in the system
+
+#### Produces
+  * application/json
+
+#### Security Requirements
+  * AccessToken
+
+#### Parameters
+
+| Name | Source | Type | Go type | Separator | Required | Default | Description |
+|------|--------|------|---------|-----------| :------: |---------|-------------|
+| fields | `query` | string (formatted string) | `string` |  |  |  | Fields to return. Example: id,first_name,last_name |
+| filter | `query` | string (formatted string) | `string` |  |  |  | Filter field. Example: id=1 AND first_name='John' |
+| limit | `query` | int (formatted integer) | `int64` |  |  |  | Limit |
+| next_token | `query` | string (formatted string) | `string` |  |  |  | Next cursor |
+| prev_token | `query` | string (formatted string) | `string` |  |  |  | Previous cursor |
+| sort | `query` | string (formatted string) | `string` |  |  |  | Comma-separated list of fields to sort by. Example: first_name ASC, created_at DESC |
+
+#### All responses
+| Code | Status | Description | Has headers | Schema |
+|------|--------|-------------|:-----------:|--------|
+| [200](#0198042a-f9c5-76b6-bd55-f34dff7b0632-200) | OK | OK |  | [schema](#0198042a-f9c5-76b6-bd55-f34dff7b0632-200-schema) |
+| [400](#0198042a-f9c5-76b6-bd55-f34dff7b0632-400) | Bad Request | Bad Request |  | [schema](#0198042a-f9c5-76b6-bd55-f34dff7b0632-400-schema) |
+| [500](#0198042a-f9c5-76b6-bd55-f34dff7b0632-500) | Internal Server Error | Internal Server Error |  | [schema](#0198042a-f9c5-76b6-bd55-f34dff7b0632-500-schema) |
+
+#### Responses
+
+
+##### <span id="0198042a-f9c5-76b6-bd55-f34dff7b0632-200"></span> 200 - OK
+Status: OK
+
+###### <span id="0198042a-f9c5-76b6-bd55-f34dff7b0632-200-schema"></span> Schema
+   
+  
+
+[ModelListResourcesResponse](#model-list-resources-response)
+
+##### <span id="0198042a-f9c5-76b6-bd55-f34dff7b0632-400"></span> 400 - Bad Request
+Status: Bad Request
+
+###### <span id="0198042a-f9c5-76b6-bd55-f34dff7b0632-400-schema"></span> Schema
+   
+  
+
+[ModelHTTPMessage](#model-http-message)
+
+##### <span id="0198042a-f9c5-76b6-bd55-f34dff7b0632-500"></span> 500 - Internal Server Error
+Status: Internal Server Error
+
+###### <span id="0198042a-f9c5-76b6-bd55-f34dff7b0632-500-schema"></span> Schema
+   
+  
+
+[ModelHTTPMessage](#model-http-message)
+
+### <span id="0198042a-f9c5-76ba-bc87-6e9e32988407"></span> Match resources (*0198042a-f9c5-76ba-bc87-6e9e32988407*)
+
+```
+GET /resources/matches
+```
+
+Find resources that match specific action and resource policy patterns
+
+#### Produces
+  * application/json
+
+#### Security Requirements
+  * AccessToken
+
+#### Parameters
+
+| Name | Source | Type | Go type | Separator | Required | Default | Description |
+|------|--------|------|---------|-----------| :------: |---------|-------------|
+| action | `query` | string (formatted string) | `string` |  | ✓ |  | Action to filter by |
+| fields | `query` | string (formatted string) | `string` |  |  |  | Fields to return. Example: id,first_name,last_name |
+| limit | `query` | int (formatted integer) | `int64` |  |  |  | Limit |
+| next_token | `query` | string (formatted string) | `string` |  |  |  | Next cursor |
+| prev_token | `query` | string (formatted string) | `string` |  |  |  | Previous cursor |
+| resource | `query` | string (formatted string) | `string` |  | ✓ |  | Resource to filter by |
+| sort | `query` | string (formatted string) | `string` |  |  |  | Comma-separated list of fields to sort by. Example: first_name ASC, created_at DESC |
+
+#### All responses
+| Code | Status | Description | Has headers | Schema |
+|------|--------|-------------|:-----------:|--------|
+| [200](#0198042a-f9c5-76ba-bc87-6e9e32988407-200) | OK | OK |  | [schema](#0198042a-f9c5-76ba-bc87-6e9e32988407-200-schema) |
+| [400](#0198042a-f9c5-76ba-bc87-6e9e32988407-400) | Bad Request | Bad Request |  | [schema](#0198042a-f9c5-76ba-bc87-6e9e32988407-400-schema) |
+| [500](#0198042a-f9c5-76ba-bc87-6e9e32988407-500) | Internal Server Error | Internal Server Error |  | [schema](#0198042a-f9c5-76ba-bc87-6e9e32988407-500-schema) |
+
+#### Responses
+
+
+##### <span id="0198042a-f9c5-76ba-bc87-6e9e32988407-200"></span> 200 - OK
+Status: OK
+
+###### <span id="0198042a-f9c5-76ba-bc87-6e9e32988407-200-schema"></span> Schema
+   
+  
+
+[ModelListResourcesResponse](#model-list-resources-response)
+
+##### <span id="0198042a-f9c5-76ba-bc87-6e9e32988407-400"></span> 400 - Bad Request
+Status: Bad Request
+
+###### <span id="0198042a-f9c5-76ba-bc87-6e9e32988407-400-schema"></span> Schema
+   
+  
+
+[ModelHTTPMessage](#model-http-message)
+
+##### <span id="0198042a-f9c5-76ba-bc87-6e9e32988407-500"></span> 500 - Internal Server Error
+Status: Internal Server Error
+
+###### <span id="0198042a-f9c5-76ba-bc87-6e9e32988407-500-schema"></span> Schema
+   
+  
+
+[ModelHTTPMessage](#model-http-message)
+
+### <span id="0198042a-f9c5-76be-ba9e-8186a69f48c4"></span> Check health (*0198042a-f9c5-76be-ba9e-8186a69f48c4*)
+
+```
+GET /health/status
+```
+
+Check service health status including database connectivity and system metrics
+
+#### Produces
+  * application/json
+
+#### All responses
+| Code | Status | Description | Has headers | Schema |
+|------|--------|-------------|:-----------:|--------|
+| [200](#0198042a-f9c5-76be-ba9e-8186a69f48c4-200) | OK | OK |  | [schema](#0198042a-f9c5-76be-ba9e-8186a69f48c4-200-schema) |
+| [500](#0198042a-f9c5-76be-ba9e-8186a69f48c4-500) | Internal Server Error | Internal Server Error |  | [schema](#0198042a-f9c5-76be-ba9e-8186a69f48c4-500-schema) |
+
+#### Responses
+
+
+##### <span id="0198042a-f9c5-76be-ba9e-8186a69f48c4-200"></span> 200 - OK
+Status: OK
+
+###### <span id="0198042a-f9c5-76be-ba9e-8186a69f48c4-200-schema"></span> Schema
+   
+  
+
+[ModelHealth](#model-health)
+
+##### <span id="0198042a-f9c5-76be-ba9e-8186a69f48c4-500"></span> 500 - Internal Server Error
+Status: Internal Server Error
+
+###### <span id="0198042a-f9c5-76be-ba9e-8186a69f48c4-500-schema"></span> Schema
+   
+  
+
+[ModelHTTPMessage](#model-http-message)
+
+### <span id="0198042a-f9c5-76c2-96f2-d16b0674bcd9"></span> Get policy (*0198042a-f9c5-76c2-96f2-d16b0674bcd9*)
+
+```
+GET /policies/{policy_id}
+```
+
+Retrieve a specific policy by its unique identifier
+
+#### Produces
+  * application/json
+
+#### Security Requirements
+  * AccessToken
+
+#### Parameters
+
+| Name | Source | Type | Go type | Separator | Required | Default | Description |
+|------|--------|------|---------|-----------| :------: |---------|-------------|
+| policy_id | `path` | uuid (formatted string) | `strfmt.UUID` |  | ✓ |  | The policy id in UUID format |
+
+#### All responses
+| Code | Status | Description | Has headers | Schema |
+|------|--------|-------------|:-----------:|--------|
+| [200](#0198042a-f9c5-76c2-96f2-d16b0674bcd9-200) | OK | OK |  | [schema](#0198042a-f9c5-76c2-96f2-d16b0674bcd9-200-schema) |
+| [400](#0198042a-f9c5-76c2-96f2-d16b0674bcd9-400) | Bad Request | Bad Request |  | [schema](#0198042a-f9c5-76c2-96f2-d16b0674bcd9-400-schema) |
+| [404](#0198042a-f9c5-76c2-96f2-d16b0674bcd9-404) | Not Found | Not Found |  | [schema](#0198042a-f9c5-76c2-96f2-d16b0674bcd9-404-schema) |
+| [500](#0198042a-f9c5-76c2-96f2-d16b0674bcd9-500) | Internal Server Error | Internal Server Error |  | [schema](#0198042a-f9c5-76c2-96f2-d16b0674bcd9-500-schema) |
+
+#### Responses
+
+
+##### <span id="0198042a-f9c5-76c2-96f2-d16b0674bcd9-200"></span> 200 - OK
+Status: OK
+
+###### <span id="0198042a-f9c5-76c2-96f2-d16b0674bcd9-200-schema"></span> Schema
+   
+  
+
+[ModelPolicy](#model-policy)
+
+##### <span id="0198042a-f9c5-76c2-96f2-d16b0674bcd9-400"></span> 400 - Bad Request
+Status: Bad Request
+
+###### <span id="0198042a-f9c5-76c2-96f2-d16b0674bcd9-400-schema"></span> Schema
+   
+  
+
+[ModelHTTPMessage](#model-http-message)
+
+##### <span id="0198042a-f9c5-76c2-96f2-d16b0674bcd9-404"></span> 404 - Not Found
+Status: Not Found
+
+###### <span id="0198042a-f9c5-76c2-96f2-d16b0674bcd9-404-schema"></span> Schema
+   
+  
+
+[ModelHTTPMessage](#model-http-message)
+
+##### <span id="0198042a-f9c5-76c2-96f2-d16b0674bcd9-500"></span> 500 - Internal Server Error
+Status: Internal Server Error
+
+###### <span id="0198042a-f9c5-76c2-96f2-d16b0674bcd9-500-schema"></span> Schema
+   
+  
+
+[ModelHTTPMessage](#model-http-message)
+
+### <span id="0198042a-f9c5-76c6-9a07-0c8948640ac2"></span> Create policy (*0198042a-f9c5-76c6-9a07-0c8948640ac2*)
+
+```
+POST /policies
+```
+
+Create a new policy with specified permissions
+
+#### Consumes
+  * application/json
+
+#### Produces
+  * application/json
+
+#### Security Requirements
+  * AccessToken
+
+#### Parameters
+
+| Name | Source | Type | Go type | Separator | Required | Default | Description |
+|------|--------|------|---------|-----------| :------: |---------|-------------|
+| body | `body` | [ModelCreatePolicyRequest](#model-create-policy-request) | `models.ModelCreatePolicyRequest` | | ✓ | | Create policy Request |
+
+#### All responses
+| Code | Status | Description | Has headers | Schema |
+|------|--------|-------------|:-----------:|--------|
+| [201](#0198042a-f9c5-76c6-9a07-0c8948640ac2-201) | Created | Created |  | [schema](#0198042a-f9c5-76c6-9a07-0c8948640ac2-201-schema) |
+| [400](#0198042a-f9c5-76c6-9a07-0c8948640ac2-400) | Bad Request | Bad Request |  | [schema](#0198042a-f9c5-76c6-9a07-0c8948640ac2-400-schema) |
+| [409](#0198042a-f9c5-76c6-9a07-0c8948640ac2-409) | Conflict | Conflict |  | [schema](#0198042a-f9c5-76c6-9a07-0c8948640ac2-409-schema) |
+| [500](#0198042a-f9c5-76c6-9a07-0c8948640ac2-500) | Internal Server Error | Internal Server Error |  | [schema](#0198042a-f9c5-76c6-9a07-0c8948640ac2-500-schema) |
+
+#### Responses
+
+
+##### <span id="0198042a-f9c5-76c6-9a07-0c8948640ac2-201"></span> 201 - Created
+Status: Created
+
+###### <span id="0198042a-f9c5-76c6-9a07-0c8948640ac2-201-schema"></span> Schema
+   
+  
+
+[ModelHTTPMessage](#model-http-message)
+
+##### <span id="0198042a-f9c5-76c6-9a07-0c8948640ac2-400"></span> 400 - Bad Request
+Status: Bad Request
+
+###### <span id="0198042a-f9c5-76c6-9a07-0c8948640ac2-400-schema"></span> Schema
+   
+  
+
+[ModelHTTPMessage](#model-http-message)
+
+##### <span id="0198042a-f9c5-76c6-9a07-0c8948640ac2-409"></span> 409 - Conflict
+Status: Conflict
+
+###### <span id="0198042a-f9c5-76c6-9a07-0c8948640ac2-409-schema"></span> Schema
+   
+  
+
+[ModelHTTPMessage](#model-http-message)
+
+##### <span id="0198042a-f9c5-76c6-9a07-0c8948640ac2-500"></span> 500 - Internal Server Error
+Status: Internal Server Error
+
+###### <span id="0198042a-f9c5-76c6-9a07-0c8948640ac2-500-schema"></span> Schema
+   
+  
+
+[ModelHTTPMessage](#model-http-message)
+
+### <span id="0198042a-f9c5-76ca-b40d-b1de1d359c22"></span> Update policy (*0198042a-f9c5-76ca-b40d-b1de1d359c22*)
+
+```
+PUT /policies/{policy_id}
+```
+
+Modify an existing policy by its ID
+
+#### Consumes
+  * application/json
+
+#### Produces
+  * application/json
+
+#### Security Requirements
+  * AccessToken
+
+#### Parameters
+
+| Name | Source | Type | Go type | Separator | Required | Default | Description |
+|------|--------|------|---------|-----------| :------: |---------|-------------|
+| policy_id | `path` | uuid (formatted string) | `strfmt.UUID` |  | ✓ |  | The policy id in UUID format |
+| body | `body` | [ModelUpdatePolicyRequest](#model-update-policy-request) | `models.ModelUpdatePolicyRequest` | | ✓ | | Update policy Request |
+
+#### All responses
+| Code | Status | Description | Has headers | Schema |
+|------|--------|-------------|:-----------:|--------|
+| [200](#0198042a-f9c5-76ca-b40d-b1de1d359c22-200) | OK | OK |  | [schema](#0198042a-f9c5-76ca-b40d-b1de1d359c22-200-schema) |
+| [400](#0198042a-f9c5-76ca-b40d-b1de1d359c22-400) | Bad Request | Bad Request |  | [schema](#0198042a-f9c5-76ca-b40d-b1de1d359c22-400-schema) |
+| [404](#0198042a-f9c5-76ca-b40d-b1de1d359c22-404) | Not Found | Not Found |  | [schema](#0198042a-f9c5-76ca-b40d-b1de1d359c22-404-schema) |
+| [500](#0198042a-f9c5-76ca-b40d-b1de1d359c22-500) | Internal Server Error | Internal Server Error |  | [schema](#0198042a-f9c5-76ca-b40d-b1de1d359c22-500-schema) |
+
+#### Responses
+
+
+##### <span id="0198042a-f9c5-76ca-b40d-b1de1d359c22-200"></span> 200 - OK
+Status: OK
+
+###### <span id="0198042a-f9c5-76ca-b40d-b1de1d359c22-200-schema"></span> Schema
+   
+  
+
+[ModelHTTPMessage](#model-http-message)
+
+##### <span id="0198042a-f9c5-76ca-b40d-b1de1d359c22-400"></span> 400 - Bad Request
+Status: Bad Request
+
+###### <span id="0198042a-f9c5-76ca-b40d-b1de1d359c22-400-schema"></span> Schema
+   
+  
+
+[ModelHTTPMessage](#model-http-message)
+
+##### <span id="0198042a-f9c5-76ca-b40d-b1de1d359c22-404"></span> 404 - Not Found
+Status: Not Found
+
+###### <span id="0198042a-f9c5-76ca-b40d-b1de1d359c22-404-schema"></span> Schema
+   
+  
+
+[ModelHTTPMessage](#model-http-message)
+
+##### <span id="0198042a-f9c5-76ca-b40d-b1de1d359c22-500"></span> 500 - Internal Server Error
+Status: Internal Server Error
+
+###### <span id="0198042a-f9c5-76ca-b40d-b1de1d359c22-500-schema"></span> Schema
+   
+  
+
+[ModelHTTPMessage](#model-http-message)
+
+### <span id="0198042a-f9c5-76ce-b208-2f58f7ccd177"></span> Delete policy (*0198042a-f9c5-76ce-b208-2f58f7ccd177*)
+
+```
+DELETE /policies/{policy_id}
+```
+
+Remove a policy permanently from the system
+
+#### Produces
+  * application/json
+
+#### Security Requirements
+  * AccessToken
+
+#### Parameters
+
+| Name | Source | Type | Go type | Separator | Required | Default | Description |
+|------|--------|------|---------|-----------| :------: |---------|-------------|
+| policy_id | `path` | uuid (formatted string) | `strfmt.UUID` |  | ✓ |  | The policy id in UUID format |
+
+#### All responses
+| Code | Status | Description | Has headers | Schema |
+|------|--------|-------------|:-----------:|--------|
+| [200](#0198042a-f9c5-76ce-b208-2f58f7ccd177-200) | OK | OK |  | [schema](#0198042a-f9c5-76ce-b208-2f58f7ccd177-200-schema) |
+| [400](#0198042a-f9c5-76ce-b208-2f58f7ccd177-400) | Bad Request | Bad Request |  | [schema](#0198042a-f9c5-76ce-b208-2f58f7ccd177-400-schema) |
+| [404](#0198042a-f9c5-76ce-b208-2f58f7ccd177-404) | Not Found | Not Found |  | [schema](#0198042a-f9c5-76ce-b208-2f58f7ccd177-404-schema) |
+| [500](#0198042a-f9c5-76ce-b208-2f58f7ccd177-500) | Internal Server Error | Internal Server Error |  | [schema](#0198042a-f9c5-76ce-b208-2f58f7ccd177-500-schema) |
+
+#### Responses
+
+
+##### <span id="0198042a-f9c5-76ce-b208-2f58f7ccd177-200"></span> 200 - OK
+Status: OK
+
+###### <span id="0198042a-f9c5-76ce-b208-2f58f7ccd177-200-schema"></span> Schema
+   
+  
+
+[ModelHTTPMessage](#model-http-message)
+
+##### <span id="0198042a-f9c5-76ce-b208-2f58f7ccd177-400"></span> 400 - Bad Request
+Status: Bad Request
+
+###### <span id="0198042a-f9c5-76ce-b208-2f58f7ccd177-400-schema"></span> Schema
+   
+  
+
+[ModelHTTPMessage](#model-http-message)
+
+##### <span id="0198042a-f9c5-76ce-b208-2f58f7ccd177-404"></span> 404 - Not Found
+Status: Not Found
+
+###### <span id="0198042a-f9c5-76ce-b208-2f58f7ccd177-404-schema"></span> Schema
+   
+  
+
+[ModelHTTPMessage](#model-http-message)
+
+##### <span id="0198042a-f9c5-76ce-b208-2f58f7ccd177-500"></span> 500 - Internal Server Error
+Status: Internal Server Error
+
+###### <span id="0198042a-f9c5-76ce-b208-2f58f7ccd177-500-schema"></span> Schema
+   
+  
+
+[ModelHTTPMessage](#model-http-message)
+
+### <span id="0198042a-f9c5-76d2-a491-9cc989c1d59c"></span> List policies (*0198042a-f9c5-76d2-a491-9cc989c1d59c*)
+
+```
+GET /policies
+```
+
+Retrieve paginated list of all policies in the system
+
+#### Produces
+  * application/json
+
+#### Security Requirements
+  * AccessToken
+
+#### Parameters
+
+| Name | Source | Type | Go type | Separator | Required | Default | Description |
+|------|--------|------|---------|-----------| :------: |---------|-------------|
+| fields | `query` | string (formatted string) | `string` |  |  |  | Fields to return. Example: id,first_name,last_name |
+| filter | `query` | string (formatted string) | `string` |  |  |  | Filter field. Example: id=1 AND first_name='John' |
+| limit | `query` | int (formatted integer) | `int64` |  |  |  | Limit |
+| next_token | `query` | string (formatted string) | `string` |  |  |  | Next cursor |
+| prev_token | `query` | string (formatted string) | `string` |  |  |  | Previous cursor |
+| sort | `query` | string (formatted string) | `string` |  |  |  | Comma-separated list of fields to sort by. Example: first_name ASC, created_at DESC |
+
+#### All responses
+| Code | Status | Description | Has headers | Schema |
+|------|--------|-------------|:-----------:|--------|
+| [200](#0198042a-f9c5-76d2-a491-9cc989c1d59c-200) | OK | OK |  | [schema](#0198042a-f9c5-76d2-a491-9cc989c1d59c-200-schema) |
+| [400](#0198042a-f9c5-76d2-a491-9cc989c1d59c-400) | Bad Request | Bad Request |  | [schema](#0198042a-f9c5-76d2-a491-9cc989c1d59c-400-schema) |
+| [500](#0198042a-f9c5-76d2-a491-9cc989c1d59c-500) | Internal Server Error | Internal Server Error |  | [schema](#0198042a-f9c5-76d2-a491-9cc989c1d59c-500-schema) |
+
+#### Responses
+
+
+##### <span id="0198042a-f9c5-76d2-a491-9cc989c1d59c-200"></span> 200 - OK
+Status: OK
+
+###### <span id="0198042a-f9c5-76d2-a491-9cc989c1d59c-200-schema"></span> Schema
+   
+  
+
+[ModelListPoliciesResponse](#model-list-policies-response)
+
+##### <span id="0198042a-f9c5-76d2-a491-9cc989c1d59c-400"></span> 400 - Bad Request
+Status: Bad Request
+
+###### <span id="0198042a-f9c5-76d2-a491-9cc989c1d59c-400-schema"></span> Schema
+   
+  
+
+[ModelHTTPMessage](#model-http-message)
+
+##### <span id="0198042a-f9c5-76d2-a491-9cc989c1d59c-500"></span> 500 - Internal Server Error
+Status: Internal Server Error
+
+###### <span id="0198042a-f9c5-76d2-a491-9cc989c1d59c-500-schema"></span> Schema
+   
+  
+
+[ModelHTTPMessage](#model-http-message)
+
+### <span id="0198042a-f9c5-76d6-b1f3-0bfb57a9197f"></span> Link roles to policy (*0198042a-f9c5-76d6-b1f3-0bfb57a9197f*)
+
+```
+POST /policies/{policy_id}/roles
+```
+
+Associate multiple roles with a specific policy for authorization
+
+#### Consumes
+  * application/json
+
+#### Produces
+  * application/json
+
+#### Security Requirements
+  * AccessToken
+
+#### Parameters
+
+| Name | Source | Type | Go type | Separator | Required | Default | Description |
+|------|--------|------|---------|-----------| :------: |---------|-------------|
+| policy_id | `path` | uuid (formatted string) | `strfmt.UUID` |  | ✓ |  | The policy id in UUID format |
+| body | `body` | [ModelLinkRolesToPolicyRequest](#model-link-roles-to-policy-request) | `models.ModelLinkRolesToPolicyRequest` | | ✓ | | Link policy to roles Request |
+
+#### All responses
+| Code | Status | Description | Has headers | Schema |
+|------|--------|-------------|:-----------:|--------|
+| [200](#0198042a-f9c5-76d6-b1f3-0bfb57a9197f-200) | OK | OK |  | [schema](#0198042a-f9c5-76d6-b1f3-0bfb57a9197f-200-schema) |
+| [400](#0198042a-f9c5-76d6-b1f3-0bfb57a9197f-400) | Bad Request | Bad Request |  | [schema](#0198042a-f9c5-76d6-b1f3-0bfb57a9197f-400-schema) |
+| [404](#0198042a-f9c5-76d6-b1f3-0bfb57a9197f-404) | Not Found | Not Found |  | [schema](#0198042a-f9c5-76d6-b1f3-0bfb57a9197f-404-schema) |
+| [500](#0198042a-f9c5-76d6-b1f3-0bfb57a9197f-500) | Internal Server Error | Internal Server Error |  | [schema](#0198042a-f9c5-76d6-b1f3-0bfb57a9197f-500-schema) |
+
+#### Responses
+
+
+##### <span id="0198042a-f9c5-76d6-b1f3-0bfb57a9197f-200"></span> 200 - OK
+Status: OK
+
+###### <span id="0198042a-f9c5-76d6-b1f3-0bfb57a9197f-200-schema"></span> Schema
+   
+  
+
+[ModelHTTPMessage](#model-http-message)
+
+##### <span id="0198042a-f9c5-76d6-b1f3-0bfb57a9197f-400"></span> 400 - Bad Request
+Status: Bad Request
+
+###### <span id="0198042a-f9c5-76d6-b1f3-0bfb57a9197f-400-schema"></span> Schema
+   
+  
+
+[ModelHTTPMessage](#model-http-message)
+
+##### <span id="0198042a-f9c5-76d6-b1f3-0bfb57a9197f-404"></span> 404 - Not Found
+Status: Not Found
+
+###### <span id="0198042a-f9c5-76d6-b1f3-0bfb57a9197f-404-schema"></span> Schema
+   
+  
+
+[ModelHTTPMessage](#model-http-message)
+
+##### <span id="0198042a-f9c5-76d6-b1f3-0bfb57a9197f-500"></span> 500 - Internal Server Error
+Status: Internal Server Error
+
+###### <span id="0198042a-f9c5-76d6-b1f3-0bfb57a9197f-500-schema"></span> Schema
+   
+  
+
+[ModelHTTPMessage](#model-http-message)
+
+### <span id="0198042a-f9c5-76d9-8019-babd51a0c340"></span> Unlink roles from policy (*0198042a-f9c5-76d9-8019-babd51a0c340*)
+
+```
+DELETE /policies/{policy_id}/roles
+```
+
+Remove role associations from a specific policy
+
+#### Consumes
+  * application/json
+
+#### Produces
+  * application/json
+
+#### Security Requirements
+  * AccessToken
+
+#### Parameters
+
+| Name | Source | Type | Go type | Separator | Required | Default | Description |
+|------|--------|------|---------|-----------| :------: |---------|-------------|
+| policy_id | `path` | uuid (formatted string) | `strfmt.UUID` |  | ✓ |  | The policy id in UUID format |
+| body | `body` | [ModelUnlinkRolesFromPolicyRequest](#model-unlink-roles-from-policy-request) | `models.ModelUnlinkRolesFromPolicyRequest` | | ✓ | | Unlink policy from roles Request |
+
+#### All responses
+| Code | Status | Description | Has headers | Schema |
+|------|--------|-------------|:-----------:|--------|
+| [200](#0198042a-f9c5-76d9-8019-babd51a0c340-200) | OK | OK |  | [schema](#0198042a-f9c5-76d9-8019-babd51a0c340-200-schema) |
+| [400](#0198042a-f9c5-76d9-8019-babd51a0c340-400) | Bad Request | Bad Request |  | [schema](#0198042a-f9c5-76d9-8019-babd51a0c340-400-schema) |
+| [404](#0198042a-f9c5-76d9-8019-babd51a0c340-404) | Not Found | Not Found |  | [schema](#0198042a-f9c5-76d9-8019-babd51a0c340-404-schema) |
+| [500](#0198042a-f9c5-76d9-8019-babd51a0c340-500) | Internal Server Error | Internal Server Error |  | [schema](#0198042a-f9c5-76d9-8019-babd51a0c340-500-schema) |
+
+#### Responses
+
+
+##### <span id="0198042a-f9c5-76d9-8019-babd51a0c340-200"></span> 200 - OK
+Status: OK
+
+###### <span id="0198042a-f9c5-76d9-8019-babd51a0c340-200-schema"></span> Schema
+   
+  
+
+[ModelHTTPMessage](#model-http-message)
+
+##### <span id="0198042a-f9c5-76d9-8019-babd51a0c340-400"></span> 400 - Bad Request
+Status: Bad Request
+
+###### <span id="0198042a-f9c5-76d9-8019-babd51a0c340-400-schema"></span> Schema
+   
+  
+
+[ModelHTTPMessage](#model-http-message)
+
+##### <span id="0198042a-f9c5-76d9-8019-babd51a0c340-404"></span> 404 - Not Found
+Status: Not Found
+
+###### <span id="0198042a-f9c5-76d9-8019-babd51a0c340-404-schema"></span> Schema
+   
+  
+
+[ModelHTTPMessage](#model-http-message)
+
+##### <span id="0198042a-f9c5-76d9-8019-babd51a0c340-500"></span> 500 - Internal Server Error
+Status: Internal Server Error
+
+###### <span id="0198042a-f9c5-76d9-8019-babd51a0c340-500-schema"></span> Schema
+   
+  
+
+[ModelHTTPMessage](#model-http-message)
+
+### <span id="0198042a-f9c5-76dd-8fa8-98df6be12d44"></span> List policies by role (*0198042a-f9c5-76dd-8fa8-98df6be12d44*)
+
+```
+GET /roles/{role_id}/policies
+```
+
+Retrieve paginated list of policies associated with a specific role
+
+#### Produces
+  * application/json
+
+#### Security Requirements
+  * AccessToken
+
+#### Parameters
+
+| Name | Source | Type | Go type | Separator | Required | Default | Description |
+|------|--------|------|---------|-----------| :------: |---------|-------------|
+| role_id | `path` | uuid (formatted string) | `strfmt.UUID` |  | ✓ |  | The role id in UUID format |
+| fields | `query` | string (formatted string) | `string` |  |  |  | Fields to return. Example: id,first_name,last_name |
+| filter | `query` | string (formatted string) | `string` |  |  |  | Filter field. Example: id=1 AND first_name='John' |
+| limit | `query` | int (formatted integer) | `int64` |  |  |  | Limit |
+| next_token | `query` | string (formatted string) | `string` |  |  |  | Next cursor |
+| prev_token | `query` | string (formatted string) | `string` |  |  |  | Previous cursor |
+| sort | `query` | string (formatted string) | `string` |  |  |  | Comma-separated list of fields to sort by. Example: first_name ASC, created_at DESC |
+
+#### All responses
+| Code | Status | Description | Has headers | Schema |
+|------|--------|-------------|:-----------:|--------|
+| [200](#0198042a-f9c5-76dd-8fa8-98df6be12d44-200) | OK | OK |  | [schema](#0198042a-f9c5-76dd-8fa8-98df6be12d44-200-schema) |
+| [400](#0198042a-f9c5-76dd-8fa8-98df6be12d44-400) | Bad Request | Bad Request |  | [schema](#0198042a-f9c5-76dd-8fa8-98df6be12d44-400-schema) |
+| [500](#0198042a-f9c5-76dd-8fa8-98df6be12d44-500) | Internal Server Error | Internal Server Error |  | [schema](#0198042a-f9c5-76dd-8fa8-98df6be12d44-500-schema) |
+
+#### Responses
+
+
+##### <span id="0198042a-f9c5-76dd-8fa8-98df6be12d44-200"></span> 200 - OK
+Status: OK
+
+###### <span id="0198042a-f9c5-76dd-8fa8-98df6be12d44-200-schema"></span> Schema
+   
+  
+
+[ModelListPoliciesResponse](#model-list-policies-response)
+
+##### <span id="0198042a-f9c5-76dd-8fa8-98df6be12d44-400"></span> 400 - Bad Request
+Status: Bad Request
+
+###### <span id="0198042a-f9c5-76dd-8fa8-98df6be12d44-400-schema"></span> Schema
+   
+  
+
+[ModelHTTPMessage](#model-http-message)
+
+##### <span id="0198042a-f9c5-76dd-8fa8-98df6be12d44-500"></span> 500 - Internal Server Error
+Status: Internal Server Error
+
+###### <span id="0198042a-f9c5-76dd-8fa8-98df6be12d44-500-schema"></span> Schema
+   
+  
+
+[ModelHTTPMessage](#model-http-message)
+
+### <span id="0198042a-f9c5-76e1-a650-772c826f079e"></span> Get role (*0198042a-f9c5-76e1-a650-772c826f079e*)
+
+```
+GET /roles/{role_id}
+```
+
+Retrieve a specific role by its unique identifier
+
+#### Produces
+  * application/json
+
+#### Security Requirements
+  * AccessToken
+
+#### Parameters
+
+| Name | Source | Type | Go type | Separator | Required | Default | Description |
+|------|--------|------|---------|-----------| :------: |---------|-------------|
+| role_id | `path` | uuid (formatted string) | `strfmt.UUID` |  | ✓ |  | The role id in UUID format |
+
+#### All responses
+| Code | Status | Description | Has headers | Schema |
+|------|--------|-------------|:-----------:|--------|
+| [200](#0198042a-f9c5-76e1-a650-772c826f079e-200) | OK | OK |  | [schema](#0198042a-f9c5-76e1-a650-772c826f079e-200-schema) |
+| [400](#0198042a-f9c5-76e1-a650-772c826f079e-400) | Bad Request | Bad Request |  | [schema](#0198042a-f9c5-76e1-a650-772c826f079e-400-schema) |
+| [404](#0198042a-f9c5-76e1-a650-772c826f079e-404) | Not Found | Not Found |  | [schema](#0198042a-f9c5-76e1-a650-772c826f079e-404-schema) |
+| [500](#0198042a-f9c5-76e1-a650-772c826f079e-500) | Internal Server Error | Internal Server Error |  | [schema](#0198042a-f9c5-76e1-a650-772c826f079e-500-schema) |
+
+#### Responses
+
+
+##### <span id="0198042a-f9c5-76e1-a650-772c826f079e-200"></span> 200 - OK
+Status: OK
+
+###### <span id="0198042a-f9c5-76e1-a650-772c826f079e-200-schema"></span> Schema
+   
+  
+
+[ModelRole](#model-role)
+
+##### <span id="0198042a-f9c5-76e1-a650-772c826f079e-400"></span> 400 - Bad Request
+Status: Bad Request
+
+###### <span id="0198042a-f9c5-76e1-a650-772c826f079e-400-schema"></span> Schema
+   
+  
+
+[ModelHTTPMessage](#model-http-message)
+
+##### <span id="0198042a-f9c5-76e1-a650-772c826f079e-404"></span> 404 - Not Found
+Status: Not Found
+
+###### <span id="0198042a-f9c5-76e1-a650-772c826f079e-404-schema"></span> Schema
+   
+  
+
+[ModelHTTPMessage](#model-http-message)
+
+##### <span id="0198042a-f9c5-76e1-a650-772c826f079e-500"></span> 500 - Internal Server Error
+Status: Internal Server Error
+
+###### <span id="0198042a-f9c5-76e1-a650-772c826f079e-500-schema"></span> Schema
+   
+  
+
+[ModelHTTPMessage](#model-http-message)
+
+### <span id="0198042a-f9c5-76e5-8fe5-b93a07311c47"></span> Create role (*0198042a-f9c5-76e5-8fe5-b93a07311c47*)
+
+```
+POST /roles
+```
+
+Create a new role with specified permissions and access levels
+
+#### Consumes
+  * application/json
+
+#### Produces
+  * application/json
+
+#### Security Requirements
+  * AccessToken
+
+#### Parameters
+
+| Name | Source | Type | Go type | Separator | Required | Default | Description |
+|------|--------|------|---------|-----------| :------: |---------|-------------|
+| body | `body` | [ModelCreateRoleRequest](#model-create-role-request) | `models.ModelCreateRoleRequest` | | ✓ | | Create role request |
+
+#### All responses
+| Code | Status | Description | Has headers | Schema |
+|------|--------|-------------|:-----------:|--------|
+| [201](#0198042a-f9c5-76e5-8fe5-b93a07311c47-201) | Created | Created |  | [schema](#0198042a-f9c5-76e5-8fe5-b93a07311c47-201-schema) |
+| [400](#0198042a-f9c5-76e5-8fe5-b93a07311c47-400) | Bad Request | Bad Request |  | [schema](#0198042a-f9c5-76e5-8fe5-b93a07311c47-400-schema) |
+| [409](#0198042a-f9c5-76e5-8fe5-b93a07311c47-409) | Conflict | Conflict |  | [schema](#0198042a-f9c5-76e5-8fe5-b93a07311c47-409-schema) |
+| [500](#0198042a-f9c5-76e5-8fe5-b93a07311c47-500) | Internal Server Error | Internal Server Error |  | [schema](#0198042a-f9c5-76e5-8fe5-b93a07311c47-500-schema) |
+
+#### Responses
+
+
+##### <span id="0198042a-f9c5-76e5-8fe5-b93a07311c47-201"></span> 201 - Created
+Status: Created
+
+###### <span id="0198042a-f9c5-76e5-8fe5-b93a07311c47-201-schema"></span> Schema
+   
+  
+
+[ModelHTTPMessage](#model-http-message)
+
+##### <span id="0198042a-f9c5-76e5-8fe5-b93a07311c47-400"></span> 400 - Bad Request
+Status: Bad Request
+
+###### <span id="0198042a-f9c5-76e5-8fe5-b93a07311c47-400-schema"></span> Schema
+   
+  
+
+[ModelHTTPMessage](#model-http-message)
+
+##### <span id="0198042a-f9c5-76e5-8fe5-b93a07311c47-409"></span> 409 - Conflict
+Status: Conflict
+
+###### <span id="0198042a-f9c5-76e5-8fe5-b93a07311c47-409-schema"></span> Schema
+   
+  
+
+[ModelHTTPMessage](#model-http-message)
+
+##### <span id="0198042a-f9c5-76e5-8fe5-b93a07311c47-500"></span> 500 - Internal Server Error
+Status: Internal Server Error
+
+###### <span id="0198042a-f9c5-76e5-8fe5-b93a07311c47-500-schema"></span> Schema
+   
+  
+
+[ModelHTTPMessage](#model-http-message)
+
+### <span id="0198042a-f9c5-76e9-922d-2411530cd8f8"></span> Update role (*0198042a-f9c5-76e9-922d-2411530cd8f8*)
+
+```
+PUT /roles/{role_id}
+```
+
+Modify an existing role by its ID
+
+#### Consumes
+  * application/json
+
+#### Produces
+  * application/json
+
+#### Security Requirements
+  * AccessToken
+
+#### Parameters
+
+| Name | Source | Type | Go type | Separator | Required | Default | Description |
+|------|--------|------|---------|-----------| :------: |---------|-------------|
+| role_id | `path` | uuid (formatted string) | `strfmt.UUID` |  | ✓ |  | The model id in UUID format |
+| body | `body` | [ModelUpdateRoleRequest](#model-update-role-request) | `models.ModelUpdateRoleRequest` | | ✓ | | Update role request |
+
+#### All responses
+| Code | Status | Description | Has headers | Schema |
+|------|--------|-------------|:-----------:|--------|
+| [200](#0198042a-f9c5-76e9-922d-2411530cd8f8-200) | OK | OK |  | [schema](#0198042a-f9c5-76e9-922d-2411530cd8f8-200-schema) |
+| [400](#0198042a-f9c5-76e9-922d-2411530cd8f8-400) | Bad Request | Bad Request |  | [schema](#0198042a-f9c5-76e9-922d-2411530cd8f8-400-schema) |
+| [409](#0198042a-f9c5-76e9-922d-2411530cd8f8-409) | Conflict | Conflict |  | [schema](#0198042a-f9c5-76e9-922d-2411530cd8f8-409-schema) |
+| [500](#0198042a-f9c5-76e9-922d-2411530cd8f8-500) | Internal Server Error | Internal Server Error |  | [schema](#0198042a-f9c5-76e9-922d-2411530cd8f8-500-schema) |
+
+#### Responses
+
+
+##### <span id="0198042a-f9c5-76e9-922d-2411530cd8f8-200"></span> 200 - OK
+Status: OK
+
+###### <span id="0198042a-f9c5-76e9-922d-2411530cd8f8-200-schema"></span> Schema
+   
+  
+
+[ModelHTTPMessage](#model-http-message)
+
+##### <span id="0198042a-f9c5-76e9-922d-2411530cd8f8-400"></span> 400 - Bad Request
+Status: Bad Request
+
+###### <span id="0198042a-f9c5-76e9-922d-2411530cd8f8-400-schema"></span> Schema
+   
+  
+
+[ModelHTTPMessage](#model-http-message)
+
+##### <span id="0198042a-f9c5-76e9-922d-2411530cd8f8-409"></span> 409 - Conflict
+Status: Conflict
+
+###### <span id="0198042a-f9c5-76e9-922d-2411530cd8f8-409-schema"></span> Schema
+   
+  
+
+[ModelHTTPMessage](#model-http-message)
+
+##### <span id="0198042a-f9c5-76e9-922d-2411530cd8f8-500"></span> 500 - Internal Server Error
+Status: Internal Server Error
+
+###### <span id="0198042a-f9c5-76e9-922d-2411530cd8f8-500-schema"></span> Schema
+   
+  
+
+[ModelHTTPMessage](#model-http-message)
+
+### <span id="0198042a-f9c5-76ed-99a5-84923071fa6b"></span> Delete role (*0198042a-f9c5-76ed-99a5-84923071fa6b*)
+
+```
+DELETE /roles/{role_id}
+```
+
+Remove a role permanently from the system
+
+#### Produces
+  * application/json
+
+#### Security Requirements
+  * AccessToken
+
+#### Parameters
+
+| Name | Source | Type | Go type | Separator | Required | Default | Description |
+|------|--------|------|---------|-----------| :------: |---------|-------------|
+| role_id | `path` | uuid (formatted string) | `strfmt.UUID` |  | ✓ |  | The role id in UUID format |
+
+#### All responses
+| Code | Status | Description | Has headers | Schema |
+|------|--------|-------------|:-----------:|--------|
+| [200](#0198042a-f9c5-76ed-99a5-84923071fa6b-200) | OK | OK |  | [schema](#0198042a-f9c5-76ed-99a5-84923071fa6b-200-schema) |
+| [400](#0198042a-f9c5-76ed-99a5-84923071fa6b-400) | Bad Request | Bad Request |  | [schema](#0198042a-f9c5-76ed-99a5-84923071fa6b-400-schema) |
+| [500](#0198042a-f9c5-76ed-99a5-84923071fa6b-500) | Internal Server Error | Internal Server Error |  | [schema](#0198042a-f9c5-76ed-99a5-84923071fa6b-500-schema) |
+
+#### Responses
+
+
+##### <span id="0198042a-f9c5-76ed-99a5-84923071fa6b-200"></span> 200 - OK
+Status: OK
+
+###### <span id="0198042a-f9c5-76ed-99a5-84923071fa6b-200-schema"></span> Schema
+   
+  
+
+[ModelHTTPMessage](#model-http-message)
+
+##### <span id="0198042a-f9c5-76ed-99a5-84923071fa6b-400"></span> 400 - Bad Request
+Status: Bad Request
+
+###### <span id="0198042a-f9c5-76ed-99a5-84923071fa6b-400-schema"></span> Schema
+   
+  
+
+[ModelHTTPMessage](#model-http-message)
+
+##### <span id="0198042a-f9c5-76ed-99a5-84923071fa6b-500"></span> 500 - Internal Server Error
+Status: Internal Server Error
+
+###### <span id="0198042a-f9c5-76ed-99a5-84923071fa6b-500-schema"></span> Schema
+   
+  
+
+[ModelHTTPMessage](#model-http-message)
+
+### <span id="0198042a-f9c5-76f1-9cf8-37e45b647fc0"></span> List roles (*0198042a-f9c5-76f1-9cf8-37e45b647fc0*)
+
+```
+GET /roles
+```
+
+Retrieve paginated list of all roles in the system
+
+#### Produces
+  * application/json
+
+#### Security Requirements
+  * AccessToken
+
+#### Parameters
+
+| Name | Source | Type | Go type | Separator | Required | Default | Description |
+|------|--------|------|---------|-----------| :------: |---------|-------------|
+| fields | `query` | string (formatted string) | `string` |  |  |  | Fields to return. Example: id,first_name,last_name |
+| filter | `query` | string (formatted string) | `string` |  |  |  | Filter field. Example: id=1 AND first_name='John' |
+| limit | `query` | int (formatted integer) | `int64` |  |  |  | Limit |
+| next_token | `query` | string (formatted string) | `string` |  |  |  | Next cursor |
+| prev_token | `query` | string (formatted string) | `string` |  |  |  | Previous cursor |
+| sort | `query` | string (formatted string) | `string` |  |  |  | Comma-separated list of fields to sort by. Example: first_name ASC, created_at DESC |
+
+#### All responses
+| Code | Status | Description | Has headers | Schema |
+|------|--------|-------------|:-----------:|--------|
+| [200](#0198042a-f9c5-76f1-9cf8-37e45b647fc0-200) | OK | OK |  | [schema](#0198042a-f9c5-76f1-9cf8-37e45b647fc0-200-schema) |
+| [400](#0198042a-f9c5-76f1-9cf8-37e45b647fc0-400) | Bad Request | Bad Request |  | [schema](#0198042a-f9c5-76f1-9cf8-37e45b647fc0-400-schema) |
+| [500](#0198042a-f9c5-76f1-9cf8-37e45b647fc0-500) | Internal Server Error | Internal Server Error |  | [schema](#0198042a-f9c5-76f1-9cf8-37e45b647fc0-500-schema) |
+
+#### Responses
+
+
+##### <span id="0198042a-f9c5-76f1-9cf8-37e45b647fc0-200"></span> 200 - OK
+Status: OK
+
+###### <span id="0198042a-f9c5-76f1-9cf8-37e45b647fc0-200-schema"></span> Schema
+   
+  
+
+[ModelListRolesResponse](#model-list-roles-response)
+
+##### <span id="0198042a-f9c5-76f1-9cf8-37e45b647fc0-400"></span> 400 - Bad Request
+Status: Bad Request
+
+###### <span id="0198042a-f9c5-76f1-9cf8-37e45b647fc0-400-schema"></span> Schema
+   
+  
+
+[ModelHTTPMessage](#model-http-message)
+
+##### <span id="0198042a-f9c5-76f1-9cf8-37e45b647fc0-500"></span> 500 - Internal Server Error
+Status: Internal Server Error
+
+###### <span id="0198042a-f9c5-76f1-9cf8-37e45b647fc0-500-schema"></span> Schema
+   
+  
+
+[ModelHTTPMessage](#model-http-message)
+
+### <span id="0198042a-f9c5-76f5-8ff6-b4479bdaa6b6"></span> Link users to role (*0198042a-f9c5-76f5-8ff6-b4479bdaa6b6*)
+
+```
+POST /roles/{role_id}/users
+```
+
+Associate multiple users with a specific role for authorization
+
+#### Consumes
+  * application/json
+
+#### Produces
+  * application/json
+
+#### Security Requirements
+  * AccessToken
+
+#### Parameters
+
+| Name | Source | Type | Go type | Separator | Required | Default | Description |
+|------|--------|------|---------|-----------| :------: |---------|-------------|
+| role_id | `path` | uuid (formatted string) | `strfmt.UUID` |  | ✓ |  | The role id in UUID format |
+| body | `body` | [ModelLinkUsersToRoleRequest](#model-link-users-to-role-request) | `models.ModelLinkUsersToRoleRequest` | | ✓ | | Link users to role request |
+
+#### All responses
+| Code | Status | Description | Has headers | Schema |
+|------|--------|-------------|:-----------:|--------|
+| [200](#0198042a-f9c5-76f5-8ff6-b4479bdaa6b6-200) | OK | OK |  | [schema](#0198042a-f9c5-76f5-8ff6-b4479bdaa6b6-200-schema) |
+| [400](#0198042a-f9c5-76f5-8ff6-b4479bdaa6b6-400) | Bad Request | Bad Request |  | [schema](#0198042a-f9c5-76f5-8ff6-b4479bdaa6b6-400-schema) |
+| [409](#0198042a-f9c5-76f5-8ff6-b4479bdaa6b6-409) | Conflict | Conflict |  | [schema](#0198042a-f9c5-76f5-8ff6-b4479bdaa6b6-409-schema) |
+| [500](#0198042a-f9c5-76f5-8ff6-b4479bdaa6b6-500) | Internal Server Error | Internal Server Error |  | [schema](#0198042a-f9c5-76f5-8ff6-b4479bdaa6b6-500-schema) |
+
+#### Responses
+
+
+##### <span id="0198042a-f9c5-76f5-8ff6-b4479bdaa6b6-200"></span> 200 - OK
+Status: OK
+
+###### <span id="0198042a-f9c5-76f5-8ff6-b4479bdaa6b6-200-schema"></span> Schema
+   
+  
+
+[ModelHTTPMessage](#model-http-message)
+
+##### <span id="0198042a-f9c5-76f5-8ff6-b4479bdaa6b6-400"></span> 400 - Bad Request
+Status: Bad Request
+
+###### <span id="0198042a-f9c5-76f5-8ff6-b4479bdaa6b6-400-schema"></span> Schema
+   
+  
+
+[ModelHTTPMessage](#model-http-message)
+
+##### <span id="0198042a-f9c5-76f5-8ff6-b4479bdaa6b6-409"></span> 409 - Conflict
+Status: Conflict
+
+###### <span id="0198042a-f9c5-76f5-8ff6-b4479bdaa6b6-409-schema"></span> Schema
+   
+  
+
+[ModelHTTPMessage](#model-http-message)
+
+##### <span id="0198042a-f9c5-76f5-8ff6-b4479bdaa6b6-500"></span> 500 - Internal Server Error
+Status: Internal Server Error
+
+###### <span id="0198042a-f9c5-76f5-8ff6-b4479bdaa6b6-500-schema"></span> Schema
+   
+  
+
+[ModelHTTPMessage](#model-http-message)
+
+### <span id="0198042a-f9c5-76f9-9394-170db55f62f4"></span> Unlink users from role (*0198042a-f9c5-76f9-9394-170db55f62f4*)
+
+```
+DELETE /roles/{role_id}/users
+```
+
+Remove user associations from a specific role
+
+#### Consumes
+  * application/json
+
+#### Produces
+  * application/json
+
+#### Security Requirements
+  * AccessToken
+
+#### Parameters
+
+| Name | Source | Type | Go type | Separator | Required | Default | Description |
+|------|--------|------|---------|-----------| :------: |---------|-------------|
+| role_id | `path` | uuid (formatted string) | `strfmt.UUID` |  | ✓ |  | The Embeddings Role ID in UUID format |
+| body | `body` | [ModelUnlinkUsersFromRoleRequest](#model-unlink-users-from-role-request) | `models.ModelUnlinkUsersFromRoleRequest` | | ✓ | | UnLink users from role request |
+
+#### All responses
+| Code | Status | Description | Has headers | Schema |
+|------|--------|-------------|:-----------:|--------|
+| [200](#0198042a-f9c5-76f9-9394-170db55f62f4-200) | OK | OK |  | [schema](#0198042a-f9c5-76f9-9394-170db55f62f4-200-schema) |
+| [400](#0198042a-f9c5-76f9-9394-170db55f62f4-400) | Bad Request | Bad Request |  | [schema](#0198042a-f9c5-76f9-9394-170db55f62f4-400-schema) |
+| [409](#0198042a-f9c5-76f9-9394-170db55f62f4-409) | Conflict | Conflict |  | [schema](#0198042a-f9c5-76f9-9394-170db55f62f4-409-schema) |
+| [500](#0198042a-f9c5-76f9-9394-170db55f62f4-500) | Internal Server Error | Internal Server Error |  | [schema](#0198042a-f9c5-76f9-9394-170db55f62f4-500-schema) |
+
+#### Responses
+
+
+##### <span id="0198042a-f9c5-76f9-9394-170db55f62f4-200"></span> 200 - OK
+Status: OK
+
+###### <span id="0198042a-f9c5-76f9-9394-170db55f62f4-200-schema"></span> Schema
+   
+  
+
+[ModelHTTPMessage](#model-http-message)
+
+##### <span id="0198042a-f9c5-76f9-9394-170db55f62f4-400"></span> 400 - Bad Request
+Status: Bad Request
+
+###### <span id="0198042a-f9c5-76f9-9394-170db55f62f4-400-schema"></span> Schema
+   
+  
+
+[ModelHTTPMessage](#model-http-message)
+
+##### <span id="0198042a-f9c5-76f9-9394-170db55f62f4-409"></span> 409 - Conflict
+Status: Conflict
+
+###### <span id="0198042a-f9c5-76f9-9394-170db55f62f4-409-schema"></span> Schema
+   
+  
+
+[ModelHTTPMessage](#model-http-message)
+
+##### <span id="0198042a-f9c5-76f9-9394-170db55f62f4-500"></span> 500 - Internal Server Error
+Status: Internal Server Error
+
+###### <span id="0198042a-f9c5-76f9-9394-170db55f62f4-500-schema"></span> Schema
+   
+  
+
+[ModelHTTPMessage](#model-http-message)
+
+### <span id="0198042a-f9c5-76fd-8012-5c9a2957e289"></span> Link policies to role (*0198042a-f9c5-76fd-8012-5c9a2957e289*)
+
+```
+POST /roles/{role_id}/policies
+```
+
+Associate multiple policies with a specific role for authorization
+
+#### Consumes
+  * application/json
+
+#### Produces
+  * application/json
+
+#### Security Requirements
+  * AccessToken
+
+#### Parameters
+
+| Name | Source | Type | Go type | Separator | Required | Default | Description |
+|------|--------|------|---------|-----------| :------: |---------|-------------|
+| role_id | `path` | uuid (formatted string) | `strfmt.UUID` |  | ✓ |  | The role id in UUID format |
+| body | `body` | [ModelLinkPoliciesToRoleRequest](#model-link-policies-to-role-request) | `models.ModelLinkPoliciesToRoleRequest` | | ✓ | | Link policies to role request |
+
+#### All responses
+| Code | Status | Description | Has headers | Schema |
+|------|--------|-------------|:-----------:|--------|
+| [200](#0198042a-f9c5-76fd-8012-5c9a2957e289-200) | OK | OK |  | [schema](#0198042a-f9c5-76fd-8012-5c9a2957e289-200-schema) |
+| [400](#0198042a-f9c5-76fd-8012-5c9a2957e289-400) | Bad Request | Bad Request |  | [schema](#0198042a-f9c5-76fd-8012-5c9a2957e289-400-schema) |
+| [409](#0198042a-f9c5-76fd-8012-5c9a2957e289-409) | Conflict | Conflict |  | [schema](#0198042a-f9c5-76fd-8012-5c9a2957e289-409-schema) |
+| [500](#0198042a-f9c5-76fd-8012-5c9a2957e289-500) | Internal Server Error | Internal Server Error |  | [schema](#0198042a-f9c5-76fd-8012-5c9a2957e289-500-schema) |
+
+#### Responses
+
+
+##### <span id="0198042a-f9c5-76fd-8012-5c9a2957e289-200"></span> 200 - OK
+Status: OK
+
+###### <span id="0198042a-f9c5-76fd-8012-5c9a2957e289-200-schema"></span> Schema
+   
+  
+
+[ModelHTTPMessage](#model-http-message)
+
+##### <span id="0198042a-f9c5-76fd-8012-5c9a2957e289-400"></span> 400 - Bad Request
+Status: Bad Request
+
+###### <span id="0198042a-f9c5-76fd-8012-5c9a2957e289-400-schema"></span> Schema
+   
+  
+
+[ModelHTTPMessage](#model-http-message)
+
+##### <span id="0198042a-f9c5-76fd-8012-5c9a2957e289-409"></span> 409 - Conflict
+Status: Conflict
+
+###### <span id="0198042a-f9c5-76fd-8012-5c9a2957e289-409-schema"></span> Schema
+   
+  
+
+[ModelHTTPMessage](#model-http-message)
+
+##### <span id="0198042a-f9c5-76fd-8012-5c9a2957e289-500"></span> 500 - Internal Server Error
+Status: Internal Server Error
+
+###### <span id="0198042a-f9c5-76fd-8012-5c9a2957e289-500-schema"></span> Schema
+   
+  
+
+[ModelHTTPMessage](#model-http-message)
+
+### <span id="0198042a-f9c5-7700-9e40-e64f7b8c947c"></span> Unlink policies from role (*0198042a-f9c5-7700-9e40-e64f7b8c947c*)
+
+```
+DELETE /roles/{role_id}/policies
+```
+
+Remove policy associations from a specific role
+
+#### Consumes
+  * application/json
+
+#### Produces
+  * application/json
+
+#### Security Requirements
+  * AccessToken
+
+#### Parameters
+
+| Name | Source | Type | Go type | Separator | Required | Default | Description |
+|------|--------|------|---------|-----------| :------: |---------|-------------|
+| role_id | `path` | uuid (formatted string) | `strfmt.UUID` |  | ✓ |  | The role id in UUID format |
+| body | `body` | [ModelUnlinkPoliciesFromRoleRequest](#model-unlink-policies-from-role-request) | `models.ModelUnlinkPoliciesFromRoleRequest` | | ✓ | | UnLink policies from role request |
+
+#### All responses
+| Code | Status | Description | Has headers | Schema |
+|------|--------|-------------|:-----------:|--------|
+| [200](#0198042a-f9c5-7700-9e40-e64f7b8c947c-200) | OK | OK |  | [schema](#0198042a-f9c5-7700-9e40-e64f7b8c947c-200-schema) |
+| [400](#0198042a-f9c5-7700-9e40-e64f7b8c947c-400) | Bad Request | Bad Request |  | [schema](#0198042a-f9c5-7700-9e40-e64f7b8c947c-400-schema) |
+| [409](#0198042a-f9c5-7700-9e40-e64f7b8c947c-409) | Conflict | Conflict |  | [schema](#0198042a-f9c5-7700-9e40-e64f7b8c947c-409-schema) |
+| [500](#0198042a-f9c5-7700-9e40-e64f7b8c947c-500) | Internal Server Error | Internal Server Error |  | [schema](#0198042a-f9c5-7700-9e40-e64f7b8c947c-500-schema) |
+
+#### Responses
+
+
+##### <span id="0198042a-f9c5-7700-9e40-e64f7b8c947c-200"></span> 200 - OK
+Status: OK
+
+###### <span id="0198042a-f9c5-7700-9e40-e64f7b8c947c-200-schema"></span> Schema
+   
+  
+
+[ModelHTTPMessage](#model-http-message)
+
+##### <span id="0198042a-f9c5-7700-9e40-e64f7b8c947c-400"></span> 400 - Bad Request
+Status: Bad Request
+
+###### <span id="0198042a-f9c5-7700-9e40-e64f7b8c947c-400-schema"></span> Schema
+   
+  
+
+[ModelHTTPMessage](#model-http-message)
+
+##### <span id="0198042a-f9c5-7700-9e40-e64f7b8c947c-409"></span> 409 - Conflict
+Status: Conflict
+
+###### <span id="0198042a-f9c5-7700-9e40-e64f7b8c947c-409-schema"></span> Schema
+   
+  
+
+[ModelHTTPMessage](#model-http-message)
+
+##### <span id="0198042a-f9c5-7700-9e40-e64f7b8c947c-500"></span> 500 - Internal Server Error
+Status: Internal Server Error
+
+###### <span id="0198042a-f9c5-7700-9e40-e64f7b8c947c-500-schema"></span> Schema
+   
+  
+
+[ModelHTTPMessage](#model-http-message)
+
+### <span id="0198042a-f9c5-7704-b73b-55e2ec093586"></span> List roles by user (*0198042a-f9c5-7704-b73b-55e2ec093586*)
+
+```
+GET /users/{user_id}/roles
+```
+
+Retrieve paginated list of roles assigned to a specific user
+
+#### Produces
+  * application/json
+
+#### Security Requirements
+  * AccessToken
+
+#### Parameters
+
+| Name | Source | Type | Go type | Separator | Required | Default | Description |
+|------|--------|------|---------|-----------| :------: |---------|-------------|
+| user_id | `path` | uuid (formatted string) | `strfmt.UUID` |  | ✓ |  | The user id in UUID format |
+| fields | `query` | string (formatted string) | `string` |  |  |  | Fields to return. Example: id,first_name,last_name |
+| filter | `query` | string (formatted string) | `string` |  |  |  | Filter field. Example: id=1 AND first_name='John' |
+| limit | `query` | int (formatted integer) | `int64` |  |  |  | Limit |
+| next_token | `query` | string (formatted string) | `string` |  |  |  | Next cursor |
+| prev_token | `query` | string (formatted string) | `string` |  |  |  | Previous cursor |
+| sort | `query` | string (formatted string) | `string` |  |  |  | Comma-separated list of fields to sort by. Example: first_name ASC, created_at DESC |
+
+#### All responses
+| Code | Status | Description | Has headers | Schema |
+|------|--------|-------------|:-----------:|--------|
+| [200](#0198042a-f9c5-7704-b73b-55e2ec093586-200) | OK | OK |  | [schema](#0198042a-f9c5-7704-b73b-55e2ec093586-200-schema) |
+| [400](#0198042a-f9c5-7704-b73b-55e2ec093586-400) | Bad Request | Bad Request |  | [schema](#0198042a-f9c5-7704-b73b-55e2ec093586-400-schema) |
+| [500](#0198042a-f9c5-7704-b73b-55e2ec093586-500) | Internal Server Error | Internal Server Error |  | [schema](#0198042a-f9c5-7704-b73b-55e2ec093586-500-schema) |
+
+#### Responses
+
+
+##### <span id="0198042a-f9c5-7704-b73b-55e2ec093586-200"></span> 200 - OK
+Status: OK
+
+###### <span id="0198042a-f9c5-7704-b73b-55e2ec093586-200-schema"></span> Schema
+   
+  
+
+[ModelListRolesResponse](#model-list-roles-response)
+
+##### <span id="0198042a-f9c5-7704-b73b-55e2ec093586-400"></span> 400 - Bad Request
+Status: Bad Request
+
+###### <span id="0198042a-f9c5-7704-b73b-55e2ec093586-400-schema"></span> Schema
+   
+  
+
+[ModelHTTPMessage](#model-http-message)
+
+##### <span id="0198042a-f9c5-7704-b73b-55e2ec093586-500"></span> 500 - Internal Server Error
+Status: Internal Server Error
+
+###### <span id="0198042a-f9c5-7704-b73b-55e2ec093586-500-schema"></span> Schema
+   
+  
+
+[ModelHTTPMessage](#model-http-message)
+
+### <span id="0198042a-f9c5-7704-b73b-55e2ec093587"></span> List roles by policy (*0198042a-f9c5-7704-b73b-55e2ec093587*)
+
+```
+GET /policies/{policy_id}/roles
+```
+
+Retrieve paginated list of roles associated with a specific policy
+
+#### Produces
+  * application/json
+
+#### Security Requirements
+  * AccessToken
+
+#### Parameters
+
+| Name | Source | Type | Go type | Separator | Required | Default | Description |
+|------|--------|------|---------|-----------| :------: |---------|-------------|
+| policy_id | `path` | uuid (formatted string) | `strfmt.UUID` |  | ✓ |  | The policy id in UUID format |
+| fields | `query` | string (formatted string) | `string` |  |  |  | Fields to return. Example: id,first_name,last_name |
+| filter | `query` | string (formatted string) | `string` |  |  |  | Filter field. Example: id=1 AND first_name='John' |
+| limit | `query` | int (formatted integer) | `int64` |  |  |  | Limit |
+| next_token | `query` | string (formatted string) | `string` |  |  |  | Next cursor |
+| prev_token | `query` | string (formatted string) | `string` |  |  |  | Previous cursor |
+| sort | `query` | string (formatted string) | `string` |  |  |  | Comma-separated list of fields to sort by. Example: first_name ASC, created_at DESC |
+
+#### All responses
+| Code | Status | Description | Has headers | Schema |
+|------|--------|-------------|:-----------:|--------|
+| [200](#0198042a-f9c5-7704-b73b-55e2ec093587-200) | OK | OK |  | [schema](#0198042a-f9c5-7704-b73b-55e2ec093587-200-schema) |
+| [400](#0198042a-f9c5-7704-b73b-55e2ec093587-400) | Bad Request | Bad Request |  | [schema](#0198042a-f9c5-7704-b73b-55e2ec093587-400-schema) |
+| [500](#0198042a-f9c5-7704-b73b-55e2ec093587-500) | Internal Server Error | Internal Server Error |  | [schema](#0198042a-f9c5-7704-b73b-55e2ec093587-500-schema) |
+
+#### Responses
+
+
+##### <span id="0198042a-f9c5-7704-b73b-55e2ec093587-200"></span> 200 - OK
+Status: OK
+
+###### <span id="0198042a-f9c5-7704-b73b-55e2ec093587-200-schema"></span> Schema
+   
+  
+
+[ModelListRolesResponse](#model-list-roles-response)
+
+##### <span id="0198042a-f9c5-7704-b73b-55e2ec093587-400"></span> 400 - Bad Request
+Status: Bad Request
+
+###### <span id="0198042a-f9c5-7704-b73b-55e2ec093587-400-schema"></span> Schema
+   
+  
+
+[ModelHTTPMessage](#model-http-message)
+
+##### <span id="0198042a-f9c5-7704-b73b-55e2ec093587-500"></span> 500 - Internal Server Error
+Status: Internal Server Error
+
+###### <span id="0198042a-f9c5-7704-b73b-55e2ec093587-500-schema"></span> Schema
+   
+  
+
+[ModelHTTPMessage](#model-http-message)
+
+### <span id="0198042a-f9c5-7704-b73b-55e2ec093588"></span> Get version (*0198042a-f9c5-7704-b73b-55e2ec093588*)
+
+```
+GET /version
+```
+
+Retrieve the current version and build information of the service
+
+#### Produces
+  * application/json
+
+#### All responses
+| Code | Status | Description | Has headers | Schema |
+|------|--------|-------------|:-----------:|--------|
+| [200](#0198042a-f9c5-7704-b73b-55e2ec093588-200) | OK | OK |  | [schema](#0198042a-f9c5-7704-b73b-55e2ec093588-200-schema) |
+| [500](#0198042a-f9c5-7704-b73b-55e2ec093588-500) | Internal Server Error | Internal Server Error |  | [schema](#0198042a-f9c5-7704-b73b-55e2ec093588-500-schema) |
+
+#### Responses
+
+
+##### <span id="0198042a-f9c5-7704-b73b-55e2ec093588-200"></span> 200 - OK
+Status: OK
+
+###### <span id="0198042a-f9c5-7704-b73b-55e2ec093588-200-schema"></span> Schema
+   
+  
+
+[ModelVersion](#model-version)
+
+##### <span id="0198042a-f9c5-7704-b73b-55e2ec093588-500"></span> 500 - Internal Server Error
+Status: Internal Server Error
+
+###### <span id="0198042a-f9c5-7704-b73b-55e2ec093588-500-schema"></span> Schema
    
   
 
@@ -3592,7 +3592,7 @@ Status: Internal Server Error
 | allowed_action | string (formatted string)| `string` | ✓ | |  | `GET` |
 | allowed_resource | string (formatted string)| `string` | ✓ | |  | `/projects/39a4707f-536e-433f-8597-6fc0d53a724f/tokens` |
 | description | string (formatted string)| `string` |  | |  | `This allows to list all the policies of a specific project` |
-| id | uuid (formatted string)| `strfmt.UUID` |  | |  | `01979cde-6d91-7733-8381-eaef585fad97` |
+| id | uuid (formatted string)| `strfmt.UUID` |  | |  | `01980434-b7ff-7a9e-b343-668d79691032` |
 | name | string (formatted string)| `string` | ✓ | |  | `List Policies for project` |
 
 
@@ -3612,7 +3612,7 @@ Status: Internal Server Error
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
 | description | string (formatted string)| `string` |  | |  | `This is a product` |
-| id | uuid (formatted string)| `strfmt.UUID` |  | |  | `01979cde-6d91-7756-bd58-75b685419eb3` |
+| id | uuid (formatted string)| `strfmt.UUID` |  | |  | `01980434-b7ff-7ac1-b7b0-13de306cc1cb` |
 | name | string (formatted string)| `string` |  | |  | `New product name` |
 
 
@@ -3632,7 +3632,7 @@ Status: Internal Server Error
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
 | description | string (formatted string)| `string` | ✓ | |  | `This is a new project` |
-| id | uuid (formatted string)| `strfmt.UUID` |  | |  | `01979cde-6d91-7720-aaa5-d45582f94ac4` |
+| id | uuid (formatted string)| `strfmt.UUID` |  | |  | `01980434-b7ff-7aa6-a131-a7c3590a1ce1` |
 | name | string (formatted string)| `string` | ✓ | |  | `New project name` |
 
 
@@ -3652,7 +3652,7 @@ Status: Internal Server Error
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
 | description | string (formatted string)| `string` | ✓ | |  | `This is a role` |
-| id | uuid (formatted string)| `strfmt.UUID` |  | |  | `01979cde-6d91-7766-a529-ebe2a773d447` |
+| id | uuid (formatted string)| `strfmt.UUID` |  | |  | `01980434-b7ff-7aba-a3ef-1b38309c9a1f` |
 | name | string (formatted string)| `string` | ✓ | |  | `New role name` |
 
 
@@ -3673,7 +3673,7 @@ Status: Internal Server Error
 |------|------|---------|:--------:| ------- |-------------|---------|
 | email | email (formatted string)| `strfmt.Email` | ✓ | |  | `my@email.com` |
 | first_name | string (formatted string)| `string` | ✓ | |  | `John` |
-| id | uuid (formatted string)| `strfmt.UUID` |  | |  | `01979cde-6d91-775e-b049-9627e2c6f848` |
+| id | uuid (formatted string)| `strfmt.UUID` |  | |  | `01980434-b7ff-7ab2-b903-524ba1d47616` |
 | last_name | string (formatted string)| `string` | ✓ | |  | `Doe` |
 | password | string (formatted string)| `string` | ✓ | |  | `ThisIs4Passw0rd` |
 
@@ -3771,7 +3771,7 @@ Status: Internal Server Error
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
-| role_ids | []uuid (formatted string)| `[]strfmt.UUID` | ✓ | |  | `["01979cde-6d91-772b-ac5b-c7a2aa7512f5"]` |
+| role_ids | []uuid (formatted string)| `[]strfmt.UUID` | ✓ | |  | `["01980434-b7ff-7a96-b0c8-dbabed881cf5"]` |
 
 
 
@@ -3959,7 +3959,7 @@ Status: Internal Server Error
 | permissions | map of any | `map[string]interface{}` |  | |  |  |
 | refresh_token | string (formatted string)| `string` |  | |  |  |
 | token_type | string (formatted string)| `string` |  | |  | `Bearer` |
-| user_id | uuid (formatted string)| `strfmt.UUID` |  | |  | `01979cde-6d91-773b-a03c-3779be3b55b3` |
+| user_id | uuid (formatted string)| `strfmt.UUID` |  | |  | `01980434-b7ff-7a54-a71f-34868a34e51e` |
 
 
 
@@ -4004,7 +4004,7 @@ Status: Internal Server Error
 | allowed_resource | string (formatted string)| `string` |  | |  | `/projects/39a4707f-536e-433f-8597-6fc0d53a724f/tokens` |
 | created_at | date-time (formatted string)| `strfmt.DateTime` |  | |  | `2021-01-01T00:00:00Z` |
 | description | string (formatted string)| `string` |  | |  | `This is a role` |
-| id | uuid (formatted string)| `strfmt.UUID` |  | |  | `01979cde-6d91-7728-bfbb-ec90edcd6767` |
+| id | uuid (formatted string)| `strfmt.UUID` |  | |  | `01980434-b7ff-7a93-b5b4-ca4c73283131` |
 | name | string (formatted string)| `string` |  | |  | `Policy Name` |
 | resource | [ModelResource](#model-resource)| `ModelResource` |  | |  |  |
 | system | boolean (formatted boolean)| `bool` |  | |  | `false` |
@@ -4028,7 +4028,7 @@ Status: Internal Server Error
 |------|------|---------|:--------:| ------- |-------------|---------|
 | created_at | date-time (formatted string)| `strfmt.DateTime` |  | |  | `2021-01-01T00:00:00Z` |
 | description | string (formatted string)| `string` |  | |  | `This is a product` |
-| id | uuid (formatted string)| `strfmt.UUID` |  | |  | `01979cde-6d91-7753-9b69-975f70601c14` |
+| id | uuid (formatted string)| `strfmt.UUID` |  | |  | `01980434-b7ff-7abe-a45d-7311bc7011f5` |
 | name | string (formatted string)| `string` |  | |  | `Product Name` |
 | project | [ModelProject](#model-project)| `ModelProject` |  | |  |  |
 | updated_at | date-time (formatted string)| `strfmt.DateTime` |  | |  | `2021-01-01T00:00:00Z` |
@@ -4052,7 +4052,7 @@ Status: Internal Server Error
 | created_at | date-time (formatted string)| `strfmt.DateTime` |  | |  | `2021-01-01T00:00:00Z` |
 | description | string (formatted string)| `string` |  | |  | `This is a project` |
 | disabled | boolean (formatted boolean)| `bool` |  | |  | `false` |
-| id | uuid (formatted string)| `strfmt.UUID` |  | |  | `01979cde-6d91-769f-8d3e-b04eeb538a83` |
+| id | uuid (formatted string)| `strfmt.UUID` |  | |  | `01980434-b7ff-7aa2-bfc2-d862a423985c` |
 | name | string (formatted string)| `string` |  | |  | `John` |
 | system | boolean (formatted boolean)| `bool` |  | |  | `false` |
 | updated_at | date-time (formatted string)| `strfmt.DateTime` |  | |  | `2021-01-01T00:00:00Z` |
@@ -4130,7 +4130,7 @@ Status: Internal Server Error
 |------|------|---------|:--------:| ------- |-------------|---------|
 | email | email (formatted string)| `strfmt.Email` | ✓ | |  | `john.doe@email.com` |
 | first_name | string (formatted string)| `string` | ✓ | |  | `John` |
-| id | uuid (formatted string)| `strfmt.UUID` |  | |  | `01979cde-6d91-773f-a630-7eed93217f35` |
+| id | uuid (formatted string)| `strfmt.UUID` |  | |  | `01980434-b7ff-7a8b-b8e9-144341357314` |
 | last_name | string (formatted string)| `string` | ✓ | |  | `Doe` |
 | password | string (formatted string)| `string` | ✓ | |  | `ThisIsApassw0rd.,` |
 
@@ -4153,7 +4153,7 @@ Status: Internal Server Error
 | action | string (formatted string)| `string` |  | |  | `GET` |
 | created_at | date-time (formatted string)| `strfmt.DateTime` |  | |  | `2021-01-01T00:00:00Z` |
 | description | string (formatted string)| `string` |  | |  | `Allows reading of users` |
-| id | uuid (formatted string)| `strfmt.UUID` |  | |  | `01979cde-6d91-7743-a481-bfe67f26a3c2` |
+| id | uuid (formatted string)| `strfmt.UUID` |  | |  | `01980434-b7ff-7aaa-a09c-d46077eff792` |
 | name | string (formatted string)| `string` |  | |  | `Read Users` |
 | resource | string (formatted string)| `string` |  | |  | `users` |
 | system | bool (formatted boolean)| `bool` |  | |  | `false` |
@@ -4178,7 +4178,7 @@ Status: Internal Server Error
 | auto_assign | boolean (formatted boolean)| `bool` |  | |  | `false` |
 | created_at | date-time (formatted string)| `strfmt.DateTime` |  | |  | `2021-01-01T00:00:00Z` |
 | description | string (formatted string)| `string` |  | |  | `This is a role` |
-| id | uuid (formatted string)| `strfmt.UUID` |  | |  | `01979cde-6d91-7762-aae3-871d5e5ee975` |
+| id | uuid (formatted string)| `strfmt.UUID` |  | |  | `01980434-b7ff-7ab6-8c97-3e2f8905173a` |
 | name | string (formatted string)| `string` |  | |  | `Role Name` |
 | system | boolean (formatted boolean)| `bool` |  | |  | `false` |
 | updated_at | date-time (formatted string)| `strfmt.DateTime` |  | |  | `2021-01-01T00:00:00Z` |
@@ -4236,7 +4236,7 @@ Status: Internal Server Error
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
-| role_ids | []uuid (formatted string)| `[]strfmt.UUID` | ✓ | |  | `["01979cde-6d91-772b-ac5b-c7a2aa7512f5"]` |
+| role_ids | []uuid (formatted string)| `[]strfmt.UUID` | ✓ | |  | `["01980434-b7ff-7a96-b0c8-dbabed881cf5"]` |
 
 
 
@@ -4395,7 +4395,7 @@ Status: Internal Server Error
 | disabled | boolean (formatted boolean)| `bool` |  | |  | `false` |
 | email | email (formatted string)| `strfmt.Email` |  | |  | `my@email.com` |
 | first_name | string (formatted string)| `string` |  | |  | `John` |
-| id | uuid (formatted string)| `strfmt.UUID` |  | |  | `01979cde-6d91-775a-ad3f-1a97b23ee649` |
+| id | uuid (formatted string)| `strfmt.UUID` |  | |  | `01980434-b7ff-7aae-95c6-051c9895119c` |
 | last_name | string (formatted string)| `string` |  | |  | `Doe` |
 | updated_at | date-time (formatted string)| `strfmt.DateTime` |  | |  | `2021-01-01T00:00:00Z` |
 

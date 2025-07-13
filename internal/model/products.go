@@ -36,7 +36,7 @@ var (
 //
 // @Description Product represents a product.
 type Product struct {
-	ID          uuid.UUID `json:"id,omitempty,omitzero" example:"01979cde-6d91-7753-9b69-975f70601c14" format:"uuid"`
+	ID          uuid.UUID `json:"id,omitempty,omitzero" example:"01980434-b7ff-7abe-a45d-7311bc7011f5" format:"uuid"`
 	Projects    *Project  `json:"project,omitempty"`
 	Name        string    `json:"name,omitempty" example:"Product Name" format:"string"`
 	Description string    `json:"description,omitempty" example:"This is a product" format:"string"`
@@ -309,7 +309,7 @@ type ListProductsOutput = SelectProductsOutput
 //
 // @Description CreateProductRequest represents the input for the CreateProduct method.
 type CreateProductRequest struct {
-	ID          uuid.UUID `json:"id" example:"01979cde-6d91-7756-bd58-75b685419eb3" format:"uuid"`
+	ID          uuid.UUID `json:"id" example:"01980434-b7ff-7ac1-b7b0-13de306cc1cb" format:"uuid"`
 	Name        string    `json:"name" example:"New product name" format:"string"`
 	Description string    `json:"description" example:"This is a product" format:"string"`
 }

@@ -35,7 +35,7 @@ definitions:
         format: string
         type: string
       id:
-        example: 01979cde-6d91-7733-8381-eaef585fad97
+        example: 01980434-b7ff-7a9e-b343-668d79691032
         format: uuid
         type: string
       name:
@@ -55,7 +55,7 @@ definitions:
         format: string
         type: string
       id:
-        example: 01979cde-6d91-7756-bd58-75b685419eb3
+        example: 01980434-b7ff-7ac1-b7b0-13de306cc1cb
         format: uuid
         type: string
       name:
@@ -72,7 +72,7 @@ definitions:
         format: string
         type: string
       id:
-        example: 01979cde-6d91-7720-aaa5-d45582f94ac4
+        example: 01980434-b7ff-7aa6-a131-a7c3590a1ce1
         format: uuid
         type: string
       name:
@@ -91,7 +91,7 @@ definitions:
         format: string
         type: string
       id:
-        example: 01979cde-6d91-7766-a529-ebe2a773d447
+        example: 01980434-b7ff-7aba-a3ef-1b38309c9a1f
         format: uuid
         type: string
       name:
@@ -114,7 +114,7 @@ definitions:
         format: string
         type: string
       id:
-        example: 01979cde-6d91-775e-b049-9627e2c6f848
+        example: 01980434-b7ff-7ab2-b903-524ba1d47616
         format: uuid
         type: string
       last_name:
@@ -195,7 +195,7 @@ definitions:
     properties:
       role_ids:
         example:
-        - 01979cde-6d91-772b-ac5b-c7a2aa7512f5
+        - 01980434-b7ff-7a96-b0c8-dbabed881cf5
         items:
           format: uuid
           type: string
@@ -317,7 +317,7 @@ definitions:
         format: string
         type: string
       user_id:
-        example: 01979cde-6d91-773b-a03c-3779be3b55b3
+        example: 01980434-b7ff-7a54-a71f-34868a34e51e
         format: uuid
         type: string
     type: object
@@ -369,7 +369,7 @@ definitions:
         format: string
         type: string
       id:
-        example: 01979cde-6d91-7728-bfbb-ec90edcd6767
+        example: 01980434-b7ff-7a93-b5b4-ca4c73283131
         format: uuid
         type: string
       name:
@@ -399,7 +399,7 @@ definitions:
         format: string
         type: string
       id:
-        example: 01979cde-6d91-7753-9b69-975f70601c14
+        example: 01980434-b7ff-7abe-a45d-7311bc7011f5
         format: uuid
         type: string
       name:
@@ -429,7 +429,7 @@ definitions:
         format: boolean
         type: boolean
       id:
-        example: 01979cde-6d91-769f-8d3e-b04eeb538a83
+        example: 01980434-b7ff-7aa2-bfc2-d862a423985c
         format: uuid
         type: string
       name:
@@ -486,7 +486,7 @@ definitions:
         format: string
         type: string
       id:
-        example: 01979cde-6d91-773f-a630-7eed93217f35
+        example: 01980434-b7ff-7a8b-b8e9-144341357314
         format: uuid
         type: string
       last_name:
@@ -519,7 +519,7 @@ definitions:
         format: string
         type: string
       id:
-        example: 01979cde-6d91-7743-a481-bfe67f26a3c2
+        example: 01980434-b7ff-7aaa-a09c-d46077eff792
         format: uuid
         type: string
       name:
@@ -555,7 +555,7 @@ definitions:
         format: string
         type: string
       id:
-        example: 01979cde-6d91-7762-aae3-871d5e5ee975
+        example: 01980434-b7ff-7ab6-8c97-3e2f8905173a
         format: uuid
         type: string
       name:
@@ -597,7 +597,7 @@ definitions:
     properties:
       role_ids:
         example:
-        - 01979cde-6d91-772b-ac5b-c7a2aa7512f5
+        - 01980434-b7ff-7a96-b0c8-dbabed881cf5
         items:
           format: uuid
           type: string
@@ -732,7 +732,7 @@ definitions:
         format: string
         type: string
       id:
-        example: 01979cde-6d91-775a-ad3f-1a97b23ee649
+        example: 01980434-b7ff-7aae-95c6-051c9895119c
         format: uuid
         type: string
       last_name:
@@ -799,7 +799,7 @@ paths:
       - application/json
       description: Authenticate user credentials and return JWT access and refresh
         tokens
-      operationId: 019791cc-06c7-7d8c-81e4-914dd89098e8
+      operationId: 0198042a-f9c5-7547-a6e7-567af5db26cd
       parameters:
       - description: The information of the user to login
         in: body
@@ -834,7 +834,7 @@ paths:
       consumes:
       - application/json
       description: Logout user and invalidate session tokens
-      operationId: 019791cc-06c7-7e4c-961c-b1bf5f40d633
+      operationId: 0198042a-f9c5-75d4-afa6-fe658744c80f
       produces:
       - application/json
       responses:
@@ -860,7 +860,7 @@ paths:
       consumes:
       - application/json
       description: Generate new access token using valid refresh token
-      operationId: 019791cc-06c7-7e50-a5b6-bd1c82d5c031
+      operationId: 0198042a-f9c5-75d8-aa7b-37524ea4f124
       parameters:
       - description: The refresh token to use
         in: body
@@ -901,7 +901,7 @@ paths:
       consumes:
       - application/json
       description: Create a new user account and send email verification
-      operationId: 019791cc-06c7-7e38-ac82-6919df575ff7
+      operationId: 0198042a-f9c5-75c8-9231-ad5fc9e7b32e
       parameters:
       - description: The information of the user to register
         in: body
@@ -932,7 +932,7 @@ paths:
       consumes:
       - application/json
       description: Resend account verification email to user
-      operationId: 019791cc-06c7-7e48-b046-99f072088c50
+      operationId: 0198042a-f9c5-75d0-8c20-fea31b65587f
       parameters:
       - description: The email of the user to re-verify
         in: body
@@ -969,7 +969,7 @@ paths:
   /auth/verify/{jwt}:
     get:
       description: Verify user account using JWT verification token
-      operationId: 019791cc-06c7-7e40-bcc3-149cd13bee44
+      operationId: 0198042a-f9c5-75cc-9dd2-e3ff9f6c1e3a
       parameters:
       - description: The JWT token to use
         format: jwt
@@ -1007,7 +1007,7 @@ paths:
     get:
       description: Check service health status including database connectivity and
         system metrics
-      operationId: 019791cc-06c7-7e57-8be6-a6f650ad5431
+      operationId: 0198042a-f9c5-76be-ba9e-8186a69f48c4
       produces:
       - application/json
       responses:
@@ -1025,7 +1025,7 @@ paths:
   /policies:
     get:
       description: Retrieve paginated list of all policies in the system
-      operationId: 019791cc-06c7-7e73-96aa-7e0383caae0d
+      operationId: 0198042a-f9c5-76d2-a491-9cc989c1d59c
       parameters:
       - description: 'Comma-separated list of fields to sort by. Example: first_name
           ASC, created_at DESC'
@@ -1082,7 +1082,7 @@ paths:
       consumes:
       - application/json
       description: Create a new policy with specified permissions
-      operationId: 019791cc-06c7-7e63-8ec9-de5b38235dbf
+      operationId: 0198042a-f9c5-76c6-9a07-0c8948640ac2
       parameters:
       - description: Create policy Request
         in: body
@@ -1117,7 +1117,7 @@ paths:
   /policies/{policy_id}:
     delete:
       description: Remove a policy permanently from the system
-      operationId: 019791cc-06c7-7e6b-b308-a2b2cbc2aaa1
+      operationId: 0198042a-f9c5-76ce-b208-2f58f7ccd177
       parameters:
       - description: The policy id in UUID format
         format: uuid
@@ -1151,7 +1151,7 @@ paths:
       - Policies
     get:
       description: Retrieve a specific policy by its unique identifier
-      operationId: 019791cc-06c7-7e5b-b363-1ef381f1e832
+      operationId: 0198042a-f9c5-76c2-96f2-d16b0674bcd9
       parameters:
       - description: The policy id in UUID format
         format: uuid
@@ -1187,7 +1187,7 @@ paths:
       consumes:
       - application/json
       description: Modify an existing policy by its ID
-      operationId: 019791cc-06c7-7e67-9e1b-49a34edfe07c
+      operationId: 0198042a-f9c5-76ca-b40d-b1de1d359c22
       parameters:
       - description: The policy id in UUID format
         format: uuid
@@ -1230,7 +1230,7 @@ paths:
       consumes:
       - application/json
       description: Remove role associations from a specific policy
-      operationId: 019791cc-06c7-7e7b-bdfc-381b015c44e7
+      operationId: 0198042a-f9c5-76d9-8019-babd51a0c340
       parameters:
       - description: The policy id in UUID format
         format: uuid
@@ -1271,7 +1271,7 @@ paths:
       - Roles
     get:
       description: Retrieve paginated list of roles associated with a specific policy
-      operationId: 019791cc-06c7-7ecd-93da-d21bac8fd613
+      operationId: 0198042a-f9c5-7704-b73b-55e2ec093587
       parameters:
       - description: The policy id in UUID format
         format: uuid
@@ -1335,7 +1335,7 @@ paths:
       consumes:
       - application/json
       description: Associate multiple roles with a specific policy for authorization
-      operationId: 019791cc-06c7-7e77-a2c3-4ed693a2bcdd
+      operationId: 0198042a-f9c5-76d6-b1f3-0bfb57a9197f
       parameters:
       - description: The policy id in UUID format
         format: uuid
@@ -1377,7 +1377,7 @@ paths:
   /products:
     get:
       description: Retrieve paginated list of all products in the system
-      operationId: 01979db7-f53f-73b5-a499-d6390831c94c
+      operationId: 0198042a-f9c5-7612-a055-58177eca0772
       parameters:
       - description: 'Comma-separated list of fields to sort by. Example: first_name
           ASC, created_at DESC'
@@ -1433,7 +1433,7 @@ paths:
   /projects:
     get:
       description: Retrieve paginated list of all projects in the system
-      operationId: 019797e6-138a-7cf1-b7bb-fa9c5e168c49
+      operationId: 0198042a-f9c5-76a7-a480-fbcb978b8501
       parameters:
       - description: 'Comma-separated list of fields to sort by. Example: first_name
           ASC, created_at DESC'
@@ -1490,7 +1490,7 @@ paths:
       consumes:
       - application/json
       description: Create a new project with specified configuration
-      operationId: 019797e6-138a-7d00-98db-740f21794f11
+      operationId: 0198042a-f9c5-7622-9142-88fbaa727659
       parameters:
       - description: Create Project Request
         in: body
@@ -1525,7 +1525,7 @@ paths:
   /projects/{project_id}:
     delete:
       description: Remove a project permanently from the system
-      operationId: 019797e6-138a-7cf4-8694-e4611baded39
+      operationId: 0198042a-f9c5-762a-8033-649a1526901d
       parameters:
       - description: The project id in UUID format
         format: uuid
@@ -1555,7 +1555,7 @@ paths:
       - Projects
     get:
       description: Retrieve a specific project by its unique identifier
-      operationId: 019797e6-138a-7d04-8db3-1d4755b25db3
+      operationId: 0198042a-f9c5-761e-b1c2-66a3f8ab30d6
       parameters:
       - description: The project id in UUID format
         format: uuid
@@ -1591,7 +1591,7 @@ paths:
       consumes:
       - application/json
       description: Modify an existing project by its ID
-      operationId: 019797e6-138a-7cf8-9887-e4c44ad0ae19
+      operationId: 0198042a-f9c5-7626-be9f-996a2898ef07
       parameters:
       - description: The project id in UUID format
         format: uuid
@@ -1632,7 +1632,7 @@ paths:
   /projects/{project_id}/products:
     get:
       description: Retrieve paginated list of products for a specific project
-      operationId: 01979db7-f53f-73b1-993f-15f77e72c8cc
+      operationId: 0198042a-f9c5-760e-9d2f-94cce8243e5a
       parameters:
       - description: The project id in UUID format
         format: uuid
@@ -1696,7 +1696,7 @@ paths:
       consumes:
       - application/json
       description: Create a new product with specified configuration
-      operationId: 01979db7-f53f-73a5-b916-297c6db5b714
+      operationId: 0198042a-f9c5-7606-8aab-1c2db5b81a89
       parameters:
       - description: The project id in UUID format
         format: uuid
@@ -1738,7 +1738,7 @@ paths:
   /projects/{project_id}/products/{product_id}:
     delete:
       description: Remove a product permanently from the system
-      operationId: 01979db7-f53f-73ad-a84e-49bbdfe9e5c9
+      operationId: 0198042a-f9c5-760a-99c8-1f68d597d300
       parameters:
       - description: The project id in UUID format
         format: uuid
@@ -1775,7 +1775,7 @@ paths:
       - Projects
     get:
       description: Retrieve a specific product by its unique identifier
-      operationId: 01979db7-f53f-73a1-aab2-74802b79be51
+      operationId: 0198042a-f9c5-7603-99b1-7c20ee58542b
       parameters:
       - description: The project id in UUID format
         format: uuid
@@ -1818,7 +1818,7 @@ paths:
       consumes:
       - application/json
       description: Modify an existing product by its ID
-      operationId: 01979db7-f53f-73a9-bd58-e1cd5d7df436
+      operationId: 0198042a-f9c5-7607-b75a-532912a6f35d
       parameters:
       - description: The project id in UUID format
         format: uuid
@@ -1868,7 +1868,7 @@ paths:
       consumes:
       - application/json
       description: Remove the association between a product and a payment processor
-      operationId: 01979db7-f53f-73b9-818f-cdd1848f15d0
+      operationId: 0198042a-f9c5-761a-bd02-da039b52bea2
       parameters:
       - description: The project id in UUID format
         format: uuid
@@ -1914,7 +1914,7 @@ paths:
       - application/json
       description: Associate a product with a payment processor to enable billing
         and invoicing
-      operationId: 01979db7-f53f-73bd-b6c0-4541a48549c2
+      operationId: 0198042a-f9c5-7616-8c3b-e4f19d83a033
       parameters:
       - description: The project id in UUID format
         format: uuid
@@ -1958,7 +1958,7 @@ paths:
   /resources:
     get:
       description: Retrieve paginated list of all resources in the system
-      operationId: 019791cc-06c7-7e8e-8d7e-cd3f9296e0fd
+      operationId: 0198042a-f9c5-76b6-bd55-f34dff7b0632
       parameters:
       - description: 'Comma-separated list of fields to sort by. Example: first_name
           ASC, created_at DESC'
@@ -2014,7 +2014,7 @@ paths:
   /resources/{resource_id}:
     get:
       description: Retrieve a specific resource by its identifier
-      operationId: 019791cc-06c7-7e86-ad42-b777bfcc9e40
+      operationId: 0198042a-f9c5-76b2-b8b1-bc0223a0f18d
       parameters:
       - description: The permission id in UUID format
         format: uuid
@@ -2049,7 +2049,7 @@ paths:
   /resources/matches:
     get:
       description: Find resources that match specific action and resource policy patterns
-      operationId: 019791cc-06c7-7e92-9152-cb35902f79c4
+      operationId: 0198042a-f9c5-76ba-bc87-6e9e32988407
       parameters:
       - description: Action to filter by
         format: string
@@ -2112,7 +2112,7 @@ paths:
   /roles:
     get:
       description: Retrieve paginated list of all roles in the system
-      operationId: 019791cc-06c7-7ead-968a-2a457714a7ee
+      operationId: 0198042a-f9c5-76f1-9cf8-37e45b647fc0
       parameters:
       - description: 'Comma-separated list of fields to sort by. Example: first_name
           ASC, created_at DESC'
@@ -2169,7 +2169,7 @@ paths:
       consumes:
       - application/json
       description: Create a new role with specified permissions and access levels
-      operationId: 019791cc-06c7-7e9e-87bf-dcedfa5aefa7
+      operationId: 0198042a-f9c5-76e5-8fe5-b93a07311c47
       parameters:
       - description: Create role request
         in: body
@@ -2204,7 +2204,7 @@ paths:
   /roles/{role_id}:
     delete:
       description: Remove a role permanently from the system
-      operationId: 019791cc-06c7-7ea6-9423-184c13540c26
+      operationId: 0198042a-f9c5-76ed-99a5-84923071fa6b
       parameters:
       - description: The role id in UUID format
         format: uuid
@@ -2234,7 +2234,7 @@ paths:
       - Roles
     get:
       description: Retrieve a specific role by its unique identifier
-      operationId: 019791cc-06c7-7e96-a284-ad37f86475bd
+      operationId: 0198042a-f9c5-76e1-a650-772c826f079e
       parameters:
       - description: The role id in UUID format
         format: uuid
@@ -2270,7 +2270,7 @@ paths:
       consumes:
       - application/json
       description: Modify an existing role by its ID
-      operationId: 019791cc-06c7-7ea2-8f0e-7b9f7cbc203a
+      operationId: 0198042a-f9c5-76e9-922d-2411530cd8f8
       parameters:
       - description: The model id in UUID format
         format: uuid
@@ -2313,7 +2313,7 @@ paths:
       consumes:
       - application/json
       description: Remove policy associations from a specific role
-      operationId: 019791cc-06c7-7ec1-aca1-291132927db6
+      operationId: 0198042a-f9c5-7700-9e40-e64f7b8c947c
       parameters:
       - description: The role id in UUID format
         format: uuid
@@ -2355,7 +2355,7 @@ paths:
     get:
       description: Retrieve paginated list of policies associated with a specific
         role
-      operationId: 019791cc-06c7-7e82-967d-e13c399f5018
+      operationId: 0198042a-f9c5-76dd-8fa8-98df6be12d44
       parameters:
       - description: The role id in UUID format
         format: uuid
@@ -2419,7 +2419,7 @@ paths:
       consumes:
       - application/json
       description: Associate multiple policies with a specific role for authorization
-      operationId: 019791cc-06c7-7ebd-b750-8c93b165d503
+      operationId: 0198042a-f9c5-76fd-8012-5c9a2957e289
       parameters:
       - description: The role id in UUID format
         format: uuid
@@ -2463,7 +2463,7 @@ paths:
       consumes:
       - application/json
       description: Remove user associations from a specific role
-      operationId: 019791cc-06c7-7eb5-9b74-ba394be221b4
+      operationId: 0198042a-f9c5-76f9-9394-170db55f62f4
       parameters:
       - description: The Embeddings Role ID in UUID format
         format: uuid
@@ -2504,7 +2504,7 @@ paths:
       - Users
     get:
       description: Retrieve paginated list of users associated with a specific role
-      operationId: 019791cc-06c7-7efb-99c2-b25af11e600c
+      operationId: 0198042a-f9c5-75ff-bbfc-224bf4342886
       parameters:
       - description: The role id in UUID format
         format: uuid
@@ -2568,7 +2568,7 @@ paths:
       consumes:
       - application/json
       description: Associate multiple users with a specific role for authorization
-      operationId: 019791cc-06c7-7eb1-b10c-4fbcd5943885
+      operationId: 0198042a-f9c5-76f5-8ff6-b4479bdaa6b6
       parameters:
       - description: The role id in UUID format
         format: uuid
@@ -2610,7 +2610,7 @@ paths:
   /users:
     get:
       description: Retrieve paginated list of all users in the system
-      operationId: 019791cc-06c7-7ee4-8f2b-ea43720d520b
+      operationId: 0198042a-f9c5-75ef-8ea1-29ecbbe01a2e
       parameters:
       - description: 'Comma-separated list of fields to sort by. Example: first_name
           ASC, created_at DESC'
@@ -2667,7 +2667,7 @@ paths:
       consumes:
       - application/json
       description: Create a new user account with specified configuration
-      operationId: 019791cc-06c7-7ed4-8f8b-2297e4565de3
+      operationId: 0198042a-f9c5-75e3-acf6-6901bb33ae65
       parameters:
       - description: Create user request
         in: body
@@ -2702,7 +2702,7 @@ paths:
   /users/{user_id}:
     delete:
       description: Remove a user account permanently from the system
-      operationId: 019791cc-06c7-7ee0-85b7-45450ad476eb
+      operationId: 0198042a-f9c5-75eb-b683-6c1847af7108
       parameters:
       - description: The user ID in UUID format
         format: uuid
@@ -2732,7 +2732,7 @@ paths:
       - Users
     get:
       description: Retrieve a specific user account by its unique identifier
-      operationId: 019791cc-06c7-7ed0-9140-556f721c5749
+      operationId: 0198042a-f9c5-75df-b843-b92a4d5c590e
       parameters:
       - description: The user ID in UUID format
         format: uuid
@@ -2768,7 +2768,7 @@ paths:
       consumes:
       - application/json
       description: Modify an existing user account by its ID
-      operationId: 019791cc-06c7-7edc-94d6-843e3f99e96f
+      operationId: 0198042a-f9c5-75e7-8cb9-231bee55c64e
       parameters:
       - description: The user ID in UUID format
         format: uuid
@@ -2809,7 +2809,7 @@ paths:
   /users/{user_id}/authz:
     get:
       description: Retrieve user authorization permissions and roles for access control
-      operationId: 019791cc-06c7-7ef4-afa5-81125e9dcde9
+      operationId: 0198042a-f9c5-75fb-b324-ec962beb2277
       parameters:
       - description: The user ID in UUID format
         format: uuid
@@ -2848,7 +2848,7 @@ paths:
       consumes:
       - application/json
       description: Remove role associations from a user within a specific project
-      operationId: 019791cc-06c7-7ef0-9394-d4ac3f52e94c
+      operationId: 0198042a-f9c5-75f7-b802-343518ee3788
       parameters:
       - description: The user ID in UUID format
         format: uuid
@@ -2889,7 +2889,7 @@ paths:
       - Roles
     get:
       description: Retrieve paginated list of roles assigned to a specific user
-      operationId: 019791cc-06c7-7ec5-87fe-096d6d2760a9
+      operationId: 0198042a-f9c5-7704-b73b-55e2ec093586
       parameters:
       - description: The user id in UUID format
         format: uuid
@@ -2953,7 +2953,7 @@ paths:
       consumes:
       - application/json
       description: Associate multiple roles with a user within a specific project
-      operationId: 019791cc-06c7-7eec-83f3-bcaed0c4d46f
+      operationId: 0198042a-f9c5-75f3-985f-d30e67bb3688
       parameters:
       - description: The user ID in UUID format
         format: uuid
@@ -2995,7 +2995,7 @@ paths:
   /version:
     get:
       description: Retrieve the current version and build information of the service
-      operationId: 019791cc-06c7-7eff-a1df-fbc2ad0b27c9
+      operationId: 0198042a-f9c5-7704-b73b-55e2ec093588
       produces:
       - application/json
       responses:
