@@ -121,15 +121,7 @@ func (ref *ProjectsService) Create(ctx context.Context, input *model.CreateProje
 		return o11y.RecordError(ctx, span, err, ref.metrics.serviceCalls, metricCommonAttributes, "service.Projects.Create")
 	}
 
-	rParams := &model.InsertProjectInput{
-		ID:          input.ID,
-		UserID:      input.UserID,
-		Name:        input.Name,
-		Description: input.Description,
-		Disabled:    input.Disabled,
-	}
-
-	if err := ref.repository.Insert(ctx, rParams); err != nil {
+	if err := ref.repository.Insert(ctx, input); err != nil {
 		return o11y.RecordError(ctx, span, err, ref.metrics.serviceCalls, metricCommonAttributes, "service.Projects.Create")
 	}
 
@@ -163,14 +155,7 @@ func (ref *ProjectsService) UpdateByID(ctx context.Context, input *model.UpdateP
 
 	span.SetAttributes(attribute.String("projects.id", input.ID.String()))
 
-	rParams := &model.UpdateProjectInput{
-		ID:          input.ID,
-		Name:        input.Name,
-		Description: input.Description,
-		Disabled:    input.Disabled,
-	}
-
-	if err := ref.repository.UpdateByID(ctx, rParams); err != nil {
+	if err := ref.repository.UpdateByID(ctx, input); err != nil {
 		return o11y.RecordError(ctx, span, err, ref.metrics.serviceCalls, metricCommonAttributes, "service.Projects.UpdateByID")
 	}
 
@@ -193,13 +178,7 @@ func (ref *ProjectsService) DeleteByID(ctx context.Context, input *model.DeleteP
 		return o11y.RecordError(ctx, span, errorValue, ref.metrics.serviceCalls, metricCommonAttributes, "service.Projects.DeleteByID")
 	}
 
-	rParams := &model.DeleteProjectInput{
-		ID: input.ID,
-	}
-
-	slog.Debug("service.Projects.Delete", "qParams", rParams)
-
-	if err := ref.repository.DeleteByID(ctx, rParams); err != nil {
+	if err := ref.repository.DeleteByID(ctx, input); err != nil {
 		return o11y.RecordError(ctx, span, err, ref.metrics.serviceCalls, metricCommonAttributes, "service.Projects.DeleteByID")
 	}
 
@@ -228,16 +207,7 @@ func (ref *ProjectsService) List(ctx context.Context, input *model.ListProjectsI
 		attribute.Int("limit", input.Paginator.Limit),
 	)
 
-	rParams := &model.SelectProjectsInput{
-		Sort:      input.Sort,
-		Filter:    input.Filter,
-		Fields:    input.Fields,
-		Paginator: input.Paginator,
-	}
-
-	slog.Debug("service.Projects.List", "qParams", rParams)
-
-	out, err := ref.repository.Select(ctx, rParams)
+	out, err := ref.repository.Select(ctx, input)
 	if err != nil {
 		return nil, o11y.RecordError(ctx, span, err, ref.metrics.serviceCalls, metricCommonAttributes, "service.Projects.List")
 	}

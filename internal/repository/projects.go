@@ -118,22 +118,55 @@ func (ref *ProjectsRepository) Insert(ctx context.Context, input *model.InsertPr
 		return o11y.RecordError(ctx, span, err, ref.metrics.repositoryCalls, metricCommonAttributes, "repository.Projects.Insert")
 	}
 
-	query := `
+	tx, txErr := ref.db.Begin(ctx)
+	if txErr != nil {
+		return o11y.RecordError(ctx, span, txErr, ref.metrics.repositoryCalls, metricCommonAttributes, "repository.Projects.Insert", "failed to begin transaction")
+	}
+	defer func() {
+		if txErr != nil {
+			if err := tx.Rollback(ctx); err != nil {
+				e := o11y.RecordError(ctx, span, err, ref.metrics.repositoryCalls, metricCommonAttributes, "repository.Projects.Insert", "failed to rollback transaction")
+				slog.Error("repository.Projects.Insert", "error", e)
+			}
+		} else {
+			if err := tx.Commit(ctx); err != nil {
+				e := o11y.RecordError(ctx, span, err, ref.metrics.repositoryCalls, metricCommonAttributes, "repository.Projects.Insert", "failed to commit transaction")
+				if e != nil {
+					slog.Error("repository.Projects.Insert", "error", e)
+				}
+			}
+		}
+	}()
+
+	query1 := `
         INSERT INTO projects (id, name, description, disabled)
         VALUES ($1, $2, $3, $4);
     `
 
-	slog.Debug("repository.Projects.Insert", "query", prettyPrint(query))
+	slog.Debug("repository.Projects.Insert", "query", prettyPrint(query1, input.ID, input.Name, input.Description, input.Disabled))
 
-	_, err := ref.db.Exec(ctx, query,
+	_, txErr = tx.Exec(ctx, query1,
 		input.ID,
 		input.Name,
 		input.Description,
 		input.Disabled,
 	)
-	if err != nil {
-		e := o11y.RecordError(ctx, span, err, ref.metrics.repositoryCalls, metricCommonAttributes, "repository.Projects.Insert")
-		return ref.handlePgError(e, input)
+	if txErr != nil {
+		txErr := o11y.RecordError(ctx, span, txErr, ref.metrics.repositoryCalls, metricCommonAttributes, "repository.Projects.Insert")
+		return ref.handlePgError(txErr, input)
+	}
+
+	query2 := `
+        INSERT INTO projects_users (projects_id, users_id)
+        VALUES ($1, $2);
+    `
+
+	slog.Debug("repository.Projects.Insert", "query", prettyPrint(query2, input.ID, input.UserID))
+
+	_, txErr = tx.Exec(ctx, query2, input.ID, input.UserID)
+	if txErr != nil {
+		txErr := o11y.RecordError(ctx, span, txErr, ref.metrics.repositoryCalls, metricCommonAttributes, "repository.Projects.Insert")
+		return ref.handlePgError(txErr, input)
 	}
 
 	slog.Debug("repository.Projects.Insert", "project.id", input.ID)
