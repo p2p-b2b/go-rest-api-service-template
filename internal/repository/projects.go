@@ -326,7 +326,7 @@ func (ref *ProjectsRepository) SelectByID(ctx context.Context, id, userID uuid.U
             vp.system,
             vp.created_at,
             vp.updated_at
-        FROM view_projects_users vp
+        FROM view_projects_users AS vp
         WHERE vp.id = $1 AND vp.user_id = $2;
     `
 

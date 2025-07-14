@@ -181,15 +181,6 @@ definitions:
     required:
     - policy_ids
     type: object
-  model.LinkProductToPaymentProcessorRequest:
-    description: LinkProductToPaymentProcessorRequest represents the input for linking
-      a product to a payment processor.
-    properties:
-      payment_processor_id:
-        type: string
-      payment_processor_product_id:
-        type: string
-    type: object
   model.LinkRolesToPolicyRequest:
     description: Link roles to a policy.
     properties:
@@ -582,15 +573,6 @@ definitions:
         type: array
     required:
     - policy_ids
-    type: object
-  model.UnlinkProductFromPaymentProcessorRequest:
-    description: LinkProductToPaymentProcessorRequest represents the input for linking
-      a product to a payment processor.
-    properties:
-      payment_processor_id:
-        type: string
-      payment_processor_product_id:
-        type: string
     type: object
   model.UnlinkRolesFromPolicyRequest:
     description: Link roles to a policy.
@@ -1864,98 +1846,6 @@ paths:
       security:
       - AccessToken: []
       summary: Update product
-      tags:
-      - Products
-      - Projects
-  /projects/{project_id}/products/{product_id}/payment_processor:
-    delete:
-      consumes:
-      - application/json
-      description: Remove the association between a product and a payment processor
-      operationId: 0198042a-f9c5-761a-bd02-da039b52bea2
-      parameters:
-      - description: The project id in UUID format
-        format: uuid
-        in: path
-        name: project_id
-        required: true
-        type: string
-      - description: The product id in UUID format
-        format: uuid
-        in: path
-        name: product_id
-        required: true
-        type: string
-      - description: Unlink product from payment processor request
-        in: body
-        name: body
-        required: true
-        schema:
-          $ref: '#/definitions/model.UnlinkProductFromPaymentProcessorRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/model.HTTPMessage'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/model.HTTPMessage'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/model.HTTPMessage'
-      security:
-      - AccessToken: []
-      summary: Unlink product from payment processor
-      tags:
-      - Products
-      - Projects
-    post:
-      consumes:
-      - application/json
-      description: Associate a product with a payment processor to enable billing
-        and invoicing
-      operationId: 0198042a-f9c5-7616-8c3b-e4f19d83a033
-      parameters:
-      - description: The project id in UUID format
-        format: uuid
-        in: path
-        name: project_id
-        required: true
-        type: string
-      - description: The product id in UUID format
-        format: uuid
-        in: path
-        name: product_id
-        required: true
-        type: string
-      - description: Link product to payment processor request
-        in: body
-        name: body
-        required: true
-        schema:
-          $ref: '#/definitions/model.LinkProductToPaymentProcessorRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/model.HTTPMessage'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/model.HTTPMessage'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/model.HTTPMessage'
-      security:
-      - AccessToken: []
-      summary: Link product to payment processor
       tags:
       - Products
       - Projects

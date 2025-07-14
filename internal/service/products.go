@@ -18,16 +18,13 @@ import (
 
 // ProductsRepository is the interface for the products repository methods.
 type ProductsRepository interface {
-	SelectByIDByProjectID(ctx context.Context, id uuid.UUID, projectID uuid.UUID) (*model.Product, error)
+	SelectByIDByProjectID(ctx context.Context, id, projectID, userID uuid.UUID) (*model.Product, error)
 	SelectByProjectID(ctx context.Context, projectID uuid.UUID, input *model.SelectProductsInput) (*model.SelectProductsOutput, error)
 	Select(ctx context.Context, input *model.SelectProductsInput) (*model.SelectProductsOutput, error)
 
 	Insert(ctx context.Context, input *model.InsertProductInput) error
 	Update(ctx context.Context, input *model.UpdateProductInput) error
 	Delete(ctx context.Context, input *model.DeleteProductInput) error
-
-	LinkToPaymentProcessor(ctx context.Context, input *model.LinkProductToPaymentProcessorInput) error
-	UnlinkFromPaymentProcessor(ctx context.Context, input *model.UnlinkProductFromPaymentProcessorInput) error
 }
 
 type ProductsServiceConf struct {
@@ -165,7 +162,7 @@ func (ref *ProductsService) DeleteByIDByProjectID(ctx context.Context, input *mo
 	return nil
 }
 
-func (ref *ProductsService) GetByIDByProjectID(ctx context.Context, projectID uuid.UUID, id uuid.UUID) (*model.Product, error) {
+func (ref *ProductsService) GetByIDByProjectID(ctx context.Context, id, projectID, userID uuid.UUID) (*model.Product, error) {
 	ctx, span, metricCommonAttributes := ref.setupContext(ctx, "service.Products.GetByIDByProjectID")
 	defer span.End()
 
@@ -181,7 +178,7 @@ func (ref *ProductsService) GetByIDByProjectID(ctx context.Context, projectID uu
 
 	span.SetAttributes(attribute.String("products.id", id.String()))
 
-	out, err := ref.repository.SelectByIDByProjectID(ctx, id, projectID)
+	out, err := ref.repository.SelectByIDByProjectID(ctx, id, projectID, userID)
 	if err != nil {
 		return nil, o11y.RecordError(ctx, span, err, ref.metrics.serviceCalls, metricCommonAttributes, "service.Products.GetByIDByProjectID")
 	}
@@ -277,52 +274,4 @@ func (ref *ProductsService) setupContext(ctx context.Context, operation string) 
 	}
 
 	return ctx, span, metricCommonAttributes
-}
-
-func (ref *ProductsService) LinkToPaymentProcessor(ctx context.Context, input *model.LinkProductToPaymentProcessorInput) error {
-	ctx, span, metricCommonAttributes := ref.setupContext(ctx, "service.Products.LinkToPaymentProcessor")
-	defer span.End()
-
-	if input == nil {
-		errorValue := &model.InvalidInputError{Message: "input is nil"}
-		return o11y.RecordError(ctx, span, errorValue, ref.metrics.serviceCalls, metricCommonAttributes, "service.Products.LinkToPaymentProcessor")
-	}
-
-	span.SetAttributes(
-		attribute.String("product.id", input.ProductID.String()),
-	)
-
-	if err := input.Validate(); err != nil {
-		return o11y.RecordError(ctx, span, err, ref.metrics.serviceCalls, metricCommonAttributes, "service.Products.LinkToPaymentProcessor")
-	}
-
-	if err := ref.repository.LinkToPaymentProcessor(ctx, input); err != nil {
-		return o11y.RecordError(ctx, span, err, ref.metrics.serviceCalls, metricCommonAttributes, "service.Products.LinkToPaymentProcessor")
-	}
-
-	return nil
-}
-
-func (ref *ProductsService) UnlinkFromPaymentProcessor(ctx context.Context, input *model.UnlinkProductFromPaymentProcessorInput) error {
-	ctx, span, metricCommonAttributes := ref.setupContext(ctx, "service.Products.UnlinkFromPaymentProcessor")
-	defer span.End()
-
-	if input == nil {
-		errorValue := &model.InvalidInputError{Message: "input is nil"}
-		return o11y.RecordError(ctx, span, errorValue, ref.metrics.serviceCalls, metricCommonAttributes, "service.Products.UnlinkFromPaymentProcessor")
-	}
-
-	span.SetAttributes(
-		attribute.String("product.id", input.ProductID.String()),
-	)
-
-	if err := input.Validate(); err != nil {
-		return o11y.RecordError(ctx, span, err, ref.metrics.serviceCalls, metricCommonAttributes, "service.Products.UnlinkFromPaymentProcessor")
-	}
-
-	if err := ref.repository.UnlinkFromPaymentProcessor(ctx, input); err != nil {
-		return o11y.RecordError(ctx, span, err, ref.metrics.serviceCalls, metricCommonAttributes, "service.Products.UnlinkFromPaymentProcessor")
-	}
-
-	return nil
 }

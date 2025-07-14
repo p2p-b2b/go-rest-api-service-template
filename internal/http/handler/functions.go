@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
+	"github.com/p2p-b2b/go-rest-api-service-template/internal/http/middleware"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/model"
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/o11y"
 	"github.com/p2p-b2b/qfv"
@@ -301,4 +302,25 @@ func parseListQueryParams(params map[string]any, fieldsFields, filterFields, sor
 	}
 
 	return sort, filter, fields, nextToken, prevToken, limit, nil
+}
+
+// getUserIDFromContext extracts the user ID from the context.
+// It expects the user ID to be stored in the JWT claims under the "sub" key.
+// If the "sub" claim is missing or not a string, it returns an error.
+// If the user ID is not a valid UUID, it returns an error.
+// If the user ID is a nil UUID, it returns an error.
+func getUserIDFromContext(ctx context.Context) (uuid.UUID, error) {
+	claims := ctx.Value(middleware.JwtClaims).(map[string]any)
+
+	userIDstring, ok := claims["sub"].(string)
+	if !ok {
+		return uuid.Nil, &model.InvalidJWTError{Message: "sub claim is missing or not a string"}
+	}
+
+	userID, err := uuid.Parse(userIDstring)
+	if err != nil {
+		return uuid.Nil, &model.InvalidJWTError{Message: err.Error()}
+	}
+
+	return userID, nil
 }

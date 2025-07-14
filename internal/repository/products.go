@@ -141,17 +141,31 @@ func (ref *ProductsRepository) Insert(ctx context.Context, input *model.InsertPr
 	}()
 
 	query1 := `
-        INSERT INTO products (id, projects_id, name, description)
-        VALUES ($1, $2, $3, $4);
-    `
+		INSERT INTO products (id, projects_id, name, description)
+		SELECT $1, $2, $3, $4
+		WHERE (
+			-- 2. Add a security check that must pass
+			-- Condition A: The user is an admin
+			(SELECT admin FROM users WHERE id = $5) = TRUE
+			OR
+			-- Condition B: The user is assigned to this specific project
+			EXISTS (
+				SELECT 1
+				FROM projects_users
+				WHERE projects_id = $2
+				AND users_id = $5
+			)
+		);
+	`
 
-	slog.Debug("repository.Products.Insert", "query", prettyPrint(query1, input.ID, input.ProjectID, input.Name, input.Description))
+	slog.Debug("repository.Products.Insert", "query", prettyPrint(query1, input.ID, input.ProjectID, input.Name, input.Description, input.UserID))
 
 	_, txErr = tx.Exec(ctx, query1,
 		input.ID,
 		input.ProjectID,
 		input.Name,
 		input.Description,
+		input.UserID, // User ID for security check
 	)
 	if txErr != nil {
 		return ref.handlePgError(txErr, input)
@@ -178,7 +192,7 @@ func (ref *ProductsRepository) Update(ctx context.Context, input *model.UpdatePr
 		return o11y.RecordError(ctx, span, err, ref.metrics.repositoryCalls, metricCommonAttributes, "repository.Products.Update")
 	}
 
-	args := []any{input.ID, input.ProjectID}
+	args := []any{input.ID, input.ProjectID, input.UserID}
 	if input.Name != nil && *input.Name != "" {
 		args = append(args, *input.Name)
 	} else {
@@ -219,10 +233,23 @@ func (ref *ProductsRepository) Update(ctx context.Context, input *model.UpdatePr
 	query1 := `
         UPDATE products
         SET
-            name = COALESCE($3, name),
-            description = COALESCE($4, description),
-            updated_at = COALESCE($5, updated_at)
-        WHERE id = $1 AND projects_id = $2;
+            name = COALESCE($4, name),
+            description = COALESCE($5, description),
+            updated_at = COALESCE($6, updated_at)
+        WHERE id = $1 AND projects_id = $2
+            AND (
+                -- 2. Add a security check that must pass
+                -- Condition A: The user is an admin
+                (SELECT admin FROM users WHERE id = $3) = TRUE
+                OR
+                -- Condition B: The user is assigned to this specific project
+                EXISTS (
+                    SELECT 1
+                    FROM projects_users
+                    WHERE projects_id = $2
+                    AND users_id = $3
+                )
+            );
     `
 
 	slog.Debug("repository.Products.UpdateByID", "query", prettyPrint(query1, args...))
@@ -260,12 +287,25 @@ func (ref *ProductsRepository) Delete(ctx context.Context, input *model.DeletePr
 
 	query := `
         DELETE FROM products
-        WHERE id = $1 AND projects_id = $2;
+        WHERE id = $1 AND projects_id = $2
+        AND (
+            -- 2. Add a security check that must pass
+            -- Condition A: The user is an admin
+            (SELECT admin FROM users WHERE id = $3) = TRUE
+            OR
+            -- Condition B: The user is assigned to this specific project
+            EXISTS (
+                SELECT 1
+                FROM projects_users
+                WHERE projects_id = $2
+                AND users_id = $3
+            )
+        );
     `
 
-	slog.Debug("repository.Products.Delete", "query", prettyPrint(query, input.ID, input.ProjectID))
+	slog.Debug("repository.Products.Delete", "query", prettyPrint(query, input.ID, input.ProjectID, input.UserID))
 
-	result, err := ref.db.Exec(ctx, query, input.ID, input.ProjectID)
+	result, err := ref.db.Exec(ctx, query, input.ID, input.ProjectID, input.UserID)
 	if err != nil {
 		return o11y.RecordError(ctx, span, ref.handlePgError(err, input), ref.metrics.repositoryCalls, metricCommonAttributes, "repository.Products.Delete")
 	}
@@ -284,7 +324,7 @@ func (ref *ProductsRepository) Delete(ctx context.Context, input *model.DeletePr
 	return nil
 }
 
-func (ref *ProductsRepository) SelectByIDByProjectID(ctx context.Context, id uuid.UUID, projectID uuid.UUID) (*model.Product, error) {
+func (ref *ProductsRepository) SelectByIDByProjectID(ctx context.Context, id, projectID, userID uuid.UUID) (*model.Product, error) {
 	ctx, span, metricCommonAttributes, cancel := ref.setupContext(ctx, "repository.Products.SelectByIDByProjectID", ref.maxQueryTimeout)
 	defer cancel()
 	defer span.End()
@@ -304,37 +344,22 @@ func (ref *ProductsRepository) SelectByIDByProjectID(ctx context.Context, id uui
             array_agg(
                 DISTINCT(
                     ARRAY[
-                        COALESCE(prj.id::varchar, '00000000-0000-0000-0000-000000000000'),
-                        COALESCE(prj.name, '')
+                        COALESCE(vp.id::varchar, '00000000-0000-0000-0000-000000000000'),
+                        COALESCE(vp.name, '')
                     ]
                 )
-            ) AS projects,
-            array_agg(
-                DISTINCT(
-                    ARRAY[
-                        COALESCE(ppp.payment_processor_product_id::varchar, '00000000-0000-0000-0000-000000000000'),
-                        COALESCE(pp.id::varchar, '00000000-0000-0000-0000-000000000000'),
-                        COALESCE(pp.name, ''),
-                        COALESCE(ppt.id::varchar, '00000000-0000-0000-0000-000000000000'),
-                        COALESCE(ppt.name, '')
-                    ]
-                )
-            ) AS payment_processors
+            ) AS projects
         FROM products AS p
-            LEFT JOIN projects prj ON prj.id = p.projects_id
-            LEFT JOIN products_payment_processors ppp ON ppp.product_id = p.id
-            LEFT JOIN payment_processors pp ON pp.id = ppp.payment_processor_id
-            LEFT JOIN payment_processor_types ppt ON ppt.id = pp.payment_processor_types_id
-        WHERE p.id = $1 AND p.projects_id = $2
+            LEFT JOIN view_projects_users vp ON vp.id = p.projects_id
+        WHERE p.id = $1 AND p.projects_id = $2 AND vp.user_id = $3
         GROUP BY p.id;
     `
 
-	slog.Debug("repository.Products.SelectByID", "query", prettyPrint(query, id, projectID))
+	slog.Debug("repository.Products.SelectByID", "query", prettyPrint(query, id, projectID, userID))
 
-	row := ref.db.QueryRow(ctx, query, id, projectID)
+	row := ref.db.QueryRow(ctx, query, id, projectID, userID)
 
 	var element model.Product
-	var productPaymentProcessorResponse []string
 	var projects []string
 
 	if err := row.Scan(
@@ -344,7 +369,6 @@ func (ref *ProductsRepository) SelectByIDByProjectID(ctx context.Context, id uui
 		&element.CreatedAt,
 		&element.UpdatedAt,
 		&projects,
-		&productPaymentProcessorResponse,
 	); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			errorType := &model.ProductNotFoundError{ProductID: id.String()}
@@ -392,8 +416,7 @@ func (ref *ProductsRepository) SelectByProjectID(ctx context.Context, projectID 
 		"created_at",
 		"updated_at",
 		"serial_id",
-		"array_agg(DISTINCT(ARRAY[COALESCE(prj.id::varchar, '00000000-0000-0000-0000-000000000000'),COALESCE(prj.name, '')])) AS projects",
-		"array_agg(DISTINCT(ARRAY[COALESCE(ppp.payment_processor_product_id::varchar, '00000000-0000-0000-0000-000000000000'),COALESCE(pp.id::varchar, '00000000-0000-0000-0000-000000000000'),COALESCE(pp.name, ''),COALESCE(ppt.id::varchar, '00000000-0000-0000-0000-000000000000'),COALESCE(ppt.name, '')])) AS payment_processors",
+		"array_agg(DISTINCT(ARRAY[COALESCE(vp.id::varchar, '00000000-0000-0000-0000-000000000000'),COALESCE(vp.name, '')])) AS projects",
 	}
 
 	fieldsStr := buildFieldSelection(sqlFieldsPrefix, fieldsArray, input.Fields)
@@ -417,11 +440,8 @@ func (ref *ProductsRepository) SelectByProjectID(ctx context.Context, projectID 
             SELECT
                 {{.QueryColumns}}
             FROM products AS p
-                LEFT JOIN projects prj ON prj.id = p.projects_id
-                LEFT JOIN products_payment_processors ppp ON ppp.product_id = p.id
-                LEFT JOIN payment_processors pp ON pp.id = ppp.payment_processor_id
-                LEFT JOIN payment_processor_types ppt ON ppt.id = pp.payment_processor_types_id
-            WHERE p.projects_id = $1
+                LEFT JOIN view_projects_users AS vp ON vp.id = p.projects_id
+            WHERE p.projects_id = $1 AND vp.user_id = $2
             {{ .QueryWhere }}
             GROUP BY p.id
             ORDER BY {{.QueryInternalSort}}
@@ -464,7 +484,7 @@ func (ref *ProductsRepository) SelectByProjectID(ctx context.Context, projectID 
 	slog.Debug("repository.Products.SelectByProjectID", "query", prettyPrint(query, projectID))
 
 	// execute the query
-	rows, err := ref.db.Query(ctx, query, projectID)
+	rows, err := ref.db.Query(ctx, query, projectID, input.UserID)
 	if err != nil {
 		return nil, o11y.RecordError(ctx, span, err, ref.metrics.repositoryCalls, metricCommonAttributes, "repository.Products.SelectByProjectID", "failed to select all products")
 	}
@@ -474,11 +494,9 @@ func (ref *ProductsRepository) SelectByProjectID(ctx context.Context, projectID 
 	for rows.Next() {
 		var item model.Product
 		var projects []string
-		var productPaymentProcessorResponse []string
 
 		scanFields := ref.buildScanFields(&item,
 			&projects,
-			&productPaymentProcessorResponse,
 			input.Fields)
 
 		if err := rows.Scan(scanFields...); err != nil {
@@ -580,8 +598,7 @@ func (ref *ProductsRepository) Select(ctx context.Context, input *model.SelectPr
 		"created_at",
 		"updated_at",
 		"serial_id",
-		"array_agg(DISTINCT(ARRAY[COALESCE(prj.id::varchar, '00000000-0000-0000-0000-000000000000'), COALESCE(prj.name, '')])) AS projects",
-		"array_agg(DISTINCT(ARRAY[COALESCE(ppp.payment_processor_product_id::varchar, '00000000-0000-0000-0000-000000000000'), COALESCE(pp.id::varchar, '00000000-0000-0000-0000-000000000000'),COALESCE(pp.name, ''), COALESCE(ppt.id::varchar, '00000000-0000-0000-0000-000000000000'), COALESCE(ppt.name, '')])) AS payment_processors",
+		"array_agg(DISTINCT(ARRAY[COALESCE(vp.id::varchar, '00000000-0000-0000-0000-000000000000'), COALESCE(vp.name, '')])) AS projects",
 	}
 
 	fieldsStr := buildFieldSelection(sqlFieldsPrefix, fieldsArray, input.Fields)
@@ -589,7 +606,7 @@ func (ref *ProductsRepository) Select(ctx context.Context, input *model.SelectPr
 	var filterQuery string
 	if input.Filter != "" {
 		filterSentence := injectPrefixToFields(sqlFieldsPrefix, input.Filter, model.ProductsFilterFields)
-		filterQuery = fmt.Sprintf("WHERE (%s)", filterSentence)
+		filterQuery = fmt.Sprintf("AND (%s)", filterSentence)
 	}
 
 	var sortQuery string
@@ -605,10 +622,8 @@ func (ref *ProductsRepository) Select(ctx context.Context, input *model.SelectPr
             SELECT
                 {{.QueryColumns}}
             FROM products AS p
-                LEFT JOIN projects prj ON prj.id = p.projects_id
-                LEFT JOIN products_payment_processors ppp ON ppp.product_id = p.id
-                LEFT JOIN payment_processors pp ON pp.id = ppp.payment_processor_id
-                LEFT JOIN payment_processor_types ppt ON ppt.id = pp.payment_processor_types_id
+                LEFT JOIN view_projects_users vp ON vp.id = p.projects_id
+            WHERE vp.user_id = $1
             {{ .QueryWhere }}
             GROUP BY p.id
             ORDER BY {{.QueryInternalSort}}
@@ -648,10 +663,10 @@ func (ref *ProductsRepository) Select(ctx context.Context, input *model.SelectPr
 	}
 
 	query := tpl.String()
-	slog.Debug("repository.Products.Select", "query", prettyPrint(query))
+	slog.Debug("repository.Products.Select", "query", prettyPrint(query, input.UserID))
 
 	// execute the query
-	rows, err := ref.db.Query(ctx, query)
+	rows, err := ref.db.Query(ctx, query, input.UserID)
 	if err != nil {
 		return nil, o11y.RecordError(ctx, span, err, ref.metrics.repositoryCalls, metricCommonAttributes, "repository.Products.Select", "failed to select all products")
 	}
@@ -661,11 +676,9 @@ func (ref *ProductsRepository) Select(ctx context.Context, input *model.SelectPr
 	for rows.Next() {
 		var item model.Product
 		var projects []string
-		var productPaymentProcessorResponse []string
 
 		scanFields := ref.buildScanFields(&item,
 			&projects,
-			&productPaymentProcessorResponse,
 			input.Fields)
 
 		if err := rows.Scan(scanFields...); err != nil {
@@ -748,64 +761,6 @@ func (ref *ProductsRepository) Select(ctx context.Context, input *model.SelectPr
 	return ret, nil
 }
 
-func (ref *ProductsRepository) LinkToPaymentProcessor(ctx context.Context, input *model.LinkProductToPaymentProcessorInput) error {
-	ctx, span, metricCommonAttributes, cancel := ref.setupContext(ctx, "repository.Products.LinkToPaymentProcessor", ref.maxQueryTimeout)
-	defer cancel()
-	defer span.End()
-
-	if input == nil {
-		errorValue := &model.InvalidInputError{Message: "input cannot be nil"}
-		return o11y.RecordError(ctx, span, errorValue, ref.metrics.repositoryCalls, metricCommonAttributes, "repository.Products.LinkToPaymentProcessor")
-	}
-
-	if err := input.Validate(); err != nil {
-		return o11y.RecordError(ctx, span, err, ref.metrics.repositoryCalls, metricCommonAttributes, "repository.Products.LinkToPaymentProcessor")
-	}
-
-	query := `
-		INSERT INTO products_payment_processors (product_id, payment_processor_id, payment_processor_product_id)
-		VALUES ($1, $2, $3)
-	`
-
-	slog.Debug("repository.Products.LinkToPaymentProcessor", "query", prettyPrint(query, input.ProductID, input.PaymentProcessorID, input.PaymentProcessorProductID))
-
-	_, err := ref.db.Exec(ctx, query, input.ProductID, input.PaymentProcessorID, input.PaymentProcessorProductID)
-	if err != nil {
-		return o11y.RecordError(ctx, span, err, ref.metrics.repositoryCalls, metricCommonAttributes, "repository.Products.LinkToPaymentProcessor")
-	}
-
-	return nil
-}
-
-func (ref *ProductsRepository) UnlinkFromPaymentProcessor(ctx context.Context, input *model.UnlinkProductFromPaymentProcessorInput) error {
-	ctx, span, metricCommonAttributes, cancel := ref.setupContext(ctx, "repository.Products.UnlinkFromPaymentProcessor", ref.maxQueryTimeout)
-	defer cancel()
-	defer span.End()
-
-	if input == nil {
-		errorValue := &model.InvalidInputError{Message: "input cannot be nil"}
-		return o11y.RecordError(ctx, span, errorValue, ref.metrics.repositoryCalls, metricCommonAttributes, "repository.Products.UnlinkFromPaymentProcessor")
-	}
-
-	if err := input.Validate(); err != nil {
-		return o11y.RecordError(ctx, span, err, ref.metrics.repositoryCalls, metricCommonAttributes, "repository.Products.UnlinkFromPaymentProcessor")
-	}
-
-	query := `
-		DELETE FROM products_payment_processors
-		WHERE product_id = $1 AND payment_processor_id = $2 AND payment_processor_product_id = $3
-	`
-
-	slog.Debug("repository.Products.UnlinkFromPaymentProcessor", "query", prettyPrint(query, input.ProductID, input.PaymentProcessorID, input.PaymentProcessorProductID))
-
-	_, err := ref.db.Exec(ctx, query, input.ProductID, input.PaymentProcessorID, input.PaymentProcessorProductID)
-	if err != nil {
-		return o11y.RecordError(ctx, span, err, ref.metrics.repositoryCalls, metricCommonAttributes, "repository.Products.UnlinkFromPaymentProcessor")
-	}
-
-	return nil
-}
-
 // handlePgError maps PostgreSQL errors to domain-specific errors.
 // Returns the appropriate domain error or the original error if no mapping exists.
 func (ref *ProductsRepository) handlePgError(err error, input any) error {
@@ -867,7 +822,6 @@ func (ref *ProductsRepository) setupContext(ctx context.Context, operation strin
 
 func (ref *ProductsRepository) buildScanFields(item *model.Product,
 	projects *[]string,
-	productPaymentProcessorResponse *[]string,
 	requestedFields string,
 ) []any {
 	scanFields := make([]any, 0)
@@ -882,7 +836,6 @@ func (ref *ProductsRepository) buildScanFields(item *model.Product,
 			&item.UpdatedAt,
 			&item.SerialID,
 			projects,
-			productPaymentProcessorResponse,
 		}
 	}
 
@@ -906,8 +859,6 @@ func (ref *ProductsRepository) buildScanFields(item *model.Product,
 			scanFields = append(scanFields, &item.UpdatedAt)
 		case "projects":
 			scanFields = append(scanFields, projects)
-		case "payment_processors":
-			scanFields = append(scanFields, productPaymentProcessorResponse)
 
 		default:
 			slog.Warn("repository.Products.buildScanFields", "what", "field not found", "field", field)

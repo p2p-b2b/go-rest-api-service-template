@@ -70,20 +70,6 @@ func (mr *MockProductsRepositoryMockRecorder) Insert(ctx, input any) *gomock.Cal
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Insert", reflect.TypeOf((*MockProductsRepository)(nil).Insert), ctx, input)
 }
 
-// LinkToPaymentProcessor mocks base method.
-func (m *MockProductsRepository) LinkToPaymentProcessor(ctx context.Context, input *model.LinkProductToPaymentProcessorInput) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "LinkToPaymentProcessor", ctx, input)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// LinkToPaymentProcessor indicates an expected call of LinkToPaymentProcessor.
-func (mr *MockProductsRepositoryMockRecorder) LinkToPaymentProcessor(ctx, input any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LinkToPaymentProcessor", reflect.TypeOf((*MockProductsRepository)(nil).LinkToPaymentProcessor), ctx, input)
-}
-
 // Select mocks base method.
 func (m *MockProductsRepository) Select(ctx context.Context, input *model.SelectProductsInput) (*model.SelectProductsOutput, error) {
 	m.ctrl.T.Helper()
@@ -100,18 +86,18 @@ func (mr *MockProductsRepositoryMockRecorder) Select(ctx, input any) *gomock.Cal
 }
 
 // SelectByIDByProjectID mocks base method.
-func (m *MockProductsRepository) SelectByIDByProjectID(ctx context.Context, id, projectID uuid.UUID) (*model.Product, error) {
+func (m *MockProductsRepository) SelectByIDByProjectID(ctx context.Context, id, projectID, userID uuid.UUID) (*model.Product, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SelectByIDByProjectID", ctx, id, projectID)
+	ret := m.ctrl.Call(m, "SelectByIDByProjectID", ctx, id, projectID, userID)
 	ret0, _ := ret[0].(*model.Product)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // SelectByIDByProjectID indicates an expected call of SelectByIDByProjectID.
-func (mr *MockProductsRepositoryMockRecorder) SelectByIDByProjectID(ctx, id, projectID any) *gomock.Call {
+func (mr *MockProductsRepositoryMockRecorder) SelectByIDByProjectID(ctx, id, projectID, userID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SelectByIDByProjectID", reflect.TypeOf((*MockProductsRepository)(nil).SelectByIDByProjectID), ctx, id, projectID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SelectByIDByProjectID", reflect.TypeOf((*MockProductsRepository)(nil).SelectByIDByProjectID), ctx, id, projectID, userID)
 }
 
 // SelectByProjectID mocks base method.
@@ -127,20 +113,6 @@ func (m *MockProductsRepository) SelectByProjectID(ctx context.Context, projectI
 func (mr *MockProductsRepositoryMockRecorder) SelectByProjectID(ctx, projectID, input any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SelectByProjectID", reflect.TypeOf((*MockProductsRepository)(nil).SelectByProjectID), ctx, projectID, input)
-}
-
-// UnlinkFromPaymentProcessor mocks base method.
-func (m *MockProductsRepository) UnlinkFromPaymentProcessor(ctx context.Context, input *model.UnlinkProductFromPaymentProcessorInput) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UnlinkFromPaymentProcessor", ctx, input)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// UnlinkFromPaymentProcessor indicates an expected call of UnlinkFromPaymentProcessor.
-func (mr *MockProductsRepositoryMockRecorder) UnlinkFromPaymentProcessor(ctx, input any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UnlinkFromPaymentProcessor", reflect.TypeOf((*MockProductsRepository)(nil).UnlinkFromPaymentProcessor), ctx, input)
 }
 
 // Update mocks base method.

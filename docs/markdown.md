@@ -99,8 +99,6 @@ The value must be "Bearer <refresh_token>"
 | DELETE | /projects/{project_id}/products/{product_id} | [0198042a f9c5 760a 99c8 1f68d597d300](#0198042a-f9c5-760a-99c8-1f68d597d300) | Delete product |
 | GET | /projects/{project_id}/products | [0198042a f9c5 760e 9d2f 94cce8243e5a](#0198042a-f9c5-760e-9d2f-94cce8243e5a) | List products by project |
 | GET | /products | [0198042a f9c5 7612 a055 58177eca0772](#0198042a-f9c5-7612-a055-58177eca0772) | List products |
-| POST | /projects/{project_id}/products/{product_id}/payment_processor | [0198042a f9c5 7616 8c3b e4f19d83a033](#0198042a-f9c5-7616-8c3b-e4f19d83a033) | Link product to payment processor |
-| DELETE | /projects/{project_id}/products/{product_id}/payment_processor | [0198042a f9c5 761a bd02 da039b52bea2](#0198042a-f9c5-761a-bd02-da039b52bea2) | Unlink product from payment processor |
   
 
 
@@ -1567,130 +1565,6 @@ Status: Bad Request
 Status: Internal Server Error
 
 ###### <span id="0198042a-f9c5-7612-a055-58177eca0772-500-schema"></span> Schema
-   
-  
-
-[ModelHTTPMessage](#model-http-message)
-
-### <span id="0198042a-f9c5-7616-8c3b-e4f19d83a033"></span> Link product to payment processor (*0198042a-f9c5-7616-8c3b-e4f19d83a033*)
-
-```
-POST /projects/{project_id}/products/{product_id}/payment_processor
-```
-
-Associate a product with a payment processor to enable billing and invoicing
-
-#### Consumes
-  * application/json
-
-#### Produces
-  * application/json
-
-#### Security Requirements
-  * AccessToken
-
-#### Parameters
-
-| Name | Source | Type | Go type | Separator | Required | Default | Description |
-|------|--------|------|---------|-----------| :------: |---------|-------------|
-| product_id | `path` | uuid (formatted string) | `strfmt.UUID` |  | ✓ |  | The product id in UUID format |
-| project_id | `path` | uuid (formatted string) | `strfmt.UUID` |  | ✓ |  | The project id in UUID format |
-| body | `body` | [ModelLinkProductToPaymentProcessorRequest](#model-link-product-to-payment-processor-request) | `models.ModelLinkProductToPaymentProcessorRequest` | | ✓ | | Link product to payment processor request |
-
-#### All responses
-| Code | Status | Description | Has headers | Schema |
-|------|--------|-------------|:-----------:|--------|
-| [200](#0198042a-f9c5-7616-8c3b-e4f19d83a033-200) | OK | OK |  | [schema](#0198042a-f9c5-7616-8c3b-e4f19d83a033-200-schema) |
-| [400](#0198042a-f9c5-7616-8c3b-e4f19d83a033-400) | Bad Request | Bad Request |  | [schema](#0198042a-f9c5-7616-8c3b-e4f19d83a033-400-schema) |
-| [500](#0198042a-f9c5-7616-8c3b-e4f19d83a033-500) | Internal Server Error | Internal Server Error |  | [schema](#0198042a-f9c5-7616-8c3b-e4f19d83a033-500-schema) |
-
-#### Responses
-
-
-##### <span id="0198042a-f9c5-7616-8c3b-e4f19d83a033-200"></span> 200 - OK
-Status: OK
-
-###### <span id="0198042a-f9c5-7616-8c3b-e4f19d83a033-200-schema"></span> Schema
-   
-  
-
-[ModelHTTPMessage](#model-http-message)
-
-##### <span id="0198042a-f9c5-7616-8c3b-e4f19d83a033-400"></span> 400 - Bad Request
-Status: Bad Request
-
-###### <span id="0198042a-f9c5-7616-8c3b-e4f19d83a033-400-schema"></span> Schema
-   
-  
-
-[ModelHTTPMessage](#model-http-message)
-
-##### <span id="0198042a-f9c5-7616-8c3b-e4f19d83a033-500"></span> 500 - Internal Server Error
-Status: Internal Server Error
-
-###### <span id="0198042a-f9c5-7616-8c3b-e4f19d83a033-500-schema"></span> Schema
-   
-  
-
-[ModelHTTPMessage](#model-http-message)
-
-### <span id="0198042a-f9c5-761a-bd02-da039b52bea2"></span> Unlink product from payment processor (*0198042a-f9c5-761a-bd02-da039b52bea2*)
-
-```
-DELETE /projects/{project_id}/products/{product_id}/payment_processor
-```
-
-Remove the association between a product and a payment processor
-
-#### Consumes
-  * application/json
-
-#### Produces
-  * application/json
-
-#### Security Requirements
-  * AccessToken
-
-#### Parameters
-
-| Name | Source | Type | Go type | Separator | Required | Default | Description |
-|------|--------|------|---------|-----------| :------: |---------|-------------|
-| product_id | `path` | uuid (formatted string) | `strfmt.UUID` |  | ✓ |  | The product id in UUID format |
-| project_id | `path` | uuid (formatted string) | `strfmt.UUID` |  | ✓ |  | The project id in UUID format |
-| body | `body` | [ModelUnlinkProductFromPaymentProcessorRequest](#model-unlink-product-from-payment-processor-request) | `models.ModelUnlinkProductFromPaymentProcessorRequest` | | ✓ | | Unlink product from payment processor request |
-
-#### All responses
-| Code | Status | Description | Has headers | Schema |
-|------|--------|-------------|:-----------:|--------|
-| [200](#0198042a-f9c5-761a-bd02-da039b52bea2-200) | OK | OK |  | [schema](#0198042a-f9c5-761a-bd02-da039b52bea2-200-schema) |
-| [400](#0198042a-f9c5-761a-bd02-da039b52bea2-400) | Bad Request | Bad Request |  | [schema](#0198042a-f9c5-761a-bd02-da039b52bea2-400-schema) |
-| [500](#0198042a-f9c5-761a-bd02-da039b52bea2-500) | Internal Server Error | Internal Server Error |  | [schema](#0198042a-f9c5-761a-bd02-da039b52bea2-500-schema) |
-
-#### Responses
-
-
-##### <span id="0198042a-f9c5-761a-bd02-da039b52bea2-200"></span> 200 - OK
-Status: OK
-
-###### <span id="0198042a-f9c5-761a-bd02-da039b52bea2-200-schema"></span> Schema
-   
-  
-
-[ModelHTTPMessage](#model-http-message)
-
-##### <span id="0198042a-f9c5-761a-bd02-da039b52bea2-400"></span> 400 - Bad Request
-Status: Bad Request
-
-###### <span id="0198042a-f9c5-761a-bd02-da039b52bea2-400-schema"></span> Schema
-   
-  
-
-[ModelHTTPMessage](#model-http-message)
-
-##### <span id="0198042a-f9c5-761a-bd02-da039b52bea2-500"></span> 500 - Internal Server Error
-Status: Internal Server Error
-
-###### <span id="0198042a-f9c5-761a-bd02-da039b52bea2-500-schema"></span> Schema
    
   
 
@@ -3756,25 +3630,6 @@ Status: Internal Server Error
 
 
 
-### <span id="model-link-product-to-payment-processor-request"></span> model.LinkProductToPaymentProcessorRequest
-
-
-> LinkProductToPaymentProcessorRequest represents the input for linking a product to a payment processor.
-  
-
-
-
-
-
-**Properties**
-
-| Name | Type | Go type | Required | Default | Description | Example |
-|------|------|---------|:--------:| ------- |-------------|---------|
-| payment_processor_id | string| `string` |  | |  |  |
-| payment_processor_product_id | string| `string` |  | |  |  |
-
-
-
 ### <span id="model-link-roles-to-policy-request"></span> model.LinkRolesToPolicyRequest
 
 
@@ -4218,25 +4073,6 @@ Status: Internal Server Error
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
 | policy_ids | []uuid (formatted string)| `[]strfmt.UUID` | ✓ | |  |  |
-
-
-
-### <span id="model-unlink-product-from-payment-processor-request"></span> model.UnlinkProductFromPaymentProcessorRequest
-
-
-> LinkProductToPaymentProcessorRequest represents the input for linking a product to a payment processor.
-  
-
-
-
-
-
-**Properties**
-
-| Name | Type | Go type | Required | Default | Description | Example |
-|------|------|---------|:--------:| ------- |-------------|---------|
-| payment_processor_id | string| `string` |  | |  |  |
-| payment_processor_product_id | string| `string` |  | |  |  |
 
 
 

@@ -1625,142 +1625,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/projects/{project_id}/products/{product_id}/payment_processor": {
-            "post": {
-                "security": [
-                    {
-                        "AccessToken": []
-                    }
-                ],
-                "description": "Associate a product with a payment processor to enable billing and invoicing",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Products",
-                    "Projects"
-                ],
-                "summary": "Link product to payment processor",
-                "operationId": "0198042a-f9c5-7616-8c3b-e4f19d83a033",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "format": "uuid",
-                        "description": "The project id in UUID format",
-                        "name": "project_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "format": "uuid",
-                        "description": "The product id in UUID format",
-                        "name": "product_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Link product to payment processor request",
-                        "name": "body",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/model.LinkProductToPaymentProcessorRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/model.HTTPMessage"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/model.HTTPMessage"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/model.HTTPMessage"
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "security": [
-                    {
-                        "AccessToken": []
-                    }
-                ],
-                "description": "Remove the association between a product and a payment processor",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Products",
-                    "Projects"
-                ],
-                "summary": "Unlink product from payment processor",
-                "operationId": "0198042a-f9c5-761a-bd02-da039b52bea2",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "format": "uuid",
-                        "description": "The project id in UUID format",
-                        "name": "project_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "format": "uuid",
-                        "description": "The product id in UUID format",
-                        "name": "product_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Unlink product from payment processor request",
-                        "name": "body",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/model.UnlinkProductFromPaymentProcessorRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/model.HTTPMessage"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/model.HTTPMessage"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/model.HTTPMessage"
-                        }
-                    }
-                }
-            }
-        },
         "/resources": {
             "get": {
                 "security": [
@@ -3575,18 +3439,6 @@ const docTemplate = `{
                 }
             }
         },
-        "model.LinkProductToPaymentProcessorRequest": {
-            "description": "LinkProductToPaymentProcessorRequest represents the input for linking a product to a payment processor.",
-            "type": "object",
-            "properties": {
-                "payment_processor_id": {
-                    "type": "string"
-                },
-                "payment_processor_product_id": {
-                    "type": "string"
-                }
-            }
-        },
         "model.LinkRolesToPolicyRequest": {
             "description": "Link roles to a policy.",
             "type": "object",
@@ -4112,18 +3964,6 @@ const docTemplate = `{
                         "type": "string",
                         "format": "uuid"
                     }
-                }
-            }
-        },
-        "model.UnlinkProductFromPaymentProcessorRequest": {
-            "description": "LinkProductToPaymentProcessorRequest represents the input for linking a product to a payment processor.",
-            "type": "object",
-            "properties": {
-                "payment_processor_id": {
-                    "type": "string"
-                },
-                "payment_processor_product_id": {
-                    "type": "string"
                 }
             }
         },

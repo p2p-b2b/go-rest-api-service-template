@@ -22,16 +22,13 @@ import (
 
 // ProductsService represents the service for the products.
 type ProductsService interface {
-	GetByIDByProjectID(ctx context.Context, projectID uuid.UUID, id uuid.UUID) (*model.Product, error)
+	GetByIDByProjectID(ctx context.Context, id, projectID, userID uuid.UUID) (*model.Product, error)
 	ListByProjectID(ctx context.Context, projectID uuid.UUID, input *model.ListProductsInput) (*model.ListProductsOutput, error)
 	List(ctx context.Context, input *model.ListProductsInput) (*model.ListProductsOutput, error)
 
 	CreateByProjectID(ctx context.Context, input *model.CreateProductInput) error
 	UpdateByIDByProjectID(ctx context.Context, input *model.UpdateProductInput) error
 	DeleteByIDByProjectID(ctx context.Context, input *model.DeleteProductInput) error
-
-	LinkToPaymentProcessor(ctx context.Context, input *model.LinkProductToPaymentProcessorInput) error
-	UnlinkFromPaymentProcessor(ctx context.Context, input *model.UnlinkProductFromPaymentProcessorInput) error
 }
 
 // ProductsHandlerConf represents the handler for the products.
@@ -96,67 +93,6 @@ func (ref *ProductsHandler) RegisterRoutes(mux *http.ServeMux, middlewares ...mi
 	mux.Handle("POST /projects/{project_id}/products", mdw.ThenFunc(ref.createByProjectID))
 	mux.Handle("PUT /projects/{project_id}/products/{product_id}", mdw.ThenFunc(ref.updateByIDByProjectID))
 	mux.Handle("DELETE /projects/{project_id}/products/{product_id}", mdw.ThenFunc(ref.deleteByIDByProjectID))
-
-	mux.Handle("POST /projects/{project_id}/products/{product_id}/payment_processor", mdw.ThenFunc(ref.linkToPaymentProcessor))
-	mux.Handle("DELETE /projects/{project_id}/products/{product_id}/payment_processor", mdw.ThenFunc(ref.unlinkFromPaymentProcessor))
-}
-
-// getByIDByProjectID Get a product by its ID
-//
-//	@ID				0198042a-f9c5-7603-99b1-7c20ee58542b
-//	@Summary		Get product
-//	@Description	Retrieve a specific product by its unique identifier
-//	@Tags			Products,Projects
-//	@Param			project_id	path	string	true	"The project id in UUID format"	Format(uuid)
-//	@Param			product_id	path	string	true	"The product id in UUID format"	Format(uuid)
-//	@Produce		json
-//	@Success		200	{object}	model.Product
-//	@Failure		400	{object}	model.HTTPMessage
-//	@Failure		404	{object}	model.HTTPMessage
-//	@Failure		500	{object}	model.HTTPMessage
-//	@Router			/projects/{project_id}/products/{product_id} [get]
-//	@Security		AccessToken
-func (ref *ProductsHandler) getByIDByProjectID(w http.ResponseWriter, r *http.Request) {
-	ctx, span, metricCommonAttributes := setupContext(r, ref.ot.Traces.Tracer, "handler.Products.getByIDByProjectID")
-	defer span.End()
-
-	projectID, err := parseUUIDQueryParams(r.PathValue("project_id"))
-	if err != nil {
-		e := recordError(ctx, span, err, ref.metrics.handlerCalls, metricCommonAttributes, http.StatusBadRequest, "handler.Products.getByIDByProjectID")
-		respond.WriteJSONMessage(w, r, http.StatusBadRequest, e.Error())
-		return
-	}
-
-	productID, err := parseUUIDQueryParams(r.PathValue("product_id"))
-	if err != nil {
-		e := recordError(ctx, span, err, ref.metrics.handlerCalls, metricCommonAttributes, http.StatusBadRequest, "handler.Products.getByIDByProjectID")
-		respond.WriteJSONMessage(w, r, http.StatusBadRequest, e.Error())
-		return
-	}
-
-	out, err := ref.service.GetByIDByProjectID(ctx, projectID, productID)
-	if err != nil {
-		var productNotFoundError *model.ProductNotFoundError
-		if errors.As(err, &productNotFoundError) {
-			e := recordError(ctx, span, err, ref.metrics.handlerCalls, metricCommonAttributes, http.StatusNotFound, "handler.Products.getByIDByProjectID")
-			respond.WriteJSONMessage(w, r, http.StatusNotFound, e.Error())
-			return
-		}
-
-		e := recordError(ctx, span, err, ref.metrics.handlerCalls, metricCommonAttributes, http.StatusInternalServerError, "handler.Products.getByIDByProjectID")
-		respond.WriteJSONMessage(w, r, http.StatusInternalServerError, e.Error())
-		return
-	}
-
-	if err := respond.WriteJSONData(w, http.StatusOK, out); err != nil {
-		e := recordError(ctx, span, err, ref.metrics.handlerCalls, metricCommonAttributes, http.StatusInternalServerError, "handler.Products.getByIDByProjectID")
-		respond.WriteJSONMessage(w, r, http.StatusInternalServerError, e.Error())
-		return
-	}
-
-	slog.Debug("handler.Products.getByID: called", "product.id", out.ID)
-	recordSuccess(ctx, span, ref.metrics.handlerCalls, metricCommonAttributes, http.StatusOK, "get product",
-		attribute.String("product.id", out.ID.String()))
 }
 
 // createByProjectID Create a product
@@ -178,6 +114,13 @@ func (ref *ProductsHandler) getByIDByProjectID(w http.ResponseWriter, r *http.Re
 func (ref *ProductsHandler) createByProjectID(w http.ResponseWriter, r *http.Request) {
 	ctx, span, metricCommonAttributes := setupContext(r, ref.ot.Traces.Tracer, "handler.Products.createByProjectID")
 	defer span.End()
+
+	userID, err := getUserIDFromContext(ctx)
+	if err != nil {
+		e := recordError(ctx, span, err, ref.metrics.handlerCalls, metricCommonAttributes, http.StatusBadRequest, "handler.Products.createByProjectID")
+		respond.WriteJSONMessage(w, r, http.StatusBadRequest, e.Error())
+		return
+	}
 
 	projectID, err := parseUUIDQueryParams(r.PathValue("project_id"))
 	if err != nil {
@@ -213,6 +156,7 @@ func (ref *ProductsHandler) createByProjectID(w http.ResponseWriter, r *http.Req
 	input := &model.CreateProductInput{
 		ID:          req.ID,
 		ProjectID:   projectID,
+		UserID:      userID,
 		Name:        req.Name,
 		Description: req.Description,
 	}
@@ -268,6 +212,13 @@ func (ref *ProductsHandler) updateByIDByProjectID(w http.ResponseWriter, r *http
 	ctx, span, metricCommonAttributes := setupContext(r, ref.ot.Traces.Tracer, "handler.Products.updateByIDByProjectID")
 	defer span.End()
 
+	userID, err := getUserIDFromContext(ctx)
+	if err != nil {
+		e := recordError(ctx, span, err, ref.metrics.handlerCalls, metricCommonAttributes, http.StatusBadRequest, "handler.Products.updateByIDByProjectID")
+		respond.WriteJSONMessage(w, r, http.StatusBadRequest, e.Error())
+		return
+	}
+
 	projectID, err := parseUUIDQueryParams(r.PathValue("project_id"))
 	if err != nil {
 		e := recordError(ctx, span, err, ref.metrics.handlerCalls, metricCommonAttributes, http.StatusBadRequest, "handler.Products.updateByIDByProjectID")
@@ -298,6 +249,7 @@ func (ref *ProductsHandler) updateByIDByProjectID(w http.ResponseWriter, r *http
 	input := model.UpdateProductInput{
 		ID:          productID,
 		ProjectID:   projectID,
+		UserID:      userID,
 		Name:        req.Name,
 		Description: req.Description,
 	}
@@ -358,6 +310,13 @@ func (ref *ProductsHandler) deleteByIDByProjectID(w http.ResponseWriter, r *http
 	ctx, span, metricCommonAttributes := setupContext(r, ref.ot.Traces.Tracer, "handler.Products.deleteByIDByProjectID")
 	defer span.End()
 
+	userID, err := getUserIDFromContext(ctx)
+	if err != nil {
+		e := recordError(ctx, span, err, ref.metrics.handlerCalls, metricCommonAttributes, http.StatusBadRequest, "handler.Products.deleteByIDByProjectID")
+		respond.WriteJSONMessage(w, r, http.StatusBadRequest, e.Error())
+		return
+	}
+
 	projectID, err := parseUUIDQueryParams(r.PathValue("project_id"))
 	if err != nil {
 		e := recordError(ctx, span, err, ref.metrics.handlerCalls, metricCommonAttributes, http.StatusBadRequest, "handler.Products.deleteByIDByProjectID")
@@ -375,6 +334,7 @@ func (ref *ProductsHandler) deleteByIDByProjectID(w http.ResponseWriter, r *http
 	input := model.DeleteProductInput{
 		ID:        productID,
 		ProjectID: projectID,
+		UserID:    userID,
 	}
 
 	if err := ref.service.DeleteByIDByProjectID(ctx, &input); err != nil {
@@ -394,6 +354,71 @@ func (ref *ProductsHandler) deleteByIDByProjectID(w http.ResponseWriter, r *http
 		attribute.String("product.id", input.ID.String()))
 
 	respond.WriteJSONMessage(w, r, http.StatusOK, model.ProductsProductDeletedSuccessfully)
+}
+
+// getByIDByProjectID Get a product by its ID
+//
+//	@ID				0198042a-f9c5-7603-99b1-7c20ee58542b
+//	@Summary		Get product
+//	@Description	Retrieve a specific product by its unique identifier
+//	@Tags			Products,Projects
+//	@Param			project_id	path	string	true	"The project id in UUID format"	Format(uuid)
+//	@Param			product_id	path	string	true	"The product id in UUID format"	Format(uuid)
+//	@Produce		json
+//	@Success		200	{object}	model.Product
+//	@Failure		400	{object}	model.HTTPMessage
+//	@Failure		404	{object}	model.HTTPMessage
+//	@Failure		500	{object}	model.HTTPMessage
+//	@Router			/projects/{project_id}/products/{product_id} [get]
+//	@Security		AccessToken
+func (ref *ProductsHandler) getByIDByProjectID(w http.ResponseWriter, r *http.Request) {
+	ctx, span, metricCommonAttributes := setupContext(r, ref.ot.Traces.Tracer, "handler.Products.getByIDByProjectID")
+	defer span.End()
+
+	userID, err := getUserIDFromContext(ctx)
+	if err != nil {
+		e := recordError(ctx, span, err, ref.metrics.handlerCalls, metricCommonAttributes, http.StatusBadRequest, "handler.Products.getByIDByProjectID")
+		respond.WriteJSONMessage(w, r, http.StatusBadRequest, e.Error())
+		return
+	}
+
+	projectID, err := parseUUIDQueryParams(r.PathValue("project_id"))
+	if err != nil {
+		e := recordError(ctx, span, err, ref.metrics.handlerCalls, metricCommonAttributes, http.StatusBadRequest, "handler.Products.getByIDByProjectID")
+		respond.WriteJSONMessage(w, r, http.StatusBadRequest, e.Error())
+		return
+	}
+
+	productID, err := parseUUIDQueryParams(r.PathValue("product_id"))
+	if err != nil {
+		e := recordError(ctx, span, err, ref.metrics.handlerCalls, metricCommonAttributes, http.StatusBadRequest, "handler.Products.getByIDByProjectID")
+		respond.WriteJSONMessage(w, r, http.StatusBadRequest, e.Error())
+		return
+	}
+
+	out, err := ref.service.GetByIDByProjectID(ctx, productID, projectID, userID)
+	if err != nil {
+		var productNotFoundError *model.ProductNotFoundError
+		if errors.As(err, &productNotFoundError) {
+			e := recordError(ctx, span, err, ref.metrics.handlerCalls, metricCommonAttributes, http.StatusNotFound, "handler.Products.getByIDByProjectID")
+			respond.WriteJSONMessage(w, r, http.StatusNotFound, e.Error())
+			return
+		}
+
+		e := recordError(ctx, span, err, ref.metrics.handlerCalls, metricCommonAttributes, http.StatusInternalServerError, "handler.Products.getByIDByProjectID")
+		respond.WriteJSONMessage(w, r, http.StatusInternalServerError, e.Error())
+		return
+	}
+
+	if err := respond.WriteJSONData(w, http.StatusOK, out); err != nil {
+		e := recordError(ctx, span, err, ref.metrics.handlerCalls, metricCommonAttributes, http.StatusInternalServerError, "handler.Products.getByIDByProjectID")
+		respond.WriteJSONMessage(w, r, http.StatusInternalServerError, e.Error())
+		return
+	}
+
+	slog.Debug("handler.Products.getByID: called", "product.id", out.ID)
+	recordSuccess(ctx, span, ref.metrics.handlerCalls, metricCommonAttributes, http.StatusOK, "get product",
+		attribute.String("product.id", out.ID.String()))
 }
 
 // listByProjectID Retrieves a paginated list of products by project ID
@@ -418,6 +443,13 @@ func (ref *ProductsHandler) deleteByIDByProjectID(w http.ResponseWriter, r *http
 func (ref *ProductsHandler) listByProjectID(w http.ResponseWriter, r *http.Request) {
 	ctx, span, metricCommonAttributes := setupContext(r, ref.ot.Traces.Tracer, "handler.Products.listByProjectID")
 	defer span.End()
+
+	userID, err := getUserIDFromContext(ctx)
+	if err != nil {
+		e := recordError(ctx, span, err, ref.metrics.handlerCalls, metricCommonAttributes, http.StatusBadRequest, "handler.Products.listByProjectID")
+		respond.WriteJSONMessage(w, r, http.StatusBadRequest, e.Error())
+		return
+	}
 
 	projectID, err := parseUUIDQueryParams(r.PathValue("project_id"))
 	if err != nil {
@@ -449,6 +481,7 @@ func (ref *ProductsHandler) listByProjectID(w http.ResponseWriter, r *http.Reque
 	}
 
 	input := &model.ListProductsInput{
+		UserID: userID,
 		Sort:   sort,
 		Filter: filter,
 		Fields: fields,
@@ -503,6 +536,13 @@ func (ref *ProductsHandler) list(w http.ResponseWriter, r *http.Request) {
 	ctx, span, metricCommonAttributes := setupContext(r, ref.ot.Traces.Tracer, "handler.Products.list")
 	defer span.End()
 
+	userID, err := getUserIDFromContext(ctx)
+	if err != nil {
+		e := recordError(ctx, span, err, ref.metrics.handlerCalls, metricCommonAttributes, http.StatusBadRequest, "handler.Products.list")
+		respond.WriteJSONMessage(w, r, http.StatusBadRequest, e.Error())
+		return
+	}
+
 	// parse the query parameters
 	params := map[string]any{
 		"sort":      r.URL.Query().Get("sort"),
@@ -526,6 +566,7 @@ func (ref *ProductsHandler) list(w http.ResponseWriter, r *http.Request) {
 	}
 
 	input := &model.ListProductsInput{
+		UserID: userID,
 		Sort:   sort,
 		Filter: filter,
 		Fields: fields,
@@ -556,114 +597,4 @@ func (ref *ProductsHandler) list(w http.ResponseWriter, r *http.Request) {
 	slog.Debug("handler.Products.list: called", "products.count", len(out.Items))
 	recordSuccess(ctx, span, ref.metrics.handlerCalls, metricCommonAttributes, http.StatusOK, "list product",
 		attribute.Int("products.count", len(out.Items)))
-}
-
-// linkToPaymentProcessor Links a product to a payment processor
-//
-//	@ID				0198042a-f9c5-7616-8c3b-e4f19d83a033
-//	@Summary		Link product to payment processor
-//	@Description	Associate a product with a payment processor to enable billing and invoicing
-//	@Tags			Products,Projects
-//	@Accept			json
-//	@Produce		json
-//	@Param			project_id	path		string										true	"The project id in UUID format"	Format(uuid)
-//	@Param			product_id	path		string										true	"The product id in UUID format"	Format(uuid)
-//	@Param			body		body		model.LinkProductToPaymentProcessorRequest	true	"Link product to payment processor request"
-//	@Success		200			{object}	model.HTTPMessage
-//	@Failure		400			{object}	model.HTTPMessage
-//	@Failure		500			{object}	model.HTTPMessage
-//	@Router			/projects/{project_id}/products/{product_id}/payment_processor [post]
-//	@Security		AccessToken
-func (ref *ProductsHandler) linkToPaymentProcessor(w http.ResponseWriter, r *http.Request) {
-	ctx, span, metricCommonAttributes := setupContext(r, ref.ot.Traces.Tracer, "handler.Products.linkToPaymentProcessor")
-	defer span.End()
-
-	productID, err := parseUUIDQueryParams(r.PathValue("product_id"))
-	if err != nil {
-		e := recordError(ctx, span, err, ref.metrics.handlerCalls, metricCommonAttributes, http.StatusBadRequest, "handler.Products.linkToPaymentProcessor")
-		respond.WriteJSONMessage(w, r, http.StatusBadRequest, e.Error())
-		return
-	}
-
-	var req model.LinkProductToPaymentProcessorRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		e := recordError(ctx, span, err, ref.metrics.handlerCalls, metricCommonAttributes, http.StatusBadRequest, "handler.Products.linkToPaymentProcessor")
-		respond.WriteJSONMessage(w, r, http.StatusBadRequest, e.Error())
-		return
-	}
-
-	if err := req.Validate(); err != nil {
-		e := recordError(ctx, span, err, ref.metrics.handlerCalls, metricCommonAttributes, http.StatusBadRequest, "handler.Products.linkToPaymentProcessor")
-		respond.WriteJSONMessage(w, r, http.StatusBadRequest, e.Error())
-		return
-	}
-
-	input := &model.LinkProductToPaymentProcessorInput{
-		ProductID:                 productID,
-		PaymentProcessorID:        req.PaymentProcessorID,
-		PaymentProcessorProductID: req.PaymentProcessorProductID,
-	}
-
-	if err := ref.service.LinkToPaymentProcessor(ctx, input); err != nil {
-		e := recordError(ctx, span, err, ref.metrics.handlerCalls, metricCommonAttributes, http.StatusInternalServerError, "handler.Products.linkToPaymentProcessor")
-		respond.WriteJSONMessage(w, r, http.StatusInternalServerError, e.Error())
-		return
-	}
-
-	respond.WriteJSONMessage(w, r, http.StatusOK, "product linked to payment processor successfully")
-}
-
-// unlinkFromPaymentProcessor Unlinks a product from a payment processor
-//
-//	@ID				0198042a-f9c5-761a-bd02-da039b52bea2
-//	@Summary		Unlink product from payment processor
-//	@Description	Remove the association between a product and a payment processor
-//	@Tags			Products,Projects
-//	@Accept			json
-//	@Produce		json
-//	@Param			project_id	path		string											true	"The project id in UUID format"	Format(uuid)
-//	@Param			product_id	path		string											true	"The product id in UUID format"	Format(uuid)
-//	@Param			body		body		model.UnlinkProductFromPaymentProcessorRequest	true	"Unlink product from payment processor request"
-//	@Success		200			{object}	model.HTTPMessage
-//	@Failure		400			{object}	model.HTTPMessage
-//	@Failure		500			{object}	model.HTTPMessage
-//	@Router			/projects/{project_id}/products/{product_id}/payment_processor [delete]
-//	@Security		AccessToken
-func (ref *ProductsHandler) unlinkFromPaymentProcessor(w http.ResponseWriter, r *http.Request) {
-	ctx, span, metricCommonAttributes := setupContext(r, ref.ot.Traces.Tracer, "handler.Products.unlinkFromPaymentProcessor")
-	defer span.End()
-
-	productID, err := parseUUIDQueryParams(r.PathValue("product_id"))
-	if err != nil {
-		e := recordError(ctx, span, err, ref.metrics.handlerCalls, metricCommonAttributes, http.StatusBadRequest, "handler.Products.unlinkFromPaymentProcessor")
-		respond.WriteJSONMessage(w, r, http.StatusBadRequest, e.Error())
-		return
-	}
-
-	var req model.UnlinkProductFromPaymentProcessorRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		e := recordError(ctx, span, err, ref.metrics.handlerCalls, metricCommonAttributes, http.StatusBadRequest, "handler.Products.unlinkFromPaymentProcessor")
-		respond.WriteJSONMessage(w, r, http.StatusBadRequest, e.Error())
-		return
-	}
-
-	if err := req.Validate(); err != nil {
-		e := recordError(ctx, span, err, ref.metrics.handlerCalls, metricCommonAttributes, http.StatusBadRequest, "handler.Products.unlinkFromPaymentProcessor")
-		respond.WriteJSONMessage(w, r, http.StatusBadRequest, e.Error())
-		return
-	}
-
-	input := &model.UnlinkProductFromPaymentProcessorInput{
-		ProductID:                 productID,
-		PaymentProcessorID:        req.PaymentProcessorID,
-		PaymentProcessorProductID: req.PaymentProcessorProductID,
-	}
-
-	if err := ref.service.UnlinkFromPaymentProcessor(ctx, input); err != nil {
-		e := recordError(ctx, span, err, ref.metrics.handlerCalls, metricCommonAttributes, http.StatusInternalServerError, "handler.Products.unlinkFromPaymentProcessor")
-		respond.WriteJSONMessage(w, r, http.StatusInternalServerError, e.Error())
-		return
-	}
-
-	respond.WriteJSONMessage(w, r, http.StatusOK, "product unlinked from payment processor successfully")
 }
