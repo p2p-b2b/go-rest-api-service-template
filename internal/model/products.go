@@ -48,6 +48,7 @@ type Product struct {
 type InsertProductInput struct {
 	ID          uuid.UUID
 	ProjectID   uuid.UUID
+	UserID      uuid.UUID
 	Name        string
 	Description string
 }
@@ -64,6 +65,13 @@ func (ref *InsertProductInput) Validate() error {
 
 	// Validate ProjectID
 	if err := ValidateUUID(ref.ProjectID, 7, "project_id"); err != nil {
+		if ve, ok := err.(*ValidationError); ok {
+			validationErrors.Errors = append(validationErrors.Errors, *ve)
+		}
+	}
+
+	// Validate UserID
+	if err := ValidateUUID(ref.UserID, 7, "user_id"); err != nil {
 		if ve, ok := err.(*ValidationError); ok {
 			validationErrors.Errors = append(validationErrors.Errors, *ve)
 		}
@@ -125,6 +133,7 @@ type CreateProductInput = InsertProductInput
 type UpdateProductInput struct {
 	ID          uuid.UUID
 	ProjectID   uuid.UUID
+	UserID      uuid.UUID
 	Name        *string
 	Description *string
 }
@@ -141,6 +150,13 @@ func (ref *UpdateProductInput) Validate() error {
 
 	// Validate ProjectID
 	if err := ValidateUUID(ref.ProjectID, 7, "project_id"); err != nil {
+		if ve, ok := err.(*ValidationError); ok {
+			validationErrors.Errors = append(validationErrors.Errors, *ve)
+		}
+	}
+
+	// Validate UserID
+	if err := ValidateUUID(ref.UserID, 7, "user_id"); err != nil {
 		if ve, ok := err.(*ValidationError); ok {
 			validationErrors.Errors = append(validationErrors.Errors, *ve)
 		}
@@ -202,6 +218,7 @@ func (ref *UpdateProductInput) Validate() error {
 type DeleteProductInput struct {
 	ID        uuid.UUID
 	ProjectID uuid.UUID
+	UserID    uuid.UUID
 }
 
 func (ref *DeleteProductInput) Validate() error {
@@ -221,6 +238,13 @@ func (ref *DeleteProductInput) Validate() error {
 		}
 	}
 
+	// Validate UserID
+	if err := ValidateUUID(ref.UserID, 7, "user_id"); err != nil {
+		if ve, ok := err.(*ValidationError); ok {
+			validationErrors.Errors = append(validationErrors.Errors, *ve)
+		}
+	}
+
 	if validationErrors.HasErrors() {
 		return &validationErrors
 	}
@@ -229,6 +253,7 @@ func (ref *DeleteProductInput) Validate() error {
 }
 
 type SelectProductsInput struct {
+	UserID    uuid.UUID
 	Sort      string
 	Filter    string
 	Fields    string
@@ -237,6 +262,13 @@ type SelectProductsInput struct {
 
 func (ref *SelectProductsInput) Validate() error {
 	var validationErrors ValidationErrors
+
+	// Validate UserID
+	if err := ValidateUUID(ref.UserID, 7, "user_id"); err != nil {
+		if ve, ok := err.(*ValidationError); ok {
+			validationErrors.Errors = append(validationErrors.Errors, *ve)
+		}
+	}
 
 	// Validate paginator
 	if err := ref.Paginator.Validate(); err != nil {
