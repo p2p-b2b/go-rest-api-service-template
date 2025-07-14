@@ -111,20 +111,9 @@ func (ref *ProjectsHandler) create(w http.ResponseWriter, r *http.Request) {
 	ctx, span, metricCommonAttributes := setupContext(r, ref.ot.Traces.Tracer, "handler.Projects.create")
 	defer span.End()
 
-	claims := ctx.Value(middleware.JwtClaims).(map[string]any)
-
-	userIDstring, ok := claims["sub"].(string)
-	if !ok {
-		errorType := &model.InvalidUserIDError{Message: "user ID is not a uuid string"}
-		e := recordError(ctx, span, errorType, ref.metrics.handlerCalls, metricCommonAttributes, http.StatusBadRequest, "handler.Projects.create")
-		respond.WriteJSONMessage(w, r, http.StatusBadRequest, e.Error())
-		return
-	}
-
-	userID, err := parseUUIDQueryParams(userIDstring)
+	userID, err := getUserIDFromContext(ctx)
 	if err != nil {
-		errorType := &model.InvalidUserIDError{Message: "user ID cannot be empty"}
-		e := recordError(ctx, span, errorType, ref.metrics.handlerCalls, metricCommonAttributes, http.StatusBadRequest, "handler.Projects.create")
+		e := recordError(ctx, span, err, ref.metrics.handlerCalls, metricCommonAttributes, http.StatusBadRequest, "handler.Projects.create")
 		respond.WriteJSONMessage(w, r, http.StatusBadRequest, e.Error())
 		return
 	}
@@ -201,20 +190,9 @@ func (ref *ProjectsHandler) getByID(w http.ResponseWriter, r *http.Request) {
 	ctx, span, metricCommonAttributes := setupContext(r, ref.ot.Traces.Tracer, "handler.Projects.getByID")
 	defer span.End()
 
-	claims := ctx.Value(middleware.JwtClaims).(map[string]any)
-
-	userIDstring, ok := claims["sub"].(string)
-	if !ok {
-		errorType := &model.InvalidUserIDError{Message: "user ID is not a uuid string"}
-		e := recordError(ctx, span, errorType, ref.metrics.handlerCalls, metricCommonAttributes, http.StatusBadRequest, "handler.Projects.getByID")
-		respond.WriteJSONMessage(w, r, http.StatusBadRequest, e.Error())
-		return
-	}
-
-	userID, err := parseUUIDQueryParams(userIDstring)
+	userID, err := getUserIDFromContext(ctx)
 	if err != nil {
-		errorType := &model.InvalidUserIDError{Message: "user ID cannot be empty"}
-		e := recordError(ctx, span, errorType, ref.metrics.handlerCalls, metricCommonAttributes, http.StatusBadRequest, "handler.Projects.getByID")
+		e := recordError(ctx, span, err, ref.metrics.handlerCalls, metricCommonAttributes, http.StatusBadRequest, "handler.Projects.getByID")
 		respond.WriteJSONMessage(w, r, http.StatusBadRequest, e.Error())
 		return
 	}
@@ -271,20 +249,9 @@ func (ref *ProjectsHandler) updateByID(w http.ResponseWriter, r *http.Request) {
 	ctx, span, metricCommonAttributes := setupContext(r, ref.ot.Traces.Tracer, "handler.Projects.updateByID")
 	defer span.End()
 
-	claims := ctx.Value(middleware.JwtClaims).(map[string]any)
-
-	userIDstring, ok := claims["sub"].(string)
-	if !ok {
-		errorType := &model.InvalidUserIDError{Message: "user ID is not a uuid string"}
-		e := recordError(ctx, span, errorType, ref.metrics.handlerCalls, metricCommonAttributes, http.StatusBadRequest, "handler.Projects.updateByID")
-		respond.WriteJSONMessage(w, r, http.StatusBadRequest, e.Error())
-		return
-	}
-
-	userID, err := parseUUIDQueryParams(userIDstring)
+	userID, err := getUserIDFromContext(ctx)
 	if err != nil {
-		errorType := &model.InvalidUserIDError{Message: "user ID cannot be empty"}
-		e := recordError(ctx, span, errorType, ref.metrics.handlerCalls, metricCommonAttributes, http.StatusBadRequest, "handler.Projects.updateByID")
+		e := recordError(ctx, span, err, ref.metrics.handlerCalls, metricCommonAttributes, http.StatusBadRequest, "handler.Projects.updateByID")
 		respond.WriteJSONMessage(w, r, http.StatusBadRequest, e.Error())
 		return
 	}
@@ -365,20 +332,9 @@ func (ref *ProjectsHandler) deleteByID(w http.ResponseWriter, r *http.Request) {
 	ctx, span, metricCommonAttributes := setupContext(r, ref.ot.Traces.Tracer, "handler.Projects.deleteByID")
 	defer span.End()
 
-	claims := ctx.Value(middleware.JwtClaims).(map[string]any)
-
-	userIDstring, ok := claims["sub"].(string)
-	if !ok {
-		errorType := &model.InvalidUserIDError{Message: "user ID is not a uuid string"}
-		e := recordError(ctx, span, errorType, ref.metrics.handlerCalls, metricCommonAttributes, http.StatusBadRequest, "handler.Projects.deleteByID")
-		respond.WriteJSONMessage(w, r, http.StatusBadRequest, e.Error())
-		return
-	}
-
-	userID, err := parseUUIDQueryParams(userIDstring)
+	userID, err := getUserIDFromContext(ctx)
 	if err != nil {
-		errorType := &model.InvalidUserIDError{Message: "user ID cannot be empty"}
-		e := recordError(ctx, span, errorType, ref.metrics.handlerCalls, metricCommonAttributes, http.StatusBadRequest, "handler.Projects.deleteByID")
+		e := recordError(ctx, span, err, ref.metrics.handlerCalls, metricCommonAttributes, http.StatusBadRequest, "handler.Projects.deleteByID")
 		respond.WriteJSONMessage(w, r, http.StatusBadRequest, e.Error())
 		return
 	}
@@ -429,20 +385,9 @@ func (ref *ProjectsHandler) list(w http.ResponseWriter, r *http.Request) {
 	ctx, span, metricCommonAttributes := setupContext(r, ref.ot.Traces.Tracer, "handler.Projects.list")
 	defer span.End()
 
-	claims := ctx.Value(middleware.JwtClaims).(map[string]any)
-
-	userIDstring, ok := claims["sub"].(string)
-	if !ok {
-		errorType := &model.InvalidUserIDError{Message: "user ID is not a uuid string"}
-		e := recordError(ctx, span, errorType, ref.metrics.handlerCalls, metricCommonAttributes, http.StatusBadRequest, "handler.Projects.list")
-		respond.WriteJSONMessage(w, r, http.StatusBadRequest, e.Error())
-		return
-	}
-
-	userID, err := parseUUIDQueryParams(userIDstring)
+	userID, err := getUserIDFromContext(ctx)
 	if err != nil {
-		errorType := &model.InvalidUserIDError{Message: "user ID cannot be empty"}
-		e := recordError(ctx, span, errorType, ref.metrics.handlerCalls, metricCommonAttributes, http.StatusBadRequest, "handler.Projects.list")
+		e := recordError(ctx, span, err, ref.metrics.handlerCalls, metricCommonAttributes, http.StatusBadRequest, "handler.Projects.list")
 		respond.WriteJSONMessage(w, r, http.StatusBadRequest, e.Error())
 		return
 	}
