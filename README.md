@@ -3,24 +3,66 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/p2p-b2b/go-rest-api-service-template)](https://goreportcard.com/report/github.com/p2p-b2b/go-rest-api-service-template)
 ![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/p2p-b2b/go-rest-api-service-template)
 
-This is a template for a Go HTTP REST API Service.
+This is a comprehensive template for a Go HTTP REST API Service with advanced authentication, authorization, and multi-tenant capabilities.
 
 ## Features
 
+### Core Infrastructure
 - [x] Create a new repository from this template
 - [x] Change the module name in `go.mod` using the command `go mod edit -module github.com/your-username/your-repo`
 - [x] Change the service name in `cmd/go-rest-api-service-template` to the name of your service, e.g. `cmd/your-service-name`
 - [x] Change the service name in `Makefile` to the name of your service
-- [x] Use flags, Environment Variables of `.env` file to configure the service.
+- [x] Use flags, Environment Variables of `.env` file to configure the service
 - [x] Hot reload with [air](https://github.com/cosmtrek/air), use `make install-air` to install it, then `air` to run it
 - [x] Ready to use Certificates for HTTPS, see [Certificates](#certificates)
 - [x] Containerize your service with Podman, see [Building](#building)
 - [x] Podman pod file for development [dev-service-pod.yaml](dev-service-pod.yaml), see [Running](#running). This is something like `docker-compose/podman-compose` but more powerful
-- [x] Database migrations with [goose](https://github.com/pressly/goose). Check the [db](db/README.md) documentation
+- [x] Database migrations with [goose](https://github.com/pressly/goose). Check the [database](database/README.md) documentation
 - [x] Validation with [go-playground/validator](https://github.com/go-playground/validator)
 - [x] Allow filtering, sorting, pagination and partial responses
 - [x] Middleware for logging and headers versioning
 - [x] Return JSON as default response, even for standard http library errors
+
+### Authentication & Authorization
+- [x] **JWT-based Authentication** - Secure user authentication with access and refresh tokens
+- [x] **User Registration & Verification** - Email-based user registration with verification workflow
+- [x] **Role-Based Access Control (RBAC)** - Flexible role and permission system
+- [x] **Policy-Based Authorization** - Fine-grained access control with custom policies
+- [x] **Open Policy Agent (OPA) Integration** - Advanced authorization using Rego policies with wildcard support
+- [x] **Multi-tenant Project Isolation** - Projects assigned to users with proper access control
+- [x] **Admin and Regular User Support** - Different permission levels for different user types
+
+### API Features
+- [x] **User Management** - Complete CRUD operations for users with role assignments
+- [x] **Project Management** - Multi-tenant project system with user assignments
+- [x] **Product Management** - Project-scoped product management
+- [x] **Role Management** - Dynamic role creation and assignment
+- [x] **Policy Management** - Custom authorization policies with action/resource matching
+- [x] **Resource Discovery** - Query available resources and permissions
+
+### Security & Performance
+- [x] **JWT Validation** - Robust token validation with configurable expiration
+- [x] **Password Security** - Secure password hashing and validation
+- [x] **Rate Limiting** - Built-in rate limiting capabilities
+- [x] **Input Validation** - Comprehensive request validation
+- [x] **SQL Injection Protection** - Parameterized queries and input sanitization
+- [x] **CORS Support** - Configurable Cross-Origin Resource Sharing
+
+### Observability & Monitoring
+- [x] **OpenTelemetry Integration** - Distributed tracing and metrics
+- [x] **Prometheus Metrics** - Application and business metrics
+- [x] **Grafana Dashboards** - Pre-configured monitoring dashboards
+- [x] **Tempo Tracing** - Distributed tracing backend
+- [x] **Health Checks** - Service health monitoring endpoints
+- [x] **Structured Logging** - JSON-based logging with levels
+
+### Database & Caching
+- [x] **PostgreSQL Integration** - Primary database with advanced features
+- [x] **PGVector Support** - Vector embeddings support for AI/ML applications
+- [x] **Database Migrations** - Versioned schema management with goose
+- [x] **Connection Pooling** - Efficient database connection management
+- [x] **Valkey/Redis Caching** - High-performance caching layer
+- [x] **Transaction Support** - ACID transaction management
 
 ## References
 

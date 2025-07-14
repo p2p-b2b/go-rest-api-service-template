@@ -316,8 +316,8 @@ func getAdminUserTokens(t *testing.T) model.LoginUserResponse {
 
 	// 1. Insert a user into the database
 	query1 := `
-        INSERT INTO users (id, first_name, last_name, email, password_hash, disabled)
-        VALUES ($1, $2, $3, $4, $5, $6);
+        INSERT INTO users (id, first_name, last_name, email, password_hash, disabled, admin)
+        VALUES ($1, $2, $3, $4, $5, $6, $7);
     `
 
 	userID, err := uuid.NewV7()
@@ -337,6 +337,7 @@ func getAdminUserTokens(t *testing.T) model.LoginUserResponse {
 		email,
 		hashPwd,
 		false,
+		true, // admin = true
 	)
 	if txErr != nil {
 		t.Fatalf("Failed to insert user into database: %v", txErr)
@@ -726,6 +727,26 @@ func createProjectInDB(t *testing.T, id uuid.UUID, name, description string) (*m
 	}
 
 	return &project, nil
+}
+
+// assignProjectToUserInDB is a helper function to assign a project to a user in the database
+// It creates an entry in the projects_users table to establish the relationship
+func assignProjectToUserInDB(t *testing.T, projectID, userID uuid.UUID) error {
+	t.Helper()
+
+	query := `
+        INSERT INTO projects_users (projects_id, users_id)
+        VALUES ($1, $2)
+        ON CONFLICT (projects_id, users_id) DO NOTHING;
+    `
+
+	_, err := testDBPool.Exec(context.Background(), query, projectID, userID)
+	if err != nil {
+		t.Fatalf("Failed to assign project to user in database: %v", err)
+		return err
+	}
+
+	return nil
 }
 
 // createProductInDB is a helper function to create a product in the database
