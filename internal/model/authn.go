@@ -15,7 +15,7 @@ const (
 
 // JWTClaims represents the claims in a JWT token.
 //
-// @Description JWTClaims represents the claims in a JWT token.
+//	@Description	JWTClaims represents the claims in a JWT token.
 type JWTClaims struct {
 	Email         string        `json:"email,omitempty"`
 	Subject       string        `json:"sub"`
@@ -169,7 +169,7 @@ func (ref *RegisterUserInput) Validate() error {
 
 // LoginUserRequest is the request struct for the LoginUser handler.
 //
-// @Description LoginUserRequest is the request struct for the LoginUser handler.
+//	@Description	LoginUserRequest is the request struct for the LoginUser handler.
 type LoginUserRequest struct {
 	Email    string `json:"email" example:"admin@qu3ry.me" format:"email" validate:"required"`
 	Password string `json:"password" example:"ThisIsApassw0rd.," format:"string" validate:"required"`
@@ -200,7 +200,7 @@ func (req *LoginUserRequest) Validate() error {
 
 // LoginUserResponse is the response when a user logs in.
 //
-// @Description LoginUserResponse is the response when a user logs in.
+//	@Description	LoginUserResponse is the response when a user logs in.
 type LoginUserResponse struct {
 	AccessToken  string         `json:"access_token" format:"string"`
 	RefreshToken string         `json:"refresh_token" format:"string"`
@@ -216,7 +216,7 @@ const (
 
 // RefreshTokenRequest is the request struct for the RefreshToken handler.
 //
-// @Description RefreshTokenRequest is the request struct for the RefreshToken handler.
+//	@Description	RefreshTokenRequest is the request struct for the RefreshToken handler.
 type RefreshTokenRequest struct {
 	RefreshToken string `json:"refresh_token" format:"string"`
 }
@@ -247,7 +247,7 @@ func (req *RefreshTokenRequest) Validate() error {
 
 // RefreshTokenResponse is the response when a user refreshes their token.
 //
-// @Description RefreshTokenResponse is the response when a user refreshes their token.
+//	@Description	RefreshTokenResponse is the response when a user refreshes their token.
 type RefreshTokenResponse struct {
 	AccessToken string `json:"access_token" format:"string"`
 	TokenType   string `json:"token_type" example:"Bearer" format:"string"`
@@ -255,7 +255,7 @@ type RefreshTokenResponse struct {
 
 // RegisterUserRequest is the request struct for the RegisterUser handler.
 //
-// @Description RegisterUserRequest is the request struct for the RegisterUser handler.
+//	@Description	RegisterUserRequest is the request struct for the RegisterUser handler.
 type RegisterUserRequest struct {
 	FirstName string    `json:"first_name" example:"John" format:"string" validate:"required"`
 	LastName  string    `json:"last_name" example:"Doe" format:"string" validate:"required"`
@@ -329,7 +329,7 @@ func (req *RegisterUserRequest) Validate() error {
 
 // ReVerifyUserRequest is the request struct for the ReVerifyUser handler.
 //
-// @Description ReVerifyUserRequest is the request struct for the ReVerifyUser handler.
+//	@Description	ReVerifyUserRequest is the request struct for the ReVerifyUser handler.
 type ReVerifyUserRequest struct {
 	Email string `json:"email" format:"email" example:"user@mail.com" required:"true" validate:"required"`
 }

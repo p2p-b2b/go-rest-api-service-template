@@ -23,7 +23,7 @@ var (
 
 // Resource represents a permission.
 //
-// @Description Resource represents a permission.
+//	@Description	Resource represents a permission.
 type Resource struct {
 	ID          uuid.UUID `json:"id,omitempty,omitzero" example:"01980434-b7ff-7aaa-a09c-d46077eff792" format:"uuid"`
 	Name        string    `json:"name,omitempty" example:"Read Users" format:"string"`
@@ -140,5 +140,5 @@ type ListResourcesOutput = SelectResourcesOutput
 
 // ListResourcesResponse represents a list of users.
 //
-// @Description ListResourcesResponse represents a list of users.
+//	@Description	ListResourcesResponse represents a list of users.
 type ListResourcesResponse = SelectResourcesOutput

@@ -58,7 +58,7 @@ func (d TokenDirection) IsValid() bool {
 
 // Paginator represents a model.
 //
-// @Description Paginator represents a paginator.
+//	@Description	Paginator represents a paginator.
 type Paginator struct {
 	NextToken string `json:"next_token" example:"ZmZmZmZmZmYtZmZmZi0tZmZmZmZmZmY=" format:"string"`
 	NextPage  string `json:"next_page" example:"http://localhost:8080/users?next_token=ZmZmZmZmZmYtZmZmZi0tZmZmZmZmZmY=&limit=10" format:"string"`

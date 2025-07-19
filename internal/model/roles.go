@@ -36,7 +36,7 @@ var (
 
 // Role represents a user entity used to model the data stored in the database.
 //
-// @Description Role represents a role.
+//	@Description	Role represents a role.
 type Role struct {
 	CreatedAt   time.Time `json:"created_at,omitzero" example:"2021-01-01T00:00:00Z" format:"date-time"`
 	UpdatedAt   time.Time `json:"updated_at,omitzero" example:"2021-01-01T00:00:00Z" format:"date-time"`
@@ -353,7 +353,7 @@ type UnlinkPoliciesFromRoleInput = LinkPoliciesToRoleInput
 
 // CreateRoleRequest represents the input for the CreateRole method.
 //
-// @Description CreateRoleRequest represents the input for the CreateRole method.
+//	@Description	CreateRoleRequest represents the input for the CreateRole method.
 type CreateRoleRequest struct {
 	Name        string    `json:"name" example:"New role name" format:"string" validate:"required"`
 	Description string    `json:"description" example:"This is a role" format:"string" validate:"required"`
@@ -424,7 +424,7 @@ func (req *CreateRoleRequest) Validate() error {
 
 // UpdateRoleRequest represents the input for the UpdateRole method.
 //
-// @Description UpdateRoleRequest represents the input for the UpdateRole method.
+//	@Description	UpdateRoleRequest represents the input for the UpdateRole method.
 type UpdateRoleRequest struct {
 	Name        *string `json:"name" example:"Modified role name" format:"string" validate:"optional"`
 	Description *string `json:"description" example:"This is a role" format:"string" validate:"optional"`
@@ -499,12 +499,12 @@ func (req *UpdateRoleRequest) Validate() error {
 
 // ListRolesResponse represents a list of users.
 //
-// @Description ListRoleResponse represents a list of users.
+//	@Description	ListRoleResponse represents a list of users.
 type ListRolesResponse = SelectRolesOutput
 
 // LinkUsersToRoleRequest input values for linking users to a role.
 //
-// @Description LinkUsersToRoleRequest input values for linking users to a role.
+//	@Description	LinkUsersToRoleRequest input values for linking users to a role.
 type LinkUsersToRoleRequest struct {
 	UserIDs []uuid.UUID `json:"user_ids" format:"uuid" validate:"required"`
 }
@@ -537,12 +537,12 @@ func (req *LinkUsersToRoleRequest) Validate() error {
 
 // UnlinkUsersFromRoleRequest input values for unlinking users from a role.
 //
-// @Description UnlinkUsersFromRoleRequest input values for unlinking users from a role.
+//	@Description	UnlinkUsersFromRoleRequest input values for unlinking users from a role.
 type UnlinkUsersFromRoleRequest = LinkUsersToRoleRequest
 
 // LinkPoliciesToRoleRequest input values for linking policies to a role.
 //
-// @Description LinkPoliciesToRoleRequest input values for linking policies to a role.
+//	@Description	LinkPoliciesToRoleRequest input values for linking policies to a role.
 type LinkPoliciesToRoleRequest struct {
 	PolicyIDs []uuid.UUID `json:"policy_ids" format:"uuid" validate:"required"`
 }
@@ -575,5 +575,5 @@ func (req *LinkPoliciesToRoleRequest) Validate() error {
 
 // UnlinkPoliciesFromRoleRequest input values for unlinking policies from a role.
 //
-// @Description UnlinkPoliciesFromRoleRequest input values for unlinking policies from a role.
+//	@Description	UnlinkPoliciesFromRoleRequest input values for unlinking policies from a role.
 type UnlinkPoliciesFromRoleRequest = LinkPoliciesToRoleRequest

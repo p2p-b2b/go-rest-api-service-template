@@ -2,7 +2,7 @@ package model
 
 // Version is the struct that holds the version information.
 //
-// @Description Version is the struct that holds the version information.
+//	@Description	Version is the struct that holds the version information.
 type Version struct {
 	Version       string `json:"version" example:"1.0.0" format:"string"`
 	BuildDate     string `json:"build_date" example:"2021-01-01T00:00:00Z" format:"string"`

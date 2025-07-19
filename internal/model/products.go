@@ -34,7 +34,7 @@ var (
 
 // Product represents a product entity used to model the data stored in the database.
 //
-// @Description Product represents a product.
+//	@Description	Product represents a product.
 type Product struct {
 	ID          uuid.UUID `json:"id,omitempty,omitzero" example:"01980434-b7ff-7abe-a45d-7311bc7011f5" format:"uuid"`
 	Projects    *Project  `json:"project,omitempty"`
@@ -339,7 +339,7 @@ type ListProductsOutput = SelectProductsOutput
 
 // CreateProductRequest represents the input for the CreateProduct method.
 //
-// @Description CreateProductRequest represents the input for the CreateProduct method.
+//	@Description	CreateProductRequest represents the input for the CreateProduct method.
 type CreateProductRequest struct {
 	ID          uuid.UUID `json:"id" example:"01980434-b7ff-7ac1-b7b0-13de306cc1cb" format:"uuid"`
 	Name        string    `json:"name" example:"New product name" format:"string"`
@@ -410,7 +410,7 @@ func (req *CreateProductRequest) Validate() error {
 
 // UpdateProductRequest represents the input for the UpdateProduct method.
 //
-// @Description UpdateProductRequest represents the input for the UpdateProduct method.
+//	@Description	UpdateProductRequest represents the input for the UpdateProduct method.
 type UpdateProductRequest struct {
 	Name        *string `json:"name" example:"Modified product name" format:"string"`
 	Description *string `json:"description" example:"This is a product" format:"string"`
@@ -485,12 +485,12 @@ func (req *UpdateProductRequest) Validate() error {
 
 // ListProductsResponse represents a list of users.
 //
-// @Description ListProductResponse represents a list of users.
+//	@Description	ListProductResponse represents a list of users.
 type ListProductsResponse = SelectProductsOutput
 
 // ProductPaymentProcessorRequest represents the input for linking a product to a payment processor.
 //
-// @Description ProductPaymentProcessorRequest represents the input for linking a product to a payment processor.
+//	@Description	ProductPaymentProcessorRequest represents the input for linking a product to a payment processor.
 type ProductPaymentProcessorRequest struct {
 	PaymentProcessorID        uuid.UUID `json:"payment_processor_id"`
 	PaymentProcessorProductID string    `json:"payment_processor_product_id"`
@@ -592,7 +592,7 @@ type UnlinkProductFromPaymentProcessorInput = LinkProductToPaymentProcessorInput
 
 // LinkProductToPaymentProcessorRequest represents the input for linking a product to a payment processor.
 //
-// @Description LinkProductToPaymentProcessorRequest represents the input for linking a product to a payment processor.
+//	@Description	LinkProductToPaymentProcessorRequest represents the input for linking a product to a payment processor.
 type LinkProductToPaymentProcessorRequest struct {
 	PaymentProcessorID        uuid.UUID `json:"payment_processor_id"`
 	PaymentProcessorProductID string    `json:"payment_processor_product_id"`
@@ -639,5 +639,5 @@ func (req *LinkProductToPaymentProcessorRequest) Validate() error {
 
 // UnlinkProductFromPaymentProcessorRequest represents the input for unlinking a product from a payment processor.
 //
-// @Description UnlinkProductFromPaymentProcessorRequest represents the input for unlinking a product from a payment processor.
+//	@Description	UnlinkProductFromPaymentProcessorRequest represents the input for unlinking a product from a payment processor.
 type UnlinkProductFromPaymentProcessorRequest = LinkProductToPaymentProcessorRequest

@@ -65,9 +65,10 @@ func NewProjectsService(conf ProjectsServiceConf) (*ProjectsService, error) {
 	}
 
 	service := &ProjectsService{
-		repository:   conf.Repository,
-		cacheService: conf.CacheService,
-		ot:           conf.OT,
+		repository:       conf.Repository,
+		cacheService:     conf.CacheService,
+		authServiceCache: conf.AuthServiceCache,
+		ot:               conf.OT,
 	}
 	if conf.MetricsPrefix != "" {
 		service.metricsPrefix = strings.ReplaceAll(conf.MetricsPrefix, "-", "_")
@@ -136,7 +137,9 @@ func (ref *ProjectsService) Create(ctx context.Context, input *model.CreateProje
 	}
 
 	// remove cache key for authz since a new project is created by this user and assigned to the user
-	ref.authServiceCache.InvalidateUserAuthzCache(input.UserID)
+	if ref.authServiceCache != nil {
+		ref.authServiceCache.InvalidateUserAuthzCache(input.UserID)
+	}
 
 	slog.Debug("service.Projects.Create", "name", input.Name)
 	o11y.RecordSuccess(ctx, span, ref.metrics.serviceCalls, metricCommonAttributes, "project created successfully",
@@ -190,7 +193,9 @@ func (ref *ProjectsService) DeleteByID(ctx context.Context, input *model.DeleteP
 	}
 
 	// Remove the cache key for authz since the project is deleted
-	ref.authServiceCache.InvalidateUserAuthzCache(input.UserID)
+	if ref.authServiceCache != nil {
+		ref.authServiceCache.InvalidateUserAuthzCache(input.UserID)
+	}
 
 	o11y.RecordSuccess(ctx, span, ref.metrics.serviceCalls, metricCommonAttributes, "project deleted successfully",
 		attribute.String("project.id", input.ID.String()))

@@ -14,9 +14,6 @@ CREATE TABLE IF NOT EXISTS projects (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
 
-    -- name is unique
-    CONSTRAINT unique_project_name UNIQUE (name),
-
     -- serial_id is used for pagination
     serial_id BIGSERIAL NOT NULL UNIQUE
 );

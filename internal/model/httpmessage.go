@@ -4,7 +4,7 @@ import "time"
 
 // HTTPMessage represents a message to be sent to the client trough HTTP REST API.
 //
-// @Description HTTPMessage represents a message to be sent to the client trough HTTP REST API.
+//	@Description	HTTPMessage represents a message to be sent to the client trough HTTP REST API.
 type HTTPMessage struct {
 	Timestamp  time.Time `json:"timestamp" example:"2021-07-01T00:00:00Z" format:"date-time"`
 	Message    string    `json:"message" example:"success" format:"string"`
