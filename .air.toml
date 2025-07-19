@@ -36,6 +36,7 @@ exclude_dir = [
   "mocks",
   "dev-env",
   "test",
+  "tests/integration",
 ]
 exclude_file = [
   "docs/docs.go",

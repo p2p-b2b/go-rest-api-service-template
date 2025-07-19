@@ -3616,10 +3616,8 @@ const docTemplate = `{
                     "type": "string",
                     "format": "string"
                 },
-                "token_type": {
-                    "type": "string",
-                    "format": "string",
-                    "example": "Bearer"
+                "tokenType": {
+                    "$ref": "#/definitions/model.TokenType"
                 },
                 "user_id": {
                     "type": "string",
@@ -3820,10 +3818,12 @@ const docTemplate = `{
                     "type": "string",
                     "format": "string"
                 },
-                "token_type": {
+                "refresh_token": {
                     "type": "string",
-                    "format": "string",
-                    "example": "Bearer"
+                    "format": "string"
+                },
+                "tokenType": {
+                    "$ref": "#/definitions/model.TokenType"
                 }
             }
         },
@@ -3950,6 +3950,31 @@ const docTemplate = `{
                     "example": "2021-01-01T00:00:00Z"
                 }
             }
+        },
+        "model.TokenType": {
+            "type": "string",
+            "enum": [
+                "access",
+                "refresh",
+                "email_verification",
+                "password_reset",
+                "personal_access",
+                "Bearer"
+            ],
+            "x-enum-comments": {
+                "TokenTypeBearer": "This is used for the HTTP Authorization header"
+            },
+            "x-enum-descriptions": [
+                "This is used for the HTTP Authorization header"
+            ],
+            "x-enum-varnames": [
+                "TokenTypeAccess",
+                "TokenTypeRefresh",
+                "TokenTypeEmailVerification",
+                "TokenTypePasswordReset",
+                "TokenTypePersonalAccess",
+                "TokenTypeBearer"
+            ]
         },
         "model.UnlinkPoliciesFromRoleRequest": {
             "description": "LinkPoliciesToRoleRequest input values for linking policies to a role.",

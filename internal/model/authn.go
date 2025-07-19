@@ -57,7 +57,7 @@ func (req *LoginUserInput) Validate() error {
 type LoginUserOutput struct {
 	AccessToken  string
 	RefreshToken string
-	TokenType    string
+	TokenType    TokenType
 	UserID       uuid.UUID
 	Resources    map[string]any
 }
@@ -92,8 +92,9 @@ func (req *RefreshAccessTokenInput) Validate() error {
 }
 
 type RefreshAccessTokenOutput struct {
-	AccessToken string
-	TokenType   string
+	AccessToken  string
+	RefreshToken string
+	TokenType    TokenType
 }
 
 type RegisterUserInput struct {
@@ -202,9 +203,9 @@ func (req *LoginUserRequest) Validate() error {
 //
 //	@Description	LoginUserResponse is the response when a user logs in.
 type LoginUserResponse struct {
-	AccessToken  string         `json:"access_token" format:"string"`
-	RefreshToken string         `json:"refresh_token" format:"string"`
-	TokenType    string         `json:"token_type" example:"Bearer" format:"string"`
+	AccessToken  string `json:"access_token" format:"string"`
+	RefreshToken string `json:"refresh_token" format:"string"`
+	TokenType    TokenType
 	UserID       uuid.UUID      `json:"user_id" example:"01980434-b7ff-7a54-a71f-34868a34e51e" format:"uuid"`
 	Resources    map[string]any `json:"permissions" format:"object"`
 }
@@ -249,8 +250,9 @@ func (req *RefreshTokenRequest) Validate() error {
 //
 //	@Description	RefreshTokenResponse is the response when a user refreshes their token.
 type RefreshTokenResponse struct {
-	AccessToken string `json:"access_token" format:"string"`
-	TokenType   string `json:"token_type" example:"Bearer" format:"string"`
+	AccessToken  string `json:"access_token" format:"string"`
+	RefreshToken string `json:"refresh_token" format:"string"`
+	TokenType    TokenType
 }
 
 // RegisterUserRequest is the request struct for the RegisterUser handler.

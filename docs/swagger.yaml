@@ -303,10 +303,8 @@ definitions:
       refresh_token:
         format: string
         type: string
-      token_type:
-        example: Bearer
-        format: string
-        type: string
+      tokenType:
+        $ref: '#/definitions/model.TokenType'
       user_id:
         example: 01980434-b7ff-7a54-a71f-34868a34e51e
         format: uuid
@@ -460,10 +458,11 @@ definitions:
       access_token:
         format: string
         type: string
-      token_type:
-        example: Bearer
+      refresh_token:
         format: string
         type: string
+      tokenType:
+        $ref: '#/definitions/model.TokenType'
     type: object
   model.RegisterUserRequest:
     description: RegisterUserRequest is the request struct for the RegisterUser handler.
@@ -562,6 +561,26 @@ definitions:
         format: date-time
         type: string
     type: object
+  model.TokenType:
+    enum:
+    - access
+    - refresh
+    - email_verification
+    - password_reset
+    - personal_access
+    - Bearer
+    type: string
+    x-enum-comments:
+      TokenTypeBearer: This is used for the HTTP Authorization header
+    x-enum-descriptions:
+    - This is used for the HTTP Authorization header
+    x-enum-varnames:
+    - TokenTypeAccess
+    - TokenTypeRefresh
+    - TokenTypeEmailVerification
+    - TokenTypePasswordReset
+    - TokenTypePersonalAccess
+    - TokenTypeBearer
   model.UnlinkPoliciesFromRoleRequest:
     description: LinkPoliciesToRoleRequest input values for linking policies to a
       role.
