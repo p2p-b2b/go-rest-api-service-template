@@ -15,7 +15,7 @@ func main() {
 	// check the flags values
 	if *num < 1 || *num > 1000 {
 		flag.Usage()
-		fmt.Printf("Number of UUIDs to generate must be between 1 and 1000, got: %d\n", *n)
+		fmt.Printf("Number of UUIDs to generate must be between 1 and 1000, got: %d\n", *num)
 		return
 	}
 
