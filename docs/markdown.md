@@ -3831,7 +3831,7 @@ Status: Internal Server Error
 | access_token | string (formatted string)| `string` |  | |  |  |
 | permissions | map of any | `map[string]interface{}` |  | |  |  |
 | refresh_token | string (formatted string)| `string` |  | |  |  |
-| token_type | string (formatted string)| `string` |  | |  | `Bearer` |
+| tokenType | [ModelTokenType](#model-token-type)| `ModelTokenType` |  | |  |  |
 | user_id | uuid (formatted string)| `strfmt.UUID` |  | |  | `01980434-b7ff-7a54-a71f-34868a34e51e` |
 
 
@@ -3983,7 +3983,8 @@ Status: Internal Server Error
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
 | access_token | string (formatted string)| `string` |  | |  |  |
-| token_type | string (formatted string)| `string` |  | |  | `Bearer` |
+| refresh_token | string (formatted string)| `string` |  | |  |  |
+| tokenType | [ModelTokenType](#model-token-type)| `ModelTokenType` |  | |  |  |
 
 
 
@@ -4055,6 +4056,17 @@ Status: Internal Server Error
 | name | string (formatted string)| `string` |  | |  | `Role Name` |
 | system | boolean (formatted boolean)| `bool` |  | |  | `false` |
 | updated_at | date-time (formatted string)| `strfmt.DateTime` |  | |  | `2021-01-01T00:00:00Z` |
+
+
+
+### <span id="model-token-type"></span> model.TokenType
+
+
+  
+
+| Name | Type | Go type | Default | Description | Example |
+|------|------|---------| ------- |-------------|---------|
+| model.TokenType | string| string | |  |  |
 
 
 

@@ -10,6 +10,7 @@ const (
 	TokenTypeEmailVerification TokenType = "email_verification"
 	TokenTypePasswordReset     TokenType = "password_reset"
 	TokenTypePersonalAccess    TokenType = "personal_access"
+	TokenTypeBearer            TokenType = "Bearer" // This is used for the HTTP Authorization header
 )
 
 // String returns the string representation of the token type.

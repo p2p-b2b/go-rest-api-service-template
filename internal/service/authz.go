@@ -217,4 +217,3 @@ func (ref *AuthzService) InvalidateUserAuthzCache(userID uuid.UUID) {
 		ref.cacheService.Remove(context.Background(), cacheKey)
 	}
 }
-

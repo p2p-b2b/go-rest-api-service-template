@@ -142,8 +142,8 @@ func (ref *AuthnHandler) loginUser(w http.ResponseWriter, r *http.Request) {
 		UserID:       out.UserID,
 		AccessToken:  out.AccessToken,
 		RefreshToken: out.RefreshToken,
-		TokenType:    out.TokenType,
 		Resources:    out.Resources,
+		TokenType:    out.TokenType,
 	}
 
 	if err := respond.WriteJSONData(w, http.StatusOK, resp); err != nil {
@@ -453,8 +453,9 @@ func (ref *AuthnHandler) refreshAccessToken(w http.ResponseWriter, r *http.Reque
 	}
 
 	resp := &model.RefreshTokenResponse{
-		AccessToken: out.AccessToken,
-		TokenType:   out.TokenType,
+		AccessToken:  out.AccessToken,
+		RefreshToken: out.RefreshToken,
+		TokenType:    out.TokenType,
 	}
 
 	if err := respond.WriteJSONData(w, http.StatusOK, resp); err != nil {

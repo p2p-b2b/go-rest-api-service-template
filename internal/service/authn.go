@@ -224,8 +224,8 @@ func (ref *AuthnService) LoginUser(ctx context.Context, input *model.LoginUserIn
 		UserID:       user.ID,
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
-		TokenType:    "Bearer",
 		Resources:    permissionsL1,
+		TokenType:    model.TokenTypeBearer, // Set the token type to Bearer for HTTP Authorization header
 	}
 
 	o11y.RecordSuccess(ctx, span, ref.metrics.serviceCalls, metricAttrs, "login successful")
@@ -567,26 +567,26 @@ func (ref *AuthnService) RefreshAccessToken(ctx context.Context, input *model.Re
 		return nil, o11y.RecordError(ctx, span, errorValue, ref.metrics.serviceCalls, metricAttrs, "service.Authn.RefreshAccessToken", "refresh token is invalid")
 	}
 
-	claims, ok := refreshToken.Claims.(jwt.MapClaims)
+	rtClaims, ok := refreshToken.Claims.(jwt.MapClaims)
 	if !ok {
 		errorValue := &model.InvalidRefreshTokenError{Message: "failed to get claims from refresh token"}
 		return nil, o11y.RecordError(ctx, span, errorValue, ref.metrics.serviceCalls, metricAttrs, "service.Authn.RefreshAccessToken", "failed to get claims from refresh token")
 	}
 
 	// The jti claim is required for a refresh token only and difference it from an access token
-	if claims["jti"] == nil || claims["jti"] == "" {
+	if rtClaims["jti"] == nil || rtClaims["jti"] == "" {
 		errorValue := &model.InvalidRefreshTokenError{Message: "jti claim is missing"}
 		return nil, o11y.RecordError(ctx, span, errorValue, ref.metrics.serviceCalls, metricAttrs, "service.Authn.RefreshAccessToken", "jti claim is missing")
 	}
 
-	userID, err := uuid.Parse(claims["sub"].(string))
+	userID, err := uuid.Parse(rtClaims["sub"].(string))
 	if err != nil {
 		return nil, o11y.RecordError(ctx, span, err, ref.metrics.serviceCalls, metricAttrs, "service.Authn.RefreshAccessToken", "failed to parse user ID")
 	}
 
 	slog.Debug("service.Authn.RefreshAccessToken", "userID", userID)
 
-	userEmail, ok := claims["email"].(string)
+	userEmail, ok := rtClaims["email"].(string)
 	if !ok {
 		errorValue := &model.InvalidRefreshTokenError{Message: "email claim is missing"}
 		// The email claim is required for a refresh token only and difference it from an access token
@@ -594,7 +594,7 @@ func (ref *AuthnService) RefreshAccessToken(ctx context.Context, input *model.Re
 	}
 	slog.Debug("service.Authn.RefreshAccessToken", "userEmail", userEmail)
 
-	tokenType, ok := claims["token_type"].(string)
+	tokenType, ok := rtClaims["token_type"].(string)
 	if !ok {
 		errorValue := &model.InvalidRefreshTokenError{Message: "token_type claim is missing"}
 		return nil, o11y.RecordError(ctx, span, errorValue, ref.metrics.serviceCalls, metricAttrs, "service.Authn.RefreshAccessToken", "token_type claim is missing")
@@ -610,7 +610,7 @@ func (ref *AuthnService) RefreshAccessToken(ctx context.Context, input *model.Re
 		Email: userEmail,
 	}
 
-	jwtClaims := model.JWTClaims{
+	atJWTClaims := model.JWTClaims{
 		Email:         user.Email,
 		Subject:       user.ID.String(),
 		Issuer:        ref.issuer,
@@ -618,15 +618,42 @@ func (ref *AuthnService) RefreshAccessToken(ctx context.Context, input *model.Re
 		TokenDuration: ref.accessTokenDuration,
 	}
 
-	accessTokenSigned, err := createJWT(jwtClaims, ref.privateKey)
+	accessTokenSigned, err := createJWT(atJWTClaims, ref.privateKey)
 	if err != nil {
 		return nil, o11y.RecordError(ctx, span, err, ref.metrics.serviceCalls, metricAttrs, "service.Authn.RefreshAccessToken", "failed to create access token")
 	}
 
+	// this is a good idea to refresh the refresh token as well, but it is not required
+	// and until no invalidated the oldest refresh token, we can use the same one and this is a attack vector
+	// // Extract expiration time from the current refresh token
+	// currentExp, ok := rtClaims["exp"].(float64)
+	// if !ok {
+	// 	errorValue := &model.InvalidRefreshTokenError{Message: "exp claim is missing"}
+	// 	return nil, o11y.RecordError(ctx, span, errorValue, ref.metrics.serviceCalls, metricAttrs, "service.Authn.RefreshAccessToken", "exp claim is missing")
+	// }
+
+	// // Calculate remaining duration from the current refresh token
+	// expirationTime := time.Unix(int64(currentExp), 0)
+	// remainingDuration := time.Until(expirationTime)
+
+	// newRefreshTokenClaims := model.JWTClaims{
+	// 	Email:         user.Email,
+	// 	Subject:       user.ID.String(),
+	// 	Issuer:        ref.issuer,
+	// 	TokenType:     model.TokenTypeRefresh,
+	// 	TokenDuration: remainingDuration,
+	// }
+
+	// newRefreshTokenSigned, err := createJWT(newRefreshTokenClaims, ref.privateKey)
+	// if err != nil {
+	// 	return nil, o11y.RecordError(ctx, span, err, ref.metrics.serviceCalls, metricAttrs, "service.Authn.RefreshAccessToken", "failed to create refresh token")
+	// }
+
 	o11y.RecordSuccess(ctx, span, ref.metrics.serviceCalls, metricAttrs, "access token refreshed successfully")
 	return &model.RefreshAccessTokenOutput{
-		AccessToken: accessTokenSigned,
-		TokenType:   "Bearer",
+		AccessToken:  accessTokenSigned,
+		RefreshToken: refreshToken.Raw,      // Return the original refresh token
+		TokenType:    model.TokenTypeBearer, // Set the token type to Bearer for HTTP Authorization header
 	}, nil
 }
 
