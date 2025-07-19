@@ -81,7 +81,7 @@ func ValidateResource(resource string) (validate string, error error) {
 
 // Policy represents a user entity used to model the data stored in the database.
 //
-// @Description Policy represents a role.
+//	@Description	Policy represents a role.
 type Policy struct {
 	ID              uuid.UUID `json:"id,omitempty,omitzero" example:"01980434-b7ff-7a93-b5b4-ca4c73283131" format:"uuid"`
 	Name            string    `json:"name,omitempty" example:"Policy Name" format:"string"`
@@ -142,7 +142,7 @@ type UnlinkRolesFromPolicyInput = LinkRolesToPolicyInput
 
 // LinkRolesToPolicyRequest links roles to a policy.
 //
-// @Description Link roles to a policy.
+//	@Description	Link roles to a policy.
 type LinkRolesToPolicyRequest struct {
 	RoleIDs []uuid.UUID `json:"role_ids" example:"01980434-b7ff-7a96-b0c8-dbabed881cf5" format:"uuid" validate:"required"`
 }
@@ -180,7 +180,7 @@ func (ref *LinkRolesToPolicyRequest) Validate() error {
 
 // UnlinkRolesFromPolicyRequest unlinks roles from a policy.
 //
-// @Description Unlink roles from a policy.
+//	@Description	Unlink roles from a policy.
 type UnlinkRolesFromPolicyRequest = LinkRolesToPolicyRequest
 
 type SelectPoliciesInput struct {
@@ -436,7 +436,7 @@ func (ref *DeletePolicyInput) Validate() error {
 
 // CreatePolicyRequest represents a request to create a policy.
 //
-// @Description Create a policy.
+//	@Description	Create a policy.
 type CreatePolicyRequest struct {
 	ID              uuid.UUID `json:"id,omitempty,omitzero" example:"01980434-b7ff-7a9e-b343-668d79691032" format:"uuid" validate:"optional"`
 	Name            string    `json:"name" example:"List Policies for project" format:"string" validate:"required"`
@@ -518,7 +518,7 @@ func (ref *CreatePolicyRequest) Validate() error {
 
 // UpdatePolicyRequest represents a request to update a policy.
 //
-// @Description Update a policy.
+//	@Description	Update a policy.
 type UpdatePolicyRequest struct {
 	Name            *string `json:"name,omitempty" example:"Policy Name" format:"string" validate:"optional"`
 	Description     *string `json:"description,omitempty" example:"This is a role" format:"string" validate:"optional"`

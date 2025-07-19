@@ -33,7 +33,7 @@ var (
 
 // Project represents a user entity used to model the data stored in the database.
 //
-// @Description Project represents a project.
+//	@Description	Project represents a project.
 type Project struct {
 	CreatedAt   time.Time `json:"created_at,omitzero" example:"2021-01-01T00:00:00Z" format:"date-time"`
 	UpdatedAt   time.Time `json:"updated_at,omitzero" example:"2021-01-01T00:00:00Z" format:"date-time"`
@@ -313,7 +313,7 @@ type ListProjectsOutput = SelectProjectsOutput
 
 // CreateProjectRequest represents the inputs necessary to create a new project.
 //
-// @Description CreateProjectRequest represents the inputs necessary to create a new project.
+//	@Description	CreateProjectRequest represents the inputs necessary to create a new project.
 type CreateProjectRequest struct {
 	Name        string    `json:"name" example:"New project name" format:"string" validate:"required"`
 	Description string    `json:"description" example:"This is a new project" format:"string" validate:"required"`
@@ -383,7 +383,7 @@ func (req *CreateProjectRequest) Validate() error {
 
 // UpdateProjectRequest represents the inputs necessary to update a project.
 //
-// @Description UpdateProjectRequest represents the inputs necessary to update a project.
+//	@Description	UpdateProjectRequest represents the inputs necessary to update a project.
 type UpdateProjectRequest struct {
 	Name        *string `json:"name" example:"New project name" format:"string"`
 	Description *string `json:"description" example:"This is a new project data" format:"string"`
@@ -456,12 +456,12 @@ func (req *UpdateProjectRequest) Validate() error {
 
 // ListProjectsResponse represents a list of users.
 //
-// @Description ListProjectsResponse represents a list of users.
+//	@Description	ListProjectsResponse represents a list of users.
 type ListProjectsResponse = SelectProjectsOutput
 
 // LinkUsersToProjectRequest represents the input for the LinkUserToProject method.
 //
-// @Description LinkUsersToProjectRequest represents the input for the LinkUserToProject method.
+//	@Description	LinkUsersToProjectRequest represents the input for the LinkUserToProject method.
 type LinkUsersToProjectRequest struct {
 	UserIDs []uuid.UUID `json:"user_ids" format:"uuid"`
 }
@@ -491,5 +491,5 @@ func (req *LinkUsersToProjectRequest) Validate() error {
 
 // UnlinkUsersFromProjectRequest represents the input for the UnlinkUserFromProject method.
 //
-// @Description UnlinkUsersFromProjectRequest represents the input for the UnlinkUserFromProject method.
+//	@Description	UnlinkUsersFromProjectRequest represents the input for the UnlinkUserFromProject method.
 type UnlinkUsersFromProjectRequest = LinkUsersToProjectRequest

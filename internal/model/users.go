@@ -40,7 +40,7 @@ var (
 
 // User represents a user entity used to model the data stored in the database.
 //
-// @Description User represents a user entity.
+//	@Description	User represents a user entity.
 type User struct {
 	CreatedAt    time.Time `json:"created_at,omitzero" example:"2021-01-01T00:00:00Z" format:"date-time"`
 	UpdatedAt    time.Time `json:"updated_at,omitzero" example:"2021-01-01T00:00:00Z" format:"date-time"`
@@ -379,7 +379,7 @@ type UnLinkRolesFromUsersInput = LinkRolesToUserInput
 
 // CreateUserRequest represents the input for the CreateUser method.
 //
-// @Description Create user request.
+//	@Description	Create user request.
 type CreateUserRequest struct {
 	FirstName string    `json:"first_name" example:"John" format:"string" validate:"required"`
 	LastName  string    `json:"last_name" example:"Doe" format:"string" validate:"required"`
@@ -445,7 +445,7 @@ func (req *CreateUserRequest) Validate() error {
 
 // UpdateUserRequest represents the input for the UpdateUser method.
 //
-// @Description Update user request.
+//	@Description	Update user request.
 type UpdateUserRequest struct {
 	FirstName *string `json:"first_name" example:"John" format:"string" validate:"optional"`
 	LastName  *string `json:"last_name" example:"Doe" format:"string" validate:"optional"`
@@ -522,7 +522,7 @@ func (req *UpdateUserRequest) Validate() error {
 
 // LinkRolesToUserRequest represents the input for the LinkRoles method.
 //
-// @Description Link roles request.
+//	@Description	Link roles request.
 type LinkRolesToUserRequest struct {
 	RoleIDs []uuid.UUID `json:"role_ids" format:"uuid" validate:"required"`
 }
@@ -562,10 +562,10 @@ func (req *LinkRolesToUserRequest) Validate() error {
 
 // UnlinkRolesFromUserRequest represents the input for the UnLinkRoles method.
 //
-// @Description Unlink roles request.
+//	@Description	Unlink roles request.
 type UnlinkRolesFromUserRequest = LinkRolesToUserRequest
 
 // ListUsersResponse represents a list of users.
 //
-// @Description List of users.
+//	@Description	List of users.
 type ListUsersResponse = SelectUsersOutput
