@@ -310,7 +310,15 @@ func parseListQueryParams(params map[string]any, fieldsFields, filterFields, sor
 // If the user ID is not a valid UUID, it returns an error.
 // If the user ID is a nil UUID, it returns an error.
 func getUserIDFromContext(ctx context.Context) (uuid.UUID, error) {
-	claims := ctx.Value(middleware.JwtClaims).(map[string]any)
+	claimsValue := ctx.Value(middleware.JwtClaims)
+	if claimsValue == nil {
+		return uuid.Nil, &model.InvalidJWTError{Message: "JWT claims are missing from context"}
+	}
+
+	claims, ok := claimsValue.(map[string]any)
+	if !ok {
+		return uuid.Nil, &model.InvalidJWTError{Message: "JWT claims are not in the expected format"}
+	}
 
 	userIDstring, ok := claims["sub"].(string)
 	if !ok {
