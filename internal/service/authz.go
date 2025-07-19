@@ -208,8 +208,9 @@ func (ref *AuthzService) GetUserAuthzCacheKey(userID uuid.UUID) string {
 // InvalidateUserAuthzCache removes the user authorization cache entry for the given userID.
 func (ref *AuthzService) InvalidateUserAuthzCache(userID uuid.UUID) {
 	cacheKey := ref.GetUserAuthzCacheKey(userID)
-	if ref.cacheService.cache != nil {
+	if ref.cacheService != nil && ref.cacheService.cache != nil {
 		slog.Debug("service.Authz.InvalidateUserAuthzCache", "cache", "removing cache", "key", cacheKey)
 		ref.cacheService.Remove(context.Background(), cacheKey)
 	}
 }
+
