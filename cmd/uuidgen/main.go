@@ -19,9 +19,9 @@ func main() {
 		return
 	}
 
-	if *ver != 4 && *ver != 5 && *ver != 6 && *ver != 7 {
+	if *ver != 4 && *ver != 6 && *ver != 7 {
 		flag.Usage()
-		fmt.Printf("Unsupported UUID version: %d. Supported versions are 4, 5, 6, and 7.\n", *ver)
+		fmt.Printf("Unsupported UUID version: %d. Supported versions are 4, 6, and 7.\n", *ver)
 		return
 	}
 
