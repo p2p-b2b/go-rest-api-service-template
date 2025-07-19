@@ -16,6 +16,18 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+//go:generate go tool mockgen -package=mocks -destination=../../mocks/service/authz.go -source=authz.go AuthzServiceCache
+
+// AuthzServiceCache is the interface for the authz service cache methods.
+// This must be used in other services that need to access the authz cache key and invalidate it.
+// implement as dependency injection in the AuthzServiceCache interface.
+// NOTE: This is defined here to allows other services to use the AuthzServiceCache interface
+// without importing the entire authz service package.
+type AuthzServiceCache interface {
+	GetUserAuthzCacheKey(userID uuid.UUID) string
+	InvalidateUserAuthzCache(userID uuid.UUID)
+}
+
 type AuthzServiceConf struct {
 	Repository    UsersRepository
 	CacheService  *CacheService
@@ -186,4 +198,18 @@ func (ref *AuthzService) setupContext(ctx context.Context, operation string) (co
 	}
 
 	return ctx, span, metricCommonAttributes
+}
+
+// GetUserAuthzCacheKey generates a cache key for user authorization based on userID.
+func (ref *AuthzService) GetUserAuthzCacheKey(userID uuid.UUID) string {
+	return fmt.Sprintf("authz:%s", userID)
+}
+
+// InvalidateUserAuthzCache removes the user authorization cache entry for the given userID.
+func (ref *AuthzService) InvalidateUserAuthzCache(userID uuid.UUID) {
+	cacheKey := ref.GetUserAuthzCacheKey(userID)
+	if ref.cacheService.cache != nil {
+		slog.Debug("service.Authz.InvalidateUserAuthzCache", "cache", "removing cache", "key", cacheKey)
+		ref.cacheService.Remove(context.Background(), cacheKey)
+	}
 }

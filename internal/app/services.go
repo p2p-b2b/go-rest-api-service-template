@@ -159,8 +159,10 @@ func (a *App) initAuthServices(jwtPrivateKey, jwtPublicKey []byte, mailService *
 
 	// Projects service
 	a.services.Projects, err = service.NewProjectsService(service.ProjectsServiceConf{
-		Repository: a.repositories.Projects,
-		OT:         a.telemetry,
+		Repository:       a.repositories.Projects,
+		CacheService:     cacheService,
+		AuthServiceCache: a.services.Authz,
+		OT:               a.telemetry,
 	})
 	if err != nil {
 		return fmt.Errorf("error creating projects service: %w", err)

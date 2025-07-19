@@ -26,10 +26,11 @@ type ProjectsRepository interface {
 }
 
 type ProjectsServiceConf struct {
-	Repository    ProjectsRepository
-	CacheService  *CacheService
-	OT            *o11y.OpenTelemetry
-	MetricsPrefix string
+	Repository       ProjectsRepository
+	CacheService     *CacheService
+	AuthServiceCache AuthzServiceCache
+	OT               *o11y.OpenTelemetry
+	MetricsPrefix    string
 }
 
 type projectServiceMetrics struct {
@@ -37,11 +38,12 @@ type projectServiceMetrics struct {
 }
 
 type ProjectsService struct {
-	repository    ProjectsRepository
-	cacheService  *CacheService
-	ot            *o11y.OpenTelemetry
-	metricsPrefix string
-	metrics       projectServiceMetrics
+	repository       ProjectsRepository
+	cacheService     *CacheService
+	authServiceCache AuthzServiceCache
+	ot               *o11y.OpenTelemetry
+	metricsPrefix    string
+	metrics          projectServiceMetrics
 }
 
 // NewProjectsService creates a new ProjectsService.
@@ -52,6 +54,14 @@ func NewProjectsService(conf ProjectsServiceConf) (*ProjectsService, error) {
 
 	if conf.OT == nil {
 		return nil, &model.InvalidOTConfigurationError{Message: "OpenTelemetry is nil, but it is required for ProjectsService"}
+	}
+
+	if conf.CacheService == nil {
+		return nil, &model.InvalidCacheServiceError{Message: "CacheService is nil, but it is required for ProjectsService"}
+	}
+
+	if conf.AuthServiceCache == nil {
+		return nil, &model.InvalidAuthzServiceCacheError{Message: "AuthzServiceCache is nil, but it is required for ProjectsService"}
 	}
 
 	service := &ProjectsService{
@@ -125,11 +135,8 @@ func (ref *ProjectsService) Create(ctx context.Context, input *model.CreateProje
 		return o11y.RecordError(ctx, span, err, ref.metrics.serviceCalls, metricCommonAttributes, "service.Projects.Create")
 	}
 
-	// remove cache key for authz
-	if ref.cacheService != nil {
-		slog.Debug("service.Projects.Create", "what", "removing cache", "id", fmt.Sprintf("authz:%s", input.UserID.String()))
-		ref.cacheService.Remove(ctx, fmt.Sprintf("authz:%s", input.UserID.String()))
-	}
+	// remove cache key for authz since a new project is created by this user and assigned to the user
+	ref.authServiceCache.InvalidateUserAuthzCache(input.UserID)
 
 	slog.Debug("service.Projects.Create", "name", input.Name)
 	o11y.RecordSuccess(ctx, span, ref.metrics.serviceCalls, metricCommonAttributes, "project created successfully",
@@ -182,12 +189,8 @@ func (ref *ProjectsService) DeleteByID(ctx context.Context, input *model.DeleteP
 		return o11y.RecordError(ctx, span, err, ref.metrics.serviceCalls, metricCommonAttributes, "service.Projects.DeleteByID")
 	}
 
-	// TODO: remove cache key for authz, userIDs are needed
-	// remove cache key for authz
-	// if ref.cacheService != nil {
-	//  slog.Debug("service.Projects.DeleteByID", "what", "removing cache", "id", fmt.Sprintf("authz:%s", input.UserID.String()))
-	//   ref.cacheService.Remove(ctx, fmt.Sprintf("authz:%s", input.UserID.String()))
-	// }
+	// Remove the cache key for authz since the project is deleted
+	ref.authServiceCache.InvalidateUserAuthzCache(input.UserID)
 
 	o11y.RecordSuccess(ctx, span, ref.metrics.serviceCalls, metricCommonAttributes, "project deleted successfully",
 		attribute.String("project.id", input.ID.String()))
