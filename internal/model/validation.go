@@ -25,11 +25,10 @@ const (
 	MaxFieldsExpressionLength = 1024
 
 	// Character validation patterns
-	NullBytePattern     = "\x00"
-	ControlCharPattern  = "[\x00-\x1f\x7f]"
-	HTMLTagPattern      = `<[^>]*>`
-	ScriptTagPattern    = `(?i)<script[^>]*>.*?</script>`
-	SQLInjectionPattern = `(?i)(union|select|insert|update|delete|drop|alter|exec|execute|sp_|xp_)`
+	NullBytePattern    = "\x00"
+	ControlCharPattern = "[\x00-\x1f\x7f]"
+	HTMLTagPattern     = `<[^>]*>`
+	ScriptTagPattern   = `(?i)<script[^>]*>.*?</script>`
 
 	// Password complexity requirements
 	MinPasswordComplexityScore = 3
@@ -37,10 +36,9 @@ const (
 
 var (
 	// Compiled regex patterns for performance
-	controlCharRegex  = regexp.MustCompile(ControlCharPattern)
-	htmlTagRegex      = regexp.MustCompile(HTMLTagPattern)
-	scriptTagRegex    = regexp.MustCompile(ScriptTagPattern)
-	sqlInjectionRegex = regexp.MustCompile(SQLInjectionPattern)
+	controlCharRegex = regexp.MustCompile(ControlCharPattern)
+	htmlTagRegex     = regexp.MustCompile(HTMLTagPattern)
+	scriptTagRegex   = regexp.MustCompile(ScriptTagPattern)
 
 	// Common weak passwords (basic list)
 	commonPasswords = map[string]bool{
@@ -111,7 +109,6 @@ type StringValidationOptions struct {
 	NoControlChars   bool
 	NoHTMLTags       bool
 	NoScriptTags     bool
-	NoSQLKeywords    bool
 	NoNullBytes      bool
 	NormalizeUnicode bool
 	FieldName        string
@@ -208,15 +205,6 @@ func ValidateString(value string, opts StringValidationOptions) (string, error) 
 		return "", &ValidationError{
 			Field:   opts.FieldName,
 			Message: "contains script tags which are not allowed",
-			Code:    "INVALID_CONTENT",
-		}
-	}
-
-	// Check for SQL injection patterns
-	if opts.NoSQLKeywords && sqlInjectionRegex.MatchString(value) {
-		return "", &ValidationError{
-			Field:   opts.FieldName,
-			Message: "contains potentially malicious SQL keywords",
 			Code:    "INVALID_CONTENT",
 		}
 	}
@@ -576,15 +564,6 @@ func ValidateFilterExpression(filter string, fieldName string) error {
 		}
 	}
 
-	// Check for SQL injection patterns
-	if sqlInjectionRegex.MatchString(filter) {
-		return &ValidationError{
-			Field:   fieldName,
-			Message: "filter expression contains potentially malicious content",
-			Code:    "INVALID_CONTENT",
-		}
-	}
-
 	return nil
 }
 
@@ -602,15 +581,6 @@ func ValidateSortExpression(sort string, fieldName string) error {
 		}
 	}
 
-	// Check for SQL injection patterns
-	if sqlInjectionRegex.MatchString(sort) {
-		return &ValidationError{
-			Field:   fieldName,
-			Message: "sort expression contains potentially malicious content",
-			Code:    "INVALID_CONTENT",
-		}
-	}
-
 	return nil
 }
 
@@ -625,15 +595,6 @@ func ValidateFieldsExpression(fields string, fieldName string) error {
 			Field:   fieldName,
 			Message: fmt.Sprintf("fields expression exceeds maximum length of %d characters", MaxFieldsExpressionLength),
 			Code:    "TOO_LONG",
-		}
-	}
-
-	// Check for SQL injection patterns
-	if sqlInjectionRegex.MatchString(fields) {
-		return &ValidationError{
-			Field:   fieldName,
-			Message: "fields expression contains potentially malicious content",
-			Code:    "INVALID_CONTENT",
 		}
 	}
 
