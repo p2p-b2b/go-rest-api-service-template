@@ -72,70 +72,7 @@ This is a comprehensive template for a Go HTTP REST API Service with advanced au
 
 ## API Endpoints
 
-The service provides comprehensive REST API endpoints for managing users, projects, products, roles, and policies.
-
-### Authentication Endpoints
-
-- `POST /auth/register` - Register a new user
-- `POST /auth/login` - Authenticate user and get JWT tokens
-- `POST /auth/refresh` - Refresh access token using refresh token
-- `POST /auth/logout` - Logout user and invalidate tokens
-- `GET /auth/verify/{token}` - Verify user email address
-
-### User Management
-
-- `GET /users` - List all users (with pagination, filtering, sorting)
-- `GET /users/{user_id}` - Get specific user details
-- `POST /users` - Create a new user (admin only)
-- `PUT /users/{user_id}` - Update user information
-- `DELETE /users/{user_id}` - Delete a user
-- `POST /users/{user_id}/roles` - Assign roles to user
-- `DELETE /users/{user_id}/roles` - Remove roles from user
-- `GET /users/{user_id}/roles` - List user's roles
-
-### Project Management
-
-- `GET /projects` - List accessible projects
-- `GET /projects/{project_id}` - Get project details
-- `POST /projects` - Create a new project
-- `PUT /projects/{project_id}` - Update project
-- `DELETE /projects/{project_id}` - Delete project
-
-### Product Management
-
-- `GET /projects/{project_id}/products` - List products in a project
-- `GET /projects/{project_id}/products/{product_id}` - Get product details
-- `POST /projects/{project_id}/products` - Create product in project
-- `PUT /projects/{project_id}/products/{product_id}` - Update product
-- `DELETE /projects/{project_id}/products/{product_id}` - Delete product
-
-### Role & Policy Management
-
-- `GET /roles` - List all roles
-- `GET /roles/{role_id}` - Get role details
-- `POST /roles` - Create a new role
-- `PUT /roles/{role_id}` - Update role
-- `DELETE /roles/{role_id}` - Delete role
-- `POST /roles/{role_id}/policies` - Link policies to role
-- `DELETE /roles/{role_id}/policies` - Unlink policies from role
-
-- `GET /policies` - List all policies
-- `GET /policies/{policy_id}` - Get policy details
-- `POST /policies` - Create a new policy
-- `PUT /policies/{policy_id}` - Update policy
-- `DELETE /policies/{policy_id}` - Delete policy
-
-### Resource Discovery
-
-- `GET /resources` - List all available resources
-- `GET /resources/{resource_id}` - Get resource details
-- `GET /resources/matches` - Find resources matching action/resource criteria
-
-### Health & Monitoring
-
-- `GET /health` - Service health check
-- `GET /version` - Service version information
-- `GET /metrics` - Prometheus metrics (if enabled)
+For detailed API endpoint documentation, please refer to [docs/markdown.md](docs/markdown.md).
 
 ## Authentication Flow
 
@@ -186,15 +123,55 @@ go mod tidy
 
 ### 2. Environment Configuration
 
-```bash
-# Copy environment template
-cp dev.env .env
+Create the `dev.env` file with the following content:
 
-# Configure your environment variables
-# Edit .env file with your database credentials, JWT secrets, etc.
+```env
+MAIL_SMTP_HOST=localhost
+MAIL_SMTP_PORT=1025
+MAIL_SMTP_USERNAME=welcome@qu3ry.me
+MAIL_SMTP_PASSWORD=new_secure_password
+DB_USERNAME=username
+DB_PASSWORD=password
 ```
 
-### 3. Start Development Environment
+### 3. Generate Required Certificates
+
+#### Ed25519 Key Pair
+
+Generate the private and public key pair:
+
+```bash
+# Create the directory to store the certificates
+mkdir -p certs
+
+# Generate the JWT Private Key
+openssl ecparam -genkey -name prime256v1 -noout -out certs/jwt.key
+
+# Generate the JWT Public Key
+openssl ec -in certs/jwt.key -pubout -out certs/jwt.pub
+```
+
+#### Symmetric Key for encryption and decryption of Application and API tokens
+
+This service uses a `symmetric key` to `encrypt and decrypt` application tokens stored in the database.
+Application tokens are used to authenticate the application to the service and these
+are long-lived JWT or JOT tokens without expiration time.
+
+This also use to encrypt and decrypt API tokens stored in the database.
+
+##### AES-256 Key
+
+Generate the symmetric key:
+
+```bash
+# Create the directory to store the certificates
+mkdir -p certs
+
+# Generate the AES-256 Key, hexadecimal format is important!
+openssl rand -hex 32 | tr -d '\n' > certs/aes-256-symmetric-hex.key
+```
+
+### 4. Start Development Environment
 
 ```bash
 # Start the development stack (PostgreSQL, Redis, etc.)
@@ -203,11 +180,13 @@ make start-dev-env
 # Run database migrations
 make migrate-up
 
-# Start the API server with hot reload
+# Start the API server with hot reload in development mode
 air
 ```
 
-### 4. Test the API
+The `air` command provides hot reload functionality that automatically rebuilds and restarts the application when code changes are detected.
+
+### 5. Test the API
 
 ```bash
 # Check service health
@@ -352,7 +331,11 @@ swag init \
   --dir "./cmd/go-rest-api-service-template/,./internal/handler" \
   --output ./docs \
   --parseDependency true \
-  --parseInternal true
+    --parseInternal true
+```
+
+## Building and Running
+
 ```
 
 ## References
@@ -367,225 +350,6 @@ swag init \
 - [Multi-hop tracing with OpenTelemetry in Golang](https://faun.pub/multi-hop-tracing-with-opentelemetry-in-golang-792df5feb37c)
 - [How to setup your own CA with OpenSSL](https://gist.github.com/soarez/9688998)
 - [How to setup your own self signed Certificate Authority (CA) and certificates with OpenSSL 3.x and using ED25519](https://gist.github.com/christiangda/aaa1c5b58dfa17f4d1cf6e42d60f9273#file-howto-self-signed-ca-certs-ed25519-md)
-
-## Swagger Documentation
-
-The Swagger documentation is available at `/swagger/index.html`.
-
-To generate the Swagger documentation, you need to install [swag](https://github.com/swaggo/swag) and run the following command:
-
-```bash
-swag init \
-  --dir "./cmd/go-rest-api-service-template/,./internal/handler" \
-  --output ./docs \
-  --parseDependency true \
-  --parseInternal true
-```
-
-## Self-Signed Certificates for Mutual TLS (mTLS)
-
-This service could use self-signed certificates for mutual TLS (mTLS) authentication.
-
-### Requirements
-
-- [OpenSSL 3.x](https://www.openssl.org/)
-
-### Ed25519 Certificates
-
-Generate the Certificate Authority (CA) key and certificate:
-
-```bash
-mkdir -p certs/newcerts
-cd certs/
-
-# Generate the CA Key Pair
-# Reference: https://docs.openssl.org/3.4/man1/openssl-ecparam/
-# to get -name parameter user -> openssl ecparam -list_curves
-openssl ecparam -genkey -name secp256k1 -out ca.key
-
-# Generate the CA Certificate configuration file
-cat <<EOF > ca.cnf
-[req]
-prompt = no
-default_bits = 2048
-default_keyfile = ca.key
-default_days = 3650
-default_md = sha256
-utf8 = yes
-distinguished_name = dn
-x509_extensions = v3_ca
-
-[dn]
-C = ES
-ST = Barcelona
-L = Barcelona
-O = ACME
-OU = ACME CA
-CN = *.acme.com
-emailAddress = info@acme.com
-
-[v3_ca]
-subjectKeyIdentifier = hash
-authorityKeyIdentifier = keyid:always,issuer
-basicConstraints = critical, CA:true
-keyUsage = critical, cRLSign, keyCertSign, digitalSignature, keyEncipherment
-EOF
-
-# Create the CA Certificate (10 years)
-# NOTE: This will request a PEM pass phrase
-openssl req -new -x509 -out ca.crt -config ca.cnf
-
-# Check the CA Certificate
-openssl x509 -in ca.crt -text -noout
-
-# Generate the Intermediate CA Key Pair (Optional)
-openssl ecparam -genkey -name secp256k1 -out intermediate_ca.key
-
-# Generate the Intermediate CA Certificate configuration file (Optional)
-cat <<EOF > intermediate_ca.cnf
-[req]
-prompt = no
-default_bits = 2048
-default_keyfile = intermediate_ca.key
-default_days = 3650
-default_md = sha256
-distinguished_name = dn
-x509_extensions = v3_ca
-
-[dn]
-C = ES
-ST = Barcelona
-L = Barcelona
-O = ACME
-OU = ACME Intermediate CA
-CN = *.acme.com
-emailAddress = intermediate@acme.com
-
-[v3_ca]
-subjectKeyIdentifier = hash
-authorityKeyIdentifier = keyid:always,issuer
-basicConstraints = critical, CA:true
-keyUsage = critical, cRLSign, keyCertSign, digitalSignature, keyEncipherment
-EOF
-
-# Create the Intermediate CA Certificate (10 years) (Optional)
-# NOTES:
-# + This is to protect the CA private key and Certificate because this could be used to sign other certificates and validate them
-# + This will request the CA pass phrase
-openssl req -new -out intermediate_ca.csr -config intermediate_ca.cnf
-
-# Check the Intermediate CA Certificate (Optional)
-openssl req -in intermediate_ca.csr -noout -text
-
-# Sign the Intermediate CA Certificate with the CA Certificate (Optional)
-openssl x509 -req -in intermediate_ca.csr -CA ca.crt -CAkey ca.key -CAcreateserial -out intermediate_ca.crt -days 3650 -sha256
-
-# Generate the infrastructure to Create Private Self-Signed CA Certificates
-touch index.txt
-echo 1000 > serial
-
-# Generate Sign CA Certificate configuration file
-cat <<EOF > sign.ca.cnf
-[ ca ]
-default_ca = CA_default
-
-[ CA_default ]
-new_certs_dir = ./newcerts
-database = ./index.txt
-serial = ./serial
-RANDFILE = ./.rand
-certificate = ./intermediate_ca.crt
-private_key = ./intermediate_ca.key
-default_days = 365
-default_md = sha256
-policy = policy_any
-x509_extensions = v3_ca
-
-[ policy_any ]
-# optional, supplied or match
-countryName = match
-stateOrProvinceName = match
-organizationName = match
-organizationalUnitName = optional
-commonName = supplied
-emailAddress = optional
-
-[ v3_ca ]
-subjectKeyIdentifier = hash
-authorityKeyIdentifier = keyid:always,issuer
-basicConstraints = critical, CA:true
-keyUsage = critical, cRLSign, keyCertSign, digitalSignature, keyEncipherment
-EOF
-
-# Generate base domain configuration file
-cat <<EOF > req.acme.com.cnf
-[ req ]
-prompt = no
-default_bits = 2048
-default_keyfile = acme.com.key
-encrypt_key = no
-default_md = sha256
-utf8 = yes
-distinguished_name = dn
-req_extensions = v3_req
-
-[ dn ]
-C = ES
-ST = Barcelona
-L = Barcelona
-O = ACME
-OU = ACME Domain
-CN = *.acme.com
-emailAddress = info@acme.com
-
-[ v3_req ]
-subjectKeyIdentifier = hash
-keyUsage = critical, digitalSignature, keyEncipherment
-basicConstraints = critical, CA:FALSE
-extendedKeyUsage = critical, serverAuth, clientAuth
-subjectAltName = @alt_names
-
-[ alt_names ]
-DNS.1 = *.acme.com
-DNS.2 = acme.com
-EOF
-
-# Generate the Domain Key Pair and Certificate Signing Request (CSR):
-# Generate the Domain Key Pair
-# openssl ecparam -genkey -name secp256k1 -out acme.com.key
-
-# Generate the Domain Certificate Signing Request (CSR)
-openssl req -new -out acme.com.csr -config req.acme.com.cnf
-
-# Sign the Domain Certificate Signing Request (CSR) with the Intermediate CA Certificate
-# NOTES:
-# + This will request the Intermediate CA pass phrase
-# + This will request validation of the Domain Certificate Signing Request (CSR)
-# + This will request confirmation to sign the Domain Certificate Signing Request (CSR)
-openssl ca -config sign.ca.cnf -extfile req.acme.com.cnf -extensions v3_req -in acme.com.csr -out acme.com.crt
-
-# Check the Domain Certificate Signing Request (CSR)
-openssl req -in acme.com.csr -noout -text
-
-# Generate the public keys and certificates in PEM format
-# NOTES:
-# + The public keys are used to verify the signature of the certificates
-# + The certificates are used to verify the public keys
-# + This will request the pass phrase of the CA and Intermediate CA
-openssl ec -in ca.key -pubout -out ca.pub
-openssl ec -in intermediate_ca.key -pubout -out intermediate_ca.pub
-openssl ec -in acme.com.key -pubout -out acme.com.pub
-
-# Generate the public keys and certificates in DER format
-openssl ec -in ca.key -pubout -outform DER -out ca.pub.der
-openssl ec -in intermediate_ca.key -pubout -outform DER -out intermediate_ca.pub.der
-openssl ec -in acme.com.key -pubout -outform DER -out acme.com.pub.der
-
-# Generate PEM format certificates
-openssl x509 -in ca.crt -outform PEM -out ca.pem
-openssl x509 -in intermediate_ca.crt -outform PEM -out intermediate_ca.pem
-openssl x509 -in acme.com.crt -outform PEM -out acme.com.pem
-```
 
 ## Building and Running
 
@@ -608,20 +372,33 @@ podman machine start
 
 ### Development environment
 
-start
+#### Prerequisites
+
+Before starting the development environment, ensure you have:
+
+1. **Created the `dev.env` file** with the required environment variables (see [Environment Configuration](#2-environment-configuration))
+2. **Generated the required certificates** for JWT tokens and encryption (see [Generate Required Certificates](#3-generate-required-certificates))
+
+#### Start Development Environment
 
 ```bash
-# create the necessary containers
+# Create and start the necessary containers
 make start-dev-env
 
-# start the development environment
+# Start the development environment with hot reload
 air
 ```
 
-stop
+The `air` command will:
+
+- Watch for code changes and automatically rebuild the application
+- Restart the server when changes are detected
+- Provide hot reload functionality for development
+
+#### Stop Development Environment
 
 ```bash
-# create the necessary containers
+# Stop the development containers
 make stop-dev-env
 ```
 

@@ -343,7 +343,7 @@ func TestUserGet(t *testing.T) {
 		assert.NoError(t, err)
 
 		assert.Equal(t, user["id"], loginAPIResp.UserID.String(), "Expected user ID to be set")
-		assert.Equal(t, "Bearer", loginAPIResp.TokenType, "Expected token type to be Bearer")
+		assert.Equal(t, model.TokenTypeBearer, loginAPIResp.TokenType, "Expected token type to be Bearer")
 		assert.NotEmpty(t, loginAPIResp.AccessToken, "Expected access token to be set")
 		assert.NotEmpty(t, loginAPIResp.RefreshToken, "Expected refresh token to be set")
 

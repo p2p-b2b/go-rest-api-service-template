@@ -390,7 +390,7 @@ func getAdminUserTokens(t *testing.T) model.LoginUserResponse {
 	assert.NotEmpty(t, loginAPIResp.UserID, "Expected user ID to be present")
 
 	assert.Equal(t, loginAPIResp.UserID.String(), userID.String(), "Expected user ID to match")
-	assert.Equal(t, loginAPIResp.TokenType, "Bearer", "Expected token type to be Bearer")
+	assert.Equal(t, loginAPIResp.TokenType, model.TokenTypeBearer, "Expected token type to be Bearer")
 
 	return loginAPIResp
 }

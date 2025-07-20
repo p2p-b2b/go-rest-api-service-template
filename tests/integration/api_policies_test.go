@@ -86,7 +86,275 @@ func createTestRole(t *testing.T, accessToken, namePrefix string) uuid.UUID {
 }
 
 func TestPolicyCreate(t *testing.T) {
-	// Test policy creation
+	// Test policy creation with various resource patterns
+	t.Run("create_policy_resource_patterns", func(t *testing.T) {
+		t.Parallel()
+
+		// 1. Create an administrator user and get the token
+		adminToken := getAdminUserTokens(t)
+		assert.NotEmpty(t, adminToken, "Admin token should not be empty")
+
+		accessTokenHeader := map[string]string{
+			"Authorization": "Bearer " + adminToken.AccessToken,
+		}
+
+		ctx := context.Background()
+
+		// Define test cases based on resources from the SQL migration file
+		testCases := []struct {
+			name            string
+			allowedAction   string
+			allowedResource string
+			description     string
+		}{
+			{
+				name:            "Wildcard all access",
+				allowedAction:   "*",
+				allowedResource: "*",
+				description:     "Allow all actions on all resources",
+			},
+			{
+				name:            "Read only wildcard",
+				allowedAction:   "GET",
+				allowedResource: "*",
+				description:     "Allow all GET actions on all resources",
+			},
+			{
+				name:            "Create only wildcard",
+				allowedAction:   "POST",
+				allowedResource: "*",
+				description:     "Allow all POST actions on all resources",
+			},
+			{
+				name:            "Delete only wildcard",
+				allowedAction:   "DELETE",
+				allowedResource: "*",
+				description:     "Allow all DELETE actions on all resources",
+			},
+			{
+				name:            "Update only wildcard",
+				allowedAction:   "PUT",
+				allowedResource: "*",
+				description:     "Allow all PUT actions on all resources",
+			},
+			{
+				name:            "Partial update only wildcard",
+				allowedAction:   "PATCH",
+				allowedResource: "*",
+				description:     "Allow all PATCH actions on all resources",
+			},
+			{
+				name:            "Login user",
+				allowedAction:   "POST",
+				allowedResource: "/auth/login",
+				description:     "Authenticate user credentials and return JWT access and refresh tokens",
+			},
+			{
+				name:            "Logout user",
+				allowedAction:   "DELETE",
+				allowedResource: "/auth/logout",
+				description:     "Logout user and invalidate session tokens",
+			},
+			{
+				name:            "Refresh access token",
+				allowedAction:   "POST",
+				allowedResource: "/auth/refresh",
+				description:     "Generate new access token using valid refresh token",
+			},
+			{
+				name:            "Register user",
+				allowedAction:   "POST",
+				allowedResource: "/auth/register",
+				description:     "Create a new user account and send email verification",
+			},
+			{
+				name:            "Verify user with dynamic JWT",
+				allowedAction:   "GET",
+				allowedResource: "/auth/verify/019826e3-d118-70cf-a4dc-34ab5815a866",
+				description:     "Verify user account using JWT verification token",
+			},
+			{
+				name:            "List policies",
+				allowedAction:   "GET",
+				allowedResource: "/policies",
+				description:     "Retrieve paginated list of all policies in the system",
+			},
+			{
+				name:            "Create policy",
+				allowedAction:   "POST",
+				allowedResource: "/policies",
+				description:     "Create a new policy with specified permissions",
+			},
+			{
+				name:            "Get policy with UUID",
+				allowedAction:   "GET",
+				allowedResource: "/policies/019826e3-d118-7153-a149-ffa559d5e81c",
+				description:     "Retrieve a specific policy by its unique identifier",
+			},
+			{
+				name:            "Update policy with UUID",
+				allowedAction:   "PUT",
+				allowedResource: "/policies/019826e3-d118-7157-af66-69649c40b171",
+				description:     "Modify an existing policy by its ID",
+			},
+			{
+				name:            "Delete policy with UUID",
+				allowedAction:   "DELETE",
+				allowedResource: "/policies/019826e3-d118-715b-a9fd-b7578292a87e",
+				description:     "Remove a policy permanently from the system",
+			},
+			{
+				name:            "List roles by policy",
+				allowedAction:   "GET",
+				allowedResource: "/policies/019826e3-d118-715f-bf7c-e8e3fe40c458/roles",
+				description:     "Retrieve paginated list of roles associated with a specific policy",
+			},
+			{
+				name:            "Link roles to policy",
+				allowedAction:   "POST",
+				allowedResource: "/policies/019826e3-d118-7163-a9fd-41d1754edd7c/roles",
+				description:     "Associate multiple roles with a specific policy for authorization",
+			},
+			{
+				name:            "List projects",
+				allowedAction:   "GET",
+				allowedResource: "/projects",
+				description:     "Retrieve paginated list of all projects in the system",
+			},
+			{
+				name:            "Create project",
+				allowedAction:   "POST",
+				allowedResource: "/projects",
+				description:     "Create a new project with specified configuration",
+			},
+			{
+				name:            "Get project with UUID",
+				allowedAction:   "GET",
+				allowedResource: "/projects/019826e3-d118-7167-9876-689c5072cd53",
+				description:     "Retrieve a specific project by its unique identifier",
+			},
+			{
+				name:            "Update project with UUID",
+				allowedAction:   "PUT",
+				allowedResource: "/projects/019826e3-d118-716b-a5df-b788c61691aa",
+				description:     "Modify an existing project by its ID",
+			},
+			{
+				name:            "Delete project with UUID",
+				allowedAction:   "DELETE",
+				allowedResource: "/projects/019826e3-d118-716f-afe4-c29840316b62",
+				description:     "Remove a project permanently from the system",
+			},
+			{
+				name:            "List products by project",
+				allowedAction:   "GET",
+				allowedResource: "/projects/019826e3-d118-7173-bad2-4056eb7ed27c/products",
+				description:     "Retrieve paginated list of products for a specific project",
+			},
+			{
+				name:            "Create product in project",
+				allowedAction:   "POST",
+				allowedResource: "/projects/019826e3-d118-7177-8d95-d4db11f0b693/products",
+				description:     "Create a new product with specified configuration",
+			},
+			{
+				name:            "Get product with UUIDs",
+				allowedAction:   "GET",
+				allowedResource: "/projects/019826e3-d118-717a-aedd-0001aa702c2d/products/019826e3-d118-717e-aafa-d97531bc29d7",
+				description:     "Retrieve a specific product by its unique identifier",
+			},
+			{
+				name:            "Update product with UUIDs",
+				allowedAction:   "PUT",
+				allowedResource: "/projects/019826e3-d118-7182-a1ac-b10a135b267e/products/019826e3-d118-7186-9df6-fcbb43ee1738",
+				description:     "Modify an existing product by its ID",
+			},
+			{
+				name:            "Delete product with UUIDs",
+				allowedAction:   "DELETE",
+				allowedResource: "/projects/019826e3-d118-718a-932c-969b821f13e1/products/019826e3-d118-718e-9d02-8cd41fed1d8e",
+				description:     "Remove a product permanently from the system",
+			},
+			{
+				name:            "List users",
+				allowedAction:   "GET",
+				allowedResource: "/users",
+				description:     "Retrieve paginated list of all users in the system",
+			},
+			{
+				name:            "Create user",
+				allowedAction:   "POST",
+				allowedResource: "/users",
+				description:     "Create a new user account with specified configuration",
+			},
+			{
+				name:            "Get user with UUID",
+				allowedAction:   "GET",
+				allowedResource: "/users/019826e3-d118-7192-8dc8-dffca8d700f8",
+				description:     "Retrieve a specific user account by its unique identifier",
+			},
+			{
+				name:            "Update user with UUID",
+				allowedAction:   "PUT",
+				allowedResource: "/users/019826e3-d118-7196-866d-d412bc57f632",
+				description:     "Modify an existing user account by its ID",
+			},
+			{
+				name:            "Get user authorization",
+				allowedAction:   "GET",
+				allowedResource: "/users/019826e3-d118-719a-ba77-a2e8465a95d6/authz",
+				description:     "Retrieve user authorization permissions and roles for access control",
+			},
+		}
+
+		// Track policy IDs for cleanup
+		var policyIDs []uuid.UUID
+
+		// Run each test case
+		for _, tc := range testCases {
+			t.Run(tc.name, func(t *testing.T) {
+				// Generate unique policy ID for this test case
+				policyID := uuid.Must(uuid.NewV7())
+				policyIDs = append(policyIDs, policyID)
+
+				policy := map[string]any{
+					"id":               policyID.String(),
+					"name":             "test_" + strings.ReplaceAll(tc.name, " ", "_") + "_" + policyID.String(),
+					"description":      tc.description + " - " + policyID.String(),
+					"allowed_action":   tc.allowedAction,
+					"allowed_resource": tc.allowedResource,
+				}
+
+				response, err := sendHTTPRequest(t, ctx, policyCreateEndpoint, policy, accessTokenHeader)
+				assert.NoError(t, err, "Error sending request for %s: %v", tc.name, err)
+				defer response.Body.Close()
+
+				assert.Equal(t, http.StatusCreated, response.StatusCode,
+					"Expected status code 201 Created for %s. Got %d. Message: %s",
+					tc.name, response.StatusCode, readResponseBody(t, response))
+
+				apiResp, err := parserResponseBody[model.HTTPMessage](t, response)
+				assert.NoError(t, err, "Failed to parse response body for %s", tc.name)
+
+				assert.Equal(t, model.PoliciesPolicyCreatedSuccessfully, apiResp.Message,
+					"Unexpected response message for %s", tc.name)
+				assert.Equal(t, policyCreateEndpoint.method, apiResp.Method,
+					"Expected method to be set for %s", tc.name)
+				assert.Equal(t, policyCreateEndpoint.Path(), apiResp.Path,
+					"Expected path to be set for %s", tc.name)
+			})
+		}
+
+		// Cleanup all created policies
+		t.Cleanup(func() {
+			for _, policyID := range policyIDs {
+				deletePolicyByIDFromDB(t, policyID)
+			}
+			deleteUserByIDFromDB(t, adminToken.UserID)
+		})
+	})
+
+	// Test policy creation - original simple test
 	t.Run("create_policy", func(t *testing.T) {
 		t.Parallel()
 
