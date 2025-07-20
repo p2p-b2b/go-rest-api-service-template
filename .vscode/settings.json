@@ -46,6 +46,7 @@
     "rego",
     "removeit",
     "RESTAPI",
+    "rpol",
     "sdktrace",
     "semconv",
     "SQLSTATE",

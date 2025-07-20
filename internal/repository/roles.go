@@ -824,34 +824,26 @@ func (ref *RolesRepository) LinkUsers(ctx context.Context, input *model.LinkUser
 		return o11y.RecordError(ctx, span, err, ref.metrics.repositoryCalls, metricCommonAttributes, "repository.Roles.LinkUsers")
 	}
 
-	var roleUsers bytes.Buffer
-	for i, user := range input.UserIDs {
-		_, err := roleUsers.WriteString(fmt.Sprintf("('%s', '%s')", input.RoleID, user))
-		if err != nil {
-			return o11y.RecordError(ctx, span, err, ref.metrics.repositoryCalls, metricCommonAttributes, "repository.Roles.LinkUsers")
-		}
-
-		if i != len(input.UserIDs)-1 {
-			_, err := roleUsers.WriteString(", ")
-			if err != nil {
-				return o11y.RecordError(ctx, span, err, ref.metrics.repositoryCalls, metricCommonAttributes, "repository.Roles.LinkUsers")
-			}
-		}
+	// Prepare arrays for UNNEST
+	roleIDs := make([]string, len(input.UserIDs))
+	userIDs := make([]string, len(input.UserIDs))
+	for i, userID := range input.UserIDs {
+		roleIDs[i] = input.RoleID.String() // Ensure RoleID is converted to string (e.g., if it's a UUID)
+		userIDs[i] = userID.String()       // Ensure userID is converted to string (e.g., if it's a UUID)
 	}
 
-	queryString := fmt.Sprintf(`
+	query := `
         -- insert the new users
         INSERT INTO users_roles (roles_id, users_id)
-        VALUES %s
+        SELECT * FROM UNNEST($1::uuid[], $2::uuid[]) -- Use appropriate type casting for your UUIDs
         ON CONFLICT (roles_id, users_id)
         DO UPDATE SET updated_at = NOW();
-    `,
-		roleUsers.String(),
-	)
+    `
 
-	slog.Debug("repository.Roles.LinkUsers", "query", prettyPrint(queryString))
+	slog.Debug("repository.Roles.LinkUsers", "query", prettyPrint(query), "roleIDs", roleIDs, "userIDs", userIDs)
 
-	_, err := ref.db.Exec(ctx, queryString)
+	// Pass the arrays as parameters
+	_, err := ref.db.Exec(ctx, query, roleIDs, userIDs)
 	if err != nil {
 		return o11y.RecordError(ctx, span, err, ref.metrics.repositoryCalls, metricCommonAttributes, "repository.Roles.LinkUsers", "failed to link users")
 	}
@@ -876,32 +868,24 @@ func (ref *RolesRepository) UnlinkUsers(ctx context.Context, input *model.Unlink
 		return o11y.RecordError(ctx, span, err, ref.metrics.repositoryCalls, metricCommonAttributes, "repository.Roles.UnlinkUsers")
 	}
 
-	var usersIn bytes.Buffer
-	for i, user := range input.UserIDs {
-		_, err := usersIn.WriteString(fmt.Sprintf("'%s'", user))
-		if err != nil {
-			return o11y.RecordError(ctx, span, err, ref.metrics.repositoryCalls, metricCommonAttributes, "repository.Roles.UnlinkUsers")
-		}
-
-		if i != len(input.UserIDs)-1 {
-			_, err := usersIn.WriteString(", ")
-			if err != nil {
-				return o11y.RecordError(ctx, span, err, ref.metrics.repositoryCalls, metricCommonAttributes, "repository.Roles.UnlinkUsers")
-			}
-		}
+	// Prepare the user IDs for the parameterized query.
+	// Assuming UserIDs are UUIDs, convert them to string slices.
+	userIDs := make([]string, len(input.UserIDs))
+	for i, userID := range input.UserIDs {
+		userIDs[i] = userID.String() // Ensure your UUID type has a .String() method
 	}
 
-	queryString := fmt.Sprintf(`
+	// Use a parameterized query with ANY() for the IN clause.
+	query := `
         DELETE FROM users_roles
-        WHERE roles_id = '%s' AND users_id IN (%s);
-    `,
-		input.RoleID,
-		usersIn.String(),
-	)
+        WHERE roles_id = $1 AND users_id IN (SELECT unnest($2::uuid[]));
+    `
 
-	slog.Debug("repository.Roles.UnlinkUsers", "query", prettyPrint(queryString))
+	slog.Debug("repository.Roles.UnlinkUsers", "query", prettyPrint(query), "roleID", input.RoleID.String(), "userIDs", userIDs)
 
-	_, err := ref.db.Exec(ctx, queryString)
+	// Execute the query with parameters.
+	// Ensure input.RoleID is converted to its string representation if it's a UUID type.
+	_, err := ref.db.Exec(ctx, query, input.RoleID.String(), userIDs)
 	if err != nil {
 		return o11y.RecordError(ctx, span, err, ref.metrics.repositoryCalls, metricCommonAttributes, "repository.Roles.UnlinkUsers", "failed to unlink users")
 	}
@@ -926,34 +910,26 @@ func (ref *RolesRepository) LinkPolicies(ctx context.Context, input *model.LinkP
 		return o11y.RecordError(ctx, span, err, ref.metrics.repositoryCalls, metricCommonAttributes, "repository.Roles.LinkPolicies")
 	}
 
-	var rolePolicies bytes.Buffer
-	for i, permission := range input.PolicyIDs {
-		_, err := rolePolicies.WriteString(fmt.Sprintf("('%s', '%s')", input.RoleID, permission))
-		if err != nil {
-			return o11y.RecordError(ctx, span, err, ref.metrics.repositoryCalls, metricCommonAttributes, "repository.Roles.LinkPolicies")
-		}
-
-		if i != len(input.PolicyIDs)-1 {
-			_, err := rolePolicies.WriteString(", ")
-			if err != nil {
-				return o11y.RecordError(ctx, span, err, ref.metrics.repositoryCalls, metricCommonAttributes, "repository.Roles.LinkPolicies")
-			}
-		}
+	// Prepare arrays for UNNEST
+	roleIDs := make([]string, len(input.PolicyIDs))
+	policyIDs := make([]string, len(input.PolicyIDs))
+	for i, policyID := range input.PolicyIDs {
+		roleIDs[i] = input.RoleID.String() // Ensure RoleID is converted to string (e.g., if it's a UUID)
+		policyIDs[i] = policyID.String()   // Ensure PolicyID is converted to string (e.g., if it's a UUID)
 	}
 
-	queryString := fmt.Sprintf(`
+	query := `
         -- insert the new policies
         INSERT INTO roles_policies (roles_id, policies_id)
-        VALUES %s
+        SELECT * FROM UNNEST($1::uuid[], $2::uuid[]) -- Use appropriate type casting for your UUIDs
         ON CONFLICT (roles_id, policies_id)
         DO UPDATE SET updated_at = NOW();
-    `,
-		rolePolicies.String(),
-	)
+    `
 
-	slog.Debug("repository.Roles.LinkPolicies", "query", prettyPrint(queryString))
+	slog.Debug("repository.Roles.LinkPolicies", "query", prettyPrint(query), "roleIDs", roleIDs, "policyIDs", policyIDs)
 
-	_, err := ref.db.Exec(ctx, queryString)
+	// Pass the arrays as parameters
+	_, err := ref.db.Exec(ctx, query, roleIDs, policyIDs)
 	if err != nil {
 		return o11y.RecordError(ctx, span, err, ref.metrics.repositoryCalls, metricCommonAttributes, "repository.Roles.LinkPolicies", "failed to link policies")
 	}
@@ -978,31 +954,24 @@ func (ref *RolesRepository) UnlinkPolicies(ctx context.Context, input *model.Unl
 		return o11y.RecordError(ctx, span, err, ref.metrics.repositoryCalls, metricCommonAttributes, "repository.Roles.UnlinkPolicies")
 	}
 
-	var policiesIn bytes.Buffer
-	for i, permission := range input.PolicyIDs {
-		_, err := policiesIn.WriteString(fmt.Sprintf("'%s'", permission))
-		if err != nil {
-			return o11y.RecordError(ctx, span, err, ref.metrics.repositoryCalls, metricCommonAttributes, "repository.Roles.UnlinkPolicies")
-		}
-
-		if i != len(input.PolicyIDs)-1 {
-			_, err := policiesIn.WriteString(", ")
-			if err != nil {
-				return o11y.RecordError(ctx, span, err, ref.metrics.repositoryCalls, metricCommonAttributes, "repository.Roles.UnlinkPolicies")
-			}
-		}
+	// Prepare the policy IDs for the parameterized query.
+	// Assuming PolicyIDs are UUIDs, convert them to string slices.
+	policyIDs := make([]string, len(input.PolicyIDs))
+	for i, policyID := range input.PolicyIDs {
+		policyIDs[i] = policyID.String()
 	}
 
-	queryString := fmt.Sprintf(`
+	// Use parameterized query with ANY() for the IN clause.
+	query := `
         DELETE FROM roles_policies
-        WHERE roles_id = '%s' AND policies_id IN (%s);
-    `,
-		input.RoleID,
-		policiesIn.String(),
-	)
+        WHERE roles_id = $1  AND policies_id IN (SELECT unnest($2::uuid[]));
+    `
 
-	slog.Debug("repository.Roles.UnlinkPolicies", "query", prettyPrint(queryString))
-	_, err := ref.db.Exec(ctx, queryString)
+	slog.Debug("repository.Roles.UnlinkPolicies", "query", prettyPrint(query), "roleID", input.RoleID.String(), "policyIDs", policyIDs)
+
+	// Execute the query with parameters.
+	// Ensure input.RoleID is converted to its string representation if it's a UUID type.
+	_, err := ref.db.Exec(ctx, query, input.RoleID.String(), policyIDs)
 	if err != nil {
 		return o11y.RecordError(ctx, span, err, ref.metrics.repositoryCalls, metricCommonAttributes, "repository.Roles.UnlinkPolicies", "failed to unlink policies")
 	}

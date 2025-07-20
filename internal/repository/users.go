@@ -778,37 +778,25 @@ func (ref *UsersRepository) LinkRoles(ctx context.Context, input *model.LinkRole
 	if err := input.Validate(); err != nil {
 		return o11y.RecordError(ctx, span, err, ref.metrics.repositoryCalls, metricCommonAttributes, "repository.Users.LinkRoles")
 	}
-
-	var userRoles bytes.Buffer
+	// Prepare arrays for UNNEST
+	userIDs := make([]string, len(input.RoleIDs))
+	roleIDs := make([]string, len(input.RoleIDs))
 	for i, roleID := range input.RoleIDs {
-		_, err := userRoles.WriteString(fmt.Sprintf("('%s', '%s')", input.UserID, roleID))
-		if err != nil {
-			slog.Error("repository.Users.LinkRoles", "error", err)
-			return err
-		}
-
-		if i < len(input.RoleIDs)-1 {
-			_, err := userRoles.WriteString(", ")
-			if err != nil {
-				slog.Error("repository.Users.LinkRoles", "error", err)
-				return err
-			}
-		}
+		userIDs[i] = input.UserID.String()
+		roleIDs[i] = roleID.String() // Assuming roleID is a UUID or similar that needs String()
 	}
 
-	query2 := fmt.Sprintf(`
+	query := `
         -- insert the new roles
         INSERT INTO users_roles (users_id, roles_id)
-        VALUES %s
+        SELECT * FROM UNNEST($1::uuid[], $2::uuid[]) -- Use appropriate type casting for your UUIDs
         ON CONFLICT (users_id, roles_id)
         DO UPDATE SET updated_at = NOW();
-    `,
-		userRoles.String(),
-	)
+    `
 
-	slog.Debug("repository.Users.LinkRoles", "query", prettyPrint(query2))
+	slog.Debug("repository.Users.LinkRoles", "query", prettyPrint(query), "userIDs", userIDs, "roleIDs", roleIDs)
 
-	_, err := ref.db.Exec(ctx, query2)
+	_, err := ref.db.Exec(ctx, query, userIDs, roleIDs)
 	if err != nil {
 		return o11y.RecordError(ctx, span, err, ref.metrics.repositoryCalls, metricCommonAttributes, "repository.Users.LinkRoles", "failed to link roles")
 	}
@@ -834,34 +822,22 @@ func (ref *UsersRepository) UnLinkRoles(ctx context.Context, input *model.UnLink
 		return o11y.RecordError(ctx, span, err, ref.metrics.repositoryCalls, metricCommonAttributes, "repository.Users.UnLinkRoles")
 	}
 
-	var rolesIn bytes.Buffer
+	// Convert input.RoleIDs to a slice of strings (or UUIDs if that's their underlying type)
+	// to pass as a single parameter to the IN clause.
+	roleIDs := make([]string, len(input.RoleIDs))
 	for i, roleID := range input.RoleIDs {
-		_, err := rolesIn.WriteString(fmt.Sprintf("'%s'", roleID))
-		if err != nil {
-			slog.Error("repository.Users.UnLinkRoles", "error", err)
-			return err
-		}
-
-		if i < len(input.RoleIDs)-1 {
-			_, err := rolesIn.WriteString(", ")
-			if err != nil {
-				slog.Error("repository.Users.UnLinkRoles", "error", err)
-				return err
-			}
-		}
+		roleIDs[i] = roleID.String()
 	}
 
-	queryString := fmt.Sprintf(`
+	queryString := `
         DELETE FROM users_roles
-        WHERE users_id = '%s' AND roles_id IN (%s);
-    `,
-		input.UserID,
-		rolesIn.String(),
-	)
+        WHERE users_id = $1 AND roles_id IN (SELECT unnest($2::uuid[]));
+    `
 
-	slog.Debug("repository.Users.UnLinkRoles", "query", prettyPrint(queryString))
+	slog.Debug("repository.Users.UnLinkRoles", "query", prettyPrint(queryString), "userID", input.UserID.String(), "roleIDs", roleIDs)
 
-	_, err := ref.db.Exec(ctx, queryString)
+	// Pass input.UserID and the slice of roleIDs as parameters
+	_, err := ref.db.Exec(ctx, queryString, input.UserID.String(), roleIDs)
 	if err != nil {
 		return o11y.RecordError(ctx, span, err, ref.metrics.repositoryCalls, metricCommonAttributes, "repository.Users.UnLinkRoles", "failed to unlink roles")
 	}
@@ -925,11 +901,11 @@ func (ref *UsersRepository) SelectAuthz(ctx context.Context, userID uuid.UUID) (
 
 	var item map[string]any
 	var jsonString string
+	hasResults := false
 
 	for rows.Next() {
-		if err := rows.Scan(
-			&jsonString,
-		); err != nil {
+		hasResults = true
+		if err := rows.Scan(&jsonString); err != nil {
 			return nil, o11y.RecordError(ctx, span, err, ref.metrics.repositoryCalls, metricCommonAttributes, "repository.Users.SelectAuthz", "failed to scan user roles")
 		}
 	}
@@ -939,7 +915,7 @@ func (ref *UsersRepository) SelectAuthz(ctx context.Context, userID uuid.UUID) (
 	}
 
 	// if the user does not have any roles and permissions, return an empty map
-	if len(jsonString) == 0 {
+	if !hasResults || len(jsonString) == 0 {
 		slog.Warn("repository.Users.SelectAuthz", "what", "user does not have any roles and permissions")
 		return make(map[string]any), nil
 	}
