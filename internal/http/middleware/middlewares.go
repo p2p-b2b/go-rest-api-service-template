@@ -239,6 +239,12 @@ func CheckAccessToken(validator map[string]jwtvalidator.Validator) Middleware {
 				return
 			}
 
+			// avoid panic if authHeader is too short
+			if !strings.HasPrefix(authHeader, "Bearer ") {
+				respond.WriteJSONMessage(w, r, http.StatusUnauthorized, "Authorization header must start with Bearer ")
+				return
+			}
+
 			// Extract Bearer from authHeader
 			token := authHeader[len("Bearer "):]
 			if token == "" {
@@ -303,6 +309,12 @@ func CheckRefreshToken(validator map[string]jwtvalidator.Validator) Middleware {
 			authHeader := r.Header.Get("Authorization")
 			if authHeader == "" {
 				respond.WriteJSONMessage(w, r, http.StatusUnauthorized, "Missing header: Authorization")
+				return
+			}
+
+			// avoid panic if authHeader is too short
+			if !strings.HasPrefix(authHeader, "Bearer ") {
+				respond.WriteJSONMessage(w, r, http.StatusUnauthorized, "Authorization header must start with Bearer ")
 				return
 			}
 
