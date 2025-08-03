@@ -93,8 +93,8 @@ spec:
         - mountPath: /mnt/config/tempo-local-config.yaml:Z
           name: tempo-config
     - name: prometheus
-      # image: docker.io/prom/prometheus:latest
-      image: docker.io/prom/prometheus:v3.4.2
+      # image: docker.io/prom/prometheus:v3.5.0
+      image: docker.io/prom/prometheus:latest
       args:
         - "--config.file=/etc/prometheus/prometheus.yml"
         - "--storage.tsdb.path=/prometheus"
