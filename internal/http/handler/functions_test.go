@@ -7,6 +7,7 @@ import (
 	"github.com/p2p-b2b/go-rest-api-service-template/internal/model"
 	"github.com/p2p-b2b/qfv"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestParseJWTQueryParams(t *testing.T) {
@@ -53,9 +54,7 @@ func TestParseJWTQueryParams(t *testing.T) {
 
 func TestParseUUIDQueryParams(t *testing.T) {
 	testID, err := uuid.NewV7()
-	if err != nil {
-		t.Fatalf("Failed to generate UUID: %v", err)
-	}
+	require.NoError(t, err)
 
 	tests := []struct {
 		input    string
@@ -136,10 +135,7 @@ func TestParseFieldsQueryParams(t *testing.T) {
 
 func TestParseNextTokenQueryParams(t *testing.T) {
 	testID, err := uuid.NewV7()
-	if err != nil {
-		t.Fatalf("Failed to generate UUID: %v", err)
-	}
-
+	require.NoError(t, err)
 	validToken := model.EncodeToken(testID, 10, model.TokenDirectionNext)
 
 	tests := []struct {
@@ -187,10 +183,7 @@ func TestParseNextTokenQueryParams(t *testing.T) {
 
 func TestParsePrevTokenQueryParams(t *testing.T) {
 	testID, err := uuid.NewV7()
-	if err != nil {
-		t.Fatalf("Failed to generate UUID: %v", err)
-	}
-
+	require.NoError(t, err)
 	validPrevToken := model.EncodeToken(testID, 10, model.TokenDirectionPrev)
 	validNextToken := model.EncodeToken(testID, 10, model.TokenDirectionNext)
 
@@ -248,31 +241,68 @@ func TestParsePrevTokenQueryParams(t *testing.T) {
 
 func TestParseLimitQueryParams(t *testing.T) {
 	tests := []struct {
+		name     string
 		limit    string
 		expected int
 		err      error
 	}{
-		{"", model.PaginatorDefaultLimit, nil},
-		{"invalid", 0, &model.InvalidLimitError{MinLimit: model.PaginatorMinLimit, MaxLimit: model.PaginatorMaxLimit}},
-		{"0", model.PaginatorDefaultLimit, nil},
-		{"5", 5, nil},
-		{"-1", 0, &model.InvalidLimitError{MinLimit: model.PaginatorMinLimit, MaxLimit: model.PaginatorMaxLimit}},
-		{"1000", model.PaginatorMaxLimit, nil},
+		{
+			name:     "empty string",
+			limit:    "",
+			expected: model.PaginatorDefaultLimit,
+			err:      nil,
+		},
+		{
+			name:     "invalid string",
+			limit:    "invalid",
+			expected: 0,
+			err:      &model.InvalidLimitError{MinLimit: model.PaginatorMinLimit, MaxLimit: model.PaginatorMaxLimit},
+		},
+		{
+			name:     "zero returns default",
+			limit:    "0",
+			expected: model.PaginatorDefaultLimit,
+			err:      nil,
+		},
+		{
+			name:     "valid limit",
+			limit:    "5",
+			expected: 5,
+			err:      nil,
+		},
+		{
+			name:     "negative limit",
+			limit:    "-1",
+			expected: 0,
+			err:      &model.InvalidLimitError{MinLimit: model.PaginatorMinLimit, MaxLimit: model.PaginatorMaxLimit},
+		},
+		{
+			name:     "max limit",
+			limit:    "1000",
+			expected: model.PaginatorMaxLimit,
+			err:      nil,
+		},
 	}
 
 	for _, test := range tests {
-		result, err := parseLimitQueryParams(test.limit)
-		assert.Equal(t, test.expected, result)
-		assert.Equal(t, test.err, err)
+		t.Run(test.name, func(t *testing.T) {
+			result, err := parseLimitQueryParams(test.limit)
+			assert.Equal(t, test.expected, result)
+
+			if test.err == nil {
+				assert.NoError(t, err)
+			} else {
+				assert.Error(t, err)
+				assert.IsType(t, test.err, err)
+			}
+		})
 	}
 }
 
 func TestParseListQueryParams(t *testing.T) {
 	t.Run("TestParseListQueryParams", func(t *testing.T) {
 		testID, err := uuid.NewV7()
-		if err != nil {
-			t.Fatalf("Failed to generate UUID: %v", err)
-		}
+		require.NoError(t, err)
 
 		params := map[string]any{
 			"sort":      "name ASC",

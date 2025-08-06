@@ -165,10 +165,6 @@ func parseUUIDQueryParams(input string) (uuid.UUID, error) {
 		return uuid.Nil, &model.InvalidUUIDError{UUID: input, Message: "input is nil"}
 	}
 
-	if id.Version() != uuid.Version(7) {
-		return uuid.Nil, &model.InvalidUUIDError{UUID: input, Message: "input is not a valid UUIDv7"}
-	}
-
 	return id, nil
 }
 
@@ -252,6 +248,11 @@ func parseLimitQueryParams(limit string) (int, error) {
 	// check if this is a valid integer
 	if limitInt, err = strconv.Atoi(limit); err != nil {
 		return 0, &model.InvalidLimitError{MinLimit: model.PaginatorMinLimit, MaxLimit: model.PaginatorMaxLimit}
+	}
+
+	// Treat 0 as "use default limit"
+	if limitInt == 0 {
+		return model.PaginatorDefaultLimit, nil
 	}
 
 	if limitInt < model.PaginatorMinLimit || limitInt > model.PaginatorMaxLimit {

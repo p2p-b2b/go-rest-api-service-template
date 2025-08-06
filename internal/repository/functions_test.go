@@ -286,6 +286,22 @@ func TestPrettyPrint(t *testing.T) {
 			args:     []any{nil},
 			expected: "SELECT * FROM users WHERE name = NULL",
 		},
+		{
+			name: "Query with nil args slice",
+			query: `SELECT *
+                  FROM users
+                  WHERE name = $1`,
+			args:     nil,
+			expected: "SELECT * FROM users WHERE name = $1",
+		},
+		{
+			name: "Query with empty args slice",
+			query: `SELECT *
+                  FROM users
+                  WHERE name = $1`,
+			args:     []any{},
+			expected: "SELECT * FROM users WHERE name = $1",
+		},
 	}
 
 	for _, tt := range tests {

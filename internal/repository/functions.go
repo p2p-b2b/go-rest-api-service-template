@@ -37,16 +37,11 @@ func prettyPrint(query string, arg ...any) string {
 	out = ws.ReplaceAllString(out, " ")
 	out = strings.TrimSpace(out)
 
-	if len(arg) > 0 && arg[0] != nil {
+	if len(arg) > 0 {
 		// Replace the pattern $1,$2,..., $n with the corresponding arguments
 		re := regexp.MustCompile(`\$\d{1,2}`)
 
 		for _, a := range arg {
-
-			if arg == nil {
-				continue
-			}
-
 			var placeholder string
 
 			loc := re.FindStringIndex(out)
