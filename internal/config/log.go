@@ -1,15 +1,9 @@
 package config
 
 import (
-	"errors"
 	"os"
 	"slices"
 	"strings"
-)
-
-var (
-	ErrLogInvalidLevel  = errors.New("invalid log level. Must be one of [" + ValidLogLevel + "]")
-	ErrLogInvalidFormat = errors.New("invalid log format. Must be one of [" + ValidLogFormat + "]")
 )
 
 const (
@@ -58,11 +52,19 @@ func (c *LogConfig) ParseEnvVars() {
 // Validate validates the logger configuration values
 func (c *LogConfig) Validate() error {
 	if !slices.Contains(strings.Split(ValidLogLevel, "|"), c.Level.Value) {
-		return ErrLogInvalidLevel
+		return &InvalidConfigurationError{
+			Field:   "log.level",
+			Value:   c.Level.Value,
+			Message: "Log level must be one of [" + ValidLogLevel + "]",
+		}
 	}
 
 	if !slices.Contains(strings.Split(ValidLogFormat, "|"), c.Format.Value) {
-		return ErrLogInvalidFormat
+		return &InvalidConfigurationError{
+			Field:   "log.format",
+			Value:   c.Format.Value,
+			Message: "Log format must be one of [" + ValidLogFormat + "]",
+		}
 	}
 
 	return nil

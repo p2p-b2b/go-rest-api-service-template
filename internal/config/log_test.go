@@ -1,6 +1,7 @@
 package config
 
 import (
+	"errors"
 	"os"
 	"testing"
 )
@@ -58,14 +59,17 @@ func TestValidate_Log(t *testing.T) {
 
 	// Test invalid log level
 	config.Level.Value = "invalid-level"
-	if err := config.Validate(); err != ErrLogInvalidLevel {
-		t.Errorf("expected error %v, got %v", ErrLogInvalidLevel, err)
+	err := config.Validate()
+	var invalidErr *InvalidConfigurationError
+	if err == nil || !errors.As(err, &invalidErr) || invalidErr.Field != "log.level" {
+		t.Errorf("Expected InvalidConfigurationError with field 'log.level', got %v", err)
 	}
 
 	// Test invalid log format
 	config.Level.Value = "info"
 	config.Format.Value = "invalid-format"
-	if err := config.Validate(); err != ErrLogInvalidFormat {
-		t.Errorf("expected error %v, got %v", ErrLogInvalidFormat, err)
+	err = config.Validate()
+	if err == nil || !errors.As(err, &invalidErr) || invalidErr.Field != "log.format" {
+		t.Errorf("Expected InvalidConfigurationError with field 'log.format', got %v", err)
 	}
 }

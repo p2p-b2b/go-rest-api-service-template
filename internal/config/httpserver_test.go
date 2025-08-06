@@ -1,6 +1,7 @@
 package config
 
 import (
+	"errors"
 	"os"
 	"testing"
 	"time"
@@ -112,24 +113,25 @@ func TestValidate_httpserver(t *testing.T) {
 	// Test invalid Address
 	config.Address.Value = ""
 	err = config.Validate()
-	if err != ErrHTTPServerInvalidAddress {
-		t.Errorf("Expected error %v, got %v", ErrHTTPServerInvalidAddress, err)
+	var invalidErr *InvalidConfigurationError
+	if err == nil || !errors.As(err, &invalidErr) || invalidErr.Field != "http.server.address" {
+		t.Errorf("Expected InvalidConfigurationError with field 'http.server.address', got %v", err)
 	}
 	config.Address.Value = DefaultHTTPServerAddress
 
 	// Test invalid Port
 	config.Port.Value = -1
 	err = config.Validate()
-	if err != ErrHTTPServerInvalidPort {
-		t.Errorf("Expected error %v, got %v", ErrHTTPServerInvalidPort, err)
+	if err == nil || !errors.As(err, &invalidErr) || invalidErr.Field != "http.server.port" {
+		t.Errorf("Expected InvalidConfigurationError with field 'http.server.port', got %v", err)
 	}
 	config.Port.Value = DefaultHTTPServerPort
 
 	// Test invalid ShutdownTimeout
 	config.ShutdownTimeout.Value = 0
 	err = config.Validate()
-	if err != ErrHTTPServerInvalidShutdownTimeout {
-		t.Errorf("Expected error %v, got %v", ErrHTTPServerInvalidShutdownTimeout, err)
+	if err == nil || !errors.As(err, &invalidErr) || invalidErr.Field != "http.server.shutdown.timeout" {
+		t.Errorf("Expected InvalidConfigurationError with field 'http.server.shutdown.timeout', got %v", err)
 	}
 	config.ShutdownTimeout.Value = DefaultHTTPServerShutdownTimeout
 
@@ -137,22 +139,22 @@ func TestValidate_httpserver(t *testing.T) {
 	config.CorsEnabled.Value = true
 	config.CorsAllowedOrigins.Value = ""
 	err = config.Validate()
-	if err != ErrHTTPServerInvalidCorsAllowedOrigins {
-		t.Errorf("Expected error %v, got %v", ErrHTTPServerInvalidCorsAllowedOrigins, err)
+	if err == nil || !errors.As(err, &invalidErr) || invalidErr.Field != "http.server.cors.allowed.origins" {
+		t.Errorf("Expected InvalidConfigurationError with field 'http.server.cors.allowed.origins', got %v", err)
 	}
 	config.CorsAllowedOrigins.Value = DefaultHTTPServerCorsAllowedOrigins
 
 	config.CorsAllowedMethods.Value = "INVALID"
 	err = config.Validate()
-	if err != ErrHTTPServerInvalidCorsAllowedMethods {
-		t.Errorf("Expected error %v, got %v", ErrHTTPServerInvalidCorsAllowedMethods, err)
+	if err == nil || !errors.As(err, &invalidErr) || invalidErr.Field != "http.server.cors.allowed.methods" {
+		t.Errorf("Expected InvalidConfigurationError with field 'http.server.cors.allowed.methods', got %v", err)
 	}
 	config.CorsAllowedMethods.Value = DefaultHTTPServerCorsAllowedMethods
 
 	config.CorsAllowedHeaders.Value = "A"
 	err = config.Validate()
-	if err != ErrHTTPServerInvalidCorsAllowedHeaders {
-		t.Errorf("Expected error %v, got %v", ErrHTTPServerInvalidCorsAllowedHeaders, err)
+	if err == nil || !errors.As(err, &invalidErr) || invalidErr.Field != "http.server.cors.allowed.headers" {
+		t.Errorf("Expected InvalidConfigurationError with field 'http.server.cors.allowed.headers', got %v", err)
 	}
 	config.CorsAllowedHeaders.Value = DefaultHTTPServerCorsAllowedHeaders
 }

@@ -1,19 +1,11 @@
 package config
 
 import (
-	"errors"
+	"fmt"
 	"slices"
 	"strconv"
 	"strings"
 	"time"
-)
-
-var (
-	ErrCacheInvalidKind           = errors.New("invalid cache kind, must be one of [" + ValidCacheKind + "]")
-	ErrCacheInvalidAddress        = errors.New("invalid cache address. Must be in the format host:port and port must be between [" + strconv.Itoa(ValidCacheMinPort) + "] and [" + strconv.Itoa(ValidCacheMaxPort) + "]")
-	ErrCacheInvalidDatabaseNumber = errors.New("invalid cache database number. Must be between [" + strconv.Itoa(ValidCacheMinDatabaseNumber) + "] and [" + strconv.Itoa(ValidCacheMaxDatabaseNumber) + "]")
-	ErrCacheInvalidQueryTimeout   = errors.New("invalid cache query timeout. Must be between [" + ValidCacheMinQueryTimeout.String() + "] and [" + ValidCacheMaxQueryTimeout.String() + "]")
-	ErrCacheInvalidEntitiesTTL    = errors.New("invalid cache entities TTL. Must be between [" + ValidCacheMinEntitiesTTL.String() + "] and [" + ValidCacheMaxEntitiesTTL.String() + "]")
 )
 
 var DefaultCacheAddress = SliceStringVar{"localhost:6379"}
@@ -75,11 +67,19 @@ func (c *CacheConfig) ParseEnvVars() {
 
 func (c *CacheConfig) Validate() error {
 	if !slices.Contains(strings.Split(ValidCacheKind, "|"), c.Kind.Value) {
-		return ErrCacheInvalidKind
+		return &InvalidConfigurationError{
+			Field:   "cache.kind",
+			Value:   c.Kind.Value,
+			Message: "invalid cache kind, must be one of [" + ValidCacheKind + "]",
+		}
 	}
 
 	if len(c.Addresses.Value) == 0 {
-		return ErrCacheInvalidAddress
+		return &InvalidConfigurationError{
+			Field:   "cache.addresses",
+			Value:   c.Addresses.Value.String(),
+			Message: "invalid cache addresses, must be a list of host:port",
+		}
 	}
 
 	if len(c.Addresses.Value) > 0 {
@@ -87,34 +87,62 @@ func (c *CacheConfig) Validate() error {
 			parts := strings.Split(addr, ":")
 
 			if len(parts) != 2 {
-				return ErrCacheInvalidAddress
+				return &InvalidConfigurationError{
+					Field:   "cache.addresses",
+					Value:   c.Addresses.Value.String(),
+					Message: "invalid cache address, must be in the format host:port",
+				}
 			}
 
 			port, err := strconv.Atoi(parts[1])
 			if err != nil {
-				return ErrCacheInvalidAddress
+				return &InvalidConfigurationError{
+					Field:   "cache.addresses",
+					Value:   c.Addresses.Value.String(),
+					Message: "invalid cache address port, must be a number",
+				}
 			}
 
 			if port < ValidCacheMinPort || port > ValidCacheMaxPort {
-				return ErrCacheInvalidAddress
+				return &InvalidConfigurationError{
+					Field:   "cache.addresses",
+					Value:   c.Addresses.Value.String(),
+					Message: fmt.Sprintf("invalid cache address port, must be between %d and %d", ValidCacheMinPort, ValidCacheMaxPort),
+				}
 			}
 
 			if len(parts[0]) < 3 {
-				return ErrCacheInvalidAddress
+				return &InvalidConfigurationError{
+					Field:   "cache.addresses",
+					Value:   c.Addresses.Value.String(),
+					Message: "invalid cache address, must be at least 3 characters",
+				}
 			}
 		}
 	}
 
 	if c.DB.Value < ValidCacheMinDatabaseNumber || c.DB.Value > ValidCacheMaxDatabaseNumber {
-		return ErrCacheInvalidDatabaseNumber
+		return &InvalidConfigurationError{
+			Field:   "cache.db",
+			Value:   fmt.Sprintf("%d", c.DB.Value),
+			Message: fmt.Sprintf("invalid cache db number, must be between %d and %d", ValidCacheMinDatabaseNumber, ValidCacheMaxDatabaseNumber),
+		}
 	}
 
 	if c.QueryTimeout.Value < ValidCacheMinQueryTimeout || c.QueryTimeout.Value > ValidCacheMaxQueryTimeout {
-		return ErrCacheInvalidQueryTimeout
+		return &InvalidConfigurationError{
+			Field:   "cache.query.timeout",
+			Value:   fmt.Sprintf("%d", c.QueryTimeout.Value),
+			Message: fmt.Sprintf("invalid cache query timeout, must be between %d and %d", ValidCacheMinQueryTimeout, ValidCacheMaxQueryTimeout),
+		}
 	}
 
 	if c.EntitiesTTL.Value < ValidCacheMinEntitiesTTL || c.EntitiesTTL.Value > ValidCacheMaxEntitiesTTL {
-		return ErrCacheInvalidEntitiesTTL
+		return &InvalidConfigurationError{
+			Field:   "cache.entities.ttl",
+			Value:   fmt.Sprintf("%d", c.EntitiesTTL.Value),
+			Message: fmt.Sprintf("invalid cache entities ttl, must be between %d and %d", ValidCacheMinEntitiesTTL, ValidCacheMaxEntitiesTTL),
+		}
 	}
 
 	return nil

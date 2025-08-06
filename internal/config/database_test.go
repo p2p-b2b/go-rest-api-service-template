@@ -1,6 +1,7 @@
 package config
 
 import (
+	"errors"
 	"os"
 	"testing"
 )
@@ -95,104 +96,105 @@ func TestValidate_database(t *testing.T) {
 	// Test invalid Kind
 	config.Kind.Value = "invalid"
 	err = config.Validate()
-	if err != ErrDatabaseInvalidKind {
-		t.Errorf("Expected error %v, got %v", ErrDatabaseInvalidKind, err)
+	var invalidErr *InvalidConfigurationError
+	if err == nil || !errors.As(err, &invalidErr) || invalidErr.Field != "database.kind" {
+		t.Errorf("Expected InvalidConfigurationError with field 'database.kind', got %v", err)
 	}
 	config.Kind.Value = DefaultDatabaseKind
 
 	// Test invalid Port
 	config.Port.Value = -1
 	err = config.Validate()
-	if err != ErrDatabaseInvalidPort {
-		t.Errorf("Expected error %v, got %v", ErrDatabaseInvalidPort, err)
+	if err == nil || !errors.As(err, &invalidErr) || invalidErr.Field != "database.port" {
+		t.Errorf("Expected InvalidConfigurationError with field 'database.port', got %v", err)
 	}
 	config.Port.Value = DefaultDatabasePort
 
 	// Test invalid Username
 	config.Username.Value = ""
 	err = config.Validate()
-	if err != ErrDatabaseInvalidUsername {
-		t.Errorf("Expected error %v, got %v", ErrDatabaseInvalidUsername, err)
+	if err == nil || !errors.As(err, &invalidErr) || invalidErr.Field != "database.username" {
+		t.Errorf("Expected InvalidConfigurationError with field 'database.username', got %v", err)
 	}
 	config.Username.Value = DefaultDatabaseUsername
 
 	// Test invalid Password
 	config.Password.Value = ""
 	err = config.Validate()
-	if err != ErrDatabaseInvalidPassword {
-		t.Errorf("Expected error %v, got %v", ErrDatabaseInvalidPassword, err)
+	if err == nil || !errors.As(err, &invalidErr) || invalidErr.Field != "database.password" {
+		t.Errorf("Expected InvalidConfigurationError with field 'database.password', got %v", err)
 	}
 	config.Password.Value = DefaultDatabasePassword
 
 	// Test invalid Name
 	config.Name.Value = ""
 	err = config.Validate()
-	if err != ErrDatabaseInvalidDatabaseName {
-		t.Errorf("Expected error %v, got %v", ErrDatabaseInvalidDatabaseName, err)
+	if err == nil || !errors.As(err, &invalidErr) || invalidErr.Field != "database.name" {
+		t.Errorf("Expected InvalidConfigurationError with field 'database.name', got %v", err)
 	}
 	config.Name.Value = DefaultDatabaseName
 
 	// Test invalid SSLMode
 	config.SSLMode.Value = "invalid"
 	err = config.Validate()
-	if err != ErrDatabaseInvalidSSLMode {
-		t.Errorf("Expected error %v, got %v", ErrDatabaseInvalidSSLMode, err)
+	if err == nil || !errors.As(err, &invalidErr) || invalidErr.Field != "database.sslmode" {
+		t.Errorf("Expected InvalidConfigurationError with field 'database.sslmode', got %v", err)
 	}
 	config.SSLMode.Value = DefaultDatabaseSSLMode
 
 	// Test invalid TimeZone
 	config.TimeZone.Value = ""
 	err = config.Validate()
-	if err != ErrDatabaseInvalidTimeZone {
-		t.Errorf("Expected error %v, got %v", ErrDatabaseInvalidTimeZone, err)
+	if err == nil || !errors.As(err, &invalidErr) || invalidErr.Field != "database.timezone" {
+		t.Errorf("Expected InvalidConfigurationError with field 'database.timezone', got %v", err)
 	}
 	config.TimeZone.Value = DefaultDatabaseTimeZone
 
 	// Test invalid MaxConns
 	config.MaxConns.Value = -1
 	err = config.Validate()
-	if err != ErrDatabaseInvalidMaxConns {
-		t.Errorf("Expected error %v, got %v", ErrDatabaseInvalidMaxConns, err)
+	if err == nil || !errors.As(err, &invalidErr) || invalidErr.Field != "database.max_conns" {
+		t.Errorf("Expected InvalidConfigurationError with field 'database.max_conns', got %v", err)
 	}
 	config.MaxConns.Value = DefaultDatabaseMaxConns
 
 	// Test invalid MinConns
 	config.MinConns.Value = -1
 	err = config.Validate()
-	if err != ErrDatabaseInvalidMinConns {
-		t.Errorf("Expected error %v, got %v", ErrDatabaseInvalidMinConns, err)
+	if err == nil || !errors.As(err, &invalidErr) || invalidErr.Field != "database.min_conns" {
+		t.Errorf("Expected InvalidConfigurationError with field 'database.min_conns', got %v", err)
 	}
 	config.MinConns.Value = DefaultDatabaseMinConns
 
 	// Test invalid MaxPingTimeout
 	config.MaxPingTimeout.Value = 0
 	err = config.Validate()
-	if err != ErrDatabaseInvalidMaxPingTimeout {
-		t.Errorf("Expected error %v, got %v", ErrDatabaseInvalidMaxPingTimeout, err)
+	if err == nil || !errors.As(err, &invalidErr) || invalidErr.Field != "database.max_ping_timeout" {
+		t.Errorf("Expected InvalidConfigurationError with field 'database.max_ping_timeout', got %v", err)
 	}
 	config.MaxPingTimeout.Value = DefaultDatabaseMaxPingTimeout
 
 	// Test invalid MaxQueryTimeout
 	config.MaxQueryTimeout.Value = 0
 	err = config.Validate()
-	if err != ErrDatabaseInvalidMaxQueryTimeout {
-		t.Errorf("Expected error %v, got %v", ErrDatabaseInvalidMaxQueryTimeout, err)
+	if err == nil || !errors.As(err, &invalidErr) || invalidErr.Field != "database.max_query_timeout" {
+		t.Errorf("Expected InvalidConfigurationError with field 'database.max_query_timeout', got %v", err)
 	}
 	config.MaxQueryTimeout.Value = DefaultDatabaseMaxQueryTimeout
 
 	// Test invalid ConnMaxIdleTime
 	config.ConnMaxIdleTime.Value = 0
 	err = config.Validate()
-	if err != ErrDatabaseInvalidConnMaxIdleTime {
-		t.Errorf("Expected error %v, got %v", ErrDatabaseInvalidConnMaxIdleTime, err)
+	if err == nil || !errors.As(err, &invalidErr) || invalidErr.Field != "database.conn_max_idle_time" {
+		t.Errorf("Expected InvalidConfigurationError with field 'database.conn_max_idle_time', got %v", err)
 	}
 	config.ConnMaxIdleTime.Value = DefaultDatabaseConnMaxIdleTime
 
 	// Test invalid ConnMaxLifetime
 	config.ConnMaxLifetime.Value = 0
 	err = config.Validate()
-	if err != ErrDatabaseInvalidConnMaxLifetime {
-		t.Errorf("Expected error %v, got %v", ErrDatabaseInvalidConnMaxLifetime, err)
+	if err == nil || !errors.As(err, &invalidErr) || invalidErr.Field != "database.conn_max_lifetime" {
+		t.Errorf("Expected InvalidConfigurationError with field 'database.conn_max_lifetime', got %v", err)
 	}
 	config.ConnMaxLifetime.Value = DefaultDatabaseConnMaxLifetime
 }

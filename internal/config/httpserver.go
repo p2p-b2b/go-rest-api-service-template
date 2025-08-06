@@ -1,26 +1,12 @@
 package config
 
 import (
-	"errors"
+	"fmt"
 	"net"
 	"os"
 	"slices"
-	"strconv"
 	"strings"
 	"time"
-)
-
-var (
-	ErrHTTPServerInvalidAddress                  = errors.New("invalid server address, must not be empty and a valid IP Address or Hostname")
-	ErrHTTPServerInvalidPort                     = errors.New("invalid server port, must be between [" + strconv.Itoa(ValidHTTPServerMinPort) + "] and [" + strconv.Itoa(ValidHTTPServerMaxPort) + "]")
-	ErrHTTPServerInvalidShutdownTimeout          = errors.New("invalid server shutdown timeout, must be between [" + ValidHTTPServerMinShutdownTimeout.String() + "] and [" + ValidHTTPServerMaxShutdownTimeout.String() + "]")
-	ErrHTTPServerInvalidCorsAllowedOrigins       = errors.New("invalid CORS allowed origins. Must not be empty")
-	ErrHTTPServerInvalidCorsAllowedMethods       = errors.New("invalid CORS allowed methods. Must be one of [" + ValidHTTPServerCorsAllowedMethods + "]")
-	ErrHTTPServerInvalidCorsAllowedHeaders       = errors.New("invalid CORS allowed headers. Must be at least [" + strconv.Itoa(ValidHTTPServerCorsAllowedHeaders) + "]")
-	ErrHTTPServerPprofInvalidPort                = errors.New("invalid pprof port, must be between [" + strconv.Itoa(ValidHTTPServerMinPprofPort) + "] and [" + strconv.Itoa(ValidHTTPServerMaxPprofPort) + "]")
-	ErrHTTPServerInvalidIPRateLimiterLimit       = errors.New("invalid ip rate limiter limit, must be between [" + strconv.Itoa(ValidHTTPServerMinIPRateLimiterLimit) + "] and [" + strconv.Itoa(ValidHTTPServerMaxIPRateLimiterLimit) + "]")
-	ErrHTTPServerInvalidIPRateLimiterBurst       = errors.New("invalid ip rate limiter burst, must be between [" + strconv.Itoa(ValidHTTPServerMinIPRateLimiterBurst) + "] and [" + strconv.Itoa(ValidHTTPServerMaxIPRateLimiterBurst) + "]")
-	ErrHTTPServerInvalidIPRateLimiterDeleteAfter = errors.New("invalid ip rate limiter delete after, must be between [" + ValidHTTPServerMinIPRateLimiterDeleteAfter.String() + "] and [" + ValidHTTPServerMaxIPRateLimiterDeleteAfter.String() + "]")
 )
 
 const (
@@ -162,55 +148,99 @@ func (c *HTTPServerConfig) ParseEnvVars() {
 // Validate validates the server configuration values
 func (c *HTTPServerConfig) Validate() error {
 	if c.Address.Value == "" || (c.Address.Value != "localhost" && net.ParseIP(c.Address.Value) == nil) {
-		return ErrHTTPServerInvalidAddress
+		return &InvalidConfigurationError{
+			Field:   "http.server.address",
+			Value:   c.Address.Value,
+			Message: "invalid http.server.address, must be a valid IP address or hostname",
+		}
 	}
 
 	// validate the if is a valid IP Address or Hostname
 
 	if c.Port.Value < ValidHTTPServerMinPort || c.Port.Value > ValidHTTPServerMaxPort || c.Port.Value == c.PprofPort.Value {
-		return ErrHTTPServerInvalidPort
+		return &InvalidConfigurationError{
+			Field:   "http.server.port",
+			Value:   fmt.Sprintf("%d", c.Port.Value),
+			Message: fmt.Sprintf("invalid http.server.port, must be between %d and %d and not equal to http.server.pprof.port", ValidHTTPServerMinPort, ValidHTTPServerMaxPort),
+		}
 	}
 
 	if c.ShutdownTimeout.Value < ValidHTTPServerMinShutdownTimeout || c.ShutdownTimeout.Value > ValidHTTPServerMaxShutdownTimeout {
-		return ErrHTTPServerInvalidShutdownTimeout
+		return &InvalidConfigurationError{
+			Field:   "http.server.shutdown.timeout",
+			Value:   fmt.Sprintf("%d", c.ShutdownTimeout.Value),
+			Message: fmt.Sprintf("invalid http.server.shutdown.timeout, must be between %d and %d", ValidHTTPServerMinShutdownTimeout, ValidHTTPServerMaxShutdownTimeout),
+		}
 	}
 
 	if c.CorsEnabled.Value {
 		if c.CorsAllowedOrigins.Value == "" {
-			return ErrHTTPServerInvalidCorsAllowedOrigins
+			return &InvalidConfigurationError{
+				Field:   "http.server.cors.allowed.origins",
+				Value:   c.CorsAllowedOrigins.Value,
+				Message: "invalid http.server.cors.allowed.origins, must be a non-empty string",
+			}
 		}
 
 		for method := range strings.SplitSeq(c.CorsAllowedMethods.Value, ",") {
 			if !slices.Contains(strings.Split(ValidHTTPServerCorsAllowedMethods, "|"), strings.Trim(method, " ")) {
-				return ErrHTTPServerInvalidCorsAllowedMethods
+				return &InvalidConfigurationError{
+					Field:   "http.server.cors.allowed.methods",
+					Value:   c.CorsAllowedMethods.Value,
+					Message: fmt.Sprintf("invalid http.server.cors.allowed.methods, must be one of: %s", ValidHTTPServerCorsAllowedMethods),
+				}
 			}
 		}
 
 		if len(c.CorsAllowedHeaders.Value) < ValidHTTPServerCorsAllowedHeaders {
-			return ErrHTTPServerInvalidCorsAllowedHeaders
+			return &InvalidConfigurationError{
+				Field:   "http.server.cors.allowed.headers",
+				Value:   c.CorsAllowedHeaders.Value,
+				Message: fmt.Sprintf("invalid http.server.cors.allowed.headers, must be at least %d elements", ValidHTTPServerCorsAllowedHeaders),
+			}
 		}
 	}
 
 	if c.PprofEnabled.Value {
 		if c.PprofPort.Value < ValidHTTPServerMinPprofPort || c.PprofPort.Value > ValidHTTPServerMaxPprofPort || c.Port.Value == c.PprofPort.Value {
-			return ErrHTTPServerPprofInvalidPort
+			return &InvalidConfigurationError{
+				Field:   "http.server.pprof.port",
+				Value:   fmt.Sprintf("%d", c.PprofPort.Value),
+				Message: fmt.Sprintf("invalid http.server.pprof.port, must be between %d and %d and not equal to http.server.port", ValidHTTPServerMinPprofPort, ValidHTTPServerMaxPprofPort),
+			}
 		}
 
 		if c.PprofAddress.Value == "" || (c.PprofAddress.Value != "localhost" && net.ParseIP(c.PprofAddress.Value) == nil) {
-			return ErrHTTPServerInvalidAddress
+			return &InvalidConfigurationError{
+				Field:   "http.server.pprof.address",
+				Value:   c.PprofAddress.Value,
+				Message: "invalid http.server.pprof.address, must be a valid IP address or hostname",
+			}
 		}
 	}
 
 	if c.IPRateLimiterLimit.Value < ValidHTTPServerMinIPRateLimiterLimit || c.IPRateLimiterLimit.Value > ValidHTTPServerMaxIPRateLimiterLimit {
-		return ErrHTTPServerInvalidIPRateLimiterLimit
+		return &InvalidConfigurationError{
+			Field:   "http.server.ip.rate.limiter.limit",
+			Value:   fmt.Sprintf("%.1f", c.IPRateLimiterLimit.Value),
+			Message: fmt.Sprintf("invalid http.server.ip.rate.limiter.limit, must be between %v and %v", ValidHTTPServerMinIPRateLimiterLimit, ValidHTTPServerMaxIPRateLimiterLimit),
+		}
 	}
 
 	if c.IPRateLimiterBurst.Value < ValidHTTPServerMinIPRateLimiterBurst || c.IPRateLimiterBurst.Value > ValidHTTPServerMaxIPRateLimiterBurst {
-		return ErrHTTPServerInvalidIPRateLimiterBurst
+		return &InvalidConfigurationError{
+			Field:   "http.server.ip.rate.limiter.burst",
+			Value:   fmt.Sprintf("%d", c.IPRateLimiterBurst.Value),
+			Message: fmt.Sprintf("invalid http.server.ip.rate.limiter.burst, must be between %d and %d", ValidHTTPServerMinIPRateLimiterBurst, ValidHTTPServerMaxIPRateLimiterBurst),
+		}
 	}
 
 	if c.IPRateLimiterDeleteAfter.Value < ValidHTTPServerMinIPRateLimiterDeleteAfter || c.IPRateLimiterDeleteAfter.Value > ValidHTTPServerMaxIPRateLimiterDeleteAfter {
-		return ErrHTTPServerInvalidIPRateLimiterDeleteAfter
+		return &InvalidConfigurationError{
+			Field:   "http.server.ip.rate.limiter.delete.after",
+			Value:   fmt.Sprintf("%d", c.IPRateLimiterDeleteAfter.Value),
+			Message: fmt.Sprintf("invalid http.server.ip.rate.limiter.delete.after, must be between %d and %d", ValidHTTPServerMinIPRateLimiterDeleteAfter, ValidHTTPServerMaxIPRateLimiterDeleteAfter),
+		}
 	}
 
 	return nil

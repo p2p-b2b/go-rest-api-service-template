@@ -1,23 +1,10 @@
 package config
 
 import (
-	"errors"
+	"fmt"
 	"slices"
-	"strconv"
 	"strings"
 	"time"
-)
-
-var (
-	ErrHTTPClientInvalidIdleConns             = errors.New("invalid max idle connections. Must be between " + strconv.Itoa(ValidHTTPClientMinIdleConns) + " and " + strconv.Itoa(ValidHTTPClientMaxIdleConns))
-	ErrHTTPClientInvalidConnsPerHost          = errors.New("invalid max idle connections per host. Must be between " + strconv.Itoa(ValidHTTPClientMinIdleConnsPerHost) + " and " + strconv.Itoa(ValidHTTPClientMaxIdleConnsPerHost))
-	ErrHTTPClientInvalidIdleConnTimeout       = errors.New("invalid idle connection timeout. Must be between " + ValidHTTPClientMinIdleConnTimeout.String() + " and " + ValidHTTPClientMaxIdleConnTimeout.String())
-	ErrHTTPClientInvalidTLSHandshakeTimeout   = errors.New("invalid TLS handshake timeout. Must be between " + ValidHTTPClientMinTLSHandshakeTimeout.String() + " and " + ValidHTTPClientMaxTLSHandshakeTimeout.String())
-	ErrHTTPClientInvalidExpectContinueTimeout = errors.New("invalid expect continue timeout. Must be between " + ValidHTTPClientMinExpectContinueTimeout.String() + " and " + ValidHTTPClientMaxExpectContinueTimeout.String())
-	ErrHTTPClientInvalidDisableKeepAlives     = errors.New("invalid disable keep-alives. Must be true or false")
-	ErrHTTPClientInvalidTimeout               = errors.New("invalid timeout. Must be between " + ValidHTTPClientMinTimeout.String() + " and " + ValidHTTPClientMaxTimeout.String())
-	ErrHTTPClientInvalidRetryStrategy         = errors.New("invalid retry strategy. Must be one of [" + ValidHTTPClientRetryStrategies + "]")
-	ErrHTTPClientInvalidMaxRetries            = errors.New("invalid max retries. Must be between " + strconv.Itoa(ValidHTTPClientMinMaxRetries) + " and " + strconv.Itoa(ValidHTTPClientMaxMaxRetries))
 )
 
 const (
@@ -92,35 +79,67 @@ func (c *HTTPClientConfig) ParseEnvVars() {
 
 func (c *HTTPClientConfig) Validate() error {
 	if c.MaxIdleConns.Value < ValidHTTPClientMinIdleConns || c.MaxIdleConns.Value > ValidHTTPClientMaxIdleConns {
-		return ErrHTTPClientInvalidIdleConns
+		return &InvalidConfigurationError{
+			Field:   "http.client.max.idle.conns",
+			Value:   fmt.Sprintf("%d", c.MaxIdleConns.Value),
+			Message: fmt.Sprintf("invalid http.client.max.idle.conns, must be between %d and %d", ValidHTTPClientMinIdleConns, ValidHTTPClientMaxIdleConns),
+		}
 	}
 
 	if c.MaxIdleConnsPerHost.Value < ValidHTTPClientMinIdleConnsPerHost || c.MaxIdleConnsPerHost.Value > ValidHTTPClientMaxIdleConnsPerHost {
-		return ErrHTTPClientInvalidConnsPerHost
+		return &InvalidConfigurationError{
+			Field:   "http.client.max.idle.conns.per.host",
+			Value:   fmt.Sprintf("%d", c.MaxIdleConnsPerHost.Value),
+			Message: fmt.Sprintf("invalid http.client.max.idle.conns.per.host, must be between %d and %d", ValidHTTPClientMinIdleConnsPerHost, ValidHTTPClientMaxIdleConnsPerHost),
+		}
 	}
 
 	if c.IdleConnTimeout.Value < ValidHTTPClientMinIdleConnTimeout || c.IdleConnTimeout.Value > ValidHTTPClientMaxIdleConnTimeout {
-		return ErrHTTPClientInvalidIdleConnTimeout
+		return &InvalidConfigurationError{
+			Field:   "http.client.idle.conn.timeout",
+			Value:   fmt.Sprintf("%d", c.IdleConnTimeout.Value),
+			Message: fmt.Sprintf("invalid http.client.idle.conn.timeout, must be between %d and %d", ValidHTTPClientMinIdleConnTimeout, ValidHTTPClientMaxIdleConnTimeout),
+		}
 	}
 
 	if c.TLSHandshakeTimeout.Value < ValidHTTPClientMinTLSHandshakeTimeout || c.TLSHandshakeTimeout.Value > ValidHTTPClientMaxTLSHandshakeTimeout {
-		return ErrHTTPClientInvalidTLSHandshakeTimeout
+		return &InvalidConfigurationError{
+			Field:   "http.client.tls.handshake.timeout",
+			Value:   fmt.Sprintf("%d", c.TLSHandshakeTimeout.Value),
+			Message: fmt.Sprintf("invalid http.client.tls.handshake.timeout, must be between %d and %d", ValidHTTPClientMinTLSHandshakeTimeout, ValidHTTPClientMaxTLSHandshakeTimeout),
+		}
 	}
 
 	if c.ExpectContinueTimeout.Value < ValidHTTPClientMinExpectContinueTimeout || c.ExpectContinueTimeout.Value > ValidHTTPClientMaxExpectContinueTimeout {
-		return ErrHTTPClientInvalidExpectContinueTimeout
+		return &InvalidConfigurationError{
+			Field:   "http.client.expect.continue.timeout",
+			Value:   fmt.Sprintf("%d", c.ExpectContinueTimeout.Value),
+			Message: fmt.Sprintf("invalid http.client.expect.continue.timeout, must be between %d and %d", ValidHTTPClientMinExpectContinueTimeout, ValidHTTPClientMaxExpectContinueTimeout),
+		}
 	}
 
 	if c.Timeout.Value < ValidHTTPClientMinTimeout || c.Timeout.Value > ValidHTTPClientMaxTimeout {
-		return ErrHTTPClientInvalidTimeout
+		return &InvalidConfigurationError{
+			Field:   "http.client.timeout",
+			Value:   fmt.Sprintf("%d", c.Timeout.Value),
+			Message: fmt.Sprintf("invalid http.client.timeout, must be between %d and %d", ValidHTTPClientMinTimeout, ValidHTTPClientMaxTimeout),
+		}
 	}
 
 	if !slices.Contains(strings.Split(ValidHTTPClientRetryStrategies, "|"), c.RetryStrategy.Value) {
-		return ErrHTTPClientInvalidRetryStrategy
+		return &InvalidConfigurationError{
+			Field:   "http.client.retry.strategy",
+			Value:   c.RetryStrategy.Value,
+			Message: fmt.Sprintf("invalid http.client.retry.strategy, must be one of: %s", ValidHTTPClientRetryStrategies),
+		}
 	}
 
 	if c.MaxRetries.Value < ValidHTTPClientMinMaxRetries || c.MaxRetries.Value > ValidHTTPClientMaxMaxRetries {
-		return ErrHTTPClientInvalidMaxRetries
+		return &InvalidConfigurationError{
+			Field:   "http.client.max.retries",
+			Value:   fmt.Sprintf("%d", c.MaxRetries.Value),
+			Message: fmt.Sprintf("invalid http.client.max.retries, must be between %d and %d", ValidHTTPClientMinMaxRetries, ValidHTTPClientMaxMaxRetries),
+		}
 	}
 
 	return nil

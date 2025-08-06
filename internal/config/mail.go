@@ -1,7 +1,7 @@
 package config
 
 import (
-	"errors"
+	"fmt"
 	"net/mail"
 	"net/url"
 	"slices"
@@ -10,19 +10,19 @@ import (
 	"time"
 )
 
-var (
-	ErrMailSMTPHostOrAPIURLMustBeSet = errors.New("smtp host or api url must be set")
-	ErrMailInvalidSMTPPort           = errors.New("invalid smtp port. Must be one of [" + ValidMailSMTPPorts + "]")
-	ErrMailSMTPUsernameMustBeSet     = errors.New("smtp username must be set")
-	ErrMailSMTPPasswordMustBeSet     = errors.New("smtp password must be set")
-	ErrMailAPIURLInvalid             = errors.New("mail api url is invalid")
-	ErrMailAPIKeyMustBeSet           = errors.New("mail api key must be set")
-	ErrMailSenderNameMustBeSet       = errors.New("sender name must be set")
-	ErrMailSenderAddressInvalid      = errors.New("sender address is invalid")
-	ErrMailInvalidSender             = errors.New("invalid mail sender. Must be one of [" + ValidMailSender + "]")
-	ErrMailInvalidWorkerCount        = errors.New("invalid mail worker count. Must be between [" + strconv.Itoa(ValidMailMinWorkerCount) + "] and [" + strconv.Itoa(ValidMailMaxWorkerCount) + "]")
-	ErrMailInvalidWorkerTimeout      = errors.New("invalid mail worker timeout. Must be between [" + ValidMailMinWorkerTimeout.String() + "] and [" + ValidMailMaxWorkerTimeout.String() + "]")
-)
+// var (
+// 	ErrMailSMTPHostOrAPIURLMustBeSet = errors.New("smtp host or api url must be set")
+// 	ErrMailInvalidSMTPPort           = errors.New("invalid smtp port. Must be one of [" + ValidMailSMTPPorts + "]")
+// 	ErrMailSMTPUsernameMustBeSet     = errors.New("smtp username must be set")
+// 	ErrMailSMTPPasswordMustBeSet     = errors.New("smtp password must be set")
+// 	ErrMailAPIURLInvalid             = errors.New("mail api url is invalid")
+// 	ErrMailAPIKeyMustBeSet           = errors.New("mail api key must be set")
+// 	ErrMailSenderNameMustBeSet       = errors.New("sender name must be set")
+// 	ErrMailSenderAddressInvalid      = errors.New("sender address is invalid")
+// 	ErrMailInvalidSender             = errors.New("invalid mail sender. Must be one of [" + ValidMailSender + "]")
+// 	ErrMailInvalidWorkerCount        = errors.New("invalid mail worker count. Must be between [" + strconv.Itoa(ValidMailMinWorkerCount) + "] and [" + strconv.Itoa(ValidMailMaxWorkerCount) + "]")
+// 	ErrMailInvalidWorkerTimeout      = errors.New("invalid mail worker timeout. Must be between [" + ValidMailMinWorkerTimeout.String() + "] and [" + ValidMailMaxWorkerTimeout.String() + "]")
+// )
 
 const (
 	ValidMailSMTPPorts        = "25|465|587|1025|2525"
@@ -95,54 +95,105 @@ func (ref *MailConfig) ParseEnvVars() {
 }
 
 func (ref *MailConfig) Validate() error {
-	if ref.SMTPHost.Value == "" && ref.APIURL.Value == "" {
-		return ErrMailSMTPHostOrAPIURLMustBeSet
+	if ref.SMTPHost.Value == "" {
+		return &InvalidConfigurationError{
+			Field:   "mail.smtp.host or mail.api.url",
+			Value:   ref.SMTPHost.Value,
+			Message: "Either SMTP host or API URL must be set",
+		}
+	}
+
+	if ref.APIURL.Value == "" {
+		return &InvalidConfigurationError{
+			Field:   "mail.api.url",
+			Value:   ref.APIURL.Value,
+			Message: "Either SMTP host or API URL must be set",
+		}
 	}
 
 	if ref.SMTPHost.Value != "" && !slices.Contains(strings.Split(ValidMailSMTPPorts, "|"), strconv.Itoa(ref.SMTPPort.Value)) {
-		return ErrMailInvalidSMTPPort
+		return &InvalidConfigurationError{
+			Field:   "mail.smtp.port",
+			Value:   ref.SMTPPort.Value,
+			Message: "Invalid SMTP port. Must be one of [" + ValidMailSMTPPorts + "]",
+		}
 	}
 
 	if ref.MailSender.Value != "" && !slices.Contains(strings.Split(ValidMailSender, "|"), ref.MailSender.Value) {
-		return ErrMailInvalidSender
+		return &InvalidConfigurationError{
+			Field:   "mail.sender",
+			Value:   ref.MailSender.Value,
+			Message: "Invalid mail sender. Must be one of [" + ValidMailSender + "]",
+		}
 	}
 
 	if ref.MailSender.Value == "smtp" {
 		if ref.SMTPHost.Value != "" && ref.SMTPUsername.Value == "" {
-			return ErrMailSMTPUsernameMustBeSet
+			return &InvalidConfigurationError{
+				Field:   "mail.smtp.username",
+				Value:   ref.SMTPUsername.Value,
+				Message: "SMTP username must be set",
+			}
 		}
 
 		if ref.SMTPUsername.Value != "" && ref.SMTPPassword.Value == "" {
-			return ErrMailSMTPPasswordMustBeSet
+			return &InvalidConfigurationError{
+				Field:   "mail.smtp.password",
+				Value:   ref.SMTPPassword.Value,
+				Message: "SMTP password must be set",
+			}
 		}
 	}
 
 	if ref.MailSender.Value == "mailgun" {
 		if ref.APIURL.Value != "" {
 			if _, err := url.Parse(ref.APIURL.Value); err != nil {
-				return ErrMailAPIURLInvalid
+				return &InvalidConfigurationError{
+					Field:   "mail.api.url",
+					Value:   ref.APIURL.Value,
+					Message: "Invalid Mail API URL",
+				}
 			}
 
 			if ref.APIKey.Value == "" {
-				return ErrMailAPIKeyMustBeSet
+				return &InvalidConfigurationError{
+					Field:   "mail.api.key",
+					Value:   ref.APIKey.Value,
+					Message: "Mail API Key must be set",
+				}
 			}
 		}
 	}
 
 	if ref.SenderName.Value == "" {
-		return ErrMailSenderNameMustBeSet
+		return &InvalidConfigurationError{
+			Field:   "mail.sender.name",
+			Value:   ref.SenderName.Value,
+			Message: "Mail sender name must be set",
+		}
 	}
 
 	if _, err := mail.ParseAddress(ref.SenderAddress.Value); err != nil {
-		return ErrMailSenderAddressInvalid
+		return &InvalidConfigurationError{
+			Field:   "mail.sender.address",
+			Value:   ref.SenderAddress.Value,
+			Message: "Invalid mail sender address",
+		}
 	}
-
 	if ref.MailWorkerCount.Value < ValidMailMinWorkerCount || ref.MailWorkerCount.Value > ValidMailMaxWorkerCount {
-		return ErrMailInvalidWorkerCount
+		return &InvalidConfigurationError{
+			Field:   "mail.worker.count",
+			Value:   ref.MailWorkerCount.Value,
+			Message: fmt.Sprintf("Invalid mail worker count. Must be between %d and %d", ValidMailMinWorkerCount, ValidMailMaxWorkerCount),
+		}
 	}
 
 	if ref.MailWorkerTimeout.Value < ValidMailMinWorkerTimeout || ref.MailWorkerTimeout.Value > ValidMailMaxWorkerTimeout {
-		return ErrMailInvalidWorkerTimeout
+		return &InvalidConfigurationError{
+			Field:   "mail.worker.timeout",
+			Value:   ref.MailWorkerTimeout.Value,
+			Message: fmt.Sprintf("Invalid mail worker timeout. Must be between %.0f and %.0f seconds", ValidMailMinWorkerTimeout.Seconds(), ValidMailMaxWorkerTimeout.Seconds()),
+		}
 	}
 
 	return nil
