@@ -3965,6 +3965,11 @@ const docTemplate = `{
                 "TokenTypeBearer": "This is used for the HTTP Authorization header"
             },
             "x-enum-descriptions": [
+                "",
+                "",
+                "",
+                "",
+                "",
                 "This is used for the HTTP Authorization header"
             ],
             "x-enum-varnames": [

@@ -1,22 +1,10 @@
 package config
 
 import (
-	"errors"
+	"fmt"
 	"net/url"
 	"os"
-	"strconv"
 	"time"
-)
-
-var (
-	ErrAuthnInvalidPrivateKey                  = errors.New("invalid private key. Private key must be a valid file and the name must be between [" + strconv.Itoa(ValidAuthnPrivateKeyMinLength) + "] and [" + strconv.Itoa(ValidAuthnPrivateKeyMinLength) + "] characters")
-	ErrAuthnInvalidPublicKey                   = errors.New("invalid public key. Public key must be a valid file and the name must be between [" + strconv.Itoa(ValidAuthnPublicKeyMinLength) + "] and [" + strconv.Itoa(ValidAuthnPublicKeyMinLength) + "] characters")
-	ErrAuthnInvalidIssuer                      = errors.New("invalid issuer. Issuer must be between [" + strconv.Itoa(ValidAuthnIssuerMinLength) + "] and [" + strconv.Itoa(ValidAuthnIssuerMaxLength) + "] characters")
-	ErrAuthnInvalidAccessTokenDuration         = errors.New("invalid access token duration. Duration must be between [" + ValidAuthnAccessTokenMinDuration.String() + " and " + ValidAuthnAccessTokenMaxDuration.String())
-	ErrAuthnInvalidRefreshTokenDuration        = errors.New("invalid refresh token duration. Duration must be between [" + ValidAuthnRefreshTokenMinDuration.String() + " and " + ValidAuthnRefreshTokenMaxDuration.String())
-	ErrAuthnInvalidSymmetricKey                = errors.New("invalid symmetric key. Symmetric key must be a valid file and the name must be between [" + strconv.Itoa(ValidAuthnSymmetricKeyMinLength) + "] and [" + strconv.Itoa(ValidAuthnSymmetricKeyMinLength) + "] characters")
-	ErrAuthnInvalidUserVerificationAPIEndpoint = errors.New("invalid user verification API endpoint. API endpoint must be a valid URL")
-	ErrAuthnInvalidUserVerificationTokenTTL    = errors.New("invalid user verification token TTL. Token TTL must be between [" + ValidAuthnMinUserVerificationTokenTTL.String() + "] and [" + ValidAuthnMaxUserVerificationTokenTTL.String() + "]")
 )
 
 const (
@@ -98,35 +86,67 @@ func (ref *AuthnConfig) ParseEnvVars() {
 
 func (ref *AuthnConfig) Validate() error {
 	if len(ref.PrivateKeyFile.Value.Name()) <= ValidAuthnPrivateKeyMinLength {
-		return ErrAuthnInvalidPrivateKey
+		return &InvalidConfigurationError{
+			Field:   "authn.private.key.file",
+			Value:   ref.PrivateKeyFile.Value.Name(),
+			Message: fmt.Sprintf("invalid private key file, must be at least %d characters", ValidAuthnPrivateKeyMinLength),
+		}
 	}
 
 	if len(ref.PublicKeyFile.Value.Name()) <= ValidAuthnPublicKeyMinLength {
-		return ErrAuthnInvalidPublicKey
+		return &InvalidConfigurationError{
+			Field:   "authn.public.key.file",
+			Value:   ref.PublicKeyFile.Value.Name(),
+			Message: fmt.Sprintf("invalid public key file, must be at least %d characters", ValidAuthnPublicKeyMinLength),
+		}
 	}
 
 	if len(ref.SymmetricKeyFile.Value.Name()) <= ValidAuthnSymmetricKeyMinLength {
-		return ErrAuthnInvalidSymmetricKey
+		return &InvalidConfigurationError{
+			Field:   "authn.symmetric.key.file",
+			Value:   ref.SymmetricKeyFile.Value.Name(),
+			Message: fmt.Sprintf("invalid symmetric key file, must be at least %d characters", ValidAuthnSymmetricKeyMinLength),
+		}
 	}
 
 	if ref.Issuer.Value == "" || len(ref.Issuer.Value) < ValidAuthnIssuerMinLength || len(ref.Issuer.Value) > ValidAuthnIssuerMaxLength {
-		return ErrAuthnInvalidIssuer
+		return &InvalidConfigurationError{
+			Field:   "authn.issuer",
+			Value:   ref.Issuer.Value,
+			Message: fmt.Sprintf("invalid issuer, must be between %d and %d characters", ValidAuthnIssuerMinLength, ValidAuthnIssuerMaxLength),
+		}
 	}
 
 	if ref.AccessTokenDuration.Value <= ValidAuthnAccessTokenMinDuration || ref.AccessTokenDuration.Value > ValidAuthnAccessTokenMaxDuration {
-		return ErrAuthnInvalidAccessTokenDuration
+		return &InvalidConfigurationError{
+			Field:   "authn.access.token.duration",
+			Value:   fmt.Sprintf("%d", ref.AccessTokenDuration.Value),
+			Message: fmt.Sprintf("invalid access token duration, must be between %d and %d", ValidAuthnAccessTokenMinDuration, ValidAuthnAccessTokenMaxDuration),
+		}
 	}
 
 	if ref.RefreshTokenDuration.Value <= ValidAuthnRefreshTokenMinDuration || ref.RefreshTokenDuration.Value > ValidAuthnRefreshTokenMaxDuration {
-		return ErrAuthnInvalidRefreshTokenDuration
+		return &InvalidConfigurationError{
+			Field:   "authn.refresh.token.duration",
+			Value:   fmt.Sprintf("%d", ref.RefreshTokenDuration.Value),
+			Message: fmt.Sprintf("invalid refresh token duration, must be between %d and %d", ValidAuthnRefreshTokenMinDuration, ValidAuthnRefreshTokenMaxDuration),
+		}
 	}
 
 	if _, err := url.Parse(ref.UserVerificationAPIEndpoint.Value); err != nil {
-		return ErrAuthnInvalidUserVerificationAPIEndpoint
+		return &InvalidConfigurationError{
+			Field:   "authn.user.verification.api.endpoint",
+			Value:   ref.UserVerificationAPIEndpoint.Value,
+			Message: "invalid user verification API endpoint",
+		}
 	}
 
 	if ref.UserVerificationTokenTTL.Value < ValidAuthnMinUserVerificationTokenTTL || ref.UserVerificationTokenTTL.Value > ValidAuthnMaxUserVerificationTokenTTL {
-		return ErrAuthnInvalidUserVerificationTokenTTL
+		return &InvalidConfigurationError{
+			Field:   "authn.user.verification.token.ttl",
+			Value:   fmt.Sprintf("%d", ref.UserVerificationTokenTTL.Value),
+			Message: fmt.Sprintf("invalid user verification token TTL, must be between %d and %d", ValidAuthnMinUserVerificationTokenTTL, ValidAuthnMaxUserVerificationTokenTTL),
+		}
 	}
 
 	return nil

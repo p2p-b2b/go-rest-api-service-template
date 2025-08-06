@@ -1,20 +1,10 @@
 package config
 
 import (
-	"errors"
 	"slices"
 	"strconv"
 	"strings"
 	"time"
-)
-
-var (
-	ErrTraceInvalidExporter  = errors.New("invalid trace exporter, must be one of [" + ValidTraceExporters + "]")
-	ErrMetricInvalidExporter = errors.New("invalid metric exporter, must be one of [" + ValidMetricExporters + "]")
-	ErrMetricInvalidSampling = errors.New("invalid sampling, must be between [" + strconv.Itoa(ValidTaceSamplingMin) + "] and [" + strconv.Itoa(ValidTaceSamplingMax) + "]")
-	ErrMetricInvalidInterval = errors.New("invalid metric interval, must be greater than [" + ValidMetricMinInterval.String() + "]")
-	ErrTraceInvalidPort      = errors.New("invalid trace port, must be between [" + strconv.Itoa(ValidTraceMinPort) + "] and [" + strconv.Itoa(ValidTraceMaxPort) + "]")
-	ErrMetricInvalidPort     = errors.New("invalid metric port, must be between [" + strconv.Itoa(ValidMetricMinPort) + "] and [" + strconv.Itoa(ValidMetricMaxPort) + "]")
 )
 
 const (
@@ -92,27 +82,51 @@ func (c *OpenTelemetryConfig) ParseEnvVars() {
 // Validate validates the OpenTracing configuration values
 func (c *OpenTelemetryConfig) Validate() error {
 	if !slices.Contains(strings.Split(ValidTraceExporters, "|"), c.TraceExporter.Value) {
-		return ErrTraceInvalidExporter
+		return &InvalidConfigurationError{
+			Field:   "opentelemetry.trace.exporter",
+			Value:   c.TraceExporter.Value,
+			Message: "invalid trace exporter, must be one of [" + ValidTraceExporters + "]",
+		}
 	}
 
 	if !slices.Contains(strings.Split(ValidMetricExporters, "|"), c.MetricExporter.Value) {
-		return ErrMetricInvalidExporter
+		return &InvalidConfigurationError{
+			Field:   "opentelemetry.metric.exporter",
+			Value:   c.MetricExporter.Value,
+			Message: "invalid metric exporter, must be one of [" + ValidMetricExporters + "]",
+		}
 	}
 
 	if c.TraceSampling.Value < ValidTaceSamplingMin || c.TraceSampling.Value > ValidTaceSamplingMax {
-		return ErrMetricInvalidSampling
+		return &InvalidConfigurationError{
+			Field:   "opentelemetry.trace.sampling",
+			Value:   strconv.Itoa(c.TraceSampling.Value),
+			Message: "invalid sampling, must be between [" + strconv.Itoa(ValidTaceSamplingMin) + "] and [" + strconv.Itoa(ValidTaceSamplingMax) + "]",
+		}
 	}
 
 	if c.MetricInterval.Value < ValidMetricMinInterval {
-		return ErrMetricInvalidInterval
+		return &InvalidConfigurationError{
+			Field:   "opentelemetry.metric.interval",
+			Value:   c.MetricInterval.Value.String(),
+			Message: "invalid metric interval, must be greater than [" + ValidMetricMinInterval.String() + "]",
+		}
 	}
 
 	if c.MetricPort.Value < ValidMetricMinPort || c.MetricPort.Value > ValidMetricMaxPort {
-		return ErrMetricInvalidPort
+		return &InvalidConfigurationError{
+			Field:   "opentelemetry.metric.port",
+			Value:   strconv.Itoa(c.MetricPort.Value),
+			Message: "invalid metric port, must be between [" + strconv.Itoa(ValidMetricMinPort) + "] and [" + strconv.Itoa(ValidMetricMaxPort) + "]",
+		}
 	}
 
 	if c.TracePort.Value < ValidTraceMinPort || c.TracePort.Value > ValidTraceMaxPort {
-		return ErrTraceInvalidPort
+		return &InvalidConfigurationError{
+			Field:   "opentelemetry.trace.port",
+			Value:   strconv.Itoa(c.TracePort.Value),
+			Message: "invalid trace port, must be between [" + strconv.Itoa(ValidTraceMinPort) + "] and [" + strconv.Itoa(ValidTraceMaxPort) + "]",
+		}
 	}
 
 	return nil

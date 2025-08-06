@@ -114,7 +114,94 @@ func (f *FileVar) IsBoolFlag() bool {
 	return false
 }
 
+// idpPartsSeparator is the separator used for IDP parts
+const idpPartsSeparator = "#"
+
+// IDP is a custom flag type for Identity Provider (IDP) configuration
+// This should implement the Value interface of the flag package
+// Reference: https://pkg.go.dev/gg-scm.io/tool/internal/flag#FlagSet.Var
+type IDP struct {
+	// Name is the name of the IDP
+	Name string
+
+	// RedirectURL is the URL to redirect to after authentication (callback URL)
+	RedirectURL string
+
+	// ClientID is the client ID for the IDP
+	ClientID string
+
+	// ClientSecret is the client secret for the IDP
+	ClientSecret string
+}
+
+// SliceIDPVar is a custom flag type for slices of IDP configurations
+type SliceIDPVar []IDP
+
+// String presents the current value as a string.
+func (s *SliceIDPVar) String() string {
+	var idps []string
+
+	for _, idp := range *s {
+		idps = append(idps,
+			fmt.Sprintf("%s%s%s%s%s%s%s",
+				idp.Name,
+				idpPartsSeparator,
+				idp.RedirectURL,
+				idpPartsSeparator,
+				idp.ClientID,
+				idpPartsSeparator,
+				idp.ClientSecret,
+			),
+		)
+	}
+
+	return strings.Join(idps, ",")
+}
+
+// Set is called once, in command line order, for each flag present.
+func (s *SliceIDPVar) Set(value string) error {
+	// clear existing IDPs before setting new ones
+	*s = nil
+
+	parts := strings.SplitSeq(value, ",")
+	for part := range parts {
+		idpParts := strings.SplitN(part, "#", 4)
+
+		if len(idpParts) != 4 {
+			return fmt.Errorf(
+				"invalid IDP format: %s. This should be in the format 'name%sredirectURL%sclientID%sclientSecret'",
+				part,
+				idpPartsSeparator, idpPartsSeparator, idpPartsSeparator,
+			)
+		}
+
+		// trim leading and trailing whitespace from each part
+		// in case the idps was separated by commas with spaces (, )
+		// of parts was separated by dashes with spaces (# )
+		*s = append(*s, IDP{
+			Name:         strings.TrimSpace(idpParts[0]),
+			RedirectURL:  strings.TrimSpace(idpParts[1]),
+			ClientID:     strings.TrimSpace(idpParts[2]),
+			ClientSecret: strings.TrimSpace(idpParts[3]),
+		})
+	}
+
+	return nil
+}
+
+// Get returns the contents of the Value.
+func (s *SliceIDPVar) Get() any {
+	return *s
+}
+
+// IsBoolFlag returns true if the flag is a boolean flag
+func (s *SliceIDPVar) IsBoolFlag() bool {
+	return false
+}
+
 // Field is a generic configuration field for structs
+// It holds the flag name, environment variable name, description, and value
+// This should be used to define configuration fields in structs
 type Field[T any] struct {
 	// FlagName is the name used for the command line flag
 	FlagName string
@@ -137,8 +224,9 @@ func NewField[T any](flagName string, enVarName string, flagDescription string, 
 		EnVarName:       enVarName,
 		Value:           value,
 	}
+
 	if enVarName != "" {
-		ret.FlagDescription += ", EnvVar: " + enVarName
+		ret.FlagDescription += "\nEnvVar: " + enVarName
 	}
 
 	return ret
@@ -180,11 +268,29 @@ func GetEnv[T any](key string, defaultValue T) T {
 			}
 		case FileVar:
 			// create a file using the value as the path
-			file, err := os.OpenFile(value, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
-			if err != nil {
+			file := &FileVar{
+				Flag: os.O_APPEND | os.O_CREATE | os.O_WRONLY,
+			}
+
+			if err := file.Set(value); err != nil {
 				return defaultValue
 			}
-			return any(FileVar{File: file, Flag: os.O_APPEND | os.O_CREATE | os.O_WRONLY}).(T)
+
+			return any(*file).(T)
+		case SliceStringVar:
+			slices := SliceStringVar{}
+			if err := slices.Set(value); err != nil {
+				return defaultValue
+			}
+
+			return any(slices).(T)
+		case SliceIDPVar:
+			idps := SliceIDPVar{}
+			if err := idps.Set(value); err != nil {
+				return defaultValue
+			}
+
+			return any(idps).(T)
 
 		default:
 			return defaultValue
