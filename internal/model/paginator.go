@@ -89,64 +89,76 @@ func (ref *Paginator) GenerateToken(id uuid.UUID, serial int64, dir TokenDirecti
 
 // Validate validates the model.
 func (ref *Paginator) Validate() error {
-	// Validate limit with enhanced validation
+	var errs ValidationErrors
+
+	// Validate pagination limits using the centralized function
 	if err := ValidatePagination(ref.Limit, 0, ""); err != nil {
-		return &InvalidLimitError{MinLimit: PaginatorMinLimit, MaxLimit: PaginatorMaxLimit}
+		if validationErr, ok := err.(*ValidationError); ok {
+			errs.Errors = append(errs.Errors, *validationErr)
+		}
 	}
 
-	// Additional check for our specific limits
+	// Additional business-specific validation for limit bounds
 	if ref.Limit < PaginatorMinLimit || ref.Limit > PaginatorMaxLimit {
-		return &InvalidLimitError{MinLimit: PaginatorMinLimit, MaxLimit: PaginatorMaxLimit}
+		errs.Errors = append(errs.Errors, ValidationError{
+			Field:   "limit",
+			Message: fmt.Sprintf("limit must be between %d and %d", PaginatorMinLimit, PaginatorMaxLimit),
+			Code:    "INVALID_RANGE",
+		})
 	}
 
-	// Validate next token with string validation
+	// Validate next token if provided
 	if ref.NextToken != "" {
-		// First validate the token string format
-		token, err := ValidateString(ref.NextToken, StringValidationOptions{
+		if _, err := ValidateString(ref.NextToken, StringValidationOptions{
 			MinLength:      1,
-			MaxLength:      1024,
+			MaxLength:      1000, // reasonable base64 token length
 			TrimWhitespace: true,
 			AllowEmpty:     false,
 			NoControlChars: true,
-			NoHTMLTags:     true,
-			NoScriptTags:   true,
+			NoNullBytes:    true,
 			FieldName:      "next_token",
-		})
-		if err != nil {
-			return &InvalidTokenError{Message: "invalid next token format"}
-		}
-		ref.NextToken = token
-
-		// Then validate it can be decoded
-		_, _, _, err = DecodeToken(ref.NextToken, TokenDirectionNext)
-		if err != nil {
-			return &InvalidTokenError{Message: "next token cannot be decoded"}
+		}); err != nil {
+			errs.Errors = append(errs.Errors, *err.(*ValidationError))
+		} else {
+			// Additional business logic validation for token decoding
+			_, _, _, err := DecodeToken(ref.NextToken, TokenDirectionNext)
+			if err != nil {
+				errs.Errors = append(errs.Errors, ValidationError{
+					Field:   "next_token",
+					Message: "next token cannot be decoded",
+					Code:    "INVALID_TOKEN",
+				})
+			}
 		}
 	}
 
-	// Validate previous token with string validation
+	// Validate previous token if provided
 	if ref.PrevToken != "" {
-		// First validate the token string format
-		token, err := ValidateString(ref.PrevToken, StringValidationOptions{
+		if _, err := ValidateString(ref.PrevToken, StringValidationOptions{
 			MinLength:      1,
-			MaxLength:      1024,
+			MaxLength:      1000, // reasonable base64 token length
 			TrimWhitespace: true,
 			AllowEmpty:     false,
 			NoControlChars: true,
-			NoHTMLTags:     true,
-			NoScriptTags:   true,
+			NoNullBytes:    true,
 			FieldName:      "prev_token",
-		})
-		if err != nil {
-			return &InvalidTokenError{Message: "invalid previous token format"}
+		}); err != nil {
+			errs.Errors = append(errs.Errors, *err.(*ValidationError))
+		} else {
+			// Additional business logic validation for token decoding
+			_, _, _, err := DecodeToken(ref.PrevToken, TokenDirectionPrev)
+			if err != nil {
+				errs.Errors = append(errs.Errors, ValidationError{
+					Field:   "prev_token",
+					Message: "previous token cannot be decoded",
+					Code:    "INVALID_TOKEN",
+				})
+			}
 		}
-		ref.PrevToken = token
+	}
 
-		// Then validate it can be decoded
-		_, _, _, err = DecodeToken(ref.PrevToken, TokenDirectionPrev)
-		if err != nil {
-			return &InvalidTokenError{Message: "previous token cannot be decoded"}
-		}
+	if errs.HasErrors() {
+		return &errs
 	}
 
 	return nil

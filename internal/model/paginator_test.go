@@ -371,21 +371,19 @@ func TestPaginator_GenerateToken(t *testing.T) {
 }
 
 func TestPaginator_Validate(t *testing.T) {
-	validUUID, err := uuid.NewV7()
-	if err != nil {
-		t.Fatalf("Failed to generate UUID: %v", err)
-	}
-
+	validUUID := uuid.Must(uuid.NewV7())
 	validPrevToken := EncodeToken(validUUID, 123, TokenDirectionPrev)
 	validNextToken := EncodeToken(validUUID, 123, TokenDirectionNext)
 	invalidToken := "invalid-token-not-base64"
 	invalidBase64Token := base64.StdEncoding.EncodeToString([]byte("invalid-format"))
 
 	tests := []struct {
-		name    string
-		p       Paginator
-		wantErr bool
-		errType error
+		name         string
+		p            Paginator
+		wantErr      bool
+		wantErrField string
+		wantErrCode  string
+		wantErrMsg   string
 	}{
 		{
 			name: "valid paginator with default values",
@@ -408,22 +406,20 @@ func TestPaginator_Validate(t *testing.T) {
 			p: Paginator{
 				Limit: PaginatorMinLimit - 1,
 			},
-			wantErr: true,
-			errType: &InvalidLimitError{
-				MinLimit: PaginatorMinLimit,
-				MaxLimit: PaginatorMaxLimit,
-			},
+			wantErr:      true,
+			wantErrField: "limit",
+			wantErrCode:  "INVALID_RANGE",
+			wantErrMsg:   "limit must be between",
 		},
 		{
 			name: "invalid limit - above maximum",
 			p: Paginator{
 				Limit: PaginatorMaxLimit + 1,
 			},
-			wantErr: true,
-			errType: &InvalidLimitError{
-				MinLimit: PaginatorMinLimit,
-				MaxLimit: PaginatorMaxLimit,
-			},
+			wantErr:      true,
+			wantErrField: "limit",
+			wantErrCode:  "INVALID_RANGE",
+			wantErrMsg:   "limit must be between",
 		},
 		{
 			name: "invalid next token - not base64",
@@ -431,10 +427,10 @@ func TestPaginator_Validate(t *testing.T) {
 				NextToken: invalidToken,
 				Limit:     PaginatorDefaultLimit,
 			},
-			wantErr: true,
-			errType: &InvalidTokenError{
-				Message: "next token cannot be decoded",
-			},
+			wantErr:      true,
+			wantErrField: "next_token",
+			wantErrCode:  "INVALID_TOKEN",
+			wantErrMsg:   "next token cannot be decoded",
 		},
 		{
 			name: "invalid prev token - not base64",
@@ -442,10 +438,10 @@ func TestPaginator_Validate(t *testing.T) {
 				PrevToken: invalidToken,
 				Limit:     PaginatorDefaultLimit,
 			},
-			wantErr: true,
-			errType: &InvalidTokenError{
-				Message: "previous token cannot be decoded",
-			},
+			wantErr:      true,
+			wantErrField: "prev_token",
+			wantErrCode:  "INVALID_TOKEN",
+			wantErrMsg:   "previous token cannot be decoded",
 		},
 		{
 			name: "invalid next token - invalid format",
@@ -453,10 +449,10 @@ func TestPaginator_Validate(t *testing.T) {
 				NextToken: invalidBase64Token,
 				Limit:     PaginatorDefaultLimit,
 			},
-			wantErr: true,
-			errType: &InvalidTokenError{
-				Message: "next token cannot be decoded",
-			},
+			wantErr:      true,
+			wantErrField: "next_token",
+			wantErrCode:  "INVALID_TOKEN",
+			wantErrMsg:   "next token cannot be decoded",
 		},
 		{
 			name: "invalid prev token - invalid format",
@@ -464,10 +460,10 @@ func TestPaginator_Validate(t *testing.T) {
 				PrevToken: invalidBase64Token,
 				Limit:     PaginatorDefaultLimit,
 			},
-			wantErr: true,
-			errType: &InvalidTokenError{
-				Message: "previous token cannot be decoded",
-			},
+			wantErr:      true,
+			wantErrField: "prev_token",
+			wantErrCode:  "INVALID_TOKEN",
+			wantErrMsg:   "previous token cannot be decoded",
 		},
 		{
 			name: "valid limit at minimum",
@@ -490,11 +486,10 @@ func TestPaginator_Validate(t *testing.T) {
 				PrevToken: invalidToken,
 				Limit:     PaginatorMinLimit - 1,
 			},
-			wantErr: true,
-			errType: &InvalidLimitError{
-				MinLimit: PaginatorMinLimit,
-				MaxLimit: PaginatorMaxLimit,
-			},
+			wantErr:      true,
+			wantErrField: "limit", // We'll check for at least the limit error
+			wantErrCode:  "INVALID_RANGE",
+			wantErrMsg:   "limit must be between",
 		},
 	}
 
@@ -507,28 +502,32 @@ func TestPaginator_Validate(t *testing.T) {
 			}
 
 			if tt.wantErr {
-				var invalidLimitError *InvalidLimitError
-				if errors.As(tt.errType, &invalidLimitError) {
-					var gotInvalidLimitError *InvalidLimitError
-					if !errors.As(err, &gotInvalidLimitError) {
-						t.Errorf("Expected error of type InvalidLimitError, got %T", err)
-						return
-					}
-					if gotInvalidLimitError.MinLimit != PaginatorMinLimit || gotInvalidLimitError.MaxLimit != PaginatorMaxLimit {
-						t.Errorf("InvalidLimitError: got = '%v', want = '%v'", gotInvalidLimitError, tt.errType)
+				var validationErrors *ValidationErrors
+				if !errors.As(err, &validationErrors) {
+					t.Errorf("Expected error of type *ValidationErrors, got %T", err)
+					return
+				}
+
+				// Check that we have at least one error
+				if len(validationErrors.Errors) == 0 {
+					t.Errorf("Expected validation errors but got none")
+					return
+				}
+
+				// Check if we have the expected error field and message
+				found := false
+				for _, validationErr := range validationErrors.Errors {
+					if validationErr.Field == tt.wantErrField &&
+						validationErr.Code == tt.wantErrCode &&
+						strings.Contains(validationErr.Message, tt.wantErrMsg) {
+						found = true
+						break
 					}
 				}
 
-				var invalidTokenError *InvalidTokenError
-				if errors.As(tt.errType, &invalidTokenError) {
-					var gotInvalidTokenError *InvalidTokenError
-					if !errors.As(err, &gotInvalidTokenError) {
-						t.Errorf("Expected error of type InvalidTokenError, got %T", err)
-						return
-					}
-					if gotInvalidTokenError.Message != invalidTokenError.Message {
-						t.Errorf("InvalidTokenError: got = '%v', want = '%v'", gotInvalidTokenError, tt.errType)
-					}
+				if !found {
+					t.Errorf("Expected validation error with field '%s', code '%s', and message containing '%s', but not found in errors: %v",
+						tt.wantErrField, tt.wantErrCode, tt.wantErrMsg, validationErrors.Errors)
 				}
 			}
 		})
@@ -536,10 +535,7 @@ func TestPaginator_Validate(t *testing.T) {
 }
 
 func TestPaginator_GeneratePages(t *testing.T) {
-	validUUID, err := uuid.NewV7()
-	if err != nil {
-		t.Fatalf("Failed to generate UUID: %v", err)
-	}
+	validUUID := uuid.Must(uuid.NewV7())
 
 	tests := []struct {
 		name         string
