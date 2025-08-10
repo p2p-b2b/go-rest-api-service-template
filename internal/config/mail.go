@@ -95,19 +95,18 @@ func (ref *MailConfig) ParseEnvVars() {
 }
 
 func (ref *MailConfig) Validate() error {
-	if ref.SMTPHost.Value == "" {
+	if ref.SMTPHost.Value == "" && ref.APIURL.Value == "" {
 		return &InvalidConfigurationError{
 			Field:   "mail.smtp.host or mail.api.url",
-			Value:   ref.SMTPHost.Value,
+			Value:   "",
 			Message: "Either SMTP host or API URL must be set",
 		}
 	}
-
-	if ref.APIURL.Value == "" {
+	if ref.SMTPHost.Value != "" && ref.APIURL.Value != "" {
 		return &InvalidConfigurationError{
-			Field:   "mail.api.url",
-			Value:   ref.APIURL.Value,
-			Message: "Either SMTP host or API URL must be set",
+			Field:   "mail.smtp.host and mail.api.url",
+			Value:   fmt.Sprintf("SMTPHost: %s, APIURL: %s", ref.SMTPHost.Value, ref.APIURL.Value),
+			Message: "SMTP host and API URL cannot both be set; only one must be configured",
 		}
 	}
 
