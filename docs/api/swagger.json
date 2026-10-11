@@ -6473,7 +6473,7 @@
                         "AccessToken": []
                     }
                 ],
-                "description": "Update existing user account details by ID.",
+                "description": "Update existing user account details by ID. Only the administrator account (the admin flag, not the Administrator role) changes an e-mail address; from anyone else a change is a 403 and nothing is written. The stored address sent back is accepted.",
                 "consumes": [
                     "application/json"
                 ],
@@ -6524,7 +6524,7 @@
                         }
                     },
                     "403": {
-                        "description": "Insufficient permissions",
+                        "description": "Insufficient permissions, or a change of e-mail address by an account that is not the administrator account",
                         "schema": {
                             "$ref": "#/definitions/payload.HTTPMessage"
                         }

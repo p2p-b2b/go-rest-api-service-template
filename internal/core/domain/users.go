@@ -134,6 +134,11 @@ type UpdateUserInput struct {
 	Verified     *bool
 	LocalAccount *bool
 	ID           uuid.UUID
+	// CallerID is who asks, on PUT /users/{user_id}: a change of the
+	// account's e-mail address is held to it (UsersService.UpdateByID). The
+	// flows that update an account for itself (the profile, the
+	// verification, a password reset) carry no address and name no caller.
+	CallerID uuid.UUID
 }
 
 func (ref *UpdateUserInput) Validate() error {
