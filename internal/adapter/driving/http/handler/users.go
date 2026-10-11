@@ -298,7 +298,7 @@ func (ref *UsersHandler) create(w http.ResponseWriter, r *http.Request) {
 //
 //	@ID				01982303-f0f9-7e3c-a186-f186a3418768
 //	@Summary		Update user
-//	@Description	Update existing user account details by ID.
+//	@Description	Update existing user account details by ID. Only the administrator account (the admin flag, not the Administrator role) changes an e-mail address; from anyone else a change is a 403 and nothing is written. The stored address sent back is accepted.
 //	@Tags			Users
 //	@Accept			json
 //	@Produce		json
@@ -307,7 +307,7 @@ func (ref *UsersHandler) create(w http.ResponseWriter, r *http.Request) {
 //	@Success		200		{object}	payload.HTTPMessage			"User updated successfully"
 //	@Failure		400		{object}	payload.HTTPMessage			"Invalid user ID or request body"
 //	@Failure		401		{object}	payload.HTTPMessage			"Missing or invalid authentication token"
-//	@Failure		403		{object}	payload.HTTPMessage			"Insufficient permissions"
+//	@Failure		403		{object}	payload.HTTPMessage			"Insufficient permissions, or a change of e-mail address by an account that is not the administrator account"
 //	@Failure		404		{object}	payload.HTTPMessage			"User not found"
 //	@Failure		409		{object}	payload.HTTPMessage			"Email already in use by another user"
 //	@Failure		413		{object}	payload.HTTPMessage			"Request body larger than http.server.max.body.bytes"
@@ -320,6 +320,15 @@ func (ref *UsersHandler) updateByID(w http.ResponseWriter, r *http.Request) {
 	start := time.Now()
 	ctx, span, attrs := o11y.SetupTraceHTTP(r, ref.ot.Traces.Tracer, ref.metricsMetadata, "updateByID")
 	defer span.End()
+
+	// The body may carry an address, and a change of address is held to
+	// who asks.
+	callerID, err := getUserIDFromContext(ctx)
+	if err != nil {
+		e := o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
+		respond.WriteInternalError(w, r, e)
+		return
+	}
 
 	userID, err := parseUUIDQueryParams(r.PathValue("user_id"))
 	if err != nil {
@@ -343,6 +352,7 @@ func (ref *UsersHandler) updateByID(w http.ResponseWriter, r *http.Request) {
 
 	input := &domain.UpdateUserInput{
 		ID:           userID,
+		CallerID:     callerID,
 		FirstName:    req.FirstName,
 		LastName:     req.LastName,
 		Email:        req.Email,
@@ -354,6 +364,12 @@ func (ref *UsersHandler) updateByID(w http.ResponseWriter, r *http.Request) {
 		if _, ok := errors.AsType[*domain.UserAlreadyExistsError](err); ok {
 			e := o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
 			respond.WriteJSONMessage(w, r, http.StatusConflict, e.Error())
+			return
+		}
+
+		if _, ok := errors.AsType[*domain.AdministratorOnlyError](err); ok {
+			e := o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
+			respond.WriteJSONMessage(w, r, http.StatusForbidden, e.Error())
 			return
 		}
 

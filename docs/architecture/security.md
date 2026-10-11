@@ -298,6 +298,51 @@ link instead, so taking over an account needs its mailbox as well as the
 grant. It answers 202 whatever the address's state and says nothing about
 why, the same as the public recovery route it delegates to.
 
+### An address is the administrator account's to change
+
+The reset link goes to the stored address, so an account's address is part
+of how the account is held, and is not every holder of the update's grant to
+write. Only **the administrator account** changes an account's e-mail
+address: the account with the `admin` flag, which is not the Administrator
+role. The role is a set of grants and can be given; no route sets the flag.
+
+```mermaid
+flowchart TD
+    R["PUT /users/{user_id}"] --> E{"does the body<br/>carry an address?"}
+    E -- no --> W["as before: the grant decides"]
+    E -- yes --> S{"is it the stored address?<br/>(the same bytes, or the stored one<br/>in the service's spelling)"}
+    S -- "yes: the form sent back;<br/>it is taken out of the update" --> W
+    S -- no --> C{"is the caller an enabled<br/>account with users.admin?"}
+    C -- yes --> W
+    C -- no --> F["403 AdministratorOnlyError:<br/>user email can be changed only<br/>by the administrator account<br/><i>nothing of the body is written</i>"]
+    S -- "no account with that id" --> N["404"]
+```
+
+- **A change is refused, not the field.** A client sends the whole form
+  back, the address it read included; the stored address is no change and
+  the rest of the body is written. It is then taken out of the update, so
+  the statement is handed an address by the administrator account only: the
+  check and the write are two statements.
+- **"The stored address" is the same bytes**, or the stored one in the
+  spelling `ValidateEmail` gives every address, for a row older than that
+  spelling. Nothing looser: a comparison that folds case folds more than
+  case, and the statement compares bytes.
+- **The whole body is refused**, not the address alone: a body that was
+  partly written would answer 403 and have changed the account.
+- **Not its own address either.** An account does not change its address
+  through this route, and `PUT /me` carries none. Changing one's own
+  address, with the old one confirming the new, is a feature to build.
+- **Both accounts are read from the repository, not the cache**, and a
+  disabled account with the flag is not one that may ask.
+- **The flows that update an account for itself** (the profile, the
+  verification, a password reset) carry no address and name no caller.
+
+`TestOnlyTheAdministratorAccountChangesAnotherAccountsAddress` holds it
+against a running service with the mail server;
+`TestOnlyTheAdministratorAccountChangesAnAddress` and
+`TestAUsersUpdatePassesThePathsUserAndTheCaller` where the pull request gate
+runs.
+
 ### What an anonymous caller learns about the build
 
 `GET /version` answers only `version`. It used to hand an anonymous,

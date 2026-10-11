@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -333,6 +334,15 @@ func (ref *UsersService) UpdateByID(ctx context.Context, input *domain.UpdateUse
 		return o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
 	}
 
+	// An address is not every caller's to change. It is judged against the
+	// stored row, read only when the body carries one: the profile, the
+	// verification and a password reset carry none.
+	if input.Email != nil {
+		if err := ref.addressMayChange(ctx, input); err != nil {
+			return o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
+		}
+	}
+
 	if input.Password != nil {
 		if len(*input.Password) < domain.ValidUserPasswordMinLength || len(*input.Password) > domain.ValidUserPasswordMaxLength {
 			errorValue := &domain.InvalidUserPasswordError{Message: fmt.Sprintf("password must be between %d and %d characters", domain.ValidUserPasswordMinLength, domain.ValidUserPasswordMaxLength)}
@@ -368,6 +378,90 @@ func (ref *UsersService) UpdateByID(ctx context.Context, input *domain.UpdateUse
 		attribute.String("user.id", input.ID.String()))
 
 	return nil
+}
+
+// errAddressChangeWithoutCaller is what a change of address answers when it
+// does not know who asks: a route wired without its caller. It is no domain
+// error, so the answer is the fixed 500.
+var errAddressChangeWithoutCaller = errors.New("an account's e-mail address was asked to change with no caller")
+
+// addressMayChange refuses a change of an account's e-mail address by anyone
+// but the administrator account.
+//
+// An address is where a password reset is sent, so it is part of how the
+// account is held. Only the administrator account, the one with the `admin`
+// flag, changes an account's address. The
+// flag, not the Administrator role: the role is a set of grants and can be
+// given; no route sets the flag.
+//
+// An address that is the stored one is no change, and is let through: a
+// client sends the whole form back. "The stored one" is the same bytes, or
+// the stored address in the spelling the service gives every address
+// (ValidateEmail, which the request has been through), for a row older than
+// that spelling. Nothing looser: a comparison that folds case folds more
+// than case, and the statement compares bytes.
+//
+// And an address that is no change is taken out of the input: the statement
+// is never handed one by anybody but the administrator account. The check
+// and the write are two statements, and what was "the stored address" at
+// the check would be written back over a correction made in between.
+//
+// Both rows are read from the repository and not through the cache: the
+// answer decides who may have the account.
+func (ref *UsersService) addressMayChange(ctx context.Context, input *domain.UpdateUserInput) error {
+	stored, err := ref.repository.SelectByID(ctx, input.ID)
+	if err != nil {
+		return err
+	}
+
+	if sameAddress(stored.Email, *input.Email) {
+		input.Email = nil
+
+		return nil
+	}
+
+	if input.CallerID == uuid.Nil() {
+		return errAddressChangeWithoutCaller
+	}
+
+	// An account that is not there, a flag that was never set, and an
+	// account that is disabled are not the administrator's: a disabled
+	// account does not sign in, and a token it still holds is not a reason
+	// to let it write an address.
+	caller, err := ref.repository.SelectByID(ctx, input.CallerID)
+	if _, gone := errors.AsType[*domain.UserNotFoundError](err); gone {
+		return &domain.AdministratorOnlyError{Entity: "user", Field: domain.FieldEmail}
+	}
+
+	if err != nil {
+		return err
+	}
+
+	if hasAdminFlag(caller) && !isDisabled(caller) {
+		return nil
+	}
+
+	return &domain.AdministratorOnlyError{Entity: "user", Field: domain.FieldEmail}
+}
+
+// sameAddress reports whether sent is the stored address: byte for byte, or
+// once the stored one is spelled the way the service spells every address.
+func sameAddress(stored, sent string) bool {
+	if stored == sent {
+		return true
+	}
+
+	spelled, err := domain.ValidateEmail(stored, domain.FieldEmail)
+
+	return err == nil && spelled == sent
+}
+
+func hasAdminFlag(account *domain.User) bool {
+	return account != nil && account.Admin != nil && *account.Admin
+}
+
+func isDisabled(account *domain.User) bool {
+	return account != nil && account.Disabled != nil && *account.Disabled
 }
 
 func (ref *UsersService) DeleteByID(ctx context.Context, input *domain.DeleteUserInput) error {

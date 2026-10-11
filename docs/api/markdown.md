@@ -2277,7 +2277,7 @@ Status: Internal Server Error
 PUT /users/{user_id}
 ```
 
-Update existing user account details by ID.
+Update existing user account details by ID. Only the administrator account (the admin flag, not the Administrator role) changes an e-mail address; from anyone else a change is a 403 and nothing is written. The stored address sent back is accepted.
 
 #### Consumes
   * application/json
@@ -2301,7 +2301,7 @@ Update existing user account details by ID.
 | [200](#01982303-f0f9-7e3c-a186-f186a3418768-200) | OK | User updated successfully |  | [schema](#01982303-f0f9-7e3c-a186-f186a3418768-200-schema) |
 | [400](#01982303-f0f9-7e3c-a186-f186a3418768-400) | Bad Request | Invalid user ID or request body |  | [schema](#01982303-f0f9-7e3c-a186-f186a3418768-400-schema) |
 | [401](#01982303-f0f9-7e3c-a186-f186a3418768-401) | Unauthorized | Missing or invalid authentication token |  | [schema](#01982303-f0f9-7e3c-a186-f186a3418768-401-schema) |
-| [403](#01982303-f0f9-7e3c-a186-f186a3418768-403) | Forbidden | Insufficient permissions |  | [schema](#01982303-f0f9-7e3c-a186-f186a3418768-403-schema) |
+| [403](#01982303-f0f9-7e3c-a186-f186a3418768-403) | Forbidden | Insufficient permissions, or a change of e-mail address by an account that is not the administrator account |  | [schema](#01982303-f0f9-7e3c-a186-f186a3418768-403-schema) |
 | [404](#01982303-f0f9-7e3c-a186-f186a3418768-404) | Not Found | User not found |  | [schema](#01982303-f0f9-7e3c-a186-f186a3418768-404-schema) |
 | [409](#01982303-f0f9-7e3c-a186-f186a3418768-409) | Conflict | Email already in use by another user |  | [schema](#01982303-f0f9-7e3c-a186-f186a3418768-409-schema) |
 | [413](#01982303-f0f9-7e3c-a186-f186a3418768-413) | Request Entity Too Large | Request body larger than http.server.max.body.bytes |  | [schema](#01982303-f0f9-7e3c-a186-f186a3418768-413-schema) |
@@ -2339,7 +2339,7 @@ Status: Unauthorized
 
 [PayloadHTTPMessage](#payload-http-message)
 
-##### <span id="01982303-f0f9-7e3c-a186-f186a3418768-403"></span> 403 - Insufficient permissions
+##### <span id="01982303-f0f9-7e3c-a186-f186a3418768-403"></span> 403 - Insufficient permissions, or a change of e-mail address by an account that is not the administrator account
 Status: Forbidden
 
 ###### <span id="01982303-f0f9-7e3c-a186-f186a3418768-403-schema"></span> Schema

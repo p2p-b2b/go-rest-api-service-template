@@ -163,3 +163,20 @@ func (e *BaseWrappedError) Error() string {
 func (e *BaseWrappedError) Unwrap() error {
 	return e.Err
 }
+
+// AdministratorOnlyError refuses a change that only the administrator account
+// may make: the account with the `admin` flag, which is not the Administrator
+// role. It is a 403: the caller is who they say they are and holds the
+// route's grant, and this field of this body is still not theirs to write.
+//
+// The first use is an account's e-mail address: it is where a password reset
+// is sent, so it is part of how the account is held. The message names the
+// field and no value.
+type AdministratorOnlyError struct {
+	Entity string // whose field, e.g. "user"
+	Field  string // the field, e.g. "email"
+}
+
+func (e *AdministratorOnlyError) Error() string {
+	return fmt.Sprintf("%s %s can be changed only by the administrator account", e.Entity, e.Field)
+}
