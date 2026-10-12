@@ -95,6 +95,14 @@ Since `v0.0.3`.
 
 ### Changed
 
+- **The filter parser is `qfv` v1.0.4**, which reads three inputs as
+  PostgreSQL does. A number or a boolean as a pattern (`name LIKE 1`,
+  `SIMILAR TO 1`, the `~~` operators) is refused, as PostgreSQL has no such
+  operator for any column. `YES` and `NO` are names and no boolean literals:
+  `disabled = yes` is refused, where it reached PostgreSQL as a column that
+  does not exist. `IS` in lower case is the keyword (`id is null`), which was
+  refused in that one spelling. A `400` before and after, in other words for
+  the first two. (#129)
 - A failed request is one log line, at the level of its answer: `ERROR` for
   a `5xx`, `INFO` for a `4xx`. (#115)
 - Logs go through OpenTelemetry as a third signal, beside the local output
