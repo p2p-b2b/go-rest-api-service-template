@@ -15,6 +15,14 @@ Since `v0.0.3`.
 
 ### Security
 
+- **The three routes about a user's projects are held to the projects of
+  whoever asks.** `GET /users/{user_id}/projects` answers the projects of
+  that user that are the caller's too, and `POST` and `DELETE
+  /users/{user_id}/projects` change a link only on a project the caller is
+  linked to. For an account with the `admin` flag that is every project.
+  The design is in
+  [`docs/architecture/authorization.md`](./docs/architecture/authorization.md#a-route-about-a-users-projects-is-held-to-its-caller).
+  ([#127](https://github.com/slashdevops/go-rest-api-service-template/pull/127))
 - **An account an administrator disabled is not opened by its verification
   link.** A registration is disabled until its link is followed, and the
   link must open only that. An account created through `POST /users` is
@@ -66,6 +74,12 @@ Since `v0.0.3`.
   `email`.** A form that sends back the address it read is unaffected. (#123)
 - **An account created through `POST /users` is `verified`** in what the
   API answers. (#125)
+- **`GET /users/{user_id}/projects` answers fewer rows to a caller without
+  the `admin` flag**: the ones the caller is linked to too. And `POST` and
+  `DELETE /users/{user_id}/projects` answer `400` for a project that is not
+  one of the caller's, **and for one that does not exist**, where a link
+  answered `404` "User not found" and an unlink `200`. A role that manages
+  users and is a member of no project links nobody. (#127)
 - `/health/detailed` answers `500`, not its `503` with the per-component
   payload, while the database is unreachable: the account check in front of
   it needs the database. A probe still sees a failure. (#124)
@@ -88,6 +102,8 @@ Since `v0.0.3`.
 
 - Deleting a user or an identity provider that does not exist is a `404`
   and refunds nothing. (#119)
+- `POST /users/{user_id}/projects` with a project named twice in its body
+  is a `200`, where it was a `500`. (#127)
 - A filter or a sort field is one the list can serve. (#116, #118)
 - The Rego bundle passes Regal, which `make lint` now runs. (#113, #114)
 - The development stack syncs the container VM's clock, which freezes while

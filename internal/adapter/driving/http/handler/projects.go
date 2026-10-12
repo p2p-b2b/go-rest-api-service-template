@@ -452,7 +452,7 @@ func (ref *ProjectsHandler) deleteByID(w http.ResponseWriter, r *http.Request) {
 //
 //	@ID				019870ff-37f6-737e-8efb-e39730ef6952
 //	@Summary		List projects by user
-//	@Description	Retrieve paginated list of projects accessible to specific user.
+//	@Description	Retrieve the projects of a user that are the caller's too: all of them for the administrator account and for a caller asking about themselves, the shared ones for anyone else.
 //	@Tags			Projects,Users
 //	@Produce		json
 //	@Param			user_id		path		string							true	"User unique identifier"	Format(uuid)
@@ -474,6 +474,14 @@ func (ref *ProjectsHandler) listByUserID(w http.ResponseWriter, r *http.Request)
 	start := time.Now()
 	ctx, span, attrs := o11y.SetupTraceHTTP(r, ref.ot.Traces.Tracer, ref.metricsMetadata, "listByUserID")
 	defer span.End()
+
+	// The list is scoped to who asks, beside the user of the path.
+	callerID, err := getUserIDFromContext(ctx)
+	if err != nil {
+		e := o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
+		respond.WriteInternalError(w, r, e)
+		return
+	}
 
 	userID, err := parseUUIDQueryParams(r.PathValue("user_id"))
 	if err != nil {
@@ -500,10 +508,11 @@ func (ref *ProjectsHandler) listByUserID(w http.ResponseWriter, r *http.Request)
 	}
 
 	input := &domain.ListProjectsInput{
-		UserID: userID,
-		Sort:   sort,
-		Filter: filter,
-		Fields: fields,
+		UserID:   userID,
+		CallerID: callerID,
+		Sort:     sort,
+		Filter:   filter,
+		Fields:   fields,
 		Paginator: domain.Paginator{
 			NextToken: nextToken,
 			PrevToken: prevToken,

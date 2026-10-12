@@ -6798,7 +6798,7 @@ const docTemplate = `{
                         "AccessToken": []
                     }
                 ],
-                "description": "Retrieve paginated list of projects accessible to specific user.",
+                "description": "Retrieve the projects of a user that are the caller's too: all of them for the administrator account and for a caller asking about themselves, the shared ones for anyone else.",
                 "produces": [
                     "application/json"
                 ],
@@ -6899,7 +6899,7 @@ const docTemplate = `{
                         "AccessToken": []
                     }
                 ],
-                "description": "Associate multiple projects with user.",
+                "description": "Associate projects with a user. A caller links a user only to a project the caller is linked to; another account's project and one that does not exist are the same 400.",
                 "consumes": [
                     "application/json"
                 ],
@@ -6939,7 +6939,7 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Invalid user ID or request body",
+                        "description": "Invalid user ID or request body, or a project that is not one of the caller's",
                         "schema": {
                             "$ref": "#/definitions/payload.HTTPMessage"
                         }
@@ -7000,7 +7000,7 @@ const docTemplate = `{
                         "AccessToken": []
                     }
                 ],
-                "description": "Remove project associations from user.",
+                "description": "Remove project associations from user. A caller unlinks a user only from a project the caller is linked to; another account's project and one that does not exist are the same 400.",
                 "consumes": [
                     "application/json"
                 ],
@@ -7040,7 +7040,7 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Invalid user ID or request body",
+                        "description": "Invalid user ID or request body, or a project that is not one of the caller's",
                         "schema": {
                             "$ref": "#/definitions/payload.HTTPMessage"
                         }

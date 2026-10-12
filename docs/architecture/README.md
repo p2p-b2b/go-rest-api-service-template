@@ -291,7 +291,8 @@ Read it alongside [Adding a new entity](./adding-an-entity.md).
   grants as input, `*` as one UUID segment in a path and every method as an
   action, membership rather than equality for the administrator; fail-closed
   at each layer; the grant guard and the two bootstrap links a trigger
-  protects; the cache keys every grant change drops.
+  protects; the cache keys every grant change drops; the three routes about
+  a user's projects, held to the projects of whoever asks.
 - [Identity providers](./identity-providers.md) — sign-in through Google,
   GitHub, Entra ID and Okta: the kind on the type and the issuer on the
   instance, the frontend callback and why the API sets no cookie, identity by

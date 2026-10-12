@@ -309,6 +309,10 @@ type UnlinkRolesFromUsersInput = LinkRolesToUserInput
 type LinkProjectsToUserInput struct {
 	ProjectIDs []uuid.UUID
 	UserID     uuid.UUID
+	// CallerID is who asks, on POST and DELETE /users/{user_id}/projects:
+	// a caller links or unlinks a user only on a project the caller is
+	// linked to (projectsOfCaller, in the repository).
+	CallerID uuid.UUID
 }
 
 func (ref *LinkProjectsToUserInput) Validate() error {

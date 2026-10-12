@@ -234,6 +234,11 @@ type SelectProjectsInput struct {
 	Fields    string
 	Paginator Paginator
 	UserID    uuid.UUID
+	// CallerID is who asks, on GET /users/{user_id}/projects, where UserID
+	// is the user of the path. The list is that user's projects that are
+	// the caller's too (ProjectsRepository.SelectByUserID). The caller's own
+	// list (GET /projects) has one user, in UserID, and leaves this nil.
+	CallerID uuid.UUID
 }
 
 func (ref *SelectProjectsInput) Validate() error {

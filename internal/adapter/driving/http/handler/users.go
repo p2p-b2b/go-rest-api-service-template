@@ -983,14 +983,14 @@ func (ref *UsersHandler) unlinkRoles(w http.ResponseWriter, r *http.Request) {
 //
 //	@ID				01986f44-3a65-7a2d-8c68-8c579be0aae7
 //	@Summary		Link projects to user
-//	@Description	Associate multiple projects with user.
+//	@Description	Associate projects with a user. A caller links a user only to a project the caller is linked to; another account's project and one that does not exist are the same 400.
 //	@Tags			Users,Projects
 //	@Accept			json
 //	@Produce		json
 //	@Param			user_id	path		string								true	"User unique identifier"	Format(uuid)
 //	@Param			user	body		payload.LinkProjectsToUserRequest	true	"Project IDs to link"
 //	@Success		200		{object}	payload.HTTPMessage					"Projects linked to user successfully"
-//	@Failure		400		{object}	payload.HTTPMessage					"Invalid user ID or request body"
+//	@Failure		400		{object}	payload.HTTPMessage					"Invalid user ID or request body, or a project that is not one of the caller's"
 //	@Failure		401		{object}	payload.HTTPMessage					"Missing or invalid authentication token"
 //	@Failure		403		{object}	payload.HTTPMessage					"Insufficient permissions"
 //	@Failure		404		{object}	payload.HTTPMessage					"User not found"
@@ -1005,6 +1005,14 @@ func (ref *UsersHandler) linkProjects(w http.ResponseWriter, r *http.Request) {
 	start := time.Now()
 	ctx, span, attrs := o11y.SetupTraceHTTP(r, ref.ot.Traces.Tracer, ref.metricsMetadata, "linkProjects")
 	defer span.End()
+
+	// The projects come from the body, and are held to who asks.
+	callerID, err := getUserIDFromContext(ctx)
+	if err != nil {
+		e := o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
+		respond.WriteInternalError(w, r, e)
+		return
+	}
 
 	userID, err := parseUUIDQueryParams(r.PathValue("user_id"))
 	if err != nil {
@@ -1028,10 +1036,17 @@ func (ref *UsersHandler) linkProjects(w http.ResponseWriter, r *http.Request) {
 
 	input := &domain.LinkProjectsToUserInput{
 		UserID:     userID,
+		CallerID:   callerID,
 		ProjectIDs: req.ProjectIDs,
 	}
 
 	if err := ref.service.LinkProjects(ctx, input); err != nil {
+		if _, ok := errors.AsType[*domain.ProjectNotOfCallerError](err); ok {
+			e := o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
+			respond.WriteJSONMessage(w, r, http.StatusBadRequest, e.Error())
+			return
+		}
+
 		if _, ok := errors.AsType[*domain.UserAlreadyExistsError](err); ok {
 			e := o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
 			respond.WriteJSONMessage(w, r, http.StatusConflict, e.Error())
@@ -1062,14 +1077,14 @@ func (ref *UsersHandler) linkProjects(w http.ResponseWriter, r *http.Request) {
 //
 //	@ID				01986f44-3a65-7a25-afe8-fdd6ae4572c4
 //	@Summary		Unlink projects from user
-//	@Description	Remove project associations from user.
+//	@Description	Remove project associations from user. A caller unlinks a user only from a project the caller is linked to; another account's project and one that does not exist are the same 400.
 //	@Tags			Users,Projects
 //	@Accept			json
 //	@Produce		json
 //	@Param			user_id	path		string									true	"User unique identifier"	Format(uuid)
 //	@Param			body	body		payload.UnlinkProjectsFromUserRequest	true	"Project IDs to unlink"
 //	@Success		200		{object}	payload.HTTPMessage						"Projects unlinked from user successfully"
-//	@Failure		400		{object}	payload.HTTPMessage						"Invalid user ID or request body"
+//	@Failure		400		{object}	payload.HTTPMessage						"Invalid user ID or request body, or a project that is not one of the caller's"
 //	@Failure		401		{object}	payload.HTTPMessage						"Missing or invalid authentication token"
 //	@Failure		403		{object}	payload.HTTPMessage						"Insufficient permissions"
 //	@Failure		404		{object}	payload.HTTPMessage						"User not found"
@@ -1083,6 +1098,14 @@ func (ref *UsersHandler) unlinkProjects(w http.ResponseWriter, r *http.Request) 
 	start := time.Now()
 	ctx, span, attrs := o11y.SetupTraceHTTP(r, ref.ot.Traces.Tracer, ref.metricsMetadata, "unlinkProjects")
 	defer span.End()
+
+	// The projects come from the body, and are held to who asks.
+	callerID, err := getUserIDFromContext(ctx)
+	if err != nil {
+		e := o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
+		respond.WriteInternalError(w, r, e)
+		return
+	}
 
 	userID, err := parseUUIDQueryParams(r.PathValue("user_id"))
 	if err != nil {
@@ -1106,10 +1129,17 @@ func (ref *UsersHandler) unlinkProjects(w http.ResponseWriter, r *http.Request) 
 
 	input := &domain.UnlinkProjectsFromUserInput{
 		UserID:     userID,
+		CallerID:   callerID,
 		ProjectIDs: req.ProjectIDs,
 	}
 
 	if err := ref.service.UnlinkProjects(ctx, input); err != nil {
+		if _, ok := errors.AsType[*domain.ProjectNotOfCallerError](err); ok {
+			e := o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
+			respond.WriteJSONMessage(w, r, http.StatusBadRequest, e.Error())
+			return
+		}
+
 		if _, ok := errors.AsType[*domain.UserNotFoundError](err); ok {
 			e := o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
 			respond.WriteJSONMessage(w, r, http.StatusNotFound, e.Error())
