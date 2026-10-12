@@ -36,6 +36,9 @@ type fakeUserStore struct {
 	byEmail map[string]*domain.User
 	byID    map[uuid.UUID]*domain.User
 	updates []*domain.UpdateUserInput
+	// standings is what the repository says of an account when it is not
+	// what byID, the cached copy, would say.
+	standings map[uuid.UUID]domain.AccountStanding
 }
 
 func (f *fakeUserStore) GetByEmail(_ context.Context, email string) (*domain.User, error) {
@@ -56,6 +59,25 @@ func (f *fakeUserStore) GetByID(_ context.Context, id uuid.UUID) (*domain.User, 
 	}
 
 	return nil, &domain.UserNotFoundError{}
+}
+
+// Standing answers from the same accounts GetByID does, unless standings
+// says otherwise for one: the repository and the cache disagreeing.
+func (f *fakeUserStore) Standing(_ context.Context, id uuid.UUID) (domain.AccountStanding, error) {
+	if standing, ok := f.standings[id]; ok {
+		return standing, nil
+	}
+
+	u, ok := f.byID[id]
+	if !ok {
+		return domain.AccountMissing, nil
+	}
+
+	if u.Disabled != nil && *u.Disabled {
+		return domain.AccountDisabled, nil
+	}
+
+	return domain.AccountActive, nil
 }
 
 func (f *fakeUserStore) SelectAuthz(context.Context, uuid.UUID) (map[string]any, error) {

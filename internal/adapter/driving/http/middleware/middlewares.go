@@ -3,7 +3,6 @@ package middleware
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -45,9 +44,10 @@ const (
 	JwtToken ContextKey = "jwt_token"
 )
 
-// UsersServiceInterface defines the minimal interface needed for user existence checks
-type UsersServiceInterface interface {
-	GetByID(ctx context.Context, id uuid.UUID) (*domain.User, error)
+// AccountStandings answers whether an account may act: the one question
+// RequireActiveAccount asks, of the users use-case.
+type AccountStandings interface {
+	Standing(ctx context.Context, id uuid.UUID) (domain.AccountStanding, error)
 }
 
 // Middleware is a function that wraps an http.Handler
@@ -728,61 +728,78 @@ func secondsCeil(d time.Duration) int {
 	return int((d + time.Second - 1) / time.Second)
 }
 
-// CheckUserExists is a middleware that verifies the authenticated user exists in the database
-// This should be used BEFORE authorization checks for /me endpoints to ensure proper 404 responses
-// when a user has a valid JWT token but has been deleted from the database
-func CheckUserExists(userService UsersServiceInterface) Middleware {
+// RequireActiveAccount refuses a request whose token is good and whose
+// account is not: disabled, or not there any more.
+//
+// A token is checked for its signature, its expiry and the denylist. None of
+// that asks about the account. Sign-in and refresh look at `disabled`; a
+// token that already existed was asked again on /me only, so disabling an
+// account did not stop the token it held, on any other route, until the
+// token expired.
+//
+// It answers 401 with the code token_revoked, for both: the session is over.
+// That is the one answer a client must not meet with refresh-and-retry. /me
+// used to answer 403 "account is disabled" and 404 "user not found" through
+// a check of its own; it answers this 401 now, like every other route.
+//
+// It reads the account's standing from the repository, on every request
+// (UsersService.Standing says why not from the cache). A lookup that fails
+// is not permission to continue: it fails closed.
+//
+// On every chain that verifies an access token, but logout: a disabled
+// account must still be able to end the tokens it holds. The refresh asks
+// the same question in its use-case (AuthnService.RefreshAccessToken), and so
+// does a sign-in through an identity provider.
+func RequireActiveAccount(accounts AccountStandings) Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			ctx := r.Context()
 
-			// Extract user ID from JWT claims (already validated by CheckAccessToken middleware)
+			// The claims were verified by CheckAccessToken. One that names
+			// no account is answered as any refused token is.
+			refuse := func(reason string) {
+				slog.DebugContext(ctx, "token refused", "reason", reason, "path", r.URL.Path)
+				respond.WriteJSONMessage(w, r, http.StatusUnauthorized, "Invalid or expired token")
+			}
+
 			claims, ok := ctx.Value(JwtClaims).(map[string]any)
 			if !ok {
-				respond.WriteJSONMessage(w, r, http.StatusUnauthorized, "missing or invalid JWT claims")
+				refuse("no claims on the request")
 				return
 			}
 
-			// Get the "sub" claim which contains the user ID
-			sub, ok := claims["sub"]
+			sub, ok := claims["sub"].(string)
 			if !ok {
-				respond.WriteJSONMessage(w, r, http.StatusUnauthorized, "missing user ID in token claims")
+				refuse("no sub claim, or not a string")
 				return
 			}
 
-			subStr, ok := sub.(string)
-			if !ok {
-				respond.WriteJSONMessage(w, r, http.StatusUnauthorized, "invalid user ID format in token")
-				return
-			}
-
-			userID, err := uuid.Parse(subStr)
+			userID, err := uuid.Parse(sub)
 			if err != nil {
-				respond.WriteJSONMessage(w, r, http.StatusUnauthorized, "invalid user ID in token")
+				refuse("the sub claim is not an account id")
 				return
 			}
 
-			// Check if user exists in database
-			user, err := userService.GetByID(ctx, userID)
+			standing, err := accounts.Standing(ctx, userID)
 			if err != nil {
-				if _, ok := errors.AsType[*domain.UserNotFoundError](err); ok {
-					respond.WriteJSONMessage(w, r, http.StatusNotFound, "user not found")
-					return
+				// A 500 in the words every 500 has. The access line carries
+				// the cause, at ERROR; the helper logs it only when there
+				// is no access line to carry it.
+				respond.WriteInternalError(w, r, err)
+				return
+			}
+
+			if standing != domain.AccountActive {
+				reason := "the account is disabled"
+				if standing == domain.AccountMissing {
+					reason = "the account is not there any more"
 				}
-				respond.WriteJSONMessage(w, r, http.StatusInternalServerError, "failed to verify user existence")
+
+				slog.DebugContext(ctx, "account refused", "reason", reason, "user_id", userID.String(), "path", r.URL.Path)
+				respond.WriteJSONMessageWithCode(w, r, http.StatusUnauthorized, domain.CodeTokenRevoked, domain.AuthnTokenRevoked)
 				return
 			}
 
-			// A disabled account keeps whatever tokens it was issued until they
-			// expire. Login refuses it; this is where an already-issued token
-			// is refused. It surfaced when GET /me stopped being 403 for every
-			// non-administrator: a disabled user's token then read its profile.
-			if user != nil && user.Disabled != nil && *user.Disabled {
-				respond.WriteJSONMessage(w, r, http.StatusForbidden, "account is disabled")
-				return
-			}
-
-			// User exists, continue to next middleware
 			next.ServeHTTP(w, r)
 		})
 	}

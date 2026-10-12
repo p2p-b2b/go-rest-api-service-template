@@ -318,6 +318,43 @@ func (ref *UsersService) Create(ctx context.Context, input *domain.CreateUserInp
 	return nil
 }
 
+// Standing reports whether the account may act on a request it is
+// authenticated for.
+//
+// It reads the repository and not the cache. The cached account lives twelve
+// hours and an invalidation is best effort: a failed one would leave an
+// account that was disabled working for half a day, on the one read that
+// decides whether "disabled" means anything. It is one read by primary key
+// for every authenticated request.
+func (ref *UsersService) Standing(ctx context.Context, id uuid.UUID) (domain.AccountStanding, error) {
+	start := time.Now()
+	ctx, span, attrs := o11y.SetupTrace(ctx, ref.ot.Traces.Tracer, ref.metricsMetadata, "Standing")
+	defer span.End()
+
+	span.SetAttributes(attribute.String("user.id", id.String()))
+
+	account, err := ref.repository.SelectByID(ctx, id)
+	if _, gone := errors.AsType[*domain.UserNotFoundError](err); gone {
+		o11y.RecordSuccess(ctx, span, start, ref.metrics, attrs, "the account is not there")
+
+		return domain.AccountMissing, nil
+	}
+
+	if err != nil {
+		return domain.AccountUnknown, o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
+	}
+
+	if account.Disabled != nil && *account.Disabled {
+		o11y.RecordSuccess(ctx, span, start, ref.metrics, attrs, "the account is disabled")
+
+		return domain.AccountDisabled, nil
+	}
+
+	o11y.RecordSuccess(ctx, span, start, ref.metrics, attrs, "the account may act")
+
+	return domain.AccountActive, nil
+}
+
 func (ref *UsersService) UpdateByID(ctx context.Context, input *domain.UpdateUserInput) error {
 	start := time.Now()
 	ctx, span, attrs := o11y.SetupTrace(ctx, ref.ot.Traces.Tracer, ref.metricsMetadata, "UpdateByID")

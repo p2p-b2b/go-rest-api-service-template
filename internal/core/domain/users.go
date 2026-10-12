@@ -52,6 +52,24 @@ type User struct {
 	ID           uuid.UUID
 }
 
+// AccountStanding says whether an account may act on a request it is
+// authenticated for: it is there, and it is not disabled.
+type AccountStanding int
+
+const (
+	// AccountUnknown is the zero value, and it is no answer: whatever
+	// returns it without having asked (a failed read, a double that was
+	// told nothing) must not be read as "may act".
+	AccountUnknown AccountStanding = iota
+	// AccountActive: the account exists and may act.
+	AccountActive
+	// AccountDisabled: the account exists and an administrator, or a
+	// registration not yet verified, keeps it from acting.
+	AccountDisabled
+	// AccountMissing: there is no such account any more.
+	AccountMissing
+)
+
 type InsertUserInput struct {
 	Disabled     *bool
 	Verified     *bool

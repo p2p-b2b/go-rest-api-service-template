@@ -39,7 +39,7 @@ flowchart TD
     RL -- over budget --> R429[429]
     RL --> CORS[Cors, only when enabled]
     CORS -- OPTIONS --> R204[204 preflight, Max-Age 600]
-    CORS --> ROUTE[per-route chain: token, PA-token liveness, authz, post-auth limiter]
+    CORS --> ROUTE["per-route chain: token, the account's standing, authz, post-auth limiter"]
     ROUTE --> H[handler]
     H -- panic --> REC
     REC -- "recovered" --> R500[500 internal server error, logged]

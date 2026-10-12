@@ -17,7 +17,7 @@
 //   - Cross-origin controls: Cors with CorsOpts
 //   - Authentication and authorization: CheckAccessToken,
 //     CheckRefreshToken, CheckPasswordResetToken, CheckPATokenActive, and CheckAuthz
-//   - Resource existence guard: CheckUserExists
+//   - The account behind a token: RequireActiveAccount
 //
 // The order the composition root uses, outermost first:
 //  0. RequestID -- one id per request, on the response header, the log line
@@ -34,13 +34,16 @@
 //  5. The pre-auth rate limiter, wrapped in its exemptions.
 //  6. Cors -- AFTER the limiter, so a preflight is metered; before it, an
 //     OPTIONS flood was free.
-//  7. Per route: token validation, optional user existence, PA-token
-//     liveness, authorization, the post-auth limiter.
+//  7. Per route: token validation, PA-token liveness, the account's
+//     standing, authorization, the post-auth limiter.
 //
 // Notes:
 //   - Token middlewares store validated claims in request context under JwtClaims.
-//   - CheckUserExists is useful for /me-style endpoints where a valid token may
-//     refer to a deleted user and should return 404.
+//   - RequireActiveAccount is on every chain that verifies an access token,
+//     but logout: a token that verifies says nothing about its account, and
+//     a disabled or deleted one is answered 401 with the code token_revoked.
+//     The refresh asks the same of the repository in its use-case; the
+//     password reset and the verification do not ask.
 //   - RewriteStandardErrorsAsJSON rewrites standard plain-text HTTP errors to
 //     the project's structured JSON message format.
 package middleware

@@ -247,16 +247,18 @@ func TestMeAuthz(t *testing.T) {
 		assert.NoError(t, err, "Failed to send request")
 		defer response.Body.Close()
 
-		// 4. Check that we get a 404 Not Found response (middleware handles auth before handler)
-		assert.Equal(t, http.StatusNotFound, response.StatusCode, "Expected status code 404. Got %d. Message: %s", response.StatusCode, readResponseBody(t, response))
+		// 4. The account is gone, so its session is over: 401 with the code
+		// a client ends a session on. It was a 404 "user not found" when
+		// /me had a check of its own; every authenticated route answers
+		// this now.
+		assert.Equal(t, http.StatusUnauthorized, response.StatusCode, "Expected status code 401. Got %d. Message: %s", response.StatusCode, readResponseBody(t, response))
 
 		// 5. Parse and verify the error response
 		errorResp, err := parserResponseBody[payload.HTTPMessage](t, response)
 		assert.NoError(t, err, "Failed to parse error response")
+		assert.Equal(t, domain.CodeTokenRevoked, errorResp.Code)
+		assert.Equal(t, domain.AuthnTokenRevoked, errorResp.Message)
 
-		// Verify error message contains information about unauthorized access
-		assert.Contains(t, strings.ToLower(errorResp.Message), "not found",
-			"Error message should indicate user not found")
 	})
 
 	// Test response headers
@@ -744,16 +746,18 @@ func TestMeGet(t *testing.T) {
 		assert.NoError(t, err, "Failed to send request")
 		defer response.Body.Close()
 
-		// 4. Check that we get a 404 Not Found response (middleware handles auth before handler)
-		assert.Equal(t, http.StatusNotFound, response.StatusCode, "Expected status code 404. Got %d. Message: %s", response.StatusCode, readResponseBody(t, response))
+		// 4. The account is gone, so its session is over: 401 with the code
+		// a client ends a session on. It was a 404 "user not found" when
+		// /me had a check of its own; every authenticated route answers
+		// this now.
+		assert.Equal(t, http.StatusUnauthorized, response.StatusCode, "Expected status code 401. Got %d. Message: %s", response.StatusCode, readResponseBody(t, response))
 
 		// 5. Parse and verify the error response
 		errorResp, err := parserResponseBody[payload.HTTPMessage](t, response)
 		assert.NoError(t, err, "Failed to parse error response")
+		assert.Equal(t, domain.CodeTokenRevoked, errorResp.Code)
+		assert.Equal(t, domain.AuthnTokenRevoked, errorResp.Message)
 
-		// Verify error message contains information about user not found
-		assert.Contains(t, strings.ToLower(errorResp.Message), "not found",
-			"Error message should indicate user not found")
 	})
 
 	// Test response structure and field types
@@ -868,9 +872,10 @@ func TestMeGet(t *testing.T) {
 		assert.NoError(t, err, "Failed to send request")
 		defer response.Body.Close()
 
-		// The middleware should reject disabled users
-		// Note: This might return 401 or 403 depending on your middleware implementation
-		assert.True(t, response.StatusCode == http.StatusUnauthorized || response.StatusCode == http.StatusForbidden,
+		// A disabled account's session is over: 401, on /me as on every
+		// other route. (It was a 403 when /me had a check of its own, and
+		// this accepted either.)
+		assert.Equal(t, http.StatusUnauthorized, response.StatusCode,
 			"Disabled user should not be able to access the endpoint. Got status %d", response.StatusCode)
 
 		// 7. Cleanup
@@ -1198,16 +1203,18 @@ func TestMeUpdate(t *testing.T) {
 		assert.NoError(t, err, "Failed to send request")
 		defer response.Body.Close()
 
-		// 4. Check that we get a 404 Not Found response (middleware handles auth before handler)
-		assert.Equal(t, http.StatusNotFound, response.StatusCode, "Expected status code 404. Got %d. Message: %s", response.StatusCode, readResponseBody(t, response))
+		// 4. The account is gone, so its session is over: 401 with the code
+		// a client ends a session on. It was a 404 "user not found" when
+		// /me had a check of its own; every authenticated route answers
+		// this now.
+		assert.Equal(t, http.StatusUnauthorized, response.StatusCode, "Expected status code 401. Got %d. Message: %s", response.StatusCode, readResponseBody(t, response))
 
 		// 5. Parse and verify the error response
 		errorResp, err := parserResponseBody[payload.HTTPMessage](t, response)
 		assert.NoError(t, err, "Failed to parse error response")
+		assert.Equal(t, domain.CodeTokenRevoked, errorResp.Code)
+		assert.Equal(t, domain.AuthnTokenRevoked, errorResp.Message)
 
-		// Verify error message contains information about not found access
-		assert.Contains(t, strings.ToLower(errorResp.Message), "not found",
-			"Error message should indicate user not found")
 	})
 
 	t.Run("invalid_json_request", func(t *testing.T) {

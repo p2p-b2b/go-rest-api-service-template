@@ -179,16 +179,17 @@ flowchart TB
 
     subgraph AUTH["auth chain (protected routes)"]
         direction TB
-        AT["CheckAccessToken<br/><i>validate JWT → claims</i>"] --> AZ["CheckAuthz<br/><i>OPA policy check</i>"]
+        AT["CheckAccessToken<br/><i>validate JWT → claims</i>"] --> AC["RequireActiveAccount<br/><i>disabled or deleted → 401 token_revoked</i>"] --> AZ["CheckAuthz<br/><i>OPA policy check</i>"]
     end
 
     PUB --> HND(["handler"])
     AUTH --> HND
 ```
 
-The `/me` endpoint inserts `CheckUserExists` between the two auth steps; the
-refresh and password-reset flows swap `CheckAccessToken` for
-`CheckRefreshToken` / `CheckPasswordResetToken`.
+The `/me` chain is the same without the membership check; logout drops the
+revocation check and `RequireActiveAccount`, so that a disabled account can
+still end the tokens it holds; the refresh and password-reset flows swap
+`CheckAccessToken` for `CheckRefreshToken` / `CheckPasswordResetToken`.
 
 ## Startup: the composition root
 

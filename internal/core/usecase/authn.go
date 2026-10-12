@@ -37,6 +37,12 @@ type UserServiceConsumer interface {
 	UpdateByID(ctx context.Context, input *domain.UpdateUserInput) error
 	Create(ctx context.Context, input *domain.CreateUserInput) error
 	GetByID(ctx context.Context, id uuid.UUID) (*domain.User, error)
+
+	// Standing says whether the account may act, read from the repository
+	// and never from the cache. GetByID is cached for twelve hours and its
+	// invalidation is best effort: whether a session is issued or renewed
+	// for an account is not decided from it.
+	Standing(ctx context.Context, id uuid.UUID) (domain.AccountStanding, error)
 }
 
 // AuthnServiceConf represents the configuration for the auth service.
@@ -289,7 +295,15 @@ func (ref *AuthnService) LoginUserByID(ctx context.Context, userID uuid.UUID, me
 		return nil, o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
 	}
 
-	if user.Disabled != nil && *user.Disabled {
+	// The account's data may come from the cache; whether it may sign in
+	// does not. A disabled account whose cached copy still said "enabled"
+	// was issued a session here.
+	standing, err := ref.userService.Standing(ctx, userID)
+	if err != nil {
+		return nil, o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
+	}
+
+	if standing != domain.AccountActive || (user.Disabled != nil && *user.Disabled) {
 		return nil, ref.rejectLogin(ctx, span, start, attrs, "account is disabled")
 	}
 
@@ -768,8 +782,8 @@ func (ref *AuthnService) RefreshAccessToken(ctx context.Context, input *domain.R
 	// so the holder kept minting fresh access tokens for the whole refresh
 	// lifetime. Deleting one behaved the same way until their roles were gone.
 	//
-	// This is a cached read on the same entry CheckAuthz already warms, so the
-	// hot path is a cache hit, not a query.
+	// This read is the cached one, for the account's data. Whether the
+	// account may still renew its session is asked of the repository below.
 	user, err := ref.userService.GetByID(ctx, userID)
 	if err != nil {
 		if _, ok := errors.AsType[*domain.UserNotFoundError](err); ok {
@@ -781,6 +795,21 @@ func (ref *AuthnService) RefreshAccessToken(ctx context.Context, input *domain.R
 	}
 
 	if user.Disabled != nil && *user.Disabled {
+		errorValue := &domain.InvalidRefreshTokenError{Message: "the account this token was issued for is disabled"}
+		return nil, o11y.RecordError(ctx, span, start, errorValue, ref.metrics, attrs)
+	}
+
+	// The read above is the cached one, for the account's data. Whether the
+	// account may still renew its session is asked of the repository: the
+	// cached copy lives twelve hours, and after an invalidation that failed
+	// a disabled or deleted account kept rotating its refresh token.
+	switch standing, err := ref.userService.Standing(ctx, userID); {
+	case err != nil:
+		return nil, o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
+	case standing == domain.AccountMissing:
+		errorValue := &domain.InvalidRefreshTokenError{Message: "the account this token was issued for no longer exists"}
+		return nil, o11y.RecordError(ctx, span, start, errorValue, ref.metrics, attrs)
+	case standing != domain.AccountActive:
 		errorValue := &domain.InvalidRefreshTokenError{Message: "the account this token was issued for is disabled"}
 		return nil, o11y.RecordError(ctx, span, start, errorValue, ref.metrics, attrs)
 	}

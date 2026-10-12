@@ -160,7 +160,7 @@ columns on `users`:
 | column     | set by                                            | read by                                   |
 | ---------- | ------------------------------------------------- | ----------------------------------------- |
 | `verified` | the verification link; an IdP registration        | verify, resend, recovery                  |
-| `disabled` | the verification link (to `false`); administrators | login, refresh, recovery                  |
+| `disabled` | the verification link (to `false`); administrators | login, refresh, recovery, and every request that carries an access token (`RequireActiveAccount`) |
 
 `disabled` alone decides whether an account may sign in. An account an
 administrator creates or enables has never proven its address and nothing
@@ -584,7 +584,9 @@ tokens, which it verifies.
 
 A 401 has two meanings a client has to treat differently. An **expired** access
 token should be refreshed and the request retried; a **revoked** one must not
-be, because the refresh token was revoked in the same breath — the retry burns
+be, because the refresh cannot succeed either — the refresh token was revoked
+in the same breath, or, for an account that was disabled or deleted, nothing
+was revoked and the refresh refuses the account all the same. The retry burns
 two more requests and lands in the same place, then shows the user the wrong
 message.
 
