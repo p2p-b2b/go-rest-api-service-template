@@ -467,8 +467,7 @@ func (ref *ProductsHandler) listByProjectID(w http.ResponseWriter, r *http.Reque
 
 	out, err := ref.service.ListByProjectID(ctx, projectID, userID, input)
 	if err != nil {
-		e := o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
-		respond.WriteJSONMessage(w, r, httpStatusForListError(err), e.Error())
+		writeListError(w, r, o11y.RecordError(ctx, span, start, err, ref.metrics, attrs))
 
 		return
 	}
@@ -509,8 +508,7 @@ func (ref *ProductsHandler) list(w http.ResponseWriter, r *http.Request) {
 
 	out, err := ref.service.List(ctx, input)
 	if err != nil {
-		e := o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
-		respond.WriteJSONMessage(w, r, httpStatusForListError(err), e.Error())
+		writeListError(w, r, o11y.RecordError(ctx, span, start, err, ref.metrics, attrs))
 
 		return
 	}

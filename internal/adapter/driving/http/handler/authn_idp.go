@@ -479,8 +479,12 @@ func (ref *AuthnIDPsHandler) writeStartError(w http.ResponseWriter, r *http.Requ
 	switch {
 	case isType[*domain.IDPNotFoundError](err):
 		respond.WriteJSONMessage(w, r, http.StatusNotFound, e.Error())
-	case isType[*domain.InvalidAuthnServiceError](err):
-		// The adapter's "not reachable": discovery failed.
+	case isType[*domain.IDPUnreachableError](err):
+		// The provider's discovery document cannot be fetched. This arm
+		// used to match InvalidAuthnServiceError, the error of the token
+		// exchange, which building the authorization URL never returns: an
+		// unreachable provider fell to the default arm and was answered 500,
+		// where the routes document a 503.
 		respond.WriteJSONMessage(w, r, http.StatusServiceUnavailable, e.Error())
 	case isType[*domain.ValidationErrors](err), isType[*domain.InvalidInputError](err), isType[*domain.InvalidIdentityProvidersError](err):
 		respond.WriteJSONMessage(w, r, http.StatusBadRequest, e.Error())
