@@ -1606,7 +1606,7 @@ const docTemplate = `{
                         "VerificationToken": []
                     }
                 ],
-                "description": "Activate a user account with the verification token from the email. The token travels in the Authorization header, never in the URL.",
+                "description": "Prove an account's address with the verification token from the email, and enable the account unless an administrator disabled it. The token travels in the Authorization header, never in the URL.",
                 "produces": [
                     "application/json"
                 ],
@@ -1617,7 +1617,7 @@ const docTemplate = `{
                 "operationId": "01a02dbb-bc41-7287-9cfd-7ac08bf882ae",
                 "responses": {
                     "200": {
-                        "description": "Email verified - account activated",
+                        "description": "Email verified; the account is enabled unless an administrator disabled it",
                         "schema": {
                             "$ref": "#/definitions/payload.HTTPMessage"
                         }
@@ -6317,7 +6317,7 @@ const docTemplate = `{
                         "AccessToken": []
                     }
                 ],
-                "description": "Create a new user account with specified details.",
+                "description": "Create a new user account with specified details. It is stored disabled, for an administrator to enable, and verified: the administrator vouches for the address and no verification mail is sent.",
                 "consumes": [
                     "application/json"
                 ],
@@ -10356,7 +10356,7 @@ const docTemplate = `{
                     "example": "2021-01-01T00:00:00Z"
                 },
                 "verified": {
-                    "description": "Indicates if the email address has been verified (by the verification link or an identity provider)",
+                    "description": "Indicates if the email address has been verified (by the verification link, by an identity provider, or by the administrator who created the account)",
                     "type": "boolean",
                     "example": true
                 }

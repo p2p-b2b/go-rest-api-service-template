@@ -43,6 +43,11 @@ type UserServiceConsumer interface {
 	// invalidation is best effort: whether a session is issued or renewed
 	// for an account is not decided from it.
 	Standing(ctx context.Context, id uuid.UUID) (domain.AccountStanding, error)
+
+	// Verify records that address is proven to be the account's, and opens
+	// the account unless an administrator disabled it. It is what following
+	// a verification link does; UpdateByID does not set `verified`.
+	Verify(ctx context.Context, id uuid.UUID, address string) error
 }
 
 // AuthnServiceConf represents the configuration for the auth service.
@@ -233,10 +238,10 @@ func (ref *AuthnService) LoginUser(ctx context.Context, input *domain.LoginUserI
 
 	// disabled alone decides whether an account may sign in. A registration
 	// is disabled until its link is followed, so an unverified account is
-	// caught here; an account an administrator created or enabled signs in
-	// without ever having proven its address, exactly as it did before
-	// verified became its own column. Gating on verified here locked those
-	// accounts out: nothing sends them a link.
+	// caught here; a registration an administrator enabled by hand signs in
+	// without having proven its address, exactly as it did before verified
+	// became its own column. Gating on verified here locked such accounts
+	// out. (An account an administrator creates is stored verified.)
 	case user.Disabled != nil && *user.Disabled:
 		return nil, ref.rejectLogin(ctx, span, start, attrs, "account is disabled")
 
@@ -586,15 +591,24 @@ func (ref *AuthnService) VerifyUser(ctx context.Context, jwtToken string) error 
 
 	// Verification proves the address and opens the account in one step: the
 	// only reason a fresh registration is disabled is that its link has not
-	// been followed yet. An administrator who wants an unverified account to
-	// stay shut deletes it; there is nothing to keep.
-	updateInput := &domain.UpdateUserInput{
-		ID:       user.ID,
-		Verified: new(true),
-		Disabled: new(false),
-	}
+	// been followed yet. An account an administrator disabled is not opened
+	// by it, and the answer is the same: whether the account can sign in is
+	// not this route's to tell whoever holds a link. That is decided where
+	// the row is written (UsersService.Verify), not from the copy read above,
+	// which is a cached one, and so are the three checks above: the row is
+	// asked again for the address the link was mailed to and for not being
+	// verified yet. What it answers is answered here as the same finding
+	// from the copy is, so that one state has one answer whatever the cache
+	// held.
+	if err := ref.userService.Verify(ctx, user.ID, email); err != nil {
+		if _, gone := errors.AsType[*domain.UserNotFoundError](err); gone {
+			return nil
+		}
 
-	if err := ref.userService.UpdateByID(ctx, updateInput); err != nil {
+		if errors.Is(err, ErrVerifiedAddressIsNotTheAccounts) {
+			err = &domain.InvalidJWTError{Message: "email claim is invalid"}
+		}
+
 		return o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
 	}
 

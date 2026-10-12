@@ -156,8 +156,8 @@ func (ref *UsersRepository) Insert(ctx context.Context, input *domain.InsertUser
 
 	// insert the user
 	query1 := `
-        INSERT INTO users (id, first_name, last_name, email, password_hash, disabled, verified, local_account)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8);
+        INSERT INTO users (id, first_name, last_name, email, password_hash, disabled, verified, local_account, disabled_by_admin)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9);
     `
 
 	cslog.Trace(ctx, "sql", "query",
@@ -186,6 +186,8 @@ func (ref *UsersRepository) Insert(ctx context.Context, input *domain.InsertUser
 		disabled,
 		input.Verified != nil && *input.Verified,
 		input.LocalAccount != nil && *input.LocalAccount,
+		// Only a row that is stored disabled is disabled by anybody.
+		disabled && input.DisabledByAdmin,
 	)
 	if txErr != nil {
 		txErr = ref.handlePgError(txErr, input)
@@ -271,12 +273,12 @@ func (ref *UsersRepository) UpdateByID(ctx context.Context, input *domain.Update
 		args = append(args, nil)
 	}
 
-	if input.Verified != nil {
-		args = append(args, *input.Verified)
-	} else {
-		args = append(args, nil)
-	}
-
+	// disabled_by_admin follows a CHANGE of disabled, and is read here from
+	// the row as it was before this statement: a client sends the whole form
+	// back, so "disabled: true" arrives with every rename of a registration
+	// whose link has not been followed, and that is nobody disabling it. This
+	// statement is the only one that sets disabled for somebody else; the
+	// verification has one of its own (Verify).
 	query := `
         UPDATE users SET
             first_name    = COALESCE(NULLIF($2, first_name), first_name),
@@ -284,8 +286,11 @@ func (ref *UsersRepository) UpdateByID(ctx context.Context, input *domain.Update
             email         = COALESCE(NULLIF($4, email), email),
             password_hash = COALESCE(NULLIF($5, password_hash), password_hash),
             disabled      = COALESCE($6, disabled),
+            disabled_by_admin = CASE
+                WHEN $6::boolean IS NULL OR $6::boolean = disabled THEN disabled_by_admin
+                ELSE $6::boolean
+            END,
             local_account = COALESCE($7, local_account),
-            verified      = COALESCE($8, verified),
             updated_at    = CURRENT_TIMESTAMP
         WHERE id = $1;
     `
@@ -303,6 +308,60 @@ func (ref *UsersRepository) UpdateByID(ctx context.Context, input *domain.Update
 	}
 
 	o11y.RecordSuccess(ctx, span, start, ref.metrics, attrs, "user updated successfully", attribute.String("user.id", input.ID.String()))
+
+	return nil
+}
+
+// Verify records that address is proven to be the account's, and opens the
+// account when the unfollowed link was the only thing keeping it shut.
+//
+// One statement, so that what it reads and what it writes cannot be split:
+// an account an administrator disabled stays disabled (disabled_by_admin),
+// and so does one with the `admin` flag, which a mailed link never opens.
+// Read and written in two steps, an account disabled in between would have
+// been enabled by a value read before.
+//
+// It writes only a row that is not verified yet and whose address is the
+// one the link was mailed to: a link proves the address it went to, and an
+// account whose address was changed since has not proven the new one. No
+// such row is a NotFoundError; which of the three it is (gone, verified
+// meanwhile, another address) is the use-case's to tell.
+func (ref *UsersRepository) Verify(ctx context.Context, id uuid.UUID, address string) error {
+	start := time.Now()
+	ctx, span, attrs, cancel := o11y.SetupTraceWithTimeout(ctx, ref.ot.Traces.Tracer, ref.maxQueryTimeout, ref.metricsMetadata, "Verify")
+	defer cancel()
+	defer span.End()
+
+	if id == uuid.Nil() {
+		errorValue := &domain.InvalidUserIDError{Message: "user ID cannot be empty"}
+		return o11y.RecordError(ctx, span, start, errorValue, ref.metrics, attrs)
+	}
+
+	span.SetAttributes(attribute.String("user.id", id.String()))
+
+	query := `
+        UPDATE users SET
+            verified   = TRUE,
+            disabled   = CASE WHEN disabled_by_admin OR admin IS TRUE THEN disabled ELSE FALSE END,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = $1
+          AND email = $2
+          AND verified IS FALSE;
+    `
+
+	cslog.Trace(ctx, "sql", "query", prettyPrint(query, id.String(), address))
+
+	result, err := ref.db.Exec(ctx, query, id, address)
+	if err != nil {
+		return o11y.RecordError(ctx, span, start, ref.handlePgError(err, nil), ref.metrics, attrs)
+	}
+
+	if result.RowsAffected() == 0 {
+		errorType := &domain.UserNotFoundError{ID: id}
+		return o11y.RecordError(ctx, span, start, errorType, ref.metrics, attrs)
+	}
+
+	o11y.RecordSuccess(ctx, span, start, ref.metrics, attrs, "user verified successfully", attribute.String("user.id", id.String()))
 
 	return nil
 }

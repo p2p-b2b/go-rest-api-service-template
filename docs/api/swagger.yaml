@@ -2333,7 +2333,7 @@ definitions:
         type: string
       verified:
         description: Indicates if the email address has been verified (by the verification
-          link or an identity provider)
+          link, by an identity provider, or by the administrator who created the account)
         example: true
         type: boolean
     type: object
@@ -3511,14 +3511,16 @@ paths:
       - Authentication
   /auth/verify/confirm:
     post:
-      description: Activate a user account with the verification token from the email.
-        The token travels in the Authorization header, never in the URL.
+      description: Prove an account's address with the verification token from the
+        email, and enable the account unless an administrator disabled it. The token
+        travels in the Authorization header, never in the URL.
       operationId: 01a02dbb-bc41-7287-9cfd-7ac08bf882ae
       produces:
       - application/json
       responses:
         "200":
-          description: Email verified - account activated
+          description: Email verified; the account is enabled unless an administrator
+            disabled it
           schema:
             $ref: '#/definitions/payload.HTTPMessage'
         "400":
@@ -6724,7 +6726,9 @@ paths:
     post:
       consumes:
       - application/json
-      description: Create a new user account with specified details.
+      description: 'Create a new user account with specified details. It is stored
+        disabled, for an administrator to enable, and verified: the administrator
+        vouches for the address and no verification mail is sent.'
       operationId: 01982303-f0f9-7e78-bddf-389144c4beaf
       parameters:
       - description: User creation details including email, name, and profile

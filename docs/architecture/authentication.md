@@ -159,13 +159,13 @@ columns on `users`:
 
 | column     | set by                                            | read by                                   |
 | ---------- | ------------------------------------------------- | ----------------------------------------- |
-| `verified` | the verification link; an IdP registration        | verify, resend, recovery                  |
-| `disabled` | the verification link (to `false`); administrators | login, refresh, recovery, and every request that carries an access token (`RequireActiveAccount`) |
+| `verified` | the verification link; an IdP registration; `POST /users` (the administrator vouches for the address) | verify, resend, recovery                  |
+| `disabled` | the verification link (to `false`, unless an administrator disabled the account); administrators | login, refresh, recovery, and every request that carries an access token (`RequireActiveAccount`) |
+| `disabled_by_admin` | `POST /users` (stored disabled, by an administrator); a **change** of `disabled` through `PUT /users/{user_id}` | the verification's statement, and nothing else |
 
-`disabled` alone decides whether an account may sign in. An account an
-administrator creates or enables has never proven its address and nothing
-sends it a link, so gating login on `verified` would lock it out; it signs in
-exactly as it did before the column existed, and a recovery request from it
+`disabled` alone decides whether an account may sign in. A registration an
+administrator enables by hand has not proven its address, so gating login on
+`verified` would lock it out; it signs in, and a recovery request from it
 gets the verification mail first.
 
 ```mermaid
@@ -182,14 +182,77 @@ The answer on the wire is the same `200` in every row; only the inbox differs.
 The verification mail carries no more than a fresh registration would have
 sent to the same address, so nothing new can be provoked by asking.
 
-Following the link sets `verified` and clears `disabled` in one update, which is
-also why an administrator cannot keep an *unverified* account shut by disabling
-it: verification would open it again. An account that should not exist is
-deleted; there is nothing in it to keep.
+### An account an administrator disabled is not opened by its link
 
-`UpdateUserInput.Verified` is set by the verification flow only. No request
-payload maps to it, so an administrator's `PUT /users/{id}` cannot mark an
-address proven.
+Following the link proves the address and enables the account, because a
+registration is disabled for no other reason than that its link has not been
+followed. "Disabled until the link is followed" and "disabled by an
+administrator" are the same two values, `verified = false` and
+`disabled = true`, and the link must open only the first. So the row says
+which it is:
+
+- **An account an administrator creates is stored verified.** The
+  administrator vouches for the address, as an identity provider does for
+  its subject. The link and the recovery's variant of it do not apply to it:
+  both answer as for any address and mail nothing. It is stored disabled,
+  for an administrator to enable, and marked as below.
+- **A `disabled` an administrator sets is remembered**, in
+  `users.disabled_by_admin`, and the verification enables only a row that
+  does not have it. Such an account's link proves its address and opens
+  nothing; the answer is the same `200`, because whether an account can sign
+  in is not for whoever holds a link to be told.
+
+```mermaid
+flowchart TD
+    P["PUT /users/{user_id}<br/>disabled: v"] --> C{"is v a change<br/>of the stored value?"}
+    C -- "no: the form sent back" --> K["disabled_by_admin as it was"]
+    C -- yes --> M["disabled = v<br/>disabled_by_admin = v<br/><i>one statement</i>"]
+
+    L["POST /auth/verify/confirm<br/>the link"] --> U{"the flow's copy of the account<br/>(may be a cached one)"}
+    U -- "gone" --> A200["200, nothing written"]
+    U -- "another address" --> A401["401"]
+    U -- "verified already" --> A409["409"]
+    U -- "that address, not verified" --> S["UsersRepository.Verify<br/><i>one statement: WHERE id, email,<br/>verified IS FALSE</i>"]
+    S -- "disabled_by_admin,<br/>or users.admin" --> V["verified = true<br/>disabled as it was<br/>200"]
+    S -- "neither" --> O["verified = true<br/>disabled = false<br/>200"]
+    S -- "no such row" --> W{"why? read from the row,<br/>not from the copy"}
+    W -- "gone" --> A200
+    W -- "another address" --> A401
+    W -- "verified meanwhile" --> A409
+```
+
+- **What is remembered is a change, not the field.** A client may send the
+  whole form back, so `disabled: true` arrives with every rename of a
+  registration whose link is still out, and that is nobody disabling it. The
+  statement compares what it is sent with the row it writes, so the check
+  and the write cannot be split.
+- **So a registration that was never enabled cannot be "disabled".** There
+  is no change to make, and its link still opens it. An administrator shuts
+  such a registration by deleting it, or by enabling and then disabling it.
+- **The verification is a statement of its own** (`UsersRepository.Verify`),
+  not the general update with two fields. It decides from the row it writes:
+  the flow's copy of the account comes through the cache. The same statement
+  never enables an account with the `admin` flag, and writes only a row that
+  is not verified yet and still has the address the link was mailed to: a
+  link proves that address and no other.
+- **One state has one answer, whatever the cache held.** When the statement
+  writes nothing, the use-case reads the row to say why
+  (`UsersService.whyNotVerified`), and the flow answers it as it answers the
+  same finding from its own copy.
+
+Nothing in a request maps to `verified`: `UpdateUserInput` has no such field,
+so no update can mark an address proven. `disabled_by_admin` is set by
+whoever holds the grant for `POST /users` or `PUT /users/{user_id}`, not only
+by the administrator account: it does not say who, it says "a disable that a
+link must respect". It is in no answer of the API.
+
+`TestAnAccountAnAdministratorDisabledIsNotOpenedByItsLink` holds it against a
+running service with the mail server;
+`TestTheVerificationIsTheRepositorysOneStatement`,
+`TestAVerificationThatWritesNothingSaysWhy`,
+`TestVerifyUserAnswersTheRowAsItAnswersItsOwnCopy` and
+`TestAnAccountAnAdministratorCreatesIsStoredVerifiedAndDisabled` where the
+pull request gate runs.
 
 ### And so does registration
 

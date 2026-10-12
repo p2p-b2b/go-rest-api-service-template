@@ -31,11 +31,14 @@ var (
 // Disabled and Verified are two facts, not one. Disabled says whether the
 // account may sign in and is what an administrator switches. Verified says
 // whether the address has been proven by following the verification link (or
-// by an identity provider, which proves its subject). A registration is
-// unverified and disabled; verification flips both; nothing else sets
-// Verified. They used to be one flag, and password recovery could not tell an
-// account that had never followed its link from one that had been switched
-// off, so it refused both.
+// by an identity provider, which proves its subject, or by the administrator
+// who created the account and vouches for it). A registration is unverified
+// and disabled; verification flips both, unless an administrator disabled
+// the account meanwhile, which the row remembers in a column this type does
+// not carry. Those three are the only writers of Verified, and no update
+// sets it. They used to be one flag, and
+// password recovery could not tell an account that had never followed its
+// link from one that had been switched off, so it refused both.
 type User struct {
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
@@ -80,6 +83,11 @@ type InsertUserInput struct {
 	Password     string
 	PasswordHash string
 	ID           uuid.UUID
+	// DisabledByAdmin says that Disabled is an administrator's doing and
+	// not a registration waiting for its link: POST /users, which stores
+	// the account disabled for an administrator to enable. A verification
+	// link does not open such a row.
+	DisabledByAdmin bool
 }
 
 func (ref *InsertUserInput) Validate() error {
@@ -147,9 +155,6 @@ type UpdateUserInput struct {
 	Password     *string
 	PasswordHash *string
 	Disabled     *bool
-	// Verified is set by the verification flow only; no request payload maps
-	// to it.
-	Verified     *bool
 	LocalAccount *bool
 	ID           uuid.UUID
 	// CallerID is who asks, on PUT /users/{user_id}: a change of the

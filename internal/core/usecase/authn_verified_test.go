@@ -39,6 +39,12 @@ type fakeUserStore struct {
 	// standings is what the repository says of an account when it is not
 	// what byID, the cached copy, would say.
 	standings map[uuid.UUID]domain.AccountStanding
+	// created is every account Create was asked for.
+	created []*domain.CreateUserInput
+	// verified is every account Verify was asked for, with the address,
+	// and verifyErr what it answers.
+	verified  []string
+	verifyErr error
 }
 
 func (f *fakeUserStore) GetByEmail(_ context.Context, email string) (*domain.User, error) {
@@ -80,6 +86,14 @@ func (f *fakeUserStore) Standing(_ context.Context, id uuid.UUID) (domain.Accoun
 	return domain.AccountActive, nil
 }
 
+func (f *fakeUserStore) Verify(_ context.Context, id uuid.UUID, address string) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.verified = append(f.verified, id.String()+" "+address)
+
+	return f.verifyErr
+}
+
 func (f *fakeUserStore) SelectAuthz(context.Context, uuid.UUID) (map[string]any, error) {
 	return map[string]any{}, nil
 }
@@ -92,7 +106,13 @@ func (f *fakeUserStore) UpdateByID(_ context.Context, input *domain.UpdateUserIn
 	return nil
 }
 
-func (f *fakeUserStore) Create(context.Context, *domain.CreateUserInput) error { return nil }
+func (f *fakeUserStore) Create(_ context.Context, in *domain.CreateUserInput) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.created = append(f.created, in)
+
+	return nil
+}
 
 func (f *fakeUserStore) add(u *domain.User) {
 	f.byEmail[u.Email] = u
@@ -287,15 +307,93 @@ func TestVerifyUserProvesTheAddressAndOpensTheAccount(t *testing.T) {
 		t.Fatalf("VerifyUser: %v", err)
 	}
 
-	if len(f.users.updates) != 1 {
-		t.Fatalf("expected one update, got %d", len(f.users.updates))
+	// It asks for the verification, by the account's id and with the
+	// address the link was mailed to, and for nothing else. It set
+	// `verified` and `disabled: false` through the general update: whether
+	// the account is opened is decided where the row is written, and an
+	// update that enables is not this flow's to send.
+	if want := u.ID.String() + " " + u.Email; len(f.users.verified) != 1 || f.users.verified[0] != want {
+		t.Fatalf("verified = %v, want the account with its address, once", f.users.verified)
 	}
-	up := f.users.updates[0]
-	if up.Verified == nil || !*up.Verified {
-		t.Fatal("verification must set verified")
+	if len(f.users.updates) != 0 {
+		t.Fatalf("the verification went through the general update: %+v", f.users.updates[0])
 	}
-	if up.Disabled == nil || *up.Disabled {
-		t.Fatal("verification must clear disabled: that is the only reason a registration is disabled")
+}
+
+// The flow reads the account through the cache, and the row is asked again
+// where it is written. What the row answers is answered as the same finding
+// from the flow's own copy is: one state has one answer, whatever the cache
+// held. An account that is gone is the grateful 200; one verified meanwhile
+// is "already verified"; an address that is not the account's any more is
+// the link's own refusal.
+func TestVerifyUserAnswersTheRowAsItAnswersItsOwnCopy(t *testing.T) {
+	t.Parallel()
+
+	for name, c := range map[string]struct {
+		answered error
+		check    func(t *testing.T, err error)
+	}{
+		"the_account_is_gone": {
+			answered: &domain.UserNotFoundError{},
+			check: func(t *testing.T, err error) {
+				if err != nil {
+					t.Fatalf("got %v, want the answer an account that is not there gets at the read: none", err)
+				}
+			},
+		},
+		"it_was_verified_meanwhile": {
+			answered: &domain.UserAlreadyVerifiedError{},
+			check: func(t *testing.T, err error) {
+				if _, ok := errors.AsType[*domain.UserAlreadyVerifiedError](err); !ok {
+					t.Fatalf("got %T (%v), want already verified", err, err)
+				}
+			},
+		},
+		"the_address_is_not_the_accounts_any_more": {
+			answered: ErrVerifiedAddressIsNotTheAccounts,
+			check: func(t *testing.T, err error) {
+				refused, ok := errors.AsType[*domain.InvalidJWTError](err)
+				if !ok || refused.Message != "email claim is invalid" {
+					t.Fatalf("got %T (%v), want the refusal a link for another address gets", err, err)
+				}
+			},
+		},
+		"a_fault": {
+			answered: errors.New("the database is away"),
+			check: func(t *testing.T, err error) {
+				if err == nil || err.Error() != "the database is away" {
+					t.Fatalf("got %v, want the fault", err)
+				}
+			},
+		},
+		// Only that finding: another refusal is not a link's refusal.
+		"another_refusal": {
+			answered: &domain.InvalidUserIDError{Message: "user ID cannot be empty"},
+			check: func(t *testing.T, err error) {
+				if _, ok := errors.AsType[*domain.InvalidUserIDError](err); !ok {
+					t.Fatalf("got %T (%v), want it as it was answered", err, err)
+				}
+			},
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			f := newVerifiedFixture(t)
+			u := account(t, "fresh@example.com", false, true)
+			f.users.add(u)
+			f.users.verifyErr = c.answered
+
+			tok, err := f.signer.Sign(t.Context(), domain.JWTClaims{
+				Email: u.Email, Subject: u.ID.String(), Issuer: "https://api.example",
+				TokenType: domain.TokenTypeEmailVerification, TokenDuration: time.Hour,
+			})
+			if err != nil {
+				t.Fatalf("Sign: %v", err)
+			}
+
+			c.check(t, f.svc.VerifyUser(t.Context(), tok))
+		})
 	}
 }
 
@@ -316,7 +414,7 @@ func TestVerifyUserRefusesAnAlreadyVerifiedAccount(t *testing.T) {
 	if _, ok := errors.AsType[*domain.UserAlreadyVerifiedError](err); !ok {
 		t.Fatalf("expected UserAlreadyVerifiedError, got %v", err)
 	}
-	if len(f.users.updates) != 0 {
+	if len(f.users.updates)+len(f.users.verified) != 0 {
 		t.Fatal("a verified account must not be touched by a verification link")
 	}
 }
@@ -375,9 +473,8 @@ func TestLoginDoesNotApplyTheChoosingRule(t *testing.T) {
 	}
 }
 
-// An account an administrator created or enabled has never proven its
-// address, and nothing will send it a verification link. disabled is what
-// decides sign-in; verified must not.
+// A registration an administrator enabled by hand has not proven its
+// address. disabled is what decides sign-in; verified must not.
 func TestLoginAdmitsAnEnabledAccountThatNeverVerified(t *testing.T) {
 	t.Parallel()
 
@@ -389,5 +486,41 @@ func TestLoginAdmitsAnEnabledAccountThatNeverVerified(t *testing.T) {
 	})
 	if err != nil {
 		t.Fatalf("an enabled account must sign in whether or not it verified, got %v", err)
+	}
+}
+
+// A registration is stored disabled because its link has not been followed,
+// and for no other reason: it is not an account an administrator disabled,
+// and it must not be stored as one. Marked, its own link would prove its
+// address and open nothing, and the person who registered could never get in.
+func TestARegistrationIsNotStoredAsDisabledByAnAdministrator(t *testing.T) {
+	t.Parallel()
+
+	f := newVerifiedFixture(t)
+
+	err := f.svc.RegisterUser(t.Context(), &domain.RegisterUserInput{
+		ID: uuid.NewV7(), FirstName: "Jane", LastName: "Doe", Email: "jane@example.com", Password: "Meadow7Lark!",
+		RegisterMethod: domain.RegisterMethodPassword, Disabled: new(true),
+	})
+	if err != nil {
+		t.Fatalf("RegisterUser: %v", err)
+	}
+
+	if len(f.users.created) != 1 {
+		t.Fatalf("created %d accounts, want one", len(f.users.created))
+	}
+
+	in := f.users.created[0]
+
+	if in.DisabledByAdmin {
+		t.Error("a registration was stored as disabled by an administrator: its link would open nothing")
+	}
+
+	if in.Disabled == nil || !*in.Disabled {
+		t.Errorf("Disabled = %v, want true until the link is followed", in.Disabled)
+	}
+
+	if in.Verified == nil || *in.Verified {
+		t.Errorf("Verified = %v, want false: a registration proves its address by its link", in.Verified)
 	}
 }
