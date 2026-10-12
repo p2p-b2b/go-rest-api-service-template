@@ -234,6 +234,37 @@ flowchart LR
 - **`TestNoHandlerForwardsALibraryErrorString`** reads the handler package
   and fails on either shape coming back. Same idea as the zero-`errors.As`
   invariant: the number worth recording is zero.
+- **A list that fails says whose mistake it was** (`writeListError`).
+  Seventeen of the eighteen lists wrote the error's text at whatever status
+  it mapped to (the rate-limit rules' list had a helper of its own, which
+  did not). A refused sort, filter or field list is a 400 in the error's
+  words, which is meant; anything else was a 500 in the words of whatever
+  broke. The guard above looks for `StatusInternalServerError` beside
+  `.Error()`, and these sites spelled the status as a call, so it never saw
+  them. A 500 from a list goes through `respond.WriteInternalError` now.
+- **Two guards read the syntax tree for the shape itself.**
+  `TestNoHandlerWritesAnErrorsTextAtA500`: no answer at a status the call
+  does not name (one place, the helper), and at a 5xx the message is a
+  sentence of the service's, read from the argument: a string, a constant,
+  or a name that was only ever given one. An error's text, a `Sprintf` of
+  it, or a variable that holds either is not, however it is spelled.
+  `TestEveryListAnswersItsFailureThroughTheHelper`: a handler that reads the
+  list parameters answers through the helper once, with the failure it
+  recorded, and returns.
+- **Two 503s carry an error's text on purpose**: a sign-in through an
+  identity provider that cannot be reached, at its start and at its
+  callback. Each is a branch on `IDPUnreachableError`, whose sentence the
+  service writes ("the identity provider is not reachable"), and the first
+  guard lists them with the type it requires the branch to be on. The start
+  routes answered 500 for it, though they document 503: their 503 was on
+  the type of another failure, which building the authorization URL never
+  returns. `TestAnUnreachableProviderAtTheStartIsA503`.
+- **What a 400 says is not always the service's sentence yet.** Four kinds
+  of refusal that come from the database (a byte sequence, a message
+  format, a column that does not exist, a type that does not match) are
+  typed, answered 400, and still carry PostgreSQL's own sentence; and a
+  filter PostgreSQL refuses for any other reason is not typed at all, so it
+  is a 500, which now says nothing instead of quoting PostgreSQL.
 
 ### The request id
 

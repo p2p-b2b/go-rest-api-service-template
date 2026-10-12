@@ -15,6 +15,14 @@ Since `v0.0.3`.
 
 ### Security
 
+- **A list that fails says nothing of the cause.** A list answered an
+  unexpected failure with `500` and the error's own text as the message;
+  that text is the driver's or the database's, and a connection that cannot
+  be opened names where the service connects to and as whom. A `500` from a list is now
+  `internal server error`, with the cause on the request's log line under
+  its request id. A `sort`, `filter` or `fields` that the service refuses
+  is still a `400` that says what to correct.
+  ([#128](https://github.com/slashdevops/go-rest-api-service-template/pull/128))
 - **The three routes about a user's projects are held to the projects of
   whoever asks.** `GET /users/{user_id}/projects` answers the projects of
   that user that are the caller's too, and `POST` and `DELETE
@@ -104,6 +112,9 @@ Since `v0.0.3`.
   and refunds nothing. (#119)
 - `POST /users/{user_id}/projects` with a project named twice in its body
   is a `200`, where it was a `500`. (#127)
+- Starting a sign-in through an identity provider that cannot be reached
+  (`GET /auth/idp/{idp_id}/login`, `/register`, `/link`) answers `503`, as
+  those routes document, where it answered `500`. (#128)
 - A filter or a sort field is one the list can serve. (#116, #118)
 - The Rego bundle passes Regal, which `make lint` now runs. (#113, #114)
 - The development stack syncs the container VM's clock, which freezes while

@@ -15,6 +15,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 
 	"github.com/slashdevops/go-rest-api-service-template/internal/adapter/driving/http/middleware"
+	"github.com/slashdevops/go-rest-api-service-template/internal/adapter/driving/http/respond"
 	"github.com/slashdevops/go-rest-api-service-template/internal/core/domain"
 )
 
@@ -175,6 +176,28 @@ func httpStatusForListError(err error) int {
 	default:
 		return http.StatusInternalServerError
 	}
+}
+
+// writeListError answers a list that failed.
+//
+// What the caller got wrong (a sort, a filter or a field list that is
+// refused, as httpStatusForListError knows it) is a 400 in the error's own
+// words: they say what to correct. What failed for any other reason is the
+// fixed 500, with the cause on the request's log line and nowhere in the
+// answer.
+//
+// The lists used to write the error's text at whatever status it mapped to.
+// For a 500 that text is whatever broke: with the database unreachable it
+// was the driver's "failed to connect to", with the host, the user and the
+// database it names.
+func writeListError(w http.ResponseWriter, r *http.Request, err error) {
+	if status := httpStatusForListError(err); status != http.StatusInternalServerError {
+		respond.WriteJSONMessage(w, r, status, err.Error())
+
+		return
+	}
+
+	respond.WriteInternalError(w, r, err)
 }
 
 // isErr reports whether err, or any error it wraps, is of the concrete type T.
