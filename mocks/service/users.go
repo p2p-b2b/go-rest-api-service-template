@@ -229,3 +229,17 @@ func (mr *MockUsersMockRecorder) UpdateByID(ctx, input any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateByID", reflect.TypeOf((*MockUsers)(nil).UpdateByID), ctx, input)
 }
+
+// Verify mocks base method.
+func (m *MockUsers) Verify(ctx context.Context, id uuid.UUID, address string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Verify", ctx, id, address)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Verify indicates an expected call of Verify.
+func (mr *MockUsersMockRecorder) Verify(ctx, id, address any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Verify", reflect.TypeOf((*MockUsers)(nil).Verify), ctx, id, address)
+}

@@ -197,7 +197,7 @@ func (ref *UsersHandler) getByID(w http.ResponseWriter, r *http.Request) {
 //
 //	@ID				01982303-f0f9-7e78-bddf-389144c4beaf
 //	@Summary		Create user
-//	@Description	Create a new user account with specified details.
+//	@Description	Create a new user account with specified details. It is stored disabled, for an administrator to enable, and verified: the administrator vouches for the address and no verification mail is sent.
 //	@Tags			Users
 //	@Accept			json
 //	@Produce		json
@@ -241,13 +241,21 @@ func (ref *UsersHandler) create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	input := &domain.CreateUserInput{
-		ID:           req.ID,
-		FirstName:    req.FirstName,
-		LastName:     req.LastName,
-		Email:        req.Email,
-		Password:     req.Password,
-		Disabled:     new(true), // users are disabled by default until they verify their email
-		LocalAccount: new(true),
+		ID:        req.ID,
+		FirstName: req.FirstName,
+		LastName:  req.LastName,
+		Email:     req.Email,
+		Password:  req.Password,
+		// Stored disabled, and enabled by an administrator: no mail is sent
+		// for an account made here. And stored verified: the administrator
+		// vouches for the address, as an identity provider does for its
+		// subject, so the public verification link does not apply to it. The
+		// row says whose doing its `disabled` is, so that no link opens it
+		// whatever else changes.
+		Disabled:        new(true),
+		DisabledByAdmin: true,
+		Verified:        new(true),
+		LocalAccount:    new(true),
 	}
 
 	if err := ref.service.Create(ctx, input); err != nil {

@@ -3406,7 +3406,7 @@ Status: Internal Server Error
 POST /users
 ```
 
-Create a new user account with specified details.
+Create a new user account with specified details. It is stored disabled, for an administrator to enable, and verified: the administrator vouches for the address and no verification mail is sent.
 
 #### Consumes
   * application/json
@@ -8181,7 +8181,7 @@ Status: Internal Server Error
 POST /auth/verify/confirm
 ```
 
-Activate a user account with the verification token from the email. The token travels in the Authorization header, never in the URL.
+Prove an account's address with the verification token from the email, and enable the account unless an administrator disabled it. The token travels in the Authorization header, never in the URL.
 
 #### Produces
   * application/json
@@ -8192,7 +8192,7 @@ Activate a user account with the verification token from the email. The token tr
 #### All responses
 | Code | Status | Description | Has headers | Schema |
 |------|--------|-------------|:-----------:|--------|
-| [200](#01a02dbb-bc41-7287-9cfd-7ac08bf882ae-200) | OK | Email verified - account activated |  | [schema](#01a02dbb-bc41-7287-9cfd-7ac08bf882ae-200-schema) |
+| [200](#01a02dbb-bc41-7287-9cfd-7ac08bf882ae-200) | OK | Email verified; the account is enabled unless an administrator disabled it |  | [schema](#01a02dbb-bc41-7287-9cfd-7ac08bf882ae-200-schema) |
 | [400](#01a02dbb-bc41-7287-9cfd-7ac08bf882ae-400) | Bad Request | Invalid or malformed token format |  | [schema](#01a02dbb-bc41-7287-9cfd-7ac08bf882ae-400-schema) |
 | [401](#01a02dbb-bc41-7287-9cfd-7ac08bf882ae-401) | Unauthorized | Token missing, expired, or not an email verification token |  | [schema](#01a02dbb-bc41-7287-9cfd-7ac08bf882ae-401-schema) |
 | [404](#01a02dbb-bc41-7287-9cfd-7ac08bf882ae-404) | Not Found | User not found |  | [schema](#01a02dbb-bc41-7287-9cfd-7ac08bf882ae-404-schema) |
@@ -8205,7 +8205,7 @@ Activate a user account with the verification token from the email. The token tr
 #### Responses
 
 
-##### <span id="01a02dbb-bc41-7287-9cfd-7ac08bf882ae-200"></span> 200 - Email verified - account activated
+##### <span id="01a02dbb-bc41-7287-9cfd-7ac08bf882ae-200"></span> 200 - Email verified; the account is enabled unless an administrator disabled it
 Status: OK
 
 ###### <span id="01a02dbb-bc41-7287-9cfd-7ac08bf882ae-200-schema"></span> Schema
@@ -11378,7 +11378,7 @@ Status: Internal Server Error
 | last_name | string (formatted string)| `string` |  | | User's last name | `Doe` |
 | local_account | boolean| `bool` |  | | Indicates if this is a locally managed account (vs SSO/federated) | `true` |
 | updated_at | date-time (formatted string)| `strfmt.DateTime` |  | | Timestamp when the user account was last updated | `2021-01-01T00:00:00Z` |
-| verified | boolean| `bool` |  | | Indicates if the email address has been verified (by the verification link or an identity provider) | `true` |
+| verified | boolean| `bool` |  | | Indicates if the email address has been verified (by the verification link, by an identity provider, or by the administrator who created the account) | `true` |
 
 
 

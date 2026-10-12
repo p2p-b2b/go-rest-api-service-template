@@ -301,10 +301,10 @@ func (ref *AuthnHandler) registerUser(w http.ResponseWriter, r *http.Request) {
 //
 //	@Id				01a02dbb-bc41-7287-9cfd-7ac08bf882ae
 //	@Summary		Confirm email verification
-//	@Description	Activate a user account with the verification token from the email. The token travels in the Authorization header, never in the URL.
+//	@Description	Prove an account's address with the verification token from the email, and enable the account unless an administrator disabled it. The token travels in the Authorization header, never in the URL.
 //	@Tags			Authentication
 //	@Produce		json
-//	@Success		200	{object}	payload.HTTPMessage	"Email verified - account activated"
+//	@Success		200	{object}	payload.HTTPMessage	"Email verified; the account is enabled unless an administrator disabled it"
 //	@Failure		400	{object}	payload.HTTPMessage	"Invalid or malformed token format"
 //	@Failure		401	{object}	payload.HTTPMessage	"Token missing, expired, or not an email verification token"
 //	@Failure		404	{object}	payload.HTTPMessage	"User not found"

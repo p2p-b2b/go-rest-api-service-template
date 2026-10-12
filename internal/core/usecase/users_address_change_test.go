@@ -207,7 +207,7 @@ func TestOnlyTheAdministratorAccountChangesAnAddress(t *testing.T) {
 		// The flows that update an account for itself carry no address and
 		// no caller, and are not asked who they are.
 		"no_address_and_no_caller": {
-			input: domain.UpdateUserInput{ID: target, Verified: new(true)},
+			input: domain.UpdateUserInput{ID: target, FirstName: new("Jane")},
 			want:  written, reads: 0,
 		},
 		"a_change_with_no_caller_is_a_fault_not_a_refusal": {

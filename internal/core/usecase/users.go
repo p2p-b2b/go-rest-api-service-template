@@ -355,6 +355,80 @@ func (ref *UsersService) Standing(ctx context.Context, id uuid.UUID) (domain.Acc
 	return domain.AccountActive, nil
 }
 
+// Verify records that the account's address is proven: the end of the
+// verification link, and its only writer.
+//
+// Following the link opens a registration, which is disabled for no other
+// reason than that. An account an administrator disabled has the same two
+// values (verified false, disabled true), so the row says which it is: the
+// repository's statement enables only an account no administrator disabled,
+// and never one with the `admin` flag; for those it proves the address and
+// opens nothing, and the answer is the same.
+//
+// It is not UpdateByID with two fields: the decision is taken in the
+// statement that writes, from the row as it is then. That goes for the
+// address too: the link proves the address it was mailed to, and the
+// statement writes only a row that still has it.
+//
+// A statement that wrote nothing says why, from the row and not from a
+// cached copy, in the words the flow uses when its own copy says the same:
+// the account is gone (UserNotFoundError), its address is proven already
+// (UserAlreadyVerifiedError), or the address is not the account's any more
+// (ErrVerifiedAddressIsNotTheAccounts).
+func (ref *UsersService) Verify(ctx context.Context, id uuid.UUID, address string) error {
+	start := time.Now()
+	ctx, span, attrs := o11y.SetupTrace(ctx, ref.ot.Traces.Tracer, ref.metricsMetadata, "Verify")
+	defer span.End()
+
+	span.SetAttributes(attribute.String("user.id", id.String()))
+
+	if err := ref.repository.Verify(ctx, id, address); err != nil {
+		if _, none := errors.AsType[*domain.UserNotFoundError](err); none {
+			err = ref.whyNotVerified(ctx, id, err)
+		}
+
+		return o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
+	}
+
+	// The cached account says "unverified, disabled" for twelve hours
+	// otherwise, and the flows that read it would believe it.
+	if ref.cacheService != nil {
+		if err := ref.cacheService.Invalidate(ctx, cache.Identifier{Type: "user", ID: id.String()}); err != nil {
+			slog.WarnContext(ctx, "failed to invalidate cache", slog.Any("error", err), "user_id", id)
+		}
+	}
+
+	o11y.RecordSuccess(ctx, span, start, ref.metrics, attrs, "user verified successfully",
+		attribute.String("user.id", id.String()))
+
+	return nil
+}
+
+// whyNotVerified says why the verification's statement found no row to
+// write: notFound, as the statement answered, when the account is gone.
+func (ref *UsersService) whyNotVerified(ctx context.Context, id uuid.UUID, notFound error) error {
+	stored, err := ref.repository.SelectByID(ctx, id)
+	if err != nil {
+		if _, gone := errors.AsType[*domain.UserNotFoundError](err); gone {
+			return notFound
+		}
+
+		return err
+	}
+
+	if stored.Verified != nil && *stored.Verified {
+		return &domain.UserAlreadyVerifiedError{UserID: id.String()}
+	}
+
+	return ErrVerifiedAddressIsNotTheAccounts
+}
+
+// ErrVerifiedAddressIsNotTheAccounts is what a verification answers when the
+// address its link was mailed to is not the account's any more: the account
+// is there, is not verified, and has another address. A link proves the
+// address it went to and no other.
+var ErrVerifiedAddressIsNotTheAccounts = errors.New("the address the link was mailed to is not the account's")
+
 func (ref *UsersService) UpdateByID(ctx context.Context, input *domain.UpdateUserInput) error {
 	start := time.Now()
 	ctx, span, attrs := o11y.SetupTrace(ctx, ref.ot.Traces.Tracer, ref.metricsMetadata, "UpdateByID")

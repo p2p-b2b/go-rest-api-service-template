@@ -18,10 +18,30 @@ CREATE TABLE IF NOT EXISTS users (
     -- disabled until the verification link was followed, and the service could
     -- not tell that account from one an administrator had switched off. Password
     -- recovery therefore refused both, silently. Registration sets verified FALSE
-    -- and disabled TRUE; following the link sets verified TRUE and disabled
-    -- FALSE; an administrator only ever touches disabled.
+    -- and disabled TRUE; following the link sets verified TRUE, and disabled
+    -- FALSE unless an administrator disabled the account (disabled_by_admin);
+    -- an update touches disabled and never verified. An account an
+    -- administrator creates is stored verified: the administrator vouches for
+    -- the address, and no link is mailed for it.
     disabled BOOLEAN DEFAULT TRUE,
     verified BOOLEAN NOT NULL DEFAULT FALSE,
+    -- disabled_by_admin says whose doing a disabled account is. "Disabled until
+    -- the link is followed" and "disabled by an administrator" were the same
+    -- two values, verified FALSE and disabled TRUE, and following the link
+    -- enables every account with them. It is set for an account stored
+    -- disabled by POST /users, and follows a CHANGE of disabled made through
+    -- PUT /users/{user_id}, in that statement; the verification enables only
+    -- a row that does not have it. Not who disabled the account by name: "a
+    -- disable that a link must respect".
+    --
+    -- Added to this file after it first shipped, as the rule is before a
+    -- first deploy. goose does not see an edit, so a database created from
+    -- an earlier version starts and then fails every write to this table:
+    -- recreate it, or
+    --   ALTER TABLE users ADD COLUMN disabled_by_admin BOOLEAN NOT NULL DEFAULT FALSE;
+    -- and set it by hand on the unverified, disabled rows that an
+    -- administrator disabled, which that statement leaves unmarked.
+    disabled_by_admin BOOLEAN NOT NULL DEFAULT FALSE,
     admin BOOLEAN DEFAULT FALSE,
     local_account BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,

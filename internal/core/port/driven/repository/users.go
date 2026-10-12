@@ -13,6 +13,12 @@ import (
 type Users interface {
 	Insert(ctx context.Context, input *domain.InsertUserInput) error
 	UpdateByID(ctx context.Context, input *domain.UpdateUserInput) error
+
+	// Verify records that address is proven to be the account's and opens
+	// the account, unless an administrator disabled it or it has the `admin`
+	// flag, in one statement. No unverified account with that id and that
+	// address is a NotFoundError.
+	Verify(ctx context.Context, id uuid.UUID, address string) error
 	DeleteByID(ctx context.Context, input *domain.DeleteUserInput) error
 
 	SelectByID(ctx context.Context, id uuid.UUID) (*domain.User, error)
