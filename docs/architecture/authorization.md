@@ -66,7 +66,7 @@ sequenceDiagram
     participant U as UsersService.SelectAuthz
     participant C as cache authz:<uid>
     participant E as policyopa.Engine
-    M->>M: sub from the claims; HEAD folded to GET
+    M->>M: sub from the claims, HEAD folded to GET
     M->>U: SelectAuthz(uid)
     U->>C: get
     C-->>U: hit, or fetch users→roles→policies once
@@ -115,8 +115,65 @@ case's failure paths. The Rego tests existed before and were never run.
 named in the path, because a grant on `/projects/*/…` cannot know that.
 
 **Disabled accounts.** A token issued before an account was disabled keeps
-verifying; `CheckUserExists`, on the `/me` chain, refuses it with 403. It
-surfaced when `/me` stopped being 403 for everyone.
+verifying: a token is checked for its signature, its expiry and the denylist,
+and none of that asks about the account. `RequireActiveAccount` does, on
+every chain that verifies an access token but logout, after the token checks
+and before the grants are looked up.
+
+```mermaid
+flowchart TD
+    T["an access token that verifies"] --> S{"RequireActiveAccount:<br/>the account's standing,<br/>read from the database"}
+    S -- "active" --> Z["CheckAuthz, and on"]
+    S -- "disabled" --> R["401, code token_revoked:<br/>the session is over"]
+    S -- "not there any more" --> R
+    S -- "the read failed" --> F["500: fail closed"]
+    L["DELETE /auth/logout"] -. "not asked: a disabled account<br/>can still end its tokens" .-> Z2["logout"]
+```
+
+- **It was on the `/me` chain alone** (`CheckUserExists`), so a disabled
+  account's access token was not asked again on any other route until it
+  expired.
+- **401 with the code `token_revoked`**, for a disabled account and for one
+  that is not there, on every chain. It is the one answer a client must not
+  meet with refresh-and-retry: the session is over. `/me` answered 403
+  "account is disabled" and 404 "user not found" for the two; it answers
+  this now.
+- **Read from the database on every request**, not from the cache
+  (`UsersService.Standing`). The cached account lives twelve hours and an
+  invalidation is best effort: a failed one would leave a disabled account
+  working for half a day. One read by primary key per authenticated request.
+- **A read that fails is not permission to continue**: a 500. It fails
+  closed.
+- **Not on logout.** And nothing is revoked at the disable: the refusal is
+  what makes "disabled" hold, and an account that is enabled again has its
+  tokens back.
+- **The refresh, and a sign-in through an identity provider, ask the
+  database too** (`UserServiceConsumer.Standing`). Both read the account
+  through the twelve-hour cache, for its data, and decided `disabled` from
+  that copy, which an invalidation that failed leaves saying "enabled".
+- **What it costs.** One read by primary key, a span and a count in each of
+  two layers, on every authenticated request; the users use-case's call
+  count now follows the traffic. A request the post-auth limiter refuses
+  has paid for that read first. And while the database is unreachable every
+  authenticated request is a 500 at this check. That includes
+  `/health/detailed`, the readiness target: its 503 with the per-component
+  payload is what the handler answers when it is reached, and with the
+  database down the account's read fails before it. A probe still sees a
+  failure and takes the replica out; it does not get the payload. The public
+  `/health/status` answers 500 for a failed database ping, and
+  `/health/live` checks nothing.
+- **Not asked:** the password-reset and verification chains, which carry
+  no access token.
+
+`TestADisabledAccountsTokensAreRefusedOnEveryRoute` holds it against a
+running service (a route of each chain, enabled again, a logout that ends
+the session, a deleted account, and an account disabled behind the cache's
+back, on a request and on a refresh) and fails with the check off the
+general chain. `TestEveryAccessTokenChainAsksAboutTheAccount` reads the
+wiring: the three chains, that nothing else in the file verifies an access
+token, and that the logout chain is given to the authentication handler
+alone. A chain added without the check, or the check dropped from one,
+compiles and passes every other unit test.
 
 ## Who may grant what
 

@@ -14,6 +14,8 @@ import (
 	"testing"
 	"time"
 
+	"uuid"
+
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/slashdevops/go-rest-api-service-template/internal/adapter/driving/http/respond"
@@ -404,5 +406,94 @@ func TestWorkThatOutlivesTheRequestLogsItsOwnFailure(t *testing.T) {
 	after := (*records)[before:]
 	if len(after) != 1 || after[0].level != slog.LevelError || after[0].message != "operation_failed" {
 		t.Fatalf("want the layer's own ERROR line, got %+v", after)
+	}
+}
+
+// failingStandings is a users use-case whose read of an account fails, and
+// records the failure as the use-case does.
+type failingStandings struct {
+	tracer trace.Tracer
+	err    error
+}
+
+func (f failingStandings) Standing(ctx context.Context, _ uuid.UUID) (domain.AccountStanding, error) {
+	start := time.Now()
+	ctx, span, attrs := o11y.SetupTrace(ctx, f.tracer, o11y.Metadata{Layer: o11y.LayerUsecase, Domain: "Users"}, "Standing")
+	defer span.End()
+
+	return domain.AccountUnknown, o11y.RecordError(ctx, span, start, f.err, nil, attrs)
+}
+
+// fixedStanding answers one standing.
+type fixedStanding domain.AccountStanding
+
+func (f fixedStanding) Standing(context.Context, uuid.UUID) (domain.AccountStanding, error) {
+	return domain.AccountStanding(f), nil
+}
+
+// TestTheAccountCheckWritesOneLineAndNoneForARefusal: RequireActiveAccount is
+// on every authenticated request, so what it writes it writes for all of
+// them. A read that fails is the one ERROR access line, with the cause, and
+// no second line from the middleware. A disabled or deleted account is a
+// refused request: no line at WARN or above at all.
+func TestTheAccountCheckWritesOneLineAndNoneForARefusal(t *testing.T) {
+	claims := map[string]any{"sub": "01a1028f-352c-7c1c-ba58-382d24a144a0"}
+
+	serve := func(t *testing.T, tracer trace.Tracer, accounts AccountStandings) *httptest.ResponseRecorder {
+		t.Helper()
+
+		mux := http.NewServeMux()
+		mux.Handle("GET /things", RequireActiveAccount(accounts)(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
+			t.Error("the request went through")
+		})))
+
+		// The claims are put in the context below Tracing, where the
+		// authentication middleware puts them.
+		withClaims := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			mux.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), JwtClaims, claims)))
+		})
+
+		rec := httptest.NewRecorder()
+		chain(t, tracer, withClaims).ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/things", nil))
+
+		return rec
+	}
+
+	t.Run("a_failed_read_is_one_error_line", func(t *testing.T) {
+		tracer, _ := recorder(t)
+		records := recordLogs(t)
+
+		rec := serve(t, tracer, failingStandings{tracer: tracer, err: errors.New("the database is unreachable")})
+		if rec.Code != http.StatusInternalServerError {
+			t.Fatalf("status = %d, body %s", rec.Code, rec.Body.String())
+		}
+
+		loud := atOrAbove(*records, slog.LevelWarn)
+		if len(loud) != 1 || loud[0].message != "request" || loud[0].level != slog.LevelError {
+			t.Fatalf("want the one ERROR access line, got %+v", loud)
+		}
+
+		if !strings.Contains(loud[0].attrs["error"], "the database is unreachable") {
+			t.Errorf("the cause is not on the line: %+v", loud[0].attrs)
+		}
+	})
+
+	for name, standing := range map[string]domain.AccountStanding{
+		"a_disabled_account_is_no_line_above_info": domain.AccountDisabled,
+		"a_missing_account_is_no_line_above_info":  domain.AccountMissing,
+	} {
+		t.Run(name, func(t *testing.T) {
+			tracer, _ := recorder(t)
+			records := recordLogs(t)
+
+			rec := serve(t, tracer, fixedStanding(standing))
+			if rec.Code != http.StatusUnauthorized {
+				t.Fatalf("status = %d, body %s", rec.Code, rec.Body.String())
+			}
+
+			if loud := atOrAbove(*records, slog.LevelWarn); len(loud) != 0 {
+				t.Errorf("a refused request is not an error of the service, and it wrote %+v", loud)
+			}
+		})
 	}
 }

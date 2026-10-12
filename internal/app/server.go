@@ -170,6 +170,10 @@ func (a *App) initHTTPServer(ctx context.Context) error {
 	accessTokenMiddlewares := middleware.Chain(
 		appendRateLimit([]middleware.Middleware{
 			middleware.CheckAccessToken(jwtValidators, a.revokedAccessTokensCheckerOrNil()),
+			// The token is good; is the account? A disabled or deleted
+			// account is refused here, before its grants are looked up. It
+			// used to be asked on /me alone.
+			middleware.RequireActiveAccount(a.services.Users),
 			middleware.CheckAuthz(a.services.Authz),
 			// After the grant check: a project-scoped route also needs the
 			// caller to be a member of THAT project, which the policy cannot
@@ -184,6 +188,9 @@ func (a *App) initHTTPServer(ctx context.Context) error {
 	// out at once is ordinary. It is also the only endpoint where letting a
 	// revoked token through costs nothing: logout is idempotent, and it can act
 	// only on the caller's own tokens, which it verifies.
+	//
+	// And WITHOUT RequireActiveAccount: a disabled account must still be able
+	// to end the tokens it holds.
 	logoutMiddlewares := middleware.Chain(
 		appendRateLimit([]middleware.Middleware{
 			middleware.CheckAccessToken(jwtValidators, nil),
@@ -191,12 +198,14 @@ func (a *App) initHTTPServer(ctx context.Context) error {
 		}, postAuthRateLimit)...,
 	)
 
-	// Special middleware chain for /me endpoints that checks user existence before authorization
-	// This ensures proper 404 responses when a user has a valid JWT but has been deleted
+	// The /me chain: the access chain without the project-membership check,
+	// which has no project to read there. It was the one chain that asked
+	// whether the account still existed and was enabled; every chain that
+	// verifies an access token asks now, but logout, in the same words.
 	meEndpointMiddlewares := middleware.Chain(
 		appendRateLimit([]middleware.Middleware{
 			middleware.CheckAccessToken(jwtValidators, a.revokedAccessTokensCheckerOrNil()),
-			middleware.CheckUserExists(a.services.Users),
+			middleware.RequireActiveAccount(a.services.Users),
 			middleware.CheckAuthz(a.services.Authz),
 		}, postAuthRateLimit)...,
 	)

@@ -220,6 +220,10 @@ const AuthnInvalidCredentials = "invalid email or password"
 // the same breath, so the retry cannot succeed — it burns two more requests and
 // then bounces the user to a login screen that says the wrong thing.
 //
+// The same code answers a token whose account was disabled or deleted
+// (middleware.RequireActiveAccount). Nothing was revoked there, and the retry
+// cannot succeed either: the refresh refuses the account.
+//
 // These strings are a published contract. The prose next to them is not.
 const (
 	// CodeTokenRevoked means the session is over: signed out here or

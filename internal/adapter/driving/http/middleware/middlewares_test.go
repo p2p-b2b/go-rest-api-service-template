@@ -34,21 +34,6 @@ func (f *fakeValidator) GetClientID() string {
 	return "test-client"
 }
 
-type fakeUsersService struct {
-	err       error
-	gotID     uuid.UUID
-	wasCalled bool
-}
-
-func (f *fakeUsersService) GetByID(_ context.Context, id uuid.UUID) (*domain.User, error) {
-	f.wasCalled = true
-	f.gotID = id
-	if f.err != nil {
-		return nil, f.err
-	}
-	return &domain.User{}, nil
-}
-
 func decodeHTTPMessage(t *testing.T, rec *httptest.ResponseRecorder) payload.HTTPMessage {
 	t.Helper()
 
@@ -605,147 +590,130 @@ func TestCheckPasswordResetToken(t *testing.T) {
 	})
 }
 
-func TestCheckUserExists(t *testing.T) {
+// accountStandings answers one standing, or one error, and records what it
+// was asked.
+type accountStandings struct {
+	standing domain.AccountStanding
+	err      error
+	asked    []uuid.UUID
+}
+
+func (a *accountStandings) Standing(_ context.Context, id uuid.UUID) (domain.AccountStanding, error) {
+	a.asked = append(a.asked, id)
+
+	return a.standing, a.err
+}
+
+// A token that verifies says nothing about its account. RequireActiveAccount
+// is on every chain that verifies an access token but logout, and answers a
+// disabled account, and one that is not there any more, 401 with the code
+// token_revoked: the session is over, and that is the answer a client ends a
+// session on.
+func TestRequireActiveAccount(t *testing.T) {
 	t.Parallel()
 
-	t.Run("missing_claims", func(t *testing.T) {
-		t.Parallel()
+	account := uuid.NewV7()
 
-		svc := &fakeUsersService{}
-		h := CheckUserExists(svc).ThenFunc(func(w http.ResponseWriter, _ *http.Request) {
-			w.WriteHeader(http.StatusNoContent)
+	withClaims := func(claims map[string]any) *http.Request {
+		req := httptest.NewRequest(http.MethodGet, "/users", nil)
+		if claims == nil {
+			return req
+		}
+
+		return req.WithContext(context.WithValue(req.Context(), JwtClaims, claims))
+	}
+
+	for name, c := range map[string]struct {
+		claims   map[string]any
+		standing domain.AccountStanding
+		fault    error
+		// want
+		status  int
+		code    string
+		message string
+		asked   bool
+	}{
+		"an_active_account_goes_on": {
+			claims: map[string]any{"sub": account.String()}, standing: domain.AccountActive,
+			status: http.StatusNoContent, asked: true,
+		},
+		"a_disabled_account_is_a_session_that_is_over": {
+			claims: map[string]any{"sub": account.String()}, standing: domain.AccountDisabled,
+			status: http.StatusUnauthorized, code: domain.CodeTokenRevoked, message: domain.AuthnTokenRevoked, asked: true,
+		},
+		"an_account_that_is_not_there_is_answered_the_same": {
+			claims: map[string]any{"sub": account.String()}, standing: domain.AccountMissing,
+			status: http.StatusUnauthorized, code: domain.CodeTokenRevoked, message: domain.AuthnTokenRevoked, asked: true,
+		},
+		// A lookup that fails is not permission to continue.
+		"a_fault_fails_closed": {
+			claims: map[string]any{"sub": account.String()}, fault: errors.New("the database is away"),
+			status: http.StatusInternalServerError, message: "internal server error", asked: true,
+		},
+		// No answer is not a yes: a standing nobody gave, beside no error.
+		"a_standing_nobody_gave_is_refused": {
+			claims: map[string]any{"sub": account.String()}, standing: domain.AccountUnknown,
+			status: http.StatusUnauthorized, code: domain.CodeTokenRevoked, message: domain.AuthnTokenRevoked, asked: true,
+		},
+		"no_claims":                {status: http.StatusUnauthorized, message: "Invalid or expired token"},
+		"no_sub_claim":             {claims: map[string]any{"jti": "x"}, status: http.StatusUnauthorized, message: "Invalid or expired token"},
+		"a_sub_that_is_no_string":  {claims: map[string]any{"sub": 12}, status: http.StatusUnauthorized, message: "Invalid or expired token"},
+		"a_sub_that_is_no_account": {claims: map[string]any{"sub": "nobody"}, status: http.StatusUnauthorized, message: "Invalid or expired token"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			accounts := &accountStandings{standing: c.standing, err: c.fault}
+
+			reached := false
+			h := RequireActiveAccount(accounts).ThenFunc(func(w http.ResponseWriter, _ *http.Request) {
+				reached = true
+
+				w.WriteHeader(http.StatusNoContent)
+			})
+
+			rec := httptest.NewRecorder()
+			h.ServeHTTP(rec, withClaims(c.claims))
+
+			if rec.Code != c.status {
+				t.Fatalf("status = %d, want %d. Body: %s", rec.Code, c.status, rec.Body.String())
+			}
+
+			if reached != (c.status == http.StatusNoContent) {
+				t.Errorf("the handler was reached = %v with status %d", reached, rec.Code)
+			}
+
+			if c.asked != (len(accounts.asked) == 1) {
+				t.Errorf("the account's standing was asked %d times, want asked = %v", len(accounts.asked), c.asked)
+			}
+
+			if c.asked && accounts.asked[0] != account {
+				t.Errorf("asked about %s, want the token's account %s", accounts.asked[0], account)
+			}
+
+			if c.status == http.StatusNoContent {
+				return
+			}
+
+			var body struct {
+				Message string `json:"message"`
+				Code    string `json:"code"`
+			}
+
+			if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil {
+				t.Fatalf("not a message: %s", rec.Body.String())
+			}
+
+			if body.Message != c.message || body.Code != c.code {
+				t.Errorf("answered %q (code %q), want %q (code %q)", body.Message, body.Code, c.message, c.code)
+			}
+
+			// Which of the two it was is not the caller's to learn.
+			if strings.Contains(rec.Body.String(), "disabled") || strings.Contains(rec.Body.String(), account.String()) {
+				t.Errorf("the answer says more than that the session is over: %s", rec.Body.String())
+			}
 		})
-
-		rec := httptest.NewRecorder()
-		req := httptest.NewRequest(http.MethodGet, "/me", nil)
-		h.ServeHTTP(rec, req)
-
-		msg := decodeHTTPMessage(t, rec)
-		if rec.Code != http.StatusUnauthorized || msg.Message != "missing or invalid JWT claims" {
-			t.Fatalf("unexpected response: code=%d msg=%q", rec.Code, msg.Message)
-		}
-	})
-
-	t.Run("user_not_found", func(t *testing.T) {
-		t.Parallel()
-
-		userID := uuid.New()
-		svc := &fakeUsersService{err: &domain.UserNotFoundError{ID: userID, Message: "not found"}}
-		h := CheckUserExists(svc).ThenFunc(func(w http.ResponseWriter, _ *http.Request) {
-			w.WriteHeader(http.StatusNoContent)
-		})
-
-		rec := httptest.NewRecorder()
-		req := httptest.NewRequest(http.MethodGet, "/me", nil)
-		ctx := context.WithValue(req.Context(), JwtClaims, map[string]any{"sub": userID.String()})
-		h.ServeHTTP(rec, req.WithContext(ctx))
-
-		msg := decodeHTTPMessage(t, rec)
-		if rec.Code != http.StatusNotFound || msg.Message != "user not found" {
-			t.Fatalf("unexpected response: code=%d msg=%q", rec.Code, msg.Message)
-		}
-	})
-
-	t.Run("internal_error", func(t *testing.T) {
-		t.Parallel()
-
-		userID := uuid.New()
-		svc := &fakeUsersService{err: errors.New("db failure")}
-		h := CheckUserExists(svc).ThenFunc(func(w http.ResponseWriter, _ *http.Request) {
-			w.WriteHeader(http.StatusNoContent)
-		})
-
-		rec := httptest.NewRecorder()
-		req := httptest.NewRequest(http.MethodGet, "/me", nil)
-		ctx := context.WithValue(req.Context(), JwtClaims, map[string]any{"sub": userID.String()})
-		h.ServeHTTP(rec, req.WithContext(ctx))
-
-		msg := decodeHTTPMessage(t, rec)
-		if rec.Code != http.StatusInternalServerError || msg.Message != "failed to verify user existence" {
-			t.Fatalf("unexpected response: code=%d msg=%q", rec.Code, msg.Message)
-		}
-	})
-
-	t.Run("success", func(t *testing.T) {
-		t.Parallel()
-
-		userID := uuid.New()
-		svc := &fakeUsersService{}
-		called := false
-		h := CheckUserExists(svc).ThenFunc(func(w http.ResponseWriter, _ *http.Request) {
-			called = true
-			w.WriteHeader(http.StatusNoContent)
-		})
-
-		rec := httptest.NewRecorder()
-		req := httptest.NewRequest(http.MethodGet, "/me", nil)
-		ctx := context.WithValue(req.Context(), JwtClaims, map[string]any{"sub": userID.String()})
-		h.ServeHTTP(rec, req.WithContext(ctx))
-
-		if rec.Code != http.StatusNoContent || !called {
-			t.Fatalf("expected next handler to be called with status 204")
-		}
-		if !svc.wasCalled || svc.gotID != userID {
-			t.Fatalf("expected service GetByID to be called with user id %s", userID)
-		}
-	})
-
-	t.Run("missing_sub_claim", func(t *testing.T) {
-		t.Parallel()
-
-		svc := &fakeUsersService{}
-		h := CheckUserExists(svc).ThenFunc(func(w http.ResponseWriter, _ *http.Request) {
-			w.WriteHeader(http.StatusNoContent)
-		})
-
-		rec := httptest.NewRecorder()
-		req := httptest.NewRequest(http.MethodGet, "/me", nil)
-		ctx := context.WithValue(req.Context(), JwtClaims, map[string]any{"token_type": "access"})
-		h.ServeHTTP(rec, req.WithContext(ctx))
-
-		msg := decodeHTTPMessage(t, rec)
-		if rec.Code != http.StatusUnauthorized || msg.Message != "missing user ID in token claims" {
-			t.Fatalf("unexpected response: code=%d msg=%q", rec.Code, msg.Message)
-		}
-	})
-
-	t.Run("invalid_sub_format", func(t *testing.T) {
-		t.Parallel()
-
-		svc := &fakeUsersService{}
-		h := CheckUserExists(svc).ThenFunc(func(w http.ResponseWriter, _ *http.Request) {
-			w.WriteHeader(http.StatusNoContent)
-		})
-
-		rec := httptest.NewRecorder()
-		req := httptest.NewRequest(http.MethodGet, "/me", nil)
-		ctx := context.WithValue(req.Context(), JwtClaims, map[string]any{"sub": 12345})
-		h.ServeHTTP(rec, req.WithContext(ctx))
-
-		msg := decodeHTTPMessage(t, rec)
-		if rec.Code != http.StatusUnauthorized || msg.Message != "invalid user ID format in token" {
-			t.Fatalf("unexpected response: code=%d msg=%q", rec.Code, msg.Message)
-		}
-	})
-
-	t.Run("invalid_sub_uuid", func(t *testing.T) {
-		t.Parallel()
-
-		svc := &fakeUsersService{}
-		h := CheckUserExists(svc).ThenFunc(func(w http.ResponseWriter, _ *http.Request) {
-			w.WriteHeader(http.StatusNoContent)
-		})
-
-		rec := httptest.NewRecorder()
-		req := httptest.NewRequest(http.MethodGet, "/me", nil)
-		ctx := context.WithValue(req.Context(), JwtClaims, map[string]any{"sub": "not-a-uuid"})
-		h.ServeHTTP(rec, req.WithContext(ctx))
-
-		msg := decodeHTTPMessage(t, rec)
-		if rec.Code != http.StatusUnauthorized || msg.Message != "invalid user ID in token" {
-			t.Fatalf("unexpected response: code=%d msg=%q", rec.Code, msg.Message)
-		}
-	})
+	}
 }
 
 func TestRecovery(t *testing.T) {

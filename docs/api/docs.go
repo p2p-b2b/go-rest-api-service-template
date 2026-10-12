@@ -1721,7 +1721,7 @@ const docTemplate = `{
                         }
                     },
                     "500": {
-                        "description": "The check could not be completed. The body carries a fixed message and never the underlying error. The reason is on the span and in an ERROR log",
+                        "description": "The check could not be completed, or the account behind the token could not be read: with the database unreachable that read fails first, so this answer comes before the 503 below. The body carries a fixed message and never the underlying error. The reason is on the span and in an ERROR log",
                         "schema": {
                             "$ref": "#/definitions/payload.HTTPMessage"
                         }

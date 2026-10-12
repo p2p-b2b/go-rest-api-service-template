@@ -5563,7 +5563,7 @@ Per-component health, database pool stats and startup metrics, with the status c
 | [401](#01982304-a1b2-7eec-8bf3-84f51fd09b74-401) | Unauthorized | Invalid or expired token. This endpoint names every component, its configuration and its timings, so it requires authentication -- unlike /health/live and /health/status, which an orchestrator must be able to reach without a token |  | [schema](#01982304-a1b2-7eec-8bf3-84f51fd09b74-401-schema) |
 | [403](#01982304-a1b2-7eec-8bf3-84f51fd09b74-403) | Forbidden | Not authorized |  | [schema](#01982304-a1b2-7eec-8bf3-84f51fd09b74-403-schema) |
 | [429](#01982304-a1b2-7eec-8bf3-84f51fd09b74-429) | Too Many Requests | Too many requests |  | [schema](#01982304-a1b2-7eec-8bf3-84f51fd09b74-429-schema) |
-| [500](#01982304-a1b2-7eec-8bf3-84f51fd09b74-500) | Internal Server Error | The check could not be completed. The body carries a fixed message and never the underlying error. The reason is on the span and in an ERROR log |  | [schema](#01982304-a1b2-7eec-8bf3-84f51fd09b74-500-schema) |
+| [500](#01982304-a1b2-7eec-8bf3-84f51fd09b74-500) | Internal Server Error | The check could not be completed, or the account behind the token could not be read: with the database unreachable that read fails first, so this answer comes before the 503 below. The body carries a fixed message and never the underlying error. The reason is on the span and in an ERROR log |  | [schema](#01982304-a1b2-7eec-8bf3-84f51fd09b74-500-schema) |
 | [503](#01982304-a1b2-7eec-8bf3-84f51fd09b74-503) | Service Unavailable | A HARD dependency is unreachable -- currently the database -- so this instance cannot serve. A load balancer or readiness probe should take it out of rotation. Two components are deliberately excluded from this code and can only reach 206: the cache, because it is fail-open and a request still succeeds without it; and the rate-limit store, because health and version bypass the limiter precisely so its outage cannot evict a replica, and failing readiness would reintroduce that eviction by the other door -- on every replica at once, since they share the store |  | [schema](#01982304-a1b2-7eec-8bf3-84f51fd09b74-503-schema) |
 
 #### Responses
@@ -5614,7 +5614,7 @@ Status: Too Many Requests
 
 [PayloadHTTPMessage](#payload-http-message)
 
-##### <span id="01982304-a1b2-7eec-8bf3-84f51fd09b74-500"></span> 500 - The check could not be completed. The body carries a fixed message and never the underlying error. The reason is on the span and in an ERROR log
+##### <span id="01982304-a1b2-7eec-8bf3-84f51fd09b74-500"></span> 500 - The check could not be completed, or the account behind the token could not be read: with the database unreachable that read fails first, so this answer comes before the 503 below. The body carries a fixed message and never the underlying error. The reason is on the span and in an ERROR log
 Status: Internal Server Error
 
 ###### <span id="01982304-a1b2-7eec-8bf3-84f51fd09b74-500-schema"></span> Schema

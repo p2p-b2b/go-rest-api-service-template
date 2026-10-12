@@ -210,7 +210,7 @@ func httpStatusForHealth(status string) int {
 //	@Failure		401	{object}	payload.HTTPMessage		"Invalid or expired token. This endpoint names every component, its configuration and its timings, so it requires authentication -- unlike /health/live and /health/status, which an orchestrator must be able to reach without a token"
 //	@Failure		403	{object}	payload.HTTPMessage		"Not authorized"
 //	@Failure		429	{object}	payload.HTTPMessage		"Too many requests"
-//	@Failure		500	{object}	payload.HTTPMessage		"The check could not be completed. The body carries a fixed message and never the underlying error. The reason is on the span and in an ERROR log"
+//	@Failure		500	{object}	payload.HTTPMessage		"The check could not be completed, or the account behind the token could not be read: with the database unreachable that read fails first, so this answer comes before the 503 below. The body carries a fixed message and never the underlying error. The reason is on the span and in an ERROR log"
 //	@Failure		503	{object}	payload.DetailedHealth	"A HARD dependency is unreachable -- currently the database -- so this instance cannot serve. A load balancer or readiness probe should take it out of rotation. Two components are deliberately excluded from this code and can only reach 206: the cache, because it is fail-open and a request still succeeds without it; and the rate-limit store, because health and version bypass the limiter precisely so its outage cannot evict a replica, and failing readiness would reintroduce that eviction by the other door -- on every replica at once, since they share the store"
 //	@Router			/health/detailed [get]
 //	@Security		AccessToken
