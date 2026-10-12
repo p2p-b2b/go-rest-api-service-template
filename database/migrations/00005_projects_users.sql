@@ -5,8 +5,11 @@
 -- table projects_users
 ---------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS projects_users (
-    projects_id uuid NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
-    users_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    -- The two foreign keys are named, by the names Postgres gives them: the
+    -- repository tells them apart (a link whose project is gone is not a
+    -- missing user), so the names are a contract with the code.
+    projects_id uuid NOT NULL CONSTRAINT projects_users_projects_id_fkey REFERENCES projects(id) ON DELETE CASCADE,
+    users_id uuid NOT NULL CONSTRAINT projects_users_users_id_fkey REFERENCES users(id) ON DELETE CASCADE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
 

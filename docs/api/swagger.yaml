@@ -7059,7 +7059,9 @@ paths:
     delete:
       consumes:
       - application/json
-      description: Remove project associations from user.
+      description: Remove project associations from user. A caller unlinks a user
+        only from a project the caller is linked to; another account's project and
+        one that does not exist are the same 400.
       operationId: 01986f44-3a65-7a25-afe8-fdd6ae4572c4
       parameters:
       - description: User unique identifier
@@ -7082,7 +7084,8 @@ paths:
           schema:
             $ref: '#/definitions/payload.HTTPMessage'
         "400":
-          description: Invalid user ID or request body
+          description: Invalid user ID or request body, or a project that is not one
+            of the caller's
           schema:
             $ref: '#/definitions/payload.HTTPMessage'
         "401":
@@ -7121,7 +7124,9 @@ paths:
       - Users
       - Projects
     get:
-      description: Retrieve paginated list of projects accessible to specific user.
+      description: 'Retrieve the projects of a user that are the caller''s too: all
+        of them for the administrator account and for a caller asking about themselves,
+        the shared ones for anyone else.'
       operationId: 019870ff-37f6-737e-8efb-e39730ef6952
       parameters:
       - description: User unique identifier
@@ -7192,7 +7197,9 @@ paths:
     post:
       consumes:
       - application/json
-      description: Associate multiple projects with user.
+      description: Associate projects with a user. A caller links a user only to a
+        project the caller is linked to; another account's project and one that does
+        not exist are the same 400.
       operationId: 01986f44-3a65-7a2d-8c68-8c579be0aae7
       parameters:
       - description: User unique identifier
@@ -7215,7 +7222,8 @@ paths:
           schema:
             $ref: '#/definitions/payload.HTTPMessage'
         "400":
-          description: Invalid user ID or request body
+          description: Invalid user ID or request body, or a project that is not one
+            of the caller's
           schema:
             $ref: '#/definitions/payload.HTTPMessage'
         "401":

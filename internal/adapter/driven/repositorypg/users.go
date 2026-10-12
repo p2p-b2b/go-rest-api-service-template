@@ -1209,6 +1209,66 @@ func (ref *UsersRepository) UnlinkRoles(ctx context.Context, input *domain.Unlin
 	return nil
 }
 
+// queryProjectNotOfCaller answers one of the given projects that the caller
+// is not linked to, if there is one. view_projects_users has every project
+// for an account with the `admin` flag and an account's memberships for
+// anyone else; an id that is no project at all is in nobody's.
+const queryProjectNotOfCaller = `
+        SELECT wanted.id
+        FROM UNNEST($2::uuid[]) AS wanted(id)
+        WHERE NOT EXISTS (
+            SELECT 1 FROM view_projects_users AS callers
+            WHERE callers.user_id = $1 AND callers.id = wanted.id
+        )
+        LIMIT 1;
+    `
+
+// rowQuerier is the one call projectsOfCaller makes of the pool, so that the
+// check can be asked without a database.
+type rowQuerier interface {
+	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
+}
+
+// errLinksWithoutCaller is what a change to a user's project links answers
+// when it does not know who asks: a route wired without its caller. It is no
+// domain error, so the answer is the fixed 500.
+var errLinksWithoutCaller = errors.New("a user's project links were asked to change with no caller")
+
+// projectsOfCaller refuses a change to a user's project links that names a
+// project the caller is not linked to.
+//
+// POST and DELETE /users/{user_id}/projects take the projects from the body.
+// With no project in the path no membership check runs, so the ids are held
+// to who asks here: a caller links or unlinks a user only on a project the
+// caller is linked to, in the sense the projects list has. Another account's
+// project and one that does not exist are refused in the same words.
+func projectsOfCaller(ctx context.Context, db rowQuerier, caller uuid.UUID, projectIDs []uuid.UUID) error {
+	if caller == uuid.Nil() {
+		// Never "any project": a write that does not know who asks is refused.
+		return errLinksWithoutCaller
+	}
+
+	ids := make([]string, len(projectIDs))
+	for i, id := range projectIDs {
+		ids[i] = id.String()
+	}
+
+	cslog.Trace(ctx, "sql", "query", prettyPrint(queryProjectNotOfCaller, caller.String(), ids))
+
+	var foreign uuid.UUID
+
+	err := db.QueryRow(ctx, queryProjectNotOfCaller, caller, ids).Scan(&foreign)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil
+	}
+
+	if err != nil {
+		return err
+	}
+
+	return &domain.ProjectNotOfCallerError{ProjectID: foreign}
+}
+
 func (ref *UsersRepository) LinkProjects(ctx context.Context, input *domain.LinkProjectsToUserInput) error {
 	start := time.Now()
 	ctx, span, attrs, cancel := o11y.SetupTraceWithTimeout(ctx, ref.ot.Traces.Tracer, ref.maxQueryTimeout, ref.metricsMetadata, "LinkProjects")
@@ -1226,6 +1286,10 @@ func (ref *UsersRepository) LinkProjects(ctx context.Context, input *domain.Link
 		return o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
 	}
 
+	if err := projectsOfCaller(ctx, ref.db, input.CallerID, input.ProjectIDs); err != nil {
+		return o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
+	}
+
 	// Prepare arrays for UNNEST
 	userIDs := make([]string, len(input.ProjectIDs))
 	projectIDs := make([]string, len(input.ProjectIDs))
@@ -1235,9 +1299,11 @@ func (ref *UsersRepository) LinkProjects(ctx context.Context, input *domain.Link
 	}
 
 	query := `
-        -- insert the new projects
+        -- insert the new projects. DISTINCT: a body may name a project twice,
+        -- and ON CONFLICT DO UPDATE refuses to touch one row twice in one
+        -- statement (SQLSTATE 21000), which was a 500.
         INSERT INTO projects_users (users_id, projects_id)
-        SELECT * FROM UNNEST($1::uuid[], $2::uuid[]) -- Use appropriate type casting for your UUIDs
+        SELECT DISTINCT * FROM UNNEST($1::uuid[], $2::uuid[])
         ON CONFLICT (users_id, projects_id)
         DO UPDATE SET updated_at = NOW();
     `
@@ -1268,6 +1334,10 @@ func (ref *UsersRepository) UnlinkProjects(ctx context.Context, input *domain.Un
 	span.SetAttributes(attribute.String("user.id", input.UserID.String()))
 
 	if err := input.Validate(); err != nil {
+		return o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
+	}
+
+	if err := projectsOfCaller(ctx, ref.db, input.CallerID, input.ProjectIDs); err != nil {
 		return o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
 	}
 
@@ -1414,6 +1484,10 @@ func (ref *UsersRepository) SelectAuthz(ctx context.Context, userID uuid.UUID) (
 	return out, nil
 }
 
+// constraintProjectsUsersProject is the foreign key from a link to its
+// project, by the name migration 00005 declares.
+const constraintProjectsUsersProject = "projects_users_projects_id_fkey"
+
 // handlePgError maps PostgreSQL errors to domain-specific errors.
 // Returns the appropriate domain error or the original error if no mapping exists.
 func (ref *UsersRepository) handlePgError(err error, input any) error {
@@ -1444,6 +1518,17 @@ func (ref *UsersRepository) handlePgError(err error, input any) error {
 				}
 			}
 		case "23503": // Foreign key violation
+			// A link names two rows. The project was the caller's at the
+			// check (projectsOfCaller) and is gone at the insert: the same
+			// refusal, without an id, since the statement does not say which
+			// one it was. It comes before the branch below, which answered
+			// "User not found" for either of the two.
+			if pgErr.ConstraintName == constraintProjectsUsersProject {
+				if _, ok := input.(*domain.LinkProjectsToUserInput); ok {
+					return &domain.ProjectNotOfCallerError{}
+				}
+			}
+
 			if strings.Contains(pgErr.Message, "_fkey") {
 				switch v := input.(type) {
 				case *domain.LinkProjectsToUserInput: // works too for domain.UnlinkProjectsFromUserInput because is an alias

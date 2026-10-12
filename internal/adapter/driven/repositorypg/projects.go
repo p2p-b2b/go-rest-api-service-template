@@ -459,6 +459,18 @@ func (ref *ProjectsRepository) SelectByIDByUserID(ctx context.Context, id, userI
 	return &item, nil
 }
 
+// SelectByUserID lists the projects of input.UserID that are
+// input.CallerID's too.
+//
+// The route it serves, GET /users/{user_id}/projects, has no project in its
+// path, so no membership check runs for it, and the list is of somebody
+// else's projects: it is scoped to who asks. view_projects_users has every
+// project for an account with the `admin` flag and an account's memberships
+// for anyone else, so the administrator account reads a user's whole list, a
+// caller asking about themselves their own, and anyone else the projects
+// they share with that user.
+//
+// A list with no caller is refused, never answered unscoped.
 func (ref *ProjectsRepository) SelectByUserID(ctx context.Context, input *domain.SelectProjectsInput) (*domain.SelectProjectsOutput, error) {
 	start := time.Now()
 	ctx, span, attrs, cancel := o11y.SetupTraceWithTimeout(ctx, ref.ot.Traces.Tracer, ref.maxQueryTimeout, ref.metricsMetadata, "SelectByUserID")
@@ -472,6 +484,11 @@ func (ref *ProjectsRepository) SelectByUserID(ctx context.Context, input *domain
 
 	if err := input.Validate(); err != nil {
 		return nil, o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
+	}
+
+	if input.CallerID == uuid.Nil() {
+		errorValue := &domain.InvalidInputError{Message: "a user's projects were asked for with no caller"}
+		return nil, o11y.RecordError(ctx, span, start, errorValue, ref.metrics, attrs)
 	}
 
 	// if no fields are provided, select all fields
@@ -509,6 +526,10 @@ func (ref *ProjectsRepository) SelectByUserID(ctx context.Context, input *domain
                 {{.QueryColumns}}
             FROM view_projects_users AS vp
             WHERE vp.user_id = $1
+                AND EXISTS (
+                    SELECT 1 FROM view_projects_users AS callers
+                    WHERE callers.user_id = $2 AND callers.id = vp.id
+                )
                 {{ .QueryWhere }}
             ORDER BY {{.QueryInternalSort}}
             LIMIT {{.QueryLimit}}
@@ -550,7 +571,7 @@ func (ref *ProjectsRepository) SelectByUserID(ctx context.Context, input *domain
 	cslog.Trace(ctx, "sql", "query", prettyPrint(query))
 
 	// execute the query
-	rows, err := ref.db.Query(ctx, query, input.UserID)
+	rows, err := ref.db.Query(ctx, query, input.UserID, input.CallerID)
 	if err != nil {
 		return nil, o11y.RecordError(ctx, span, start, ref.handlePgError(err, input), ref.metrics, attrs)
 	}

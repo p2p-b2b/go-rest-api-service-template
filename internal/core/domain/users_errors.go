@@ -156,3 +156,21 @@ func (e *InvalidProjectLinkError) Error() string {
 
 	return base.Error()
 }
+
+// ProjectNotOfCallerError refuses a change to a user's project links that
+// names a project the caller is not linked to. A project of another account
+// and one that does not exist are refused in the same words, with the id the
+// caller sent: the caller is not told which of the two it is.
+type ProjectNotOfCallerError struct {
+	// ProjectID is the id that is not the caller's; nil when the write found
+	// it gone and cannot say which of the ids it was.
+	ProjectID uuid.UUID
+}
+
+func (e *ProjectNotOfCallerError) Error() string {
+	if e.ProjectID == uuid.Nil() {
+		return "invalid project_ids: one of the ids is not one of your projects"
+	}
+
+	return "invalid project_ids: " + e.ProjectID.String() + " is not one of your projects"
+}

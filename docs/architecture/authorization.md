@@ -246,3 +246,105 @@ project. An administrator bypasses and is logged as one.
 
 A new project-scoped route needs nothing. A new path wildcard that is not
 named `project_id` gets **no** check, so name it `project_id` or add one.
+
+## A route about a user's projects is held to its caller
+
+A grant names a route and membership names a project in the path. Three
+routes name a user in the path and their projects somewhere else, so neither
+check holds them to a project: `GET`, `POST` and `DELETE
+/users/{user_id}/projects`. The repository holds them to the account that
+asks.
+
+"The caller's projects" means what `GET /projects` means by it:
+`view_projects_users` for the caller, which is every project for an account
+with the `admin` flag and the memberships of anyone else.
+
+### The list
+
+`GET /users/{user_id}/projects` answers the projects of the user in its path
+**that are the caller's too**.
+
+```mermaid
+flowchart TD
+    R["GET /users/{user_id}/projects"] --> H["the handler takes the caller<br/>the middleware verified"]
+    H -- "no caller on the request" --> W["500: a route wired<br/>without its middleware"]
+    H --> S{"SelectByUserID"}
+    S --> U["the projects of the user in the path<br/>(view_projects_users)"]
+    U --> C{"is the project the caller's too?<br/>(the same view, for the caller)"}
+    C -- "the caller has the admin flag" --> A["every project of that user"]
+    C -- "the caller is that user" --> O["their own list, whole"]
+    C -- "anyone else" --> I["the projects the two share"]
+    S -- "no caller reached<br/>the repository" --> X["refused: never the<br/>user's whole list"]
+```
+
+- **A list asked for with no caller is refused twice.** The handler answers
+  the 500 of a route wired without its middleware and asks nothing; the
+  repository refuses a nil caller on its own, so that a second caller of it
+  written without one reads nothing instead of everything.
+- **The list is the intersection of two accounts' row sets in one view.** A
+  caller asking about themselves gets what `GET /projects` gives them.
+- **Both predicates are in the page's statement**, so a filter and a walk by
+  page token stay inside them.
+- **An empty list says only that nothing is shared.** A user who does not
+  exist, a user with no project and a user whose projects are none of the
+  caller's are answered alike.
+- **What this means for a `UserManager`.** The role holds this route's
+  grant. Without the `admin` flag it reads, of another user's projects, the
+  ones it is linked to itself: an account that manages users and is a member
+  of nothing reads none.
+
+### The links
+
+`POST` and `DELETE /users/{user_id}/projects` take their projects from the
+body: **a caller links or unlinks a user only on a project the caller is
+linked to.**
+
+```mermaid
+flowchart TD
+    R["POST or DELETE /users/{user_id}/projects<br/>body: project_ids"] --> H["the handler takes the caller<br/>the middleware verified"]
+    H -- "no caller on the request" --> W["500: a route wired<br/>without its middleware"]
+    H --> C{"projectsOfCaller:<br/>is every id in the caller's<br/>row set of view_projects_users?"}
+    C -- "one is not: another account's<br/>project, or none at all" --> B["400 on project_ids, naming the id;<br/>nothing is written"]
+    C -- "all are (every project<br/>for the admin flag)" --> X["the statement runs"]
+    X -- "link: the user is not there" --> N["404 User not found"]
+    X -- "link: the project went<br/>between check and insert" --> B2["400 on project_ids"]
+    X --> OK["200"]
+```
+
+- **The whole request is refused**, as a foreign key would refuse it: a body
+  that names one project that is not the caller's links none of the others.
+- **Another account's project and one that does not exist are refused in the
+  same words**, with the id the caller sent
+  (`domain.ProjectNotOfCallerError`). Two answers follow from that: linking
+  a project that does not exist is this 400 and no longer a 404 "User not
+  found", and unlinking one is this 400 and no longer a 200 that unlinked
+  nothing.
+- **A link's two foreign keys are told apart by name**: the project's is the
+  same refusal, for a project that was the caller's at the check and is gone
+  at the insert; the user's stays the 404. Migration `00005` writes the two
+  names out; they are the ones Postgres gives them, so the schema is the
+  same.
+- **The check and the write are two statements**, as every check of this
+  kind in the service is: a caller unlinked from a project between the two
+  still makes the one change that was checked. The window is two statements
+  wide; a project deleted in it is the foreign key's refusal above.
+- **Unlinking a user who is not in the project** is still a 200: the project
+  is the caller's, and there is nothing to remove.
+- The other side, `POST` and `DELETE /projects/{project_id}/users`, has its
+  project in the path and is held by the membership check.
+
+### Where it is held
+
+Against a running service: `TestAnotherUsersProjectsAreOnlyTheCallersToo`
+and `TestAUsersProjectLinksChangeOnlyOnTheCallersProjects`. The unit suite
+has no database, so the wiring is held where it can run:
+`TestListByUserIDPassesThePathsUserAndTheCaller` and
+`TestAUsersProjectLinksPassThePathsUserAndTheCaller` (the handlers pass the
+path's user and the caller as what each is),
+`TestAUsersProjectLinksReachTheRepositoryWithTheirCaller` and
+`TestAUsersProjectsReachTheRepositoryWithTheirCaller` (the use-cases hand
+both on, and the refusal with its type),
+`TestAUsersProjectsAreReadHeldToTheCaller` (the list's statement),
+`TestProjectsOfCaller` (the check),
+`TestAUsersProjectLinksAreCheckedBeforeTheyAreWritten` (both writes ask
+first, with the caller) and `TestALinksTwoForeignKeysAreToldApart`.

@@ -5890,7 +5890,7 @@ Status: Internal Server Error
 DELETE /users/{user_id}/projects
 ```
 
-Remove project associations from user.
+Remove project associations from user. A caller unlinks a user only from a project the caller is linked to; another account's project and one that does not exist are the same 400.
 
 #### Consumes
   * application/json
@@ -5912,7 +5912,7 @@ Remove project associations from user.
 | Code | Status | Description | Has headers | Schema |
 |------|--------|-------------|:-----------:|--------|
 | [200](#01986f44-3a65-7a25-afe8-fdd6ae4572c4-200) | OK | Projects unlinked from user successfully |  | [schema](#01986f44-3a65-7a25-afe8-fdd6ae4572c4-200-schema) |
-| [400](#01986f44-3a65-7a25-afe8-fdd6ae4572c4-400) | Bad Request | Invalid user ID or request body |  | [schema](#01986f44-3a65-7a25-afe8-fdd6ae4572c4-400-schema) |
+| [400](#01986f44-3a65-7a25-afe8-fdd6ae4572c4-400) | Bad Request | Invalid user ID or request body, or a project that is not one of the caller's |  | [schema](#01986f44-3a65-7a25-afe8-fdd6ae4572c4-400-schema) |
 | [401](#01986f44-3a65-7a25-afe8-fdd6ae4572c4-401) | Unauthorized | Missing or invalid authentication token |  | [schema](#01986f44-3a65-7a25-afe8-fdd6ae4572c4-401-schema) |
 | [403](#01986f44-3a65-7a25-afe8-fdd6ae4572c4-403) | Forbidden | Insufficient permissions |  | [schema](#01986f44-3a65-7a25-afe8-fdd6ae4572c4-403-schema) |
 | [404](#01986f44-3a65-7a25-afe8-fdd6ae4572c4-404) | Not Found | User not found |  | [schema](#01986f44-3a65-7a25-afe8-fdd6ae4572c4-404-schema) |
@@ -5933,7 +5933,7 @@ Status: OK
 
 [PayloadHTTPMessage](#payload-http-message)
 
-##### <span id="01986f44-3a65-7a25-afe8-fdd6ae4572c4-400"></span> 400 - Invalid user ID or request body
+##### <span id="01986f44-3a65-7a25-afe8-fdd6ae4572c4-400"></span> 400 - Invalid user ID or request body, or a project that is not one of the caller's
 Status: Bad Request
 
 ###### <span id="01986f44-3a65-7a25-afe8-fdd6ae4572c4-400-schema"></span> Schema
@@ -6011,7 +6011,7 @@ Status: Internal Server Error
 POST /users/{user_id}/projects
 ```
 
-Associate multiple projects with user.
+Associate projects with a user. A caller links a user only to a project the caller is linked to; another account's project and one that does not exist are the same 400.
 
 #### Consumes
   * application/json
@@ -6033,7 +6033,7 @@ Associate multiple projects with user.
 | Code | Status | Description | Has headers | Schema |
 |------|--------|-------------|:-----------:|--------|
 | [200](#01986f44-3a65-7a2d-8c68-8c579be0aae7-200) | OK | Projects linked to user successfully |  | [schema](#01986f44-3a65-7a2d-8c68-8c579be0aae7-200-schema) |
-| [400](#01986f44-3a65-7a2d-8c68-8c579be0aae7-400) | Bad Request | Invalid user ID or request body |  | [schema](#01986f44-3a65-7a2d-8c68-8c579be0aae7-400-schema) |
+| [400](#01986f44-3a65-7a2d-8c68-8c579be0aae7-400) | Bad Request | Invalid user ID or request body, or a project that is not one of the caller's |  | [schema](#01986f44-3a65-7a2d-8c68-8c579be0aae7-400-schema) |
 | [401](#01986f44-3a65-7a2d-8c68-8c579be0aae7-401) | Unauthorized | Missing or invalid authentication token |  | [schema](#01986f44-3a65-7a2d-8c68-8c579be0aae7-401-schema) |
 | [403](#01986f44-3a65-7a2d-8c68-8c579be0aae7-403) | Forbidden | Insufficient permissions |  | [schema](#01986f44-3a65-7a2d-8c68-8c579be0aae7-403-schema) |
 | [404](#01986f44-3a65-7a2d-8c68-8c579be0aae7-404) | Not Found | User not found |  | [schema](#01986f44-3a65-7a2d-8c68-8c579be0aae7-404-schema) |
@@ -6055,7 +6055,7 @@ Status: OK
 
 [PayloadHTTPMessage](#payload-http-message)
 
-##### <span id="01986f44-3a65-7a2d-8c68-8c579be0aae7-400"></span> 400 - Invalid user ID or request body
+##### <span id="01986f44-3a65-7a2d-8c68-8c579be0aae7-400"></span> 400 - Invalid user ID or request body, or a project that is not one of the caller's
 Status: Bad Request
 
 ###### <span id="01986f44-3a65-7a2d-8c68-8c579be0aae7-400-schema"></span> Schema
@@ -6245,7 +6245,7 @@ Status: Internal Server Error
 GET /users/{user_id}/projects
 ```
 
-Retrieve paginated list of projects accessible to specific user.
+Retrieve the projects of a user that are the caller's too: all of them for the administrator account and for a caller asking about themselves, the shared ones for anyone else.
 
 #### Produces
   * application/json
