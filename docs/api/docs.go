@@ -6128,7 +6128,7 @@ const docTemplate = `{
                         "AccessToken": []
                     }
                 ],
-                "description": "Remove user associations from role",
+                "description": "Remove user associations from role. An account with the admin flag among them is stripped of the role only by an account that has the flag; the whole request is refused otherwise.",
                 "consumes": [
                     "application/json"
                 ],
@@ -6180,7 +6180,7 @@ const docTemplate = `{
                         }
                     },
                     "403": {
-                        "description": "Insufficient permissions",
+                        "description": "Insufficient permissions; or an administrator account among the users, by an account that is not one",
                         "schema": {
                             "$ref": "#/definitions/payload.HTTPMessage"
                         }
@@ -6481,7 +6481,7 @@ const docTemplate = `{
                         "AccessToken": []
                     }
                 ],
-                "description": "Update existing user account details by ID. Only the administrator account (the admin flag, not the Administrator role) changes an e-mail address; from anyone else a change is a 403 and nothing is written. The stored address sent back is accepted.",
+                "description": "Update existing user account details by ID. Only the administrator account (the admin flag, not the Administrator role) changes an e-mail address, or changes disabled or local_account on an account that has the flag; from anyone else such a change is a 403. Values equal to the stored ones are accepted.",
                 "consumes": [
                     "application/json"
                 ],
@@ -6532,7 +6532,7 @@ const docTemplate = `{
                         }
                     },
                     "403": {
-                        "description": "Insufficient permissions, or a change of e-mail address by an account that is not the administrator account",
+                        "description": "Insufficient permissions; a change of e-mail address, or of disabled or local_account on an administrator account, by an account that is not one; or the last enabled administrator account",
                         "schema": {
                             "$ref": "#/definitions/payload.HTTPMessage"
                         }
@@ -6581,7 +6581,7 @@ const docTemplate = `{
                         "AccessToken": []
                     }
                 ],
-                "description": "Permanently remove user account by ID.",
+                "description": "Permanently remove user account by ID. An account with the admin flag is deleted only by one that has it, the last one that can sign in by nobody, and the seeded administrator by nobody.",
                 "produces": [
                     "application/json"
                 ],
@@ -6620,7 +6620,7 @@ const docTemplate = `{
                         }
                     },
                     "403": {
-                        "description": "Insufficient permissions",
+                        "description": "Insufficient permissions; or an administrator account, by an account that is not one; the last enabled one; or the seeded administrator",
                         "schema": {
                             "$ref": "#/definitions/payload.HTTPMessage"
                         }
@@ -7302,7 +7302,7 @@ const docTemplate = `{
                         "AccessToken": []
                     }
                 ],
-                "description": "Remove role associations from user within project.",
+                "description": "Remove role associations from user within project. An account with the admin flag is stripped of a role only by an account that has the flag.",
                 "consumes": [
                     "application/json"
                 ],
@@ -7354,7 +7354,7 @@ const docTemplate = `{
                         }
                     },
                     "403": {
-                        "description": "Insufficient permissions",
+                        "description": "Insufficient permissions; or an administrator account, by an account that is not one",
                         "schema": {
                             "$ref": "#/definitions/payload.HTTPMessage"
                         }

@@ -623,7 +623,7 @@ func (ref *RolesHandler) linkUsers(w http.ResponseWriter, r *http.Request) {
 //
 //	@ID				01982303-f0f9-7e02-8bf7-c240927de056
 //	@Summary		Unlink users from role
-//	@Description	Remove user associations from role
+//	@Description	Remove user associations from role. An account with the admin flag among them is stripped of the role only by an account that has the flag; the whole request is refused otherwise.
 //	@Tags			Roles,Users
 //	@Accept			json
 //	@Produce		json
@@ -632,7 +632,7 @@ func (ref *RolesHandler) linkUsers(w http.ResponseWriter, r *http.Request) {
 //	@Success		200		{object}	payload.HTTPMessage					"Users unlinked from role successfully"
 //	@Failure		400		{object}	payload.HTTPMessage					"Invalid request payload or role ID format"
 //	@Failure		401		{object}	payload.HTTPMessage					"Missing or invalid authentication token"
-//	@Failure		403		{object}	payload.HTTPMessage					"Insufficient permissions"
+//	@Failure		403		{object}	payload.HTTPMessage					"Insufficient permissions; or an administrator account among the users, by an account that is not one"
 //	@Failure		404		{object}	payload.HTTPMessage					"Role not found"
 //	@Failure		413		{object}	payload.HTTPMessage					"Request body larger than http.server.max.body.bytes"
 //	@Failure		415		{object}	payload.HTTPMessage					"Body not declared as application/json"
@@ -665,12 +665,28 @@ func (ref *RolesHandler) unlinkUsers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Who asks: an account with the `admin` flag is stripped of a role only by one that
+	// has it. A request that reaches here with no caller is a route wired
+	// without its middleware.
+	callerID, err := getUserIDFromContext(ctx)
+	if err != nil {
+		respond.WriteInternalError(w, r, o11y.RecordError(ctx, span, start, err, ref.metrics, attrs))
+		return
+	}
+
 	input := &domain.UnlinkUsersFromRoleInput{
-		RoleID:  roleID,
-		UserIDs: req.UserIDs,
+		RoleID:   roleID,
+		CallerID: callerID,
+		UserIDs:  req.UserIDs,
 	}
 
 	if err := ref.service.UnlinkUsers(ctx, input); err != nil {
+		if _, ok := errors.AsType[*domain.AdministratorProtectedError](err); ok {
+			e := o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
+			respond.WriteJSONMessage(w, r, http.StatusForbidden, e.Error())
+			return
+		}
+
 		if _, ok := errors.AsType[*domain.RoleNotFoundError](err); ok {
 			e := o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
 			respond.WriteJSONMessage(w, r, http.StatusNotFound, e.Error())

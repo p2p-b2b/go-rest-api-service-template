@@ -230,6 +230,11 @@ func (ref *UpdateUserInput) Validate() error {
 
 type DeleteUserInput struct {
 	ID uuid.UUID
+	// CallerID is who asks, on DELETE /users/{user_id}: an account with the
+	// `admin` flag is deleted only by one that has it. A delete that names no
+	// caller deletes an account without the flag, and is a fault on one with
+	// it.
+	CallerID uuid.UUID
 }
 
 func (ref *DeleteUserInput) Validate() error {
@@ -276,8 +281,7 @@ type ListUsersOutput = SelectUsersOutput
 type LinkRolesToUserInput struct {
 	RoleIDs []uuid.UUID
 	// CallerID is who is granting; the guard checks they hold what they hand
-	// out, and refuses a zero value. Unlink paths share this input and leave it
-	// zero: nothing is granted there.
+	// out, and refuses a zero value.
 	CallerID uuid.UUID
 	UserID   uuid.UUID
 }

@@ -306,7 +306,7 @@ func (ref *UsersHandler) create(w http.ResponseWriter, r *http.Request) {
 //
 //	@ID				01982303-f0f9-7e3c-a186-f186a3418768
 //	@Summary		Update user
-//	@Description	Update existing user account details by ID. Only the administrator account (the admin flag, not the Administrator role) changes an e-mail address; from anyone else a change is a 403 and nothing is written. The stored address sent back is accepted.
+//	@Description	Update existing user account details by ID. Only the administrator account (the admin flag, not the Administrator role) changes an e-mail address, or changes disabled or local_account on an account that has the flag; from anyone else such a change is a 403. Values equal to the stored ones are accepted.
 //	@Tags			Users
 //	@Accept			json
 //	@Produce		json
@@ -315,7 +315,7 @@ func (ref *UsersHandler) create(w http.ResponseWriter, r *http.Request) {
 //	@Success		200		{object}	payload.HTTPMessage			"User updated successfully"
 //	@Failure		400		{object}	payload.HTTPMessage			"Invalid user ID or request body"
 //	@Failure		401		{object}	payload.HTTPMessage			"Missing or invalid authentication token"
-//	@Failure		403		{object}	payload.HTTPMessage			"Insufficient permissions, or a change of e-mail address by an account that is not the administrator account"
+//	@Failure		403		{object}	payload.HTTPMessage			"Insufficient permissions; a change of e-mail address, or of disabled or local_account on an administrator account, by an account that is not one; or the last enabled administrator account"
 //	@Failure		404		{object}	payload.HTTPMessage			"User not found"
 //	@Failure		409		{object}	payload.HTTPMessage			"Email already in use by another user"
 //	@Failure		413		{object}	payload.HTTPMessage			"Request body larger than http.server.max.body.bytes"
@@ -381,6 +381,12 @@ func (ref *UsersHandler) updateByID(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		if _, ok := errors.AsType[*domain.AdministratorProtectedError](err); ok {
+			e := o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
+			respond.WriteJSONMessage(w, r, http.StatusForbidden, e.Error())
+			return
+		}
+
 		if _, ok := errors.AsType[*domain.UserNotFoundError](err); ok {
 			e := o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
 			respond.WriteJSONMessage(w, r, http.StatusNotFound, e.Error())
@@ -415,14 +421,14 @@ func (ref *UsersHandler) updateByID(w http.ResponseWriter, r *http.Request) {
 //
 //	@ID				01982303-f0f9-7dda-84da-cedd68bca775
 //	@Summary		Delete user
-//	@Description	Permanently remove user account by ID.
+//	@Description	Permanently remove user account by ID. An account with the admin flag is deleted only by one that has it, the last one that can sign in by nobody, and the seeded administrator by nobody.
 //	@Tags			Users
 //	@Produce		json
 //	@Param			user_id	path		string				true	"User unique identifier"	Format(uuid)
 //	@Success		200		{object}	payload.HTTPMessage	"User deleted successfully"
 //	@Failure		400		{object}	payload.HTTPMessage	"Invalid user ID format"
 //	@Failure		401		{object}	payload.HTTPMessage	"Missing or invalid authentication token"
-//	@Failure		403		{object}	payload.HTTPMessage	"Insufficient permissions"
+//	@Failure		403		{object}	payload.HTTPMessage	"Insufficient permissions; or an administrator account, by an account that is not one; the last enabled one; or the seeded administrator"
 //	@Failure		404		{object}	payload.HTTPMessage	"User not found"
 //	@Failure		429		{object}	payload.HTTPMessage	"Too many requests -- RATE_LIMIT_EXCEEDED is the budget, RATE_LIMIT_UNAVAILABLE the limiter's own store"
 //	@Failure		500		{object}	payload.HTTPMessage	"Internal server error during deletion"
@@ -440,11 +446,27 @@ func (ref *UsersHandler) deleteByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Who asks: an account with the `admin` flag is deleted only by one that
+	// has it. A request that reaches here with no caller is a route wired
+	// without its middleware.
+	callerID, err := getUserIDFromContext(ctx)
+	if err != nil {
+		respond.WriteInternalError(w, r, o11y.RecordError(ctx, span, start, err, ref.metrics, attrs))
+		return
+	}
+
 	input := &domain.DeleteUserInput{
-		ID: userID,
+		ID:       userID,
+		CallerID: callerID,
 	}
 
 	if err := ref.service.DeleteByID(ctx, input); err != nil {
+		if _, ok := errors.AsType[*domain.AdministratorProtectedError](err); ok {
+			e := o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
+			respond.WriteJSONMessage(w, r, http.StatusForbidden, e.Error())
+			return
+		}
+
 		if _, ok := errors.AsType[*domain.UserNotFoundError](err); ok {
 			e := o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
 			respond.WriteJSONMessage(w, r, http.StatusNotFound, e.Error())
@@ -889,7 +911,7 @@ func (ref *UsersHandler) linkRoles(w http.ResponseWriter, r *http.Request) {
 //
 //	@ID				01982303-f0f9-7f23-b203-7079222718d0
 //	@Summary		Unlink roles from user
-//	@Description	Remove role associations from user within project.
+//	@Description	Remove role associations from user within project. An account with the admin flag is stripped of a role only by an account that has the flag.
 //	@Tags			Users,Roles
 //	@Accept			json
 //	@Produce		json
@@ -898,7 +920,7 @@ func (ref *UsersHandler) linkRoles(w http.ResponseWriter, r *http.Request) {
 //	@Success		200		{object}	payload.HTTPMessage					"Roles unlinked from user successfully"
 //	@Failure		400		{object}	payload.HTTPMessage					"Invalid user ID or request body"
 //	@Failure		401		{object}	payload.HTTPMessage					"Missing or invalid authentication token"
-//	@Failure		403		{object}	payload.HTTPMessage					"Insufficient permissions"
+//	@Failure		403		{object}	payload.HTTPMessage					"Insufficient permissions; or an administrator account, by an account that is not one"
 //	@Failure		404		{object}	payload.HTTPMessage					"User not found"
 //	@Failure		409		{object}	payload.HTTPMessage					"Conflict"
 //	@Failure		413		{object}	payload.HTTPMessage					"Request body larger than http.server.max.body.bytes"
@@ -932,12 +954,28 @@ func (ref *UsersHandler) unlinkRoles(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Who asks: an account with the `admin` flag is stripped of a role only by one that
+	// has it. A request that reaches here with no caller is a route wired
+	// without its middleware.
+	callerID, err := getUserIDFromContext(ctx)
+	if err != nil {
+		respond.WriteInternalError(w, r, o11y.RecordError(ctx, span, start, err, ref.metrics, attrs))
+		return
+	}
+
 	input := &domain.UnlinkRolesFromUsersInput{
-		UserID:  userID,
-		RoleIDs: req.RoleIDs,
+		UserID:   userID,
+		CallerID: callerID,
+		RoleIDs:  req.RoleIDs,
 	}
 
 	if err := ref.service.UnlinkRoles(ctx, input); err != nil {
+		if _, ok := errors.AsType[*domain.AdministratorProtectedError](err); ok {
+			e := o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
+			respond.WriteJSONMessage(w, r, http.StatusForbidden, e.Error())
+			return
+		}
+
 		if _, ok := errors.AsType[*domain.UserAlreadyExistsError](err); ok {
 			e := o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
 			respond.WriteJSONMessage(w, r, http.StatusConflict, e.Error())

@@ -638,10 +638,11 @@ func (a *App) initAuthServices(
 
 	// Roles service
 	a.services.Roles, err = usecase.NewRolesService(usecase.RolesServiceConf{
-		Guard:        grantGuard,
-		Repository:   a.repositories.Roles,
-		CacheService: cacheService,
-		OT:           a.telemetry,
+		Guard:          grantGuard,
+		Repository:     a.repositories.Roles,
+		Administrators: a.repositories.Users,
+		CacheService:   cacheService,
+		OT:             a.telemetry,
 	})
 	if err != nil {
 		return fmt.Errorf("error creating roles service: %w", err)

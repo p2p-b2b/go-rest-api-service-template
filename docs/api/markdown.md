@@ -1255,7 +1255,7 @@ Status: Internal Server Error
 DELETE /users/{user_id}
 ```
 
-Permanently remove user account by ID.
+Permanently remove user account by ID. An account with the admin flag is deleted only by one that has it, the last one that can sign in by nobody, and the seeded administrator by nobody.
 
 #### Produces
   * application/json
@@ -1275,7 +1275,7 @@ Permanently remove user account by ID.
 | [200](#01982303-f0f9-7dda-84da-cedd68bca775-200) | OK | User deleted successfully |  | [schema](#01982303-f0f9-7dda-84da-cedd68bca775-200-schema) |
 | [400](#01982303-f0f9-7dda-84da-cedd68bca775-400) | Bad Request | Invalid user ID format |  | [schema](#01982303-f0f9-7dda-84da-cedd68bca775-400-schema) |
 | [401](#01982303-f0f9-7dda-84da-cedd68bca775-401) | Unauthorized | Missing or invalid authentication token |  | [schema](#01982303-f0f9-7dda-84da-cedd68bca775-401-schema) |
-| [403](#01982303-f0f9-7dda-84da-cedd68bca775-403) | Forbidden | Insufficient permissions |  | [schema](#01982303-f0f9-7dda-84da-cedd68bca775-403-schema) |
+| [403](#01982303-f0f9-7dda-84da-cedd68bca775-403) | Forbidden | Insufficient permissions; or an administrator account, by an account that is not one; the last enabled one; or the seeded administrator |  | [schema](#01982303-f0f9-7dda-84da-cedd68bca775-403-schema) |
 | [404](#01982303-f0f9-7dda-84da-cedd68bca775-404) | Not Found | User not found |  | [schema](#01982303-f0f9-7dda-84da-cedd68bca775-404-schema) |
 | [429](#01982303-f0f9-7dda-84da-cedd68bca775-429) | Too Many Requests | Too many requests -- RATE_LIMIT_EXCEEDED is the budget, RATE_LIMIT_UNAVAILABLE the limiter's own store |  | [schema](#01982303-f0f9-7dda-84da-cedd68bca775-429-schema) |
 | [500](#01982303-f0f9-7dda-84da-cedd68bca775-500) | Internal Server Error | Internal server error during deletion |  | [schema](#01982303-f0f9-7dda-84da-cedd68bca775-500-schema) |
@@ -1310,7 +1310,7 @@ Status: Unauthorized
 
 [PayloadHTTPMessage](#payload-http-message)
 
-##### <span id="01982303-f0f9-7dda-84da-cedd68bca775-403"></span> 403 - Insufficient permissions
+##### <span id="01982303-f0f9-7dda-84da-cedd68bca775-403"></span> 403 - Insufficient permissions; or an administrator account, by an account that is not one; the last enabled one; or the seeded administrator
 Status: Forbidden
 
 ###### <span id="01982303-f0f9-7dda-84da-cedd68bca775-403-schema"></span> Schema
@@ -1587,7 +1587,7 @@ Status: Internal Server Error
 DELETE /roles/{role_id}/users
 ```
 
-Remove user associations from role
+Remove user associations from role. An account with the admin flag among them is stripped of the role only by an account that has the flag; the whole request is refused otherwise.
 
 #### Consumes
   * application/json
@@ -1611,7 +1611,7 @@ Remove user associations from role
 | [200](#01982303-f0f9-7e02-8bf7-c240927de056-200) | OK | Users unlinked from role successfully |  | [schema](#01982303-f0f9-7e02-8bf7-c240927de056-200-schema) |
 | [400](#01982303-f0f9-7e02-8bf7-c240927de056-400) | Bad Request | Invalid request payload or role ID format |  | [schema](#01982303-f0f9-7e02-8bf7-c240927de056-400-schema) |
 | [401](#01982303-f0f9-7e02-8bf7-c240927de056-401) | Unauthorized | Missing or invalid authentication token |  | [schema](#01982303-f0f9-7e02-8bf7-c240927de056-401-schema) |
-| [403](#01982303-f0f9-7e02-8bf7-c240927de056-403) | Forbidden | Insufficient permissions |  | [schema](#01982303-f0f9-7e02-8bf7-c240927de056-403-schema) |
+| [403](#01982303-f0f9-7e02-8bf7-c240927de056-403) | Forbidden | Insufficient permissions; or an administrator account among the users, by an account that is not one |  | [schema](#01982303-f0f9-7e02-8bf7-c240927de056-403-schema) |
 | [404](#01982303-f0f9-7e02-8bf7-c240927de056-404) | Not Found | Role not found |  | [schema](#01982303-f0f9-7e02-8bf7-c240927de056-404-schema) |
 | [413](#01982303-f0f9-7e02-8bf7-c240927de056-413) | Request Entity Too Large | Request body larger than http.server.max.body.bytes |  | [schema](#01982303-f0f9-7e02-8bf7-c240927de056-413-schema) |
 | [415](#01982303-f0f9-7e02-8bf7-c240927de056-415) | Unsupported Media Type | Body not declared as application/json |  | [schema](#01982303-f0f9-7e02-8bf7-c240927de056-415-schema) |
@@ -1648,7 +1648,7 @@ Status: Unauthorized
 
 [PayloadHTTPMessage](#payload-http-message)
 
-##### <span id="01982303-f0f9-7e02-8bf7-c240927de056-403"></span> 403 - Insufficient permissions
+##### <span id="01982303-f0f9-7e02-8bf7-c240927de056-403"></span> 403 - Insufficient permissions; or an administrator account among the users, by an account that is not one
 Status: Forbidden
 
 ###### <span id="01982303-f0f9-7e02-8bf7-c240927de056-403-schema"></span> Schema
@@ -2277,7 +2277,7 @@ Status: Internal Server Error
 PUT /users/{user_id}
 ```
 
-Update existing user account details by ID. Only the administrator account (the admin flag, not the Administrator role) changes an e-mail address; from anyone else a change is a 403 and nothing is written. The stored address sent back is accepted.
+Update existing user account details by ID. Only the administrator account (the admin flag, not the Administrator role) changes an e-mail address, or changes disabled or local_account on an account that has the flag; from anyone else such a change is a 403. Values equal to the stored ones are accepted.
 
 #### Consumes
   * application/json
@@ -2301,7 +2301,7 @@ Update existing user account details by ID. Only the administrator account (the 
 | [200](#01982303-f0f9-7e3c-a186-f186a3418768-200) | OK | User updated successfully |  | [schema](#01982303-f0f9-7e3c-a186-f186a3418768-200-schema) |
 | [400](#01982303-f0f9-7e3c-a186-f186a3418768-400) | Bad Request | Invalid user ID or request body |  | [schema](#01982303-f0f9-7e3c-a186-f186a3418768-400-schema) |
 | [401](#01982303-f0f9-7e3c-a186-f186a3418768-401) | Unauthorized | Missing or invalid authentication token |  | [schema](#01982303-f0f9-7e3c-a186-f186a3418768-401-schema) |
-| [403](#01982303-f0f9-7e3c-a186-f186a3418768-403) | Forbidden | Insufficient permissions, or a change of e-mail address by an account that is not the administrator account |  | [schema](#01982303-f0f9-7e3c-a186-f186a3418768-403-schema) |
+| [403](#01982303-f0f9-7e3c-a186-f186a3418768-403) | Forbidden | Insufficient permissions; a change of e-mail address, or of disabled or local_account on an administrator account, by an account that is not one; or the last enabled administrator account |  | [schema](#01982303-f0f9-7e3c-a186-f186a3418768-403-schema) |
 | [404](#01982303-f0f9-7e3c-a186-f186a3418768-404) | Not Found | User not found |  | [schema](#01982303-f0f9-7e3c-a186-f186a3418768-404-schema) |
 | [409](#01982303-f0f9-7e3c-a186-f186a3418768-409) | Conflict | Email already in use by another user |  | [schema](#01982303-f0f9-7e3c-a186-f186a3418768-409-schema) |
 | [413](#01982303-f0f9-7e3c-a186-f186a3418768-413) | Request Entity Too Large | Request body larger than http.server.max.body.bytes |  | [schema](#01982303-f0f9-7e3c-a186-f186a3418768-413-schema) |
@@ -2339,7 +2339,7 @@ Status: Unauthorized
 
 [PayloadHTTPMessage](#payload-http-message)
 
-##### <span id="01982303-f0f9-7e3c-a186-f186a3418768-403"></span> 403 - Insufficient permissions, or a change of e-mail address by an account that is not the administrator account
+##### <span id="01982303-f0f9-7e3c-a186-f186a3418768-403"></span> 403 - Insufficient permissions; a change of e-mail address, or of disabled or local_account on an administrator account, by an account that is not one; or the last enabled administrator account
 Status: Forbidden
 
 ###### <span id="01982303-f0f9-7e3c-a186-f186a3418768-403-schema"></span> Schema
@@ -4794,7 +4794,7 @@ Status: Internal Server Error
 DELETE /users/{user_id}/roles
 ```
 
-Remove role associations from user within project.
+Remove role associations from user within project. An account with the admin flag is stripped of a role only by an account that has the flag.
 
 #### Consumes
   * application/json
@@ -4818,7 +4818,7 @@ Remove role associations from user within project.
 | [200](#01982303-f0f9-7f23-b203-7079222718d0-200) | OK | Roles unlinked from user successfully |  | [schema](#01982303-f0f9-7f23-b203-7079222718d0-200-schema) |
 | [400](#01982303-f0f9-7f23-b203-7079222718d0-400) | Bad Request | Invalid user ID or request body |  | [schema](#01982303-f0f9-7f23-b203-7079222718d0-400-schema) |
 | [401](#01982303-f0f9-7f23-b203-7079222718d0-401) | Unauthorized | Missing or invalid authentication token |  | [schema](#01982303-f0f9-7f23-b203-7079222718d0-401-schema) |
-| [403](#01982303-f0f9-7f23-b203-7079222718d0-403) | Forbidden | Insufficient permissions |  | [schema](#01982303-f0f9-7f23-b203-7079222718d0-403-schema) |
+| [403](#01982303-f0f9-7f23-b203-7079222718d0-403) | Forbidden | Insufficient permissions; or an administrator account, by an account that is not one |  | [schema](#01982303-f0f9-7f23-b203-7079222718d0-403-schema) |
 | [404](#01982303-f0f9-7f23-b203-7079222718d0-404) | Not Found | User not found |  | [schema](#01982303-f0f9-7f23-b203-7079222718d0-404-schema) |
 | [409](#01982303-f0f9-7f23-b203-7079222718d0-409) | Conflict | Conflict |  | [schema](#01982303-f0f9-7f23-b203-7079222718d0-409-schema) |
 | [413](#01982303-f0f9-7f23-b203-7079222718d0-413) | Request Entity Too Large | Request body larger than http.server.max.body.bytes |  | [schema](#01982303-f0f9-7f23-b203-7079222718d0-413-schema) |
@@ -4856,7 +4856,7 @@ Status: Unauthorized
 
 [PayloadHTTPMessage](#payload-http-message)
 
-##### <span id="01982303-f0f9-7f23-b203-7079222718d0-403"></span> 403 - Insufficient permissions
+##### <span id="01982303-f0f9-7f23-b203-7079222718d0-403"></span> 403 - Insufficient permissions; or an administrator account, by an account that is not one
 Status: Forbidden
 
 ###### <span id="01982303-f0f9-7f23-b203-7079222718d0-403-schema"></span> Schema

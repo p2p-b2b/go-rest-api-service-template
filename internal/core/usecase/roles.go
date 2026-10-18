@@ -19,16 +19,21 @@ import (
 type RolesServiceConf struct {
 	// Guard refuses a grant the caller does not hold. Required: a service
 	// that can widen permissions without it is the escalation path.
-	Guard         *GrantGuard
-	Repository    repository.Roles
-	CacheService  cache.Cache
-	OT            *o11y.OpenTelemetry
-	MetricsPrefix string
+	Guard      *GrantGuard
+	Repository repository.Roles
+	// Administrators answers which accounts have the `admin` flag. Required:
+	// a role's unlink names users, and an account with the flag among them
+	// is stripped of the role only by an account that has the flag.
+	Administrators AdministratorAccounts
+	CacheService   cache.Cache
+	OT             *o11y.OpenTelemetry
+	MetricsPrefix  string
 }
 
 type RolesService struct {
 	guard           *GrantGuard
 	repository      repository.Roles
+	administrators  AdministratorAccounts
 	cacheService    cache.Cache
 	ot              *o11y.OpenTelemetry
 	metrics         *o11y.LayerMetrics
@@ -46,15 +51,20 @@ func NewRolesService(conf RolesServiceConf) (*RolesService, error) {
 		return nil, &domain.InvalidRepositoryError{Message: "Repository is nil, but it is required for RolesService"}
 	}
 
+	if conf.Administrators == nil {
+		return nil, &domain.InvalidRepositoryError{Message: "Administrators is nil, but it is required for RolesService"}
+	}
+
 	if conf.OT == nil {
 		return nil, &domain.InvalidOTConfigurationError{Message: "OpenTelemetry is nil, but it is required for RolesService"}
 	}
 
 	ref := &RolesService{
-		guard:        conf.Guard,
-		repository:   conf.Repository,
-		cacheService: conf.CacheService,
-		ot:           conf.OT,
+		guard:          conf.Guard,
+		repository:     conf.Repository,
+		administrators: conf.Administrators,
+		cacheService:   conf.CacheService,
+		ot:             conf.OT,
 		metricsMetadata: o11y.Metadata{
 			Layer:  AppLayer,
 			Domain: "Roles",
@@ -343,6 +353,13 @@ func (ref *RolesService) UnlinkUsers(ctx context.Context, input *domain.UnlinkUs
 
 	span.SetAttributes(attribute.String("roles.id", input.RoleID.String()))
 
+	// The same strip as DELETE /users/{user_id}/roles, from the other side:
+	// an account with the `admin` flag among the users is stripped of the
+	// role only by an account that has the flag.
+	if err := ref.administratorsAreNotStripped(ctx, input); err != nil {
+		return o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
+	}
+
 	if err := ref.repository.UnlinkUsers(ctx, input); err != nil {
 		return o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
 	}
@@ -543,4 +560,29 @@ func (ref *RolesService) ListByPolicyID(ctx context.Context, policyID uuid.UUID,
 		attribute.Int("count", len(out.Items)))
 
 	return out, nil
+}
+
+// administratorsAreNotStripped refuses a role's unlink from a set of users
+// that has an administrator account in it, unless an administrator account
+// asks. The whole request is refused: the body is one act.
+func (ref *RolesService) administratorsAreNotStripped(ctx context.Context, input *domain.UnlinkUsersFromRoleInput) error {
+	administrators, err := ref.administrators.SelectAdministratorsAmong(ctx, input.UserIDs)
+	if err != nil {
+		return err
+	}
+
+	if len(administrators) == 0 {
+		return nil
+	}
+
+	asked, err := isAdministratorAccount(ctx, ref.administrators, input.CallerID)
+	if err != nil {
+		return err
+	}
+
+	if asked {
+		return nil
+	}
+
+	return &domain.AdministratorProtectedError{Action: administratorStripped, Message: theAdministratorAccount}
 }

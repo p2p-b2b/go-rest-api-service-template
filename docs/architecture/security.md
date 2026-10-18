@@ -374,6 +374,97 @@ against a running service with the mail server;
 `TestAUsersUpdatePassesThePathsUserAndTheCaller` where the pull request gate
 runs.
 
+### An administrator account is locked only by one
+
+An account with the `admin` flag is what a deployment is operated from: it
+has every project, and it alone changes an account's address. The seeded
+`UserManager` role manages accounts: it disables them, makes a local account
+a federated one, deletes them, and takes their roles away. Nothing held the
+administrator account apart from the others.
+
+**An account with the flag is disabled, made federated, stripped of a role
+or deleted only by an account with the flag, and the last one that can still
+sign in by nobody. It is enabled, and made a local account again, only by
+an account with the flag too.** Every other account stays the role's to
+manage.
+
+```mermaid
+flowchart TD
+    R["PUT /users/{user_id} (disabled, local_account)<br/>DELETE /users/{user_id}<br/>DELETE /users/{user_id}/roles<br/>DELETE /roles/{role_id}/users"] --> T{"has the account<br/>the admin flag?"}
+    T -- no --> X["as before: the grant decides"]
+    T -- yes --> C{"is it a change?<br/>(the update only: compared<br/>with the stored row)"}
+    C -- "no: the value sent back;<br/>it is taken out of the update" --> X
+    C -- yes --> A{"has the caller the flag,<br/>and is it not disabled?"}
+    A -- no --> F["403 AdministratorProtectedError:<br/>the administrator account"]
+    A -- "no caller reached<br/>the use-case" --> W["500: a route wired<br/>without its caller"]
+    A -- yes --> S{"does it take a sign-in away,<br/>from an account that<br/>can sign in?"}
+    S -- no --> X
+    S -- yes --> L{"is that account the last<br/>with the flag that can?"}
+    L -- yes --> F2["403 AdministratorProtectedError:<br/>the last enabled administrator account"]
+    L -- no --> X
+    X -- "DELETE of the seeded administrator,<br/>or its Administrator role taken away" --> TR["the trigger on its role link refuses:<br/>403 (it was a 500)"]
+```
+
+- **One guard, `guardAdministrator`**, in the use-cases of the first three
+  doors. The fourth is the same strip from the role's side, which names
+  several users: it asks which of them have the flag
+  (`SelectAdministratorsAmong`) and refuses them all unless the caller is an
+  administrator account (`isAdministratorAccount`), as the guard does; a
+  role is no sign-in, so nothing there is counted.
+- **The flag, not the Administrator role.** The role is a set of grants, and
+  grants can be given. An account with the role and no flag is refused like
+  any other.
+- **A change is refused, not the field**, as for the address above: a form
+  sends the names, the address and `disabled` back with every edit, and a
+  user manager who renames the administrator account sends what it read.
+- **A value that is no change is taken out of the update**, on an account
+  with the flag: the check and the write are two statements, and "disabled,
+  as it already is" from an account without the flag would disable again an
+  account an administrator had enabled in between.
+- **"The last one" is counted, and refused for everybody**, the account
+  itself included. What is counted is the accounts with the flag that **can
+  sign in**: enabled, and with a password login or an identity at a
+  provider that is enabled (`CountEnabledAdministrators`). Not "not
+  disabled": a federated account with no identity has no way in, and
+  neither has one whose only identity is at a disabled provider. The count
+  applies to what takes a sign-in away (disable, federate, delete), not to
+  a role. It does not apply to an account that cannot sign in as it is,
+  which has no sign-in to take: the guard asks that of the same predicate
+  (`IsEnabledAdministrator`), so that an account the count leaves out is
+  never refused as the last one. A caller without the flag is told "the
+  administrator account" whether or not it was the last.
+- **A disabled account with the flag is not one that may ask.** It does not
+  sign in, and a token issued before it was disabled is refused on every
+  route (`RequireActiveAccount`); the guard does not rely on that:
+  `isAdministratorAccount` asks for the flag and for not being disabled.
+- **The caller is read from the repository**, not from the cache: the
+  answer decides who may lock an account.
+- **The count and the write are two statements**, as every check of this
+  kind in the service is: two administrators disabling each other in the
+  same instant can both pass.
+- **The seeded administrator keeps the Administrator role, and is deleted
+  by nobody.** A delete takes the account's role links with it, and the
+  trigger that guards its link to the Administrator role refuses that, as
+  it refuses either unlink of it (`fn_protect_bootstrap_links`). The three
+  passed the database's error on as it came, a 500, to an administrator
+  account (anyone else is refused by the guard first); each is the same
+  403 now. The trigger is the backstop and stays.
+- **The flows that update an account for itself** (the profile, a password
+  reset) carry neither field and name no caller. The verification of an
+  address is a statement of its own, and opens nothing on an account with
+  the flag.
+
+`TestAnAdministratorAccountIsNotAUserManagersToLock` holds it against a
+running service, through the four routes and in both directions;
+`TestWhichAccountsAreAdministratorsAndCanSignIn` holds the two statements
+the guard asks. In the unit suite:
+`TestAnAdministratorAccountIsLockedOnlyByOne`,
+`TestAUsersUpdateDoesNotLockAnAdministratorAccount`,
+`TestAnAdministratorAccountIsDeletedOrStrippedOnlyByOne`,
+`TestARoleIsNotTakenFromAnAdministratorAccountThroughTheRole`,
+`TestWhatLocksAnAccountPassesTheCaller`, `TestALockRefusedIsA403` and
+`TestTheSeededAdministratorsLinkIsA403`.
+
 ### What an anonymous caller learns about the build
 
 `GET /version` answers only `version`. It used to hand an anonymous,

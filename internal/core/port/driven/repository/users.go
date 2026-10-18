@@ -23,6 +23,16 @@ type Users interface {
 
 	SelectByID(ctx context.Context, id uuid.UUID) (*domain.User, error)
 	SelectByEmail(ctx context.Context, email string) (*domain.User, error)
+	// CountEnabledAdministrators is how many accounts with the `admin` flag
+	// may still sign in: enabled, and with a password login or an identity at
+	// a provider that is enabled.
+	CountEnabledAdministrators(ctx context.Context) (int, error)
+	// IsEnabledAdministrator is whether the account is one of those
+	// CountEnabledAdministrators counts.
+	IsEnabledAdministrator(ctx context.Context, id uuid.UUID) (bool, error)
+	// SelectAdministratorsAmong answers which of ids are accounts with the
+	// `admin` flag.
+	SelectAdministratorsAmong(ctx context.Context, ids []uuid.UUID) ([]uuid.UUID, error)
 	SelectByRoleID(ctx context.Context, roleID uuid.UUID, input *domain.ListUsersInput) (*domain.ListUsersOutput, error)
 	SelectByProjectID(ctx context.Context, projectID uuid.UUID, input *domain.SelectUsersInput) (*domain.SelectUsersOutput, error)
 	Select(ctx context.Context, input *domain.SelectUsersInput) (*domain.SelectUsersOutput, error)
