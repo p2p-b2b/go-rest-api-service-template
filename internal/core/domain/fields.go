@@ -28,6 +28,7 @@ const (
 	FieldDisabledByAdmin                     = "disabled_by_admin"
 	FieldDuration                            = "duration"
 	FieldEmail                               = "email"
+	FieldAdmin                               = "admin"
 	FieldEmbeddingConfig                     = "embedding_config"
 	FieldEmbeddingConfigID                   = "embedding_config_id"
 	FieldEmbeddingConfigIndexID              = "embedding_config_index_id"

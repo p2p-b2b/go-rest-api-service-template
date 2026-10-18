@@ -279,6 +279,15 @@ func (ref *UsersRepository) UpdateByID(ctx context.Context, input *domain.Update
 		args = append(args, nil)
 	}
 
+	// $9, the `admin` flag, when the body carries it: TRUE or FALSE, never
+	// NULL. The column is nullable and a flag that was never set is not
+	// set; this statement leaves such a row as it is unless it is told.
+	if input.Admin != nil {
+		args = append(args, *input.Admin)
+	} else {
+		args = append(args, nil)
+	}
+
 	// Two ways to the administrator's lock, both judged against the row as
 	// it was before this statement.
 	//
@@ -313,6 +322,7 @@ func (ref *UsersRepository) UpdateByID(ctx context.Context, input *domain.Update
                 ELSE $6::boolean
             END,
             local_account = COALESCE($7, local_account),
+            admin         = COALESCE($9::boolean, admin),
             updated_at    = CURRENT_TIMESTAMP
         WHERE id = $1;
     `
@@ -1672,6 +1682,11 @@ func (ref *UsersRepository) SelectAuthz(ctx context.Context, userID uuid.UUID) (
 // role, as raised in 00007_roles_policies_tables.sql.
 const bootstrapUserLinkMessage = "The bootstrap administrator cannot be removed from the Administrator role."
 
+// bootstrapAdministratorMessage is what fn_protect_bootstrap_administrator
+// (migration 00002) raises when a statement would take the `admin` flag from
+// the account the migrations seed.
+const bootstrapAdministratorMessage = "The bootstrap administrator keeps the admin flag."
+
 // bootstrapUserLinkRefusal answers that refusal as the 403 a protected
 // administrator account answers, for the three statements that can raise
 // it, and is nil for anything else.
@@ -1756,6 +1771,15 @@ func (ref *UsersRepository) handlePgError(err error, input any) error {
 		case "P0001": // Raised exception
 			if refusal := bootstrapUserLinkRefusal(pgErr, input); refusal != nil {
 				return refusal
+			}
+
+			// The seeded account keeps its `admin` flag: its row's trigger
+			// refuses (fn_protect_bootstrap_administrator, migration 00002),
+			// answered as the 403 the guard of the administrator account
+			// gives. Matched by the trigger's own words;
+			// TestTheSeededAdministratorKeepsItsFlag keeps the two in step.
+			if _, updating := input.(*domain.UpdateUserInput); updating && strings.Contains(pgErr.Message, bootstrapAdministratorMessage) {
+				return &domain.AdministratorProtectedError{Action: "stripped of the admin flag", Message: theBootstrapAdministrator}
 			}
 		case "22021": // invalid byte sequence for encoding
 			return &domain.InvalidByteSequenceError{Message: pgErr.Message}

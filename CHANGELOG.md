@@ -15,6 +15,16 @@ Since `v0.0.3`.
 
 ### Security
 
+- **The `admin` flag is granted, and taken back, only by an account that
+  has it.** `PUT /users/{user_id}` accepts `admin`; it is not a grant of the
+  policy engine, so the route's grant (the `UserManager`'s, the
+  Administrator role's) is not enough, and a change from anyone else is a
+  `403`. The last account with the flag that can sign in keeps it, and the
+  seeded account keeps it by a trigger on its row. A deployment is no longer
+  left with one administrator account and no way back but the database. The
+  design is in
+  [`docs/architecture/security.md`](./docs/architecture/security.md#the-admin-flag-is-granted-by-an-account-that-has-it).
+  ([#134](https://github.com/slashdevops/go-rest-api-service-template/pull/134))
 - **An identity provider's delete strands nobody, and neither its delete
   nor its disable shuts the last door.** The delete took the provider's
   identities with it and left every account that signed in through it, with
@@ -88,6 +98,11 @@ Since `v0.0.3`.
 
 ### Upgrade notes
 
+- **The `users` table has a trigger**, `tr_protect_bootstrap_administrator`:
+  the seeded account keeps its `admin` flag. Added to the file that creates
+  the table; a database created from an earlier version does not have it
+  until it is recreated (the function and the trigger are in
+  `00002_users_tables.sql`, to run by hand otherwise). (#134)
 - **The `users` table has a new check**, `users_locked_is_disabled`: an
   account an administrator locked is a disabled one. Added to the file that
   creates the table, as the column was; a database created from an earlier

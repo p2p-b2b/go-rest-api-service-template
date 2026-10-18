@@ -101,7 +101,9 @@ type UpdateUserRequest struct {
 	Disabled  *bool   `json:"disabled,omitempty" example:"false" validate:"optional"`                                               // Set to true to disable the account, false to enable
 	// The administrator's lock. True disables the account and marks it as disabled by an administrator, whatever disabled already is: a registration waiting for its verification link is disabled already, and this is how it is shut. False takes the lock off: the account is enabled if its address is verified, and waits for its link if not (send disabled false with it to enable an unverified account by hand). A value equal to the stored one changes nothing. A change of disabled in the same body must agree with it, or the body is a 400
 	DisabledByAdmin *bool `json:"disabled_by_admin,omitempty" example:"false" validate:"optional"`
-	LocalAccount    *bool `json:"local_account,omitempty" example:"true" validate:"optional"` // Set account type (local vs federated)
+	// The admin flag, which makes an account an administrator account: it has every project, and it alone changes an e-mail address, this flag, and the sign-in of another administrator account. True grants it, false takes it back; a value equal to the stored one changes nothing. A change is accepted from an account that has the flag and from nobody else (403), and is refused for everybody when it would leave no administrator account that can sign in, and on the account the migrations seed
+	Admin        *bool `json:"admin,omitempty" example:"false" validate:"optional"`
+	LocalAccount *bool `json:"local_account,omitempty" example:"true" validate:"optional"` // Set account type (local vs federated)
 }
 
 func (req *UpdateUserRequest) Validate() error {

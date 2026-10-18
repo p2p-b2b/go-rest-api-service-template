@@ -454,16 +454,20 @@ func (ref *UsersService) UpdateByID(ctx context.Context, input *domain.UpdateUse
 		}
 	}
 
-	// Nor is an account's sign-in (disabled, the lock, local_account), when
-	// the account has the `admin` flag. Judged against the stored row too,
-	// read only when the body carries one of the three.
-	if touchesSignIn(input) {
+	// Nor is the `admin` flag, nor an account's sign-in (disabled, the lock,
+	// local_account) when the account has the flag. Judged against the
+	// stored row too, read only when the body carries one of them.
+	if input.Admin != nil || touchesSignIn(input) {
 		stored, err := ref.repository.SelectByID(ctx, input.ID)
 		if err != nil {
 			return o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
 		}
 
 		twoDirections := lockMayChange(input, stored)
+
+		if err := ref.flagMayChange(ctx, input, stored); err != nil {
+			return o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
+		}
 
 		if err := ref.administratorSignInMayChange(ctx, input, stored); err != nil {
 			return o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
@@ -525,7 +529,7 @@ var errAddressChangeWithoutCaller = errors.New("an account's e-mail address was 
 // account is held. Only the administrator account, the one with the `admin`
 // flag, changes an account's address. The
 // flag, not the Administrator role: the role is a set of grants and can be
-// given; no route sets the flag.
+// given; the flag is given only by an account that has it (flagMayChange).
 //
 // An address that is the stored one is no change, and is let through: a
 // client sends the whole form back. "The stored one" is the same bytes, or
@@ -594,6 +598,66 @@ func sameAddress(stored, sent string) bool {
 // against the stored row (administratorSignInMayChange).
 func touchesSignIn(input *domain.UpdateUserInput) bool {
 	return input.Disabled != nil || input.DisabledByAdmin != nil || input.LocalAccount != nil
+}
+
+// flagMayChange refuses a change of the `admin` flag by anyone but an account
+// that has it, and the change that would leave no such account able to sign
+// in.
+//
+// The flag is the administrator account: every project, an account's
+// address, another administrator account's sign-in. No route set it, so the
+// account the migrations seed was the only one a deployment could have, and
+// a deployment whose one administrator lost its mailbox or its password had
+// no way back but the database.
+//
+// The flag is granted and taken back through PUT /users/{user_id}, by an
+// account that has it and by nobody else. It is not a grant of the policy
+// engine: whoever holds the route's grant, as the seeded UserManager role
+// does, would otherwise make itself the administrator account with one
+// request.
+//
+// What is refused is a change, not the field: a form sends back what it
+// read, and `admin: false` for an account that never had the flag is no
+// change, whoever sends it. It is taken out of the update, so that the
+// statement is handed only what an administrator account changed.
+//
+// Taking the flag is the guard's (guardAdministrator): it takes the account
+// out of the set that can do these things, as disabling it does, so the last
+// one that can still sign in keeps it. The seeded account keeps it whoever
+// asks: its row's trigger refuses, and the repository answers the same 403
+// (fn_protect_bootstrap_administrator).
+//
+// The target's own standing is not asked about when the flag is granted. A
+// disabled account has the flag and cannot use it, and is not counted as one
+// that can sign in. A registration still waiting for its link is such an
+// account, and with the flag its link proves the address and opens nothing
+// (UsersRepository.Verify): an administrator account enables it, with
+// `disabled: false`.
+func (ref *UsersService) flagMayChange(ctx context.Context, input *domain.UpdateUserInput, stored *domain.User) error {
+	if input.Admin == nil {
+		return nil
+	}
+
+	if *input.Admin == hasAdminFlag(stored) {
+		input.Admin = nil
+
+		return nil
+	}
+
+	asked, err := isAdministratorAccount(ctx, ref.repository, input.CallerID)
+	if err != nil {
+		return err
+	}
+
+	if !asked {
+		return &domain.AdministratorOnlyError{Entity: "user", Field: domain.FieldAdmin}
+	}
+
+	if *input.Admin {
+		return nil
+	}
+
+	return guardAdministrator(ctx, ref.repository, stored, input.CallerID, administratorDemoted, true)
 }
 
 // lockMayChange takes out of the update what is no change of the lock or of

@@ -2221,6 +2221,16 @@ definitions:
       emails the account holder a reset link, so taking over an account needs its
       mailbox, not a grant on PUT /users.'
     properties:
+      admin:
+        description: 'The admin flag, which makes an account an administrator account:
+          it has every project, and it alone changes an e-mail address, this flag,
+          and the sign-in of another administrator account. True grants it, false
+          takes it back; a value equal to the stored one changes nothing. A change
+          is accepted from an account that has the flag and from nobody else (403),
+          and is refused for everybody when it would leave no administrator account
+          that can sign in, and on the account the migrations seed'
+        example: false
+        type: boolean
       disabled:
         description: Set to true to disable the account, false to enable
         example: false
@@ -6918,10 +6928,10 @@ paths:
     put:
       consumes:
       - application/json
-      description: Update existing user account details by ID. Only the administrator
-        account (the admin flag, not the Administrator role) changes an e-mail address,
-        or changes disabled, disabled_by_admin or local_account on an account that
-        has the flag; from anyone else such a change is a 403. Values equal to the
+      description: Update a user account by ID. Only the administrator account (the
+        admin flag, not the Administrator role) changes an e-mail address, grants
+        or takes the admin flag, or changes disabled, disabled_by_admin or local_account
+        on an account that has the flag; anyone else gets a 403. Values equal to the
         stored ones are accepted.
       operationId: 01982303-f0f9-7e3c-a186-f186a3418768
       parameters:
@@ -6954,9 +6964,10 @@ paths:
           schema:
             $ref: '#/definitions/payload.HTTPMessage'
         "403":
-          description: Insufficient permissions; a change of e-mail address, or of
-            disabled, disabled_by_admin or local_account on an administrator account,
-            by an account that is not one; or the last enabled administrator account
+          description: Insufficient permissions; a change of e-mail address or of
+            the admin flag, or of disabled, disabled_by_admin or local_account on
+            an administrator account, by an account that is not one; the last enabled
+            administrator account; or the seeded account's admin flag
           schema:
             $ref: '#/definitions/payload.HTTPMessage'
         "404":

@@ -32,6 +32,9 @@ const (
 	administratorMadeLocal = "made a local account"
 	administratorDeleted   = "deleted"
 	administratorStripped  = "stripped of a role"
+	// Taking the flag away takes the account out of the set the guard
+	// counts, as disabling it does.
+	administratorDemoted = "stripped of the admin flag"
 )
 
 // The two rules, in the words of the refusal.

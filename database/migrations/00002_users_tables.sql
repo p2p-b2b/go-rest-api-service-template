@@ -69,6 +69,30 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE INDEX "idx_users_pagination" ON users (serial_id, id);
 
 -- +goose StatementEnd
+
+-- The account migration 00003 seeds keeps its `admin` flag, whoever asks.
+-- The flag is granted and taken back through the API by an account that has
+-- it, and the service keeps the last one that can sign in; this row is the
+-- one a deployment starts from and the one the two bootstrap links are
+-- guarded for (00007), so it is held here, for a hand-written statement too.
+-- It can still be disabled, by an administrator account, while another can
+-- sign in.
+-- +goose StatementBegin
+CREATE OR REPLACE FUNCTION fn_protect_bootstrap_administrator()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF OLD.id = '019822af-b448-73fb-89a1-447e8f8d1cde'
+       AND OLD.admin IS TRUE AND NEW.admin IS NOT TRUE THEN
+        RAISE EXCEPTION 'The bootstrap administrator keeps the admin flag.';
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+-- +goose StatementEnd
+
+CREATE TRIGGER tr_protect_bootstrap_administrator
+BEFORE UPDATE OF admin ON users
+FOR EACH ROW EXECUTE FUNCTION fn_protect_bootstrap_administrator();
 --
 
 -- +goose Down
@@ -79,5 +103,6 @@ CREATE INDEX "idx_users_pagination" ON users (serial_id, id);
 -- The trigger FUNCTIONS are schema-level objects and survive the table, so they are named.
 
 DROP TABLE IF EXISTS users CASCADE;
+DROP FUNCTION IF EXISTS fn_protect_bootstrap_administrator();
 
 -- +goose StatementEnd

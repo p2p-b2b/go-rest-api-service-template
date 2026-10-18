@@ -2277,7 +2277,7 @@ Status: Internal Server Error
 PUT /users/{user_id}
 ```
 
-Update existing user account details by ID. Only the administrator account (the admin flag, not the Administrator role) changes an e-mail address, or changes disabled, disabled_by_admin or local_account on an account that has the flag; from anyone else such a change is a 403. Values equal to the stored ones are accepted.
+Update a user account by ID. Only the administrator account (the admin flag, not the Administrator role) changes an e-mail address, grants or takes the admin flag, or changes disabled, disabled_by_admin or local_account on an account that has the flag; anyone else gets a 403. Values equal to the stored ones are accepted.
 
 #### Consumes
   * application/json
@@ -2301,7 +2301,7 @@ Update existing user account details by ID. Only the administrator account (the 
 | [200](#01982303-f0f9-7e3c-a186-f186a3418768-200) | OK | User updated successfully |  | [schema](#01982303-f0f9-7e3c-a186-f186a3418768-200-schema) |
 | [400](#01982303-f0f9-7e3c-a186-f186a3418768-400) | Bad Request | Invalid user ID or request body; or disabled and disabled_by_admin changing the account in two directions |  | [schema](#01982303-f0f9-7e3c-a186-f186a3418768-400-schema) |
 | [401](#01982303-f0f9-7e3c-a186-f186a3418768-401) | Unauthorized | Missing or invalid authentication token |  | [schema](#01982303-f0f9-7e3c-a186-f186a3418768-401-schema) |
-| [403](#01982303-f0f9-7e3c-a186-f186a3418768-403) | Forbidden | Insufficient permissions; a change of e-mail address, or of disabled, disabled_by_admin or local_account on an administrator account, by an account that is not one; or the last enabled administrator account |  | [schema](#01982303-f0f9-7e3c-a186-f186a3418768-403-schema) |
+| [403](#01982303-f0f9-7e3c-a186-f186a3418768-403) | Forbidden | Insufficient permissions; a change of e-mail address or of the admin flag, or of disabled, disabled_by_admin or local_account on an administrator account, by an account that is not one; the last enabled administrator account; or the seeded account's admin flag |  | [schema](#01982303-f0f9-7e3c-a186-f186a3418768-403-schema) |
 | [404](#01982303-f0f9-7e3c-a186-f186a3418768-404) | Not Found | User not found |  | [schema](#01982303-f0f9-7e3c-a186-f186a3418768-404-schema) |
 | [409](#01982303-f0f9-7e3c-a186-f186a3418768-409) | Conflict | Email already in use by another user |  | [schema](#01982303-f0f9-7e3c-a186-f186a3418768-409-schema) |
 | [413](#01982303-f0f9-7e3c-a186-f186a3418768-413) | Request Entity Too Large | Request body larger than http.server.max.body.bytes |  | [schema](#01982303-f0f9-7e3c-a186-f186a3418768-413-schema) |
@@ -2339,7 +2339,7 @@ Status: Unauthorized
 
 [PayloadHTTPMessage](#payload-http-message)
 
-##### <span id="01982303-f0f9-7e3c-a186-f186a3418768-403"></span> 403 - Insufficient permissions; a change of e-mail address, or of disabled, disabled_by_admin or local_account on an administrator account, by an account that is not one; or the last enabled administrator account
+##### <span id="01982303-f0f9-7e3c-a186-f186a3418768-403"></span> 403 - Insufficient permissions; a change of e-mail address or of the admin flag, or of disabled, disabled_by_admin or local_account on an administrator account, by an account that is not one; the last enabled administrator account; or the seeded account's admin flag
 Status: Forbidden
 
 ###### <span id="01982303-f0f9-7e3c-a186-f186a3418768-403-schema"></span> Schema
@@ -11317,6 +11317,7 @@ Status: Internal Server Error
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
+| admin | boolean| `bool` |  | | The admin flag, which makes an account an administrator account: it has every project, and it alone changes an e-mail address, this flag, and the sign-in of another administrator account. True grants it, false takes it back; a value equal to the stored one changes nothing. A change is accepted from an account that has the flag and from nobody else (403), and is refused for everybody when it would leave no administrator account that can sign in, and on the account the migrations seed | `false` |
 | disabled | boolean| `bool` |  | | Set to true to disable the account, false to enable | `false` |
 | disabled_by_admin | boolean| `bool` |  | | The administrator's lock. True disables the account and marks it as disabled by an administrator, whatever disabled already is: a registration waiting for its verification link is disabled already, and this is how it is shut. False takes the lock off: the account is enabled if its address is verified, and waits for its link if not (send disabled false with it to enable an unverified account by hand). A value equal to the stored one changes nothing. A change of disabled in the same body must agree with it, or the body is a 400 | `false` |
 | email | email (formatted string)| `strfmt.Email` |  | | Updated email address | `john.doe@example.com` |
