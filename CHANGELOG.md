@@ -150,6 +150,12 @@ Since `v0.0.3`.
 
 ### Changed
 
+- **Dependencies updated** with `make go-mod-update`: OPA 1.21.2, goose
+  3.29.0, c3e 0.0.3, qfv 1.0.5 (the parsers answer as with 1.0.4),
+  valkey-go 1.0.79, and the indirect modules they bring. The target now
+  ends with `go build ./...` and `go vet` on every tag, since `go mod tidy`
+  accepts a graph that does not build.
+  ([#135](https://github.com/slashdevops/go-rest-api-service-template/pull/135))
 - **The administrator's lock is a field of its own.** `disabled_by_admin` is
   in the user answers (`GET /users`, `GET /users/{user_id}`, `/me`), the
   users lists filter, sort and select by it, and `PUT /users/{user_id}`
