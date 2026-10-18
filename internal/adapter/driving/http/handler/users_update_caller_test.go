@@ -134,3 +134,30 @@ func TestAUsersUpdateWithNoCallerIsNotHandedOn(t *testing.T) {
 		t.Errorf("the update reached the use-case with no caller: %+v", stub.input)
 	}
 }
+
+// The flag reaches the use-case as it was sent: the use-case decides who may
+// change it, and a body whose flag is lost on the way would grant nothing,
+// with every unit test of the rule still green.
+func TestAUsersUpdatePassesTheAdminFlagAsItWasSent(t *testing.T) {
+	t.Parallel()
+
+	for name, body := range map[string]string{"granted": `{"admin":true}`, "taken_back": `{"admin":false}`} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			stub := &usersUpdateStub{}
+			h := usersHandlerOver(t, stub)
+
+			rec := httptest.NewRecorder()
+			h.updateByID(rec, withCaller(updateRequest(uuid.NewV7(), body), uuid.NewV7()))
+
+			if rec.Code != http.StatusOK {
+				t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
+			}
+
+			if want := name == "granted"; stub.input.Admin == nil || *stub.input.Admin != want {
+				t.Errorf("Admin = %v, want %v", stub.input.Admin, want)
+			}
+		})
+	}
+}

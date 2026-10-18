@@ -468,6 +468,87 @@ the guard asks. In the unit suite:
 `TestWhatLocksAnAccountPassesTheCaller`, `TestALockRefusedIsA403` and
 `TestTheSeededAdministratorsLinkIsA403`.
 
+### The admin flag is granted by an account that has it
+
+The flag is the administrator account: every project, an account's address,
+another administrator account's sign-in. No route set it. The account the
+migrations seed was the only one a deployment could have, and the rules
+above already spoke of "the last one that can sign in": a deployment whose
+one administrator lost its mailbox or its password had no way back but a
+statement on the database.
+
+**`PUT /users/{user_id}` accepts `admin`, from an account that has the flag
+and from nobody else.** It is not a grant of the policy engine. The route's
+grant is the seeded `UserManager`'s and the Administrator role's; with the
+field open to the route's grant, either would make itself the administrator
+account with one request.
+
+```mermaid
+flowchart TD
+    R["PUT /users/{user_id}<br/>body: admin"] --> S["the stored account,<br/>read from the repository"]
+    S --> E{"is it the value<br/>the account already has?<br/>(never set counts as not set)"}
+    S -- "no such account" --> NF["404"]
+    S -- "the read fails" --> IE["500"]
+    E -- yes --> N["no change: taken out of the update,<br/>the rest of the body is judged as before"]
+    E -- "no: a change" --> C{"does the caller have the flag,<br/>and is it not disabled?<br/>(read from the repository)"}
+    C -- no --> F["403 AdministratorOnlyError on admin;<br/>nothing of the body is written"]
+    C -- "no caller reached<br/>the use-case" --> W["500: a route wired<br/>without its caller"]
+    C -- yes --> D{"granted or taken back?"}
+    D -- granted --> U["the statement writes TRUE"]
+    D -- "taken back" --> L{"is the account one of those<br/>that can sign in, and the last?"}
+    L -- yes --> P["403 AdministratorProtectedError:<br/>the last enabled administrator account"]
+    L -- no --> T["the statement writes FALSE"]
+    T -- "the seeded account's row" --> B["its trigger refuses;<br/>403 AdministratorProtectedError"]
+```
+
+- **A change is refused, not the field** (`UsersService.flagMayChange`). A
+  form sends back what it read: `admin: false` for an account that never had
+  the flag is no change, whoever sends it, and it is taken out of the update
+  so that the statement is handed only what an administrator account
+  changed. `users.admin` is nullable, and a flag that was never set is not
+  set: `false` for such a row is no change either, and the row is left as it
+  is.
+- **Taking it back is the guard's** (`guardAdministrator`), as disabling the
+  account is: it takes the account out of the set that can do these things.
+  The last one that can still sign in keeps it, whoever asks; a disabled
+  account's flag can go, since it is not one of those. An account gives its
+  own up, while another can sign in.
+- **The seeded account keeps it.** It is the row a deployment starts from and
+  the one the two bootstrap links are guarded for. The use-case does not know
+  which account that is: a trigger on `users`
+  (`fn_protect_bootstrap_administrator`, migration `00002`) refuses a
+  statement that takes the flag from that row, a hand-written one too, and
+  the users repository answers it as the same 403. The seeded account can
+  still be disabled by an administrator account while another can sign in.
+  The start-up check ([below](#the-seeded-administrator)) looks at it while
+  it is enabled.
+- **It bites on the next request.** The flag is not in a token. The
+  membership check and the guards read it from the row at each request, and
+  the update drops the account's cached copy.
+- **The 403 comes before the 400** of a body that pulls the lock in two
+  directions: an account without the flag is not told, by a 400, what the
+  row holds.
+- **Granted to a registration that still waits for its link**, the flag
+  makes that link prove the address and open nothing, as for every account
+  with the flag (`UsersRepository.Verify`): an administrator account enables
+  it, with `disabled: false`.
+- **Not on `PUT /me`**, whose body has no such field, and **not on
+  `POST /users`**: an account is created, and then given the flag.
+- **The count and the write are two statements**, as above: two
+  administrator accounts taking each other's flag in the same instant can
+  both pass. The seeded account's trigger is not subject to it.
+
+`TestTheAdminFlagIsGrantedThroughTheAPI` holds it against a running service
+(a user manager and the Administrator role without the flag grant and take
+nothing; a value sent back changes nothing; granted and taken back, it opens
+and shuts every project to the same token; the seeded account keeps it, from
+the API and from a statement by hand). Where the pull request gate runs:
+`TestTheAdminFlagIsGrantedAndTakenByAnAdministratorAccount` (who grants, who
+takes, the last one, a value sent back),
+`TestTheAdminFlagBesideTheRestOfTheBody`,
+`TestAGrantThatIsNotTheCallersIsRefusedBeforeTheBodyIsJudged` and
+`TestTheSeededAdministratorKeepsItsFlag`.
+
 ### What an anonymous caller learns about the build
 
 `GET /version` answers only `version`. It used to hand an anonymous,
@@ -497,7 +578,7 @@ still works.
 
 ### The seeded administrator
 
-Migration `005` inserts `admin@qu3ry.me` with a bcrypt hash whose plaintext
+Migration `00003` inserts `admin@goapitemplate.local` with a bcrypt hash whose plaintext
 is in the adjacent comment, in the Swagger login example and in every
 integration test. A service that finds that hash still on an enabled
 administrator **refuses to start** unless `authn.seed.admin.password.allowed`

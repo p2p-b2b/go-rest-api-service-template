@@ -81,3 +81,35 @@ func TestTheSeededAdministratorsLinkIsA403(t *testing.T) {
 		}
 	}
 }
+
+// The seeded account keeps its `admin` flag: its row's trigger refuses, and
+// the repository answers the refusal as the 403 a protected administrator
+// account gives, by the trigger's own words, held against the migration.
+func TestTheSeededAdministratorKeepsItsFlag(t *testing.T) {
+	t.Parallel()
+
+	migration, err := os.ReadFile("../../../../database/migrations/00002_users_tables.sql")
+	if err != nil {
+		t.Fatalf("read the migration: %v", err)
+	}
+
+	if !strings.Contains(string(migration), "RAISE EXCEPTION '"+bootstrapAdministratorMessage+"'") {
+		t.Errorf("migration 00002 no longer raises %q", bootstrapAdministratorMessage)
+	}
+
+	raised := &pgconn.PgError{Code: "P0001", Message: bootstrapAdministratorMessage}
+
+	refusal, ok := errors.AsType[*domain.AdministratorProtectedError]((&UsersRepository{}).handlePgError(raised, &domain.UpdateUserInput{ID: uuid.NewV7()}))
+	if !ok {
+		t.Fatalf("the trigger's refusal of an update is not the 403 of a protected administrator account")
+	}
+
+	if want := "user cannot be stripped of the admin flag: system/protected resource: the bootstrap administrator"; refusal.Error() != want {
+		t.Errorf("refused as %q, want %q", refusal.Error(), want)
+	}
+
+	// Under another statement it is not this refusal.
+	if _, protected := errors.AsType[*domain.AdministratorProtectedError]((&UsersRepository{}).handlePgError(raised, &domain.DeleteUserInput{ID: uuid.NewV7()})); protected {
+		t.Error("the flag's refusal is answered under a delete")
+	}
+}

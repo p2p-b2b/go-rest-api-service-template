@@ -307,7 +307,7 @@ func (ref *UsersHandler) create(w http.ResponseWriter, r *http.Request) {
 //
 //	@ID				01982303-f0f9-7e3c-a186-f186a3418768
 //	@Summary		Update user
-//	@Description	Update existing user account details by ID. Only the administrator account (the admin flag, not the Administrator role) changes an e-mail address, or changes disabled, disabled_by_admin or local_account on an account that has the flag; from anyone else such a change is a 403. Values equal to the stored ones are accepted.
+//	@Description	Update a user account by ID. Only the administrator account (the admin flag, not the Administrator role) changes an e-mail address, grants or takes the admin flag, or changes disabled, disabled_by_admin or local_account on an account that has the flag; anyone else gets a 403. Values equal to the stored ones are accepted.
 //	@Tags			Users
 //	@Accept			json
 //	@Produce		json
@@ -316,7 +316,7 @@ func (ref *UsersHandler) create(w http.ResponseWriter, r *http.Request) {
 //	@Success		200		{object}	payload.HTTPMessage			"User updated successfully"
 //	@Failure		400		{object}	payload.HTTPMessage			"Invalid user ID or request body; or disabled and disabled_by_admin changing the account in two directions"
 //	@Failure		401		{object}	payload.HTTPMessage			"Missing or invalid authentication token"
-//	@Failure		403		{object}	payload.HTTPMessage			"Insufficient permissions; a change of e-mail address, or of disabled, disabled_by_admin or local_account on an administrator account, by an account that is not one; or the last enabled administrator account"
+//	@Failure		403		{object}	payload.HTTPMessage			"Insufficient permissions; a change of e-mail address or of the admin flag, or of disabled, disabled_by_admin or local_account on an administrator account, by an account that is not one; the last enabled administrator account; or the seeded account's admin flag"
 //	@Failure		404		{object}	payload.HTTPMessage			"User not found"
 //	@Failure		409		{object}	payload.HTTPMessage			"Email already in use by another user"
 //	@Failure		413		{object}	payload.HTTPMessage			"Request body larger than http.server.max.body.bytes"
@@ -368,6 +368,7 @@ func (ref *UsersHandler) updateByID(w http.ResponseWriter, r *http.Request) {
 		Disabled:        req.Disabled,
 		DisabledByAdmin: req.DisabledByAdmin,
 		LocalAccount:    req.LocalAccount,
+		Admin:           req.Admin,
 	}
 
 	if err := ref.service.UpdateByID(ctx, input); err != nil {

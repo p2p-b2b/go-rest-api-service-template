@@ -169,11 +169,19 @@ type UpdateUserInput struct {
 	// change (UsersRepository.UpdateByID).
 	DisabledByAdmin *bool
 	LocalAccount    *bool
-	ID              uuid.UUID
-	// CallerID is who asks, on PUT /users/{user_id}: a change of the
-	// account's e-mail address is held to it (UsersService.UpdateByID). The
-	// flows that update an account for itself (the profile, the
-	// verification, a password reset) carry no address and name no caller.
+	// Admin is the `admin` flag, the administrator account: every project,
+	// and the few things only that account does. True grants it and false
+	// takes it back; a value the account already has is no change. A change
+	// is made by an account that has the flag and by nobody else, and the
+	// last such account that can sign in keeps it (UsersService.flagMayChange).
+	Admin *bool
+	ID    uuid.UUID
+	// CallerID is who asks, on PUT /users/{user_id}. Three things in that
+	// body are held to it (UsersService.UpdateByID): a change of address, a
+	// change of the `admin` flag, and a change of `disabled`, of the lock or
+	// of `local_account` on an account with the flag. The flows that update
+	// an account for itself (the profile, a password reset) carry none of
+	// those and name no caller.
 	CallerID uuid.UUID
 }
 
