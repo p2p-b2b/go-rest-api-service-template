@@ -221,6 +221,99 @@ At the provider: register the callback URL exactly; for Entra ID add the
 `email` optional claim to the ID token or accept the UPN fallback; for Okta
 assign the app to the users who should sign in.
 
+## Deleting or disabling a provider
+
+A provider's delete takes its identities with it: `users_identities.idps_id`
+cascades. It asked nothing first. An account that signs in through that
+provider and has no password (`local_account` false, or never set) was left
+with no way in at all, for nobody to sign in to. A provider created again
+does not give it back, since its sign-in finds an account with the address
+that is not linked, which it refuses. Recovery by e-mail sends such an
+account nothing (`silentRecovery`): a password is a local account's to
+recover.
+
+Unlinking the last identity of such an account was already refused ("this
+is the only way into the account"). The provider's delete is the same act
+for all of them at once.
+
+**The delete is a 409 while an account's only way in is an identity at that
+provider. A disable is allowed, unless it would leave no administrator
+account that can sign in.**
+
+```mermaid
+flowchart TD
+    D["DELETE /auth/idps/{idp_id}"] --> A{"would an administrator account<br/>still be able to sign in?<br/>(keepsAnAdministrator)"}
+    A -- "no, and one can now" --> P["403 IDPProtectedError:<br/>the last enabled administrator account<br/>signs in through it"]
+    A -- "yes, or none can as it is" --> S["one statement:<br/>DELETE ... WHERE NOT EXISTS<br/>(an account that is not local,<br/>with an identity here and at no other provider)"]
+    S -- "a row was deleted" --> OK["200; its identities go with it,<br/>its slot is given back"]
+    S -- "nothing was deleted" --> R{"is the provider there?"}
+    R -- no --> N["404"]
+    R -- yes --> C["409 IDPInUseError:<br/>still used by at least one account<br/>that has no other way to sign in"]
+    U["PUT /auth/idps/{idp_id}<br/>enabled: false, on an enabled provider"] --> A2{"keepsAnAdministrator"}
+    A2 -- no --> P2["403 IDPProtectedError"]
+    A2 -- yes --> W["the update is written:<br/>sign-ins through it stop until it is enabled again"]
+```
+
+- **The rule is in the delete's own statement** (`queryDeleteIDP`), so the
+  provider is kept by the rows as they are when it runs. Not by the foreign
+  key: `ON DELETE NO ACTION` would keep the provider while any identity
+  exists, also the one of an account that signs in with its password.
+- **Which accounts keep it**: not a local account, an identity at this
+  provider, and none at another. A disabled account counts: enabled again,
+  it would have no way in. An account with a password does not, and neither
+  does one with an identity at another provider, whatever that provider's
+  state.
+- **What an administrator does instead**: disables the provider. Or deletes
+  those accounts, or makes them local accounts (`local_account: true`), which
+  lets recovery mail them a link to choose a password; but no route lists
+  the accounts that sign in through a provider, so with more than one
+  provider those accounts are found in the database, and the disable is the
+  practical answer.
+- **A disable is not held to that rule.** It takes away nothing that enabling
+  does not give back, and it is the way out of the 409. It is held to one
+  thing: an administrator account must be left that can sign in.
+- **The last door** (`IDPsService.keepsAnAdministrator`). The `admin` flag
+  may be held by an account that signs in through a provider and has no
+  password. With every other administrator account disabled, which is
+  allowed while that one can sign in, its provider is the last door:
+  disabling it, or deleting it under an account that also has an identity at
+  a disabled provider, left no administrator account that could sign in, and
+  so nobody to change an address or unlock another administrator account.
+  (The provider itself can still be enabled by an account with its route's
+  grant: what is kept is the account.) Both are a 403 for everybody: the
+  routes are the Administrator role's, and the role is not the flag. When no
+  administrator account can sign in as it is, there is nothing left to keep,
+  and nothing is refused.
+- **"A way in" means two things, and each is where it belongs.** *Can sign
+  in now*: a password login, or an identity at a provider that is enabled.
+  That is the count of administrator accounts (`enabledAdministrator`, one
+  predicate for "how many", "how many without this provider" and "is this
+  account one of them"), and it is what an account must keep when it
+  unlinks an identity of its own (`keepsAWayIn`): an identity at a disabled
+  provider is not one, and counted as one it let an account unlink its only
+  door. *Could sign in again without the database*: any other identity,
+  whatever its provider's state. That is the delete's rule, because
+  enabling a provider gives its identities back and deleting one does not.
+- **The count and the write are two statements**, as every check of this
+  kind in the service is. The delete's own rule is one statement, which is
+  one snapshot: the two providers of an account that has no other way in,
+  deleted in the same instant, each see the other's identity and both go.
+
+`TestAnIdentityProvidersDeleteStrandsNobody` holds the delete against a
+running service (an account whose only way in it is, a disabled one, one
+with a password, one with an identity elsewhere, several accounts of which
+one keeps it, a provider nobody uses, a missing one, and the disable that is
+allowed instead). `TestAnIdentityAtADisabledProviderIsNoWayIn` holds the
+count, the count without a provider, the question about one account and
+what an identity says of its provider. In the unit suite:
+`TestAProviderIsNotDisabledUnderTheLastAdministrator`,
+`TestAProviderIsNotDeletedUnderTheLastAdministrator`,
+`TestAProvidersGuardDoesNotGuessTheCount` (either count failing),
+`TestTheProvidersServiceNeedsItsCount`, `TestAnUnlinkKeepsAWayIn`,
+`TestADeleteThatDeletedNothingSaysWhy`,
+`TestTheProvidersDeleteKeepsItForAnAccountWithNoOtherWayIn` and
+`TestWhoCountsAsAnAdministratorThatCanSignIn` (the statements, whole).
+
 ## What it used to do, and why that was wrong
 
 - endpoints chosen by the type's *name*, so `parseUserInfo(raw, idp.Name)`

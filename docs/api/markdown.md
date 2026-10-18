@@ -6708,7 +6708,7 @@ Status: Internal Server Error
 DELETE /auth/idps/{idp_id}
 ```
 
-Permanently remove an Identity Provider configuration
+Permanently remove an Identity Provider configuration. Refused (409) while an account's only way to sign in is an identity at it: disable the provider instead, or delete those accounts or make them local accounts first.
 
 #### Consumes
   * application/json
@@ -6731,8 +6731,9 @@ Permanently remove an Identity Provider configuration
 | [200](#0198e7ea-3755-7a2d-9ab0-83ccef188e37-200) | OK | IDP deleted successfully |  | [schema](#0198e7ea-3755-7a2d-9ab0-83ccef188e37-200-schema) |
 | [400](#0198e7ea-3755-7a2d-9ab0-83ccef188e37-400) | Bad Request | Invalid UUID format or malformed request |  | [schema](#0198e7ea-3755-7a2d-9ab0-83ccef188e37-400-schema) |
 | [401](#0198e7ea-3755-7a2d-9ab0-83ccef188e37-401) | Unauthorized | Missing or invalid authentication token |  | [schema](#0198e7ea-3755-7a2d-9ab0-83ccef188e37-401-schema) |
-| [403](#0198e7ea-3755-7a2d-9ab0-83ccef188e37-403) | Forbidden | Insufficient permissions |  | [schema](#0198e7ea-3755-7a2d-9ab0-83ccef188e37-403-schema) |
+| [403](#0198e7ea-3755-7a2d-9ab0-83ccef188e37-403) | Forbidden | Insufficient permissions; or the delete would leave no administrator account that can sign in |  | [schema](#0198e7ea-3755-7a2d-9ab0-83ccef188e37-403-schema) |
 | [404](#0198e7ea-3755-7a2d-9ab0-83ccef188e37-404) | Not Found | IDP not found |  | [schema](#0198e7ea-3755-7a2d-9ab0-83ccef188e37-404-schema) |
+| [409](#0198e7ea-3755-7a2d-9ab0-83ccef188e37-409) | Conflict | An account's only way to sign in is an identity at this provider |  | [schema](#0198e7ea-3755-7a2d-9ab0-83ccef188e37-409-schema) |
 | [429](#0198e7ea-3755-7a2d-9ab0-83ccef188e37-429) | Too Many Requests | Too many requests -- RATE_LIMIT_EXCEEDED is the budget, RATE_LIMIT_UNAVAILABLE the limiter's own store |  | [schema](#0198e7ea-3755-7a2d-9ab0-83ccef188e37-429-schema) |
 | [500](#0198e7ea-3755-7a2d-9ab0-83ccef188e37-500) | Internal Server Error | Internal server error |  | [schema](#0198e7ea-3755-7a2d-9ab0-83ccef188e37-500-schema) |
 
@@ -6766,7 +6767,7 @@ Status: Unauthorized
 
 [PayloadHTTPMessage](#payload-http-message)
 
-##### <span id="0198e7ea-3755-7a2d-9ab0-83ccef188e37-403"></span> 403 - Insufficient permissions
+##### <span id="0198e7ea-3755-7a2d-9ab0-83ccef188e37-403"></span> 403 - Insufficient permissions; or the delete would leave no administrator account that can sign in
 Status: Forbidden
 
 ###### <span id="0198e7ea-3755-7a2d-9ab0-83ccef188e37-403-schema"></span> Schema
@@ -6779,6 +6780,15 @@ Status: Forbidden
 Status: Not Found
 
 ###### <span id="0198e7ea-3755-7a2d-9ab0-83ccef188e37-404-schema"></span> Schema
+   
+  
+
+[PayloadHTTPMessage](#payload-http-message)
+
+##### <span id="0198e7ea-3755-7a2d-9ab0-83ccef188e37-409"></span> 409 - An account's only way to sign in is an identity at this provider
+Status: Conflict
+
+###### <span id="0198e7ea-3755-7a2d-9ab0-83ccef188e37-409-schema"></span> Schema
    
   
 
@@ -6808,7 +6818,7 @@ Status: Internal Server Error
 PUT /auth/idps/{idp_id}
 ```
 
-Modify an existing Identity Provider configuration
+Modify an existing Identity Provider configuration. Disabling it is refused (403) when that would leave no administrator account that can sign in.
 
 #### Consumes
   * application/json
@@ -6832,7 +6842,7 @@ Modify an existing Identity Provider configuration
 | [200](#0198e7ea-3755-7a35-9e30-6a9392e8e7a1-200) | OK | IDP updated successfully |  | [schema](#0198e7ea-3755-7a35-9e30-6a9392e8e7a1-200-schema) |
 | [400](#0198e7ea-3755-7a35-9e30-6a9392e8e7a1-400) | Bad Request | Invalid UUID format, request body, or validation failure |  | [schema](#0198e7ea-3755-7a35-9e30-6a9392e8e7a1-400-schema) |
 | [401](#0198e7ea-3755-7a35-9e30-6a9392e8e7a1-401) | Unauthorized | Missing or invalid authentication token |  | [schema](#0198e7ea-3755-7a35-9e30-6a9392e8e7a1-401-schema) |
-| [403](#0198e7ea-3755-7a35-9e30-6a9392e8e7a1-403) | Forbidden | Insufficient permissions |  | [schema](#0198e7ea-3755-7a35-9e30-6a9392e8e7a1-403-schema) |
+| [403](#0198e7ea-3755-7a35-9e30-6a9392e8e7a1-403) | Forbidden | Insufficient permissions; or disabling it would leave no administrator account that can sign in |  | [schema](#0198e7ea-3755-7a35-9e30-6a9392e8e7a1-403-schema) |
 | [404](#0198e7ea-3755-7a35-9e30-6a9392e8e7a1-404) | Not Found | IDP not found |  | [schema](#0198e7ea-3755-7a35-9e30-6a9392e8e7a1-404-schema) |
 | [409](#0198e7ea-3755-7a35-9e30-6a9392e8e7a1-409) | Conflict | IDP name already exists |  | [schema](#0198e7ea-3755-7a35-9e30-6a9392e8e7a1-409-schema) |
 | [413](#0198e7ea-3755-7a35-9e30-6a9392e8e7a1-413) | Request Entity Too Large | Request body larger than http.server.max.body.bytes |  | [schema](#0198e7ea-3755-7a35-9e30-6a9392e8e7a1-413-schema) |
@@ -6870,7 +6880,7 @@ Status: Unauthorized
 
 [PayloadHTTPMessage](#payload-http-message)
 
-##### <span id="0198e7ea-3755-7a35-9e30-6a9392e8e7a1-403"></span> 403 - Insufficient permissions
+##### <span id="0198e7ea-3755-7a35-9e30-6a9392e8e7a1-403"></span> 403 - Insufficient permissions; or disabling it would leave no administrator account that can sign in
 Status: Forbidden
 
 ###### <span id="0198e7ea-3755-7a35-9e30-6a9392e8e7a1-403-schema"></span> Schema

@@ -432,6 +432,19 @@ func (ref *AuthnIDPsService) ListIdentities(ctx context.Context, userID uuid.UUI
 	return items, nil
 }
 
+// keepsAWayIn reports whether an account with these identities can still
+// sign in once the one at the given provider is unlinked: it has another, at
+// a provider that is enabled.
+func keepsAWayIn(identities []domain.UserIdentity, unlinked uuid.UUID) bool {
+	for _, identity := range identities {
+		if identity.IDPID != unlinked && identity.IDPEnabled {
+			return true
+		}
+	}
+
+	return false
+}
+
 // UnlinkIdentity implements driving.AuthnIDPs.
 func (ref *AuthnIDPsService) UnlinkIdentity(ctx context.Context, userID, idpID uuid.UUID) error {
 	start := time.Now()
@@ -439,7 +452,9 @@ func (ref *AuthnIDPsService) UnlinkIdentity(ctx context.Context, userID, idpID u
 	defer span.End()
 
 	// Never strand an account: one with no password (local_account false)
-	// and a single identity would have nothing left to sign in with.
+	// has to keep an identity it can sign in with. That is an identity at
+	// another provider that is enabled: one at a disabled provider is no way
+	// in, and counting it let an account unlink its only door.
 	user, err := ref.userService.GetByID(ctx, userID)
 	if err != nil {
 		return o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
@@ -451,7 +466,7 @@ func (ref *AuthnIDPsService) UnlinkIdentity(ctx context.Context, userID, idpID u
 			return o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
 		}
 
-		if len(items) <= 1 {
+		if !keepsAWayIn(items, idpID) {
 			return o11y.RecordError(ctx, span, start, &domain.UserIdentityAlreadyLinkedError{Message: "this is the only way into the account; set a password or link another provider first"}, ref.metrics, attrs)
 		}
 	}

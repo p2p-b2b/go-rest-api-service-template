@@ -291,7 +291,7 @@ func (ref *IDPsHandler) create(w http.ResponseWriter, r *http.Request) {
 //
 //	@ID				0198e7ea-3755-7a35-9e30-6a9392e8e7a1
 //	@Summary		Update IDP
-//	@Description	Modify an existing Identity Provider configuration
+//	@Description	Modify an existing Identity Provider configuration. Disabling it is refused (403) when that would leave no administrator account that can sign in.
 //	@Tags			Authentication,Identity Providers (IDPs)
 //	@Accept			json
 //	@Produce		json
@@ -300,7 +300,7 @@ func (ref *IDPsHandler) create(w http.ResponseWriter, r *http.Request) {
 //	@Success		200		{object}	payload.HTTPMessage			"IDP updated successfully"
 //	@Failure		400		{object}	payload.HTTPMessage			"Invalid UUID format, request body, or validation failure"
 //	@Failure		401		{object}	payload.HTTPMessage			"Missing or invalid authentication token"
-//	@Failure		403		{object}	payload.HTTPMessage			"Insufficient permissions"
+//	@Failure		403		{object}	payload.HTTPMessage			"Insufficient permissions; or disabling it would leave no administrator account that can sign in"
 //	@Failure		404		{object}	payload.HTTPMessage			"IDP not found"
 //	@Failure		409		{object}	payload.HTTPMessage			"IDP name already exists"
 //	@Failure		413		{object}	payload.HTTPMessage			"Request body larger than http.server.max.body.bytes"
@@ -349,6 +349,12 @@ func (ref *IDPsHandler) updateByID(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := ref.service.UpdateByID(ctx, input); err != nil {
+		if _, ok := errors.AsType[*domain.IDPProtectedError](err); ok {
+			e := o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
+			respond.WriteJSONMessage(w, r, http.StatusForbidden, e.Error())
+			return
+		}
+
 		if _, ok := errors.AsType[*domain.IDPNotFoundError](err); ok {
 			e := o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
 			respond.WriteJSONMessage(w, r, http.StatusNotFound, e.Error())
@@ -400,7 +406,7 @@ func (ref *IDPsHandler) updateByID(w http.ResponseWriter, r *http.Request) {
 //
 //	@ID				0198e7ea-3755-7a2d-9ab0-83ccef188e37
 //	@Summary		Delete IDP
-//	@Description	Permanently remove an Identity Provider configuration
+//	@Description	Permanently remove an Identity Provider configuration. Refused (409) while an account's only way to sign in is an identity at it: disable the provider instead, or delete those accounts or make them local accounts first.
 //	@Tags			Authentication,Identity Providers (IDPs)
 //	@Accept			json
 //	@Produce		json
@@ -408,8 +414,9 @@ func (ref *IDPsHandler) updateByID(w http.ResponseWriter, r *http.Request) {
 //	@Success		200		{object}	payload.HTTPMessage	"IDP deleted successfully"
 //	@Failure		400		{object}	payload.HTTPMessage	"Invalid UUID format or malformed request"
 //	@Failure		401		{object}	payload.HTTPMessage	"Missing or invalid authentication token"
-//	@Failure		403		{object}	payload.HTTPMessage	"Insufficient permissions"
+//	@Failure		403		{object}	payload.HTTPMessage	"Insufficient permissions; or the delete would leave no administrator account that can sign in"
 //	@Failure		404		{object}	payload.HTTPMessage	"IDP not found"
+//	@Failure		409		{object}	payload.HTTPMessage	"An account's only way to sign in is an identity at this provider"
 //	@Failure		429		{object}	payload.HTTPMessage	"Too many requests -- RATE_LIMIT_EXCEEDED is the budget, RATE_LIMIT_UNAVAILABLE the limiter's own store"
 //	@Failure		500		{object}	payload.HTTPMessage	"Internal server error"
 //	@Router			/auth/idps/{idp_id} [delete]
@@ -437,8 +444,21 @@ func (ref *IDPsHandler) deleteByID(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// The use case's own rules: an oidc kind without an issuer, a github
-		// kind with one, a callback that is not a URL. Field-named 400s, not 500s.
+		// An account whose only way in is an identity at this provider.
+		if _, ok := errors.AsType[*domain.IDPInUseError](err); ok {
+			e := o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
+			respond.WriteJSONMessage(w, r, http.StatusConflict, e.Error())
+			return
+		}
+
+		// The last administrator account signs in through it.
+		if _, ok := errors.AsType[*domain.IDPProtectedError](err); ok {
+			e := o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
+			respond.WriteJSONMessage(w, r, http.StatusForbidden, e.Error())
+			return
+		}
+
+		// A malformed id is the caller's.
 		_, isValidation := errors.AsType[*domain.ValidationErrors](err)
 		_, isInvalidInput := errors.AsType[*domain.InvalidInputError](err)
 		_, isTypeMissing := errors.AsType[*domain.IDPTypesNotFoundError](err)

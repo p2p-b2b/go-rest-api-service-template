@@ -30,6 +30,10 @@ type Users interface {
 	// IsEnabledAdministrator is whether the account is one of those
 	// CountEnabledAdministrators counts.
 	IsEnabledAdministrator(ctx context.Context, id uuid.UUID) (bool, error)
+	// CountEnabledAdministratorsWithout is the same count as if the given
+	// identity provider were not there: what is left when it is disabled or
+	// deleted.
+	CountEnabledAdministratorsWithout(ctx context.Context, idpID uuid.UUID) (int, error)
 	// SelectAdministratorsAmong answers which of ids are accounts with the
 	// `admin` flag.
 	SelectAdministratorsAmong(ctx context.Context, ids []uuid.UUID) ([]uuid.UUID, error)

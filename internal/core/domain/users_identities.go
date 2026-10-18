@@ -23,6 +23,10 @@ type UserIdentity struct {
 	IDPName     string
 	IDPTypeName string
 
+	// IDPEnabled says whether the provider is enabled: an identity at a
+	// provider that is disabled is not a way into the account.
+	IDPEnabled bool
+
 	UserID uuid.UUID
 	IDPID  uuid.UUID
 }

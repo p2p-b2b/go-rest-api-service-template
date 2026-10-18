@@ -433,6 +433,9 @@ flowchart TD
   (`IsEnabledAdministrator`), so that an account the count leaves out is
   never refused as the last one. A caller without the flag is told "the
   administrator account" whether or not it was the last.
+- **A provider's disable and delete are held to the same count**: neither
+  may leave no administrator account that can sign in
+  ([identity-providers.md](identity-providers.md#deleting-or-disabling-a-provider)).
 - **A disabled account with the flag is not one that may ask.** It does not
   sign in, and a token issued before it was disabled is refused on every
   route (`RequireActiveAccount`); the guard does not rely on that:

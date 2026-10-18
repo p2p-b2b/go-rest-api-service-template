@@ -100,3 +100,28 @@ func (e *InvalidIDPUpdateError) Error() string {
 		Reason: reason,
 	}).Error()
 }
+
+// IDPInUseError refuses the delete of an identity provider that something
+// depends on to work: an account whose only way to sign in is an identity at
+// it. The delete took those identities with it, by foreign key, and left the
+// accounts with no way in at all.
+type IDPInUseError struct {
+	UsedBy string // what depends on it, in the singular
+	ID     uuid.UUID
+}
+
+func (e *IDPInUseError) Error() string {
+	return "identity provider cannot be deleted: still used by at least one " + e.UsedBy
+}
+
+// IDPProtectedError refuses to disable or delete an identity provider when
+// that would leave no administrator account that can sign in.
+type IDPProtectedError struct {
+	Action  string // "disabled" or "deleted"
+	Message string // which rule refused it
+	ID      uuid.UUID
+}
+
+func (e *IDPProtectedError) Error() string {
+	return (&BaseProtectedError{Entity: "identity provider", Action: e.Action, Message: e.Message}).Error()
+}
