@@ -252,12 +252,17 @@ go-mod-tidy: ## Clean go.mod and go.sum
 	$(call exec_cmd, go mod tidy)
 
 .PHONY: go-mod-update
-go-mod-update: go-mod-tidy ## Update go.mod and go.sum
+go-mod-update: go-mod-tidy ## Update go.mod and go.sum, then check the graph builds on every tag
 	@printf "👉 Updating go.mod and go.sum...\n"
 	$(foreach DEP, $(PROJECT_DEPENDENCIES), \
 		$(call exec_cmd, go get -u $(DEP)) \
 	)
 	$(call exec_cmd, go mod tidy)
+	@printf "👉 Checking the updated graph builds (go mod tidy accepts one that does not)...\n"
+	$(call exec_cmd, go build ./...)
+	$(foreach TAG, unit integration eval, \
+		$(call exec_cmd, go vet -tags=$(TAG) ./...) \
+	)
 
 .PHONY: go-mod-vendor
 go-mod-vendor: ## Create mod vendor
