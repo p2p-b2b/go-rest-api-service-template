@@ -23,7 +23,12 @@ type IDPsServiceConf struct {
 	// IDPTypes answers which KIND a provider is, which decides whether an
 	// issuer is required. Without it an oidc row with no issuer is accepted and
 	// fails at the first sign-in, when the operator is no longer looking.
-	IDPTypes        repository.IDPTypes
+	IDPTypes repository.IDPTypes
+
+	// Administrators answers how many administrator accounts could sign in
+	// with and without a provider. A provider's disable and its delete ask
+	// it: without it either could leave none.
+	Administrators  AdministratorCount
 	CacheService    cache.Cache
 	Cipher          cipher.Cipher
 	ResourcesLimits ResourcesLimitsServiceConsumer
@@ -31,9 +36,18 @@ type IDPsServiceConf struct {
 	MetricsPrefix   string
 }
 
+// AdministratorCount is what the guard of an identity provider reads: how
+// many accounts with the `admin` flag can still sign in, and how many could
+// if one provider were not there. The users repository provides it.
+type AdministratorCount interface {
+	CountEnabledAdministrators(ctx context.Context) (int, error)
+	CountEnabledAdministratorsWithout(ctx context.Context, idpID uuid.UUID) (int, error)
+}
+
 type IDPsService struct {
 	repository      repository.IDPs
 	idpTypes        repository.IDPTypes
+	administrators  AdministratorCount
 	cacheService    cache.Cache
 	cipher          cipher.Cipher
 	resourcesLimits ResourcesLimitsServiceConsumer
@@ -52,6 +66,10 @@ func NewIDPsService(conf IDPsServiceConf) (*IDPsService, error) {
 		return nil, &domain.InvalidRepositoryError{Message: "IDPTypes is nil, but it is required for IDPsService"}
 	}
 
+	if conf.Administrators == nil {
+		return nil, &domain.InvalidRepositoryError{Message: "Administrators is nil, but it is required for IDPsService"}
+	}
+
 	if conf.Cipher == nil {
 		return nil, &domain.InvalidCipherError{Message: "Cipher is nil, but it is required for IDPsService"}
 	}
@@ -67,6 +85,7 @@ func NewIDPsService(conf IDPsServiceConf) (*IDPsService, error) {
 	ref := &IDPsService{
 		repository:      conf.Repository,
 		idpTypes:        conf.IDPTypes,
+		administrators:  conf.Administrators,
 		cacheService:    conf.CacheService,
 		cipher:          conf.Cipher,
 		resourcesLimits: conf.ResourcesLimits,
@@ -353,6 +372,23 @@ func (ref *IDPsService) UpdateByID(ctx context.Context, input *domain.UpdateIDPI
 		}
 	}
 
+	// Disabling a provider takes away every sign-in that goes through it,
+	// until it is enabled again. That is what an administrator does instead
+	// of deleting it, and it is allowed, unless it would leave no
+	// administrator account that can sign in.
+	if input.Enabled != nil && !*input.Enabled {
+		current, err := ref.repository.SelectByID(ctx, input.ID)
+		if err != nil {
+			return o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
+		}
+
+		if current.Enabled {
+			if err := ref.keepsAnAdministrator(ctx, input.ID, idpDisabled); err != nil {
+				return o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
+			}
+		}
+	}
+
 	if input.ClientSecret != nil && *input.ClientSecret != "" {
 		cypherText, err := ref.cipher.EncryptString([]byte(*input.ClientSecret))
 		if err != nil {
@@ -390,6 +426,54 @@ func (ref *IDPsService) UpdateByID(ctx context.Context, input *domain.UpdateIDPI
 	return nil
 }
 
+// What is done to a provider, in the words of the refusal.
+const (
+	idpDisabled = "disabled"
+	idpDeleted  = "deleted"
+)
+
+// keepsAnAdministrator refuses to disable or delete an identity provider
+// when that would leave no administrator account that can sign in.
+//
+// "Can sign in" is the count the guard of the administrator account uses
+// (guardAdministrator): an account with the `admin` flag that is enabled and
+// has a password login or an identity at an enabled provider. An account
+// with the flag may sign in through a provider and have no password; with
+// every other one disabled, which is allowed while it can sign in, that
+// provider is the last door. Disabling or deleting it left no administrator
+// account that could sign in: nobody to change an address or unlock another
+// administrator account. (The provider itself can still be enabled again by
+// an account with that route's grant; what is kept is the account.)
+//
+// It is refused for everybody, as the last administrator account's lock is:
+// the routes are the Administrator role's, and the role is not the flag.
+// When no administrator account can sign in as it is, there is nothing left
+// to keep, and nothing is refused.
+//
+// The count and the write are two statements, as every check of this kind
+// is.
+func (ref *IDPsService) keepsAnAdministrator(ctx context.Context, idpID uuid.UUID, action string) error {
+	left, err := ref.administrators.CountEnabledAdministratorsWithout(ctx, idpID)
+	if err != nil {
+		return err
+	}
+
+	if left > 0 {
+		return nil
+	}
+
+	now, err := ref.administrators.CountEnabledAdministrators(ctx)
+	if err != nil {
+		return err
+	}
+
+	if now == 0 {
+		return nil
+	}
+
+	return &domain.IDPProtectedError{Action: action, Message: "the last enabled administrator account signs in through it", ID: idpID}
+}
+
 func (ref *IDPsService) DeleteByID(ctx context.Context, input *domain.DeleteIDPInput) error {
 	start := time.Now()
 	ctx, span, attrs := o11y.SetupTrace(ctx, ref.ot.Traces.Tracer, ref.metricsMetadata, "DeleteByID")
@@ -400,6 +484,15 @@ func (ref *IDPsService) DeleteByID(ctx context.Context, input *domain.DeleteIDPI
 	if input.ID == uuid.Nil() {
 		errorValue := &domain.InvalidInputError{Message: "input is nil"}
 		return o11y.RecordError(ctx, span, start, errorValue, ref.metrics, attrs)
+	}
+
+	// The delete's own statement keeps the provider for an account whose
+	// only way in it is (a 409). This is the other way a delete takes a
+	// sign-in away: an administrator account with an identity here and one
+	// at a provider that is disabled is not kept by that rule, and signs in
+	// through this one alone.
+	if err := ref.keepsAnAdministrator(ctx, input.ID, idpDeleted); err != nil {
+		return o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
 	}
 
 	if err := ref.repository.DeleteByID(ctx, input); err != nil {

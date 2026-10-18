@@ -262,6 +262,58 @@ func (ref *IDPsRepository) UpdateByID(ctx context.Context, input *domain.UpdateI
 	return nil
 }
 
+// queryDeleteIDP deletes an identity provider unless an account's only way in
+// is an identity at it: an account that is not a local one (it has no
+// password to sign in with, and recovery sends it nothing) and has no
+// identity at another provider.
+//
+// users_identities.idps_id is ON DELETE CASCADE, so the delete took those
+// identities with it and left such accounts with no way in at all, for
+// nobody to sign in to; a provider created again does not give them back,
+// since its sign-in finds an account with the address that is not linked.
+// Unlinking the last identity of such an account is refused; this is the
+// same act for all of them at once.
+//
+// The condition is in the statement that deletes, so that the provider is
+// kept by the rows as they are when it runs. Not the foreign key: ON DELETE
+// NO ACTION would keep the provider while any identity exists, also the one
+// of an account that signs in with its password. `local_account` is
+// nullable, and a value never set is no password login.
+const queryDeleteIDP = `
+        DELETE FROM idps
+        WHERE id = $1
+          AND NOT EXISTS (
+                SELECT 1
+                FROM users_identities AS only_way
+                JOIN users ON users.id = only_way.users_id
+                WHERE only_way.idps_id = $1
+                  AND users.local_account IS NOT TRUE
+                  AND NOT EXISTS (
+                        SELECT 1 FROM users_identities AS other
+                        WHERE other.users_id = only_way.users_id
+                          AND other.idps_id <> $1
+                  )
+          );
+    `
+
+// queryIDPExists tells a provider that is not there from one the delete kept.
+const queryIDPExists = `SELECT EXISTS (SELECT 1 FROM idps WHERE id = $1);`
+
+// idpOnlyWayIn is what still uses a provider that cannot be deleted, in the
+// words of the 409.
+const idpOnlyWayIn = "account that has no other way to sign in"
+
+// idpNotDeleted is what a delete that deleted nothing answers: the provider
+// is not there (404), or it is, and the statement kept it for an account
+// (409).
+func idpNotDeleted(exists bool, id uuid.UUID) error {
+	if exists {
+		return &domain.IDPInUseError{UsedBy: idpOnlyWayIn, ID: id}
+	}
+
+	return &domain.IDPNotFoundError{ID: id}
+}
+
 func (ref *IDPsRepository) DeleteByID(ctx context.Context, input *domain.DeleteIDPInput) error {
 	start := time.Now()
 	ctx, span, attrs, cancel := o11y.SetupTraceWithTimeout(ctx, ref.ot.Traces.Tracer, ref.maxQueryTimeout, ref.metricsMetadata, "DeleteByID")
@@ -279,26 +331,28 @@ func (ref *IDPsRepository) DeleteByID(ctx context.Context, input *domain.DeleteI
 
 	span.SetAttributes(attribute.String("idp.id", input.ID.String()))
 
-	query := `
-        DELETE FROM idps WHERE id=$1;
-    `
+	cslog.Trace(ctx, "sql", "query", prettyPrint(queryDeleteIDP, input.ID.String()))
 
-	cslog.Trace(ctx, "sql", "query", prettyPrint(query, input.ID))
-
-	result, err := ref.db.Exec(ctx, query, input.ID)
+	result, err := ref.db.Exec(ctx, queryDeleteIDP, input.ID)
 	if err != nil {
 		return o11y.RecordError(ctx, span, start, ref.handlePgError(err, input), ref.metrics, attrs)
 	}
 
 	if result.RowsAffected() == 0 {
-		// Nothing was deleted, and the caller is told so. This returned nil,
-		// "for security", and the use-case went on as after a real delete:
-		// it gave a usage slot back, so deleting ids that do not exist
-		// lowered the counter the limit is checked against. The handler has
-		// always had the 404 arm.
-		errorType := &domain.IDPNotFoundError{ID: input.ID}
+		// Nothing was deleted, and the caller is told why: the provider is
+		// not there (this returned nil, "for security", and the use-case
+		// gave a usage slot back for a delete that deleted nothing), or the
+		// statement kept it for an account. Which of the two is a read of
+		// its own.
+		var exists bool
 
-		return o11y.RecordError(ctx, span, start, errorType, ref.metrics, attrs)
+		cslog.Trace(ctx, "sql", "query", prettyPrint(queryIDPExists, input.ID.String()))
+
+		if err := ref.db.QueryRow(ctx, queryIDPExists, input.ID).Scan(&exists); err != nil {
+			return o11y.RecordError(ctx, span, start, ref.handlePgError(err, input), ref.metrics, attrs)
+		}
+
+		return o11y.RecordError(ctx, span, start, idpNotDeleted(exists, input.ID), ref.metrics, attrs)
 	}
 
 	o11y.RecordSuccess(ctx, span, start, ref.metrics, attrs, "idp deleted successfully", attribute.String("idp.id", input.ID.String()))

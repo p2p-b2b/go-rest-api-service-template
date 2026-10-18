@@ -512,12 +512,30 @@ const queryIsEnabledAdministrator = `
 // CountEnabledAdministrators implements [repository.Users]: how many accounts
 // with the `admin` flag may still sign in (queryEnabledAdministrators).
 func (ref *UsersRepository) CountEnabledAdministrators(ctx context.Context) (int, error) {
+	return ref.countEnabledAdministrators(ctx, "CountEnabledAdministrators", nil)
+}
+
+// CountEnabledAdministratorsWithout implements [repository.Users]: the same
+// count as if the given identity provider were not there. A provider's
+// disable and its delete ask it, so that neither leaves no administrator
+// account that can sign in.
+func (ref *UsersRepository) CountEnabledAdministratorsWithout(ctx context.Context, idpID uuid.UUID) (int, error) {
+	if idpID == uuid.Nil() {
+		// Never "without nothing": that is the other count, and whoever
+		// asks this one means a provider.
+		return 0, &domain.InvalidInputError{Message: "the administrators were counted without a provider that was not named"}
+	}
+
+	without := idpID.String()
+
+	return ref.countEnabledAdministrators(ctx, "CountEnabledAdministratorsWithout", &without)
+}
+
+func (ref *UsersRepository) countEnabledAdministrators(ctx context.Context, action string, without *string) (int, error) {
 	start := time.Now()
-	ctx, span, attrs, cancel := o11y.SetupTraceWithTimeout(ctx, ref.ot.Traces.Tracer, ref.maxQueryTimeout, ref.metricsMetadata, "CountEnabledAdministrators")
+	ctx, span, attrs, cancel := o11y.SetupTraceWithTimeout(ctx, ref.ot.Traces.Tracer, ref.maxQueryTimeout, ref.metricsMetadata, action)
 	defer cancel()
 	defer span.End()
-
-	var without *string
 
 	cslog.Trace(ctx, "sql", "query", prettyPrint(queryEnabledAdministrators, without))
 

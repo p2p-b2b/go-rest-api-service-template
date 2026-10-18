@@ -180,7 +180,7 @@ func (ref *UsersIdentitiesRepository) SelectBySubject(ctx context.Context, idpID
 	}
 
 	const query = `
-        SELECT ui.users_id, ui.idps_id, ui.subject, ui.email, ui.linked_at, idp.name, idpt.name
+        SELECT ui.users_id, ui.idps_id, ui.subject, ui.email, ui.linked_at, idp.name, idpt.name, idp.enabled
         FROM users_identities AS ui
             JOIN idps AS idp ON idp.id = ui.idps_id
             JOIN idp_types AS idpt ON idpt.id = idp.idp_types
@@ -191,7 +191,7 @@ func (ref *UsersIdentitiesRepository) SelectBySubject(ctx context.Context, idpID
 
 	var item domain.UserIdentity
 
-	err := ref.db.QueryRow(ctx, query, idpID, subject).Scan(&item.UserID, &item.IDPID, &item.Subject, &item.Email, &item.LinkedAt, &item.IDPName, &item.IDPTypeName)
+	err := ref.db.QueryRow(ctx, query, idpID, subject).Scan(&item.UserID, &item.IDPID, &item.Subject, &item.Email, &item.LinkedAt, &item.IDPName, &item.IDPTypeName, &item.IDPEnabled)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			// The ordinary answer for a first sign-in; an error so the caller
@@ -219,7 +219,7 @@ func (ref *UsersIdentitiesRepository) SelectByUserID(ctx context.Context, userID
 	}
 
 	const query = `
-        SELECT ui.users_id, ui.idps_id, ui.subject, ui.email, ui.linked_at, idp.name, idpt.name
+        SELECT ui.users_id, ui.idps_id, ui.subject, ui.email, ui.linked_at, idp.name, idpt.name, idp.enabled
         FROM users_identities AS ui
             JOIN idps AS idp ON idp.id = ui.idps_id
             JOIN idp_types AS idpt ON idpt.id = idp.idp_types
@@ -239,7 +239,7 @@ func (ref *UsersIdentitiesRepository) SelectByUserID(ctx context.Context, userID
 
 	for rows.Next() {
 		var item domain.UserIdentity
-		if err := rows.Scan(&item.UserID, &item.IDPID, &item.Subject, &item.Email, &item.LinkedAt, &item.IDPName, &item.IDPTypeName); err != nil {
+		if err := rows.Scan(&item.UserID, &item.IDPID, &item.Subject, &item.Email, &item.LinkedAt, &item.IDPName, &item.IDPTypeName, &item.IDPEnabled); err != nil {
 			return nil, o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
 		}
 

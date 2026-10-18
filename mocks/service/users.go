@@ -57,6 +57,21 @@ func (mr *MockUsersMockRecorder) CountEnabledAdministrators(ctx any) *gomock.Cal
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CountEnabledAdministrators", reflect.TypeOf((*MockUsers)(nil).CountEnabledAdministrators), ctx)
 }
 
+// CountEnabledAdministratorsWithout mocks base method.
+func (m *MockUsers) CountEnabledAdministratorsWithout(ctx context.Context, idpID uuid.UUID) (int, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CountEnabledAdministratorsWithout", ctx, idpID)
+	ret0, _ := ret[0].(int)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CountEnabledAdministratorsWithout indicates an expected call of CountEnabledAdministratorsWithout.
+func (mr *MockUsersMockRecorder) CountEnabledAdministratorsWithout(ctx, idpID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CountEnabledAdministratorsWithout", reflect.TypeOf((*MockUsers)(nil).CountEnabledAdministratorsWithout), ctx, idpID)
+}
+
 // DeleteByID mocks base method.
 func (m *MockUsers) DeleteByID(ctx context.Context, input *domain.DeleteUserInput) error {
 	m.ctrl.T.Helper()

@@ -15,6 +15,17 @@ Since `v0.0.3`.
 
 ### Security
 
+- **An identity provider's delete strands nobody, and neither its delete
+  nor its disable shuts the last door.** The delete took the provider's
+  identities with it and left every account that signed in through it, with
+  no password, without a way in. It is a `409` while an account's only way
+  in is an identity at that provider; disable the provider instead, or
+  delete those accounts or make them local accounts first. Disabling or
+  deleting a provider is a `403` when it would leave no administrator
+  account that can sign in, and an account's own unlink keeps an identity
+  at an enabled provider. The design is in
+  [`docs/architecture/identity-providers.md`](./docs/architecture/identity-providers.md#deleting-or-disabling-a-provider).
+  ([#132](https://github.com/slashdevops/go-rest-api-service-template/pull/132))
 - **An administrator account is locked, and unlocked, only by one.** An
   account with the `admin` flag is disabled or enabled, made a federated or
   a local account, stripped of a role or deleted only by an account that
@@ -76,6 +87,10 @@ Since `v0.0.3`.
   ([#94](https://github.com/slashdevops/go-rest-api-service-template/pull/94))
 
 ### Upgrade notes
+
+- **`DELETE /auth/idps/{idp_id}` can answer `409`**, and it and
+  `PUT /auth/idps/{idp_id}` with `enabled: false` can answer `403`. A client
+  that deleted providers to retire them disables them now. (#132)
 
 - **The `users` table has a new column**, added to the file that creates
   the table (`00002_users_tables.sql`), as this template does before a first

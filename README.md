@@ -221,7 +221,7 @@ make docs-api-resources # regenerate the authz resource rows for migration 00008
 | 🛡️ [Security](./docs/architecture/security.md) | the middleware chain and its order, response headers, body and content-type bounds, error hygiene, project membership, single-use links, the outbound address guard, supply chain |
 | 🚨 [Security policy](./SECURITY.md) | how to report a vulnerability, and how a copy of this template learns of a fix |
 | 📝 [Changelog](./CHANGELOG.md) | what changed, release by release, with a Security section to read first |
-| 🪪 [Identity providers](./docs/architecture/identity-providers.md) | OIDC and GitHub sign-in: a provider proves a subject, never an email; linking, provisioning, the callback contract |
+| 🪪 [Identity providers](./docs/architecture/identity-providers.md) | OIDC and GitHub sign-in: a provider proves a subject, never an email; linking, provisioning, the callback contract; what a provider's delete and disable are held to |
 | ⏳ [Token lifetimes](./docs/architecture/token-lifetimes.md) | the access/refresh lifetimes as a database row edited through the API |
 | 🚦 [Rate limiting](./docs/architecture/rate-limiting.md) | the rule model and how it is enforced |
 | 📏 [Resource limits](./docs/architecture/resource-limits.md) | scopes, resolution, the signature |

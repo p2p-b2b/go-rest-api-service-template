@@ -2892,7 +2892,10 @@ paths:
     delete:
       consumes:
       - application/json
-      description: Permanently remove an Identity Provider configuration
+      description: 'Permanently remove an Identity Provider configuration. Refused
+        (409) while an account''s only way to sign in is an identity at it: disable
+        the provider instead, or delete those accounts or make them local accounts
+        first.'
       operationId: 0198e7ea-3755-7a2d-9ab0-83ccef188e37
       parameters:
       - description: Identity Provider UUID
@@ -2917,11 +2920,16 @@ paths:
           schema:
             $ref: '#/definitions/payload.HTTPMessage'
         "403":
-          description: Insufficient permissions
+          description: Insufficient permissions; or the delete would leave no administrator
+            account that can sign in
           schema:
             $ref: '#/definitions/payload.HTTPMessage'
         "404":
           description: IDP not found
+          schema:
+            $ref: '#/definitions/payload.HTTPMessage'
+        "409":
+          description: An account's only way to sign in is an identity at this provider
           schema:
             $ref: '#/definitions/payload.HTTPMessage'
         "429":
@@ -2993,7 +3001,9 @@ paths:
     put:
       consumes:
       - application/json
-      description: Modify an existing Identity Provider configuration
+      description: Modify an existing Identity Provider configuration. Disabling it
+        is refused (403) when that would leave no administrator account that can sign
+        in.
       operationId: 0198e7ea-3755-7a35-9e30-6a9392e8e7a1
       parameters:
       - description: Identity Provider UUID
@@ -3024,7 +3034,8 @@ paths:
           schema:
             $ref: '#/definitions/payload.HTTPMessage'
         "403":
-          description: Insufficient permissions
+          description: Insufficient permissions; or disabling it would leave no administrator
+            account that can sign in
           schema:
             $ref: '#/definitions/payload.HTTPMessage'
         "404":

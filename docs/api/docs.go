@@ -783,7 +783,7 @@ const docTemplate = `{
                         "AccessToken": []
                     }
                 ],
-                "description": "Modify an existing Identity Provider configuration",
+                "description": "Modify an existing Identity Provider configuration. Disabling it is refused (403) when that would leave no administrator account that can sign in.",
                 "consumes": [
                     "application/json"
                 ],
@@ -835,7 +835,7 @@ const docTemplate = `{
                         }
                     },
                     "403": {
-                        "description": "Insufficient permissions",
+                        "description": "Insufficient permissions; or disabling it would leave no administrator account that can sign in",
                         "schema": {
                             "$ref": "#/definitions/payload.HTTPMessage"
                         }
@@ -884,7 +884,7 @@ const docTemplate = `{
                         "AccessToken": []
                     }
                 ],
-                "description": "Permanently remove an Identity Provider configuration",
+                "description": "Permanently remove an Identity Provider configuration. Refused (409) while an account's only way to sign in is an identity at it: disable the provider instead, or delete those accounts or make them local accounts first.",
                 "consumes": [
                     "application/json"
                 ],
@@ -927,13 +927,19 @@ const docTemplate = `{
                         }
                     },
                     "403": {
-                        "description": "Insufficient permissions",
+                        "description": "Insufficient permissions; or the delete would leave no administrator account that can sign in",
                         "schema": {
                             "$ref": "#/definitions/payload.HTTPMessage"
                         }
                     },
                     "404": {
                         "description": "IDP not found",
+                        "schema": {
+                            "$ref": "#/definitions/payload.HTTPMessage"
+                        }
+                    },
+                    "409": {
+                        "description": "An account's only way to sign in is an identity at this provider",
                         "schema": {
                             "$ref": "#/definitions/payload.HTTPMessage"
                         }

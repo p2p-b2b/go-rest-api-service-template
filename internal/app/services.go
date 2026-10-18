@@ -552,6 +552,7 @@ func (a *App) initAuthServices(
 	a.services.IDPs, err = usecase.NewIDPsService(usecase.IDPsServiceConf{
 		Repository:      a.repositories.IDPs,
 		IDPTypes:        a.repositories.IDPTypes,
+		Administrators:  a.repositories.Users,
 		CacheService:    cacheService,
 		ResourcesLimits: a.services.ResourcesLimits,
 		Cipher:          cipherAdapter,

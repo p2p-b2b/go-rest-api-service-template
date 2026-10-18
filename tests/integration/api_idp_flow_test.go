@@ -148,10 +148,36 @@ func createOIDCIDP(t *testing.T, admin string, f *fakeProvider, autoProvision bo
 	resp.Body.Close()
 
 	t.Cleanup(func() {
-		r, err := sendHTTPRequest(t, context.Background(), idpsDeleteEndpoint.Clone().RewriteSlugs(id), nil, hdr)
-		if err == nil {
-			r.Body.Close()
+		// The provider's delete is refused while an account's only way in is
+		// an identity at it. Whatever accounts a test had this provider
+		// provision are the test's own, and go first: otherwise the cleanup
+		// would leave the provider, and its slot, behind.
+		if _, err := testDBPool.Exec(context.Background(), `
+            DELETE FROM users
+            WHERE local_account IS NOT TRUE
+              AND id IN (SELECT users_id FROM users_identities WHERE idps_id = $1)
+              AND NOT EXISTS (
+                    SELECT 1 FROM users_identities AS other
+                    WHERE other.users_id = users.id AND other.idps_id <> $1
+              )`, id); err != nil {
+			t.Logf("cleanup: the accounts provider %s provisioned were not removed: %v", id, err)
 		}
+
+		// A fresh context: t.Context() is already cancelled by the time
+		// cleanup runs, so the request would fail before it was sent.
+		r, err := sendHTTPRequest(t, context.Background(), idpsDeleteEndpoint.Clone().RewriteSlugs(id), nil, hdr)
+		if err != nil {
+			t.Logf("cleanup: provider %s was not deleted: %v", id, err)
+
+			return
+		}
+
+		// A test that deleted it itself finds it gone, and that is fine.
+		if r.StatusCode != http.StatusOK && r.StatusCode != http.StatusNotFound {
+			t.Logf("cleanup: provider %s was left behind, with its slot: %d %s", id, r.StatusCode, readResponseBody(t, r))
+		}
+
+		_ = r.Body.Close()
 	})
 
 	return id
