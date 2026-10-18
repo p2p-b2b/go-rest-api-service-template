@@ -88,10 +88,17 @@ Since `v0.0.3`.
 
 ### Upgrade notes
 
+- **The `users` table has a new check**, `users_locked_is_disabled`: an
+  account an administrator locked is a disabled one. Added to the file that
+  creates the table, as the column was; a database created from an earlier
+  version does not have it until it is recreated, or
+  `ALTER TABLE users ADD CONSTRAINT "users_locked_is_disabled" CHECK (NOT disabled_by_admin OR disabled IS TRUE);`
+  (#133)
+- **`PUT /users/{user_id}` can answer `400`** for a body whose `disabled`
+  changes the account against the `disabled_by_admin` it carries. (#133)
 - **`DELETE /auth/idps/{idp_id}` can answer `409`**, and it and
   `PUT /auth/idps/{idp_id}` with `enabled: false` can answer `403`. A client
   that deleted providers to retire them disables them now. (#132)
-
 - **The `users` table has a new column**, added to the file that creates
   the table (`00002_users_tables.sql`), as this template does before a first
   deploy. The migration tool does not see an edit: **a database created from
@@ -106,7 +113,8 @@ Since `v0.0.3`.
 - **`PUT /users/{user_id}` can answer `403` for a body that carries
   `email`.** A form that sends back the address it read is unaffected. (#123)
 - **Four routes can answer `403` for an account with the `admin` flag**:
-  `PUT /users/{user_id}` for a change of `disabled` or `local_account`,
+  `PUT /users/{user_id}` for a change of `disabled`, `disabled_by_admin` or
+  `local_account`,
   `DELETE /users/{user_id}`, `DELETE /users/{user_id}/roles` and
   `DELETE /roles/{role_id}/users`, when the caller does not have the flag,
   and for everybody when it is the last such account that can sign in.
@@ -127,6 +135,18 @@ Since `v0.0.3`.
 
 ### Changed
 
+- **The administrator's lock is a field of its own.** `disabled_by_admin` is
+  in the user answers (`GET /users`, `GET /users/{user_id}`, `/me`), the
+  users lists filter, sort and select by it, and `PUT /users/{user_id}`
+  writes it: `true` locks the account (disabled, and marked so that its
+  verification link opens nothing) whatever `disabled` already is, which is
+  how a registration that was never enabled is shut; `false` unlocks it,
+  enabled if its address is verified and waiting for its link if not. A
+  value the account already has changes nothing. On an account with the
+  `admin` flag the lock is the administrator account's to change, as
+  `disabled` is. The design is in
+  [`docs/architecture/authentication.md`](./docs/architecture/authentication.md).
+  ([#133](https://github.com/slashdevops/go-rest-api-service-template/pull/133))
 - **The filter parser is `qfv` v1.0.4**, which reads three inputs as
   PostgreSQL does. A number or a boolean as a pattern (`name LIKE 1`,
   `SIMILAR TO 1`, the `~~` operators) is refused, as PostgreSQL has no such

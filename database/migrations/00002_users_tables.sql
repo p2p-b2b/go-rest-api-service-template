@@ -47,6 +47,17 @@ CREATE TABLE IF NOT EXISTS users (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
 
+    -- An account an administrator locked is a disabled one. Every statement
+    -- of the service keeps the two together; this holds a hand-written one
+    -- to it, because an enabled account that is marked is read back as
+    -- "locked" by a client and cannot be locked through the API (the value
+    -- is no change). "IS TRUE", because disabled is nullable here and a
+    -- check that is NULL passes: a marked row whose disabled is NULL signs
+    -- in. Added to this file as the column was: a database created from an
+    -- earlier version does not have it until it is recreated, or
+    --   ALTER TABLE users ADD CONSTRAINT "users_locked_is_disabled" CHECK (NOT disabled_by_admin OR disabled IS TRUE);
+    CONSTRAINT "users_locked_is_disabled" CHECK (NOT disabled_by_admin OR disabled IS TRUE),
+
     -- email is unique
     CONSTRAINT "users_email" UNIQUE (email),
 

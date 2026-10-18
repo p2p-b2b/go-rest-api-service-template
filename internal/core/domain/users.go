@@ -21,9 +21,9 @@ const (
 )
 
 var (
-	UsersFilterFields  = []string{FieldID, FieldFirstName, FieldLastName, FieldEmail, FieldDisabled, FieldVerified, FieldLocalAccount, FieldCreatedAt, FieldUpdatedAt}
-	UsersSortFields    = []string{FieldID, FieldFirstName, FieldLastName, FieldEmail, FieldDisabled, FieldVerified, FieldLocalAccount, FieldCreatedAt, FieldUpdatedAt}
-	UsersPartialFields = []string{FieldID, FieldFirstName, FieldLastName, FieldEmail, FieldDisabled, FieldVerified, FieldLocalAccount, FieldCreatedAt, FieldUpdatedAt}
+	UsersFilterFields  = []string{FieldID, FieldFirstName, FieldLastName, FieldEmail, FieldDisabled, FieldDisabledByAdmin, FieldVerified, FieldLocalAccount, FieldCreatedAt, FieldUpdatedAt}
+	UsersSortFields    = []string{FieldID, FieldFirstName, FieldLastName, FieldEmail, FieldDisabled, FieldDisabledByAdmin, FieldVerified, FieldLocalAccount, FieldCreatedAt, FieldUpdatedAt}
+	UsersPartialFields = []string{FieldID, FieldFirstName, FieldLastName, FieldEmail, FieldDisabled, FieldDisabledByAdmin, FieldVerified, FieldLocalAccount, FieldCreatedAt, FieldUpdatedAt}
 )
 
 // User is the user-account entity.
@@ -34,25 +34,30 @@ var (
 // by an identity provider, which proves its subject, or by the administrator
 // who created the account and vouches for it). A registration is unverified
 // and disabled; verification flips both, unless an administrator disabled
-// the account meanwhile, which the row remembers in a column this type does
-// not carry. Those three are the only writers of Verified, and no update
-// sets it. They used to be one flag, and
-// password recovery could not tell an account that had never followed its
-// link from one that had been switched off, so it refused both.
+// the account meanwhile (DisabledByAdmin). Those three are the only writers
+// of Verified, and no update sets it. They used to be one flag, and password
+// recovery could not tell an account that had never followed its link from
+// one that had been switched off, so it refused both.
+//
+// DisabledByAdmin is the administrator's lock: an account that is disabled
+// because an administrator said so, and not because its registration is
+// waiting for its link. A verification link does not open such an account.
+// It is read and written through the API as `disabled_by_admin`.
 type User struct {
-	CreatedAt    time.Time
-	UpdatedAt    time.Time
-	Disabled     *bool
-	Verified     *bool
-	Admin        *bool
-	LocalAccount *bool
-	FirstName    string
-	LastName     string
-	Email        string
-	Password     string
-	PasswordHash string
-	SerialID     int64
-	ID           uuid.UUID
+	CreatedAt       time.Time
+	UpdatedAt       time.Time
+	Disabled        *bool
+	DisabledByAdmin *bool
+	Verified        *bool
+	Admin           *bool
+	LocalAccount    *bool
+	FirstName       string
+	LastName        string
+	Email           string
+	Password        string
+	PasswordHash    string
+	SerialID        int64
+	ID              uuid.UUID
 }
 
 // AccountStanding says whether an account may act on a request it is
@@ -155,8 +160,16 @@ type UpdateUserInput struct {
 	Password     *string
 	PasswordHash *string
 	Disabled     *bool
-	LocalAccount *bool
-	ID           uuid.UUID
+	// DisabledByAdmin is the administrator's lock, set by itself: true
+	// locks the account whatever Disabled already is (a registration whose
+	// link is still out is disabled already, and "disabled: true" for it is
+	// no change and is not remembered); false takes the lock off, and the
+	// account is enabled if its address is proven and waits for its link
+	// if not. Nil leaves the lock to Disabled, which sets it when it is a
+	// change (UsersRepository.UpdateByID).
+	DisabledByAdmin *bool
+	LocalAccount    *bool
+	ID              uuid.UUID
 	// CallerID is who asks, on PUT /users/{user_id}: a change of the
 	// account's e-mail address is held to it (UsersService.UpdateByID). The
 	// flows that update an account for itself (the profile, the

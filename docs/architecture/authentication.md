@@ -161,7 +161,7 @@ columns on `users`:
 | ---------- | ------------------------------------------------- | ----------------------------------------- |
 | `verified` | the verification link; an IdP registration; `POST /users` (the administrator vouches for the address) | verify, resend, recovery                  |
 | `disabled` | the verification link (to `false`, unless an administrator disabled the account); administrators | login, refresh, recovery, and every request that carries an access token (`RequireActiveAccount`) |
-| `disabled_by_admin` | `POST /users` (stored disabled, by an administrator); a **change** of `disabled` through `PUT /users/{user_id}` | the verification's statement, and nothing else |
+| `disabled_by_admin` | `POST /users` (stored disabled, by an administrator); `PUT /users/{user_id}`: the field itself, or a **change** of `disabled` | the verification's statement, the update's (an unlock), and every user answer and list |
 
 `disabled` alone decides whether an account may sign in. A registration an
 administrator enables by hand has not proven its address, so gating login on
@@ -204,7 +204,11 @@ which it is:
 
 ```mermaid
 flowchart TD
-    P["PUT /users/{user_id}<br/>disabled: v"] --> C{"is v a change<br/>of the stored value?"}
+    P["PUT /users/{user_id}"] --> F{"does the body carry<br/>disabled_by_admin,<br/>and is it a change?"}
+    F -- "true" --> LK["locked:<br/>disabled = true, disabled_by_admin = true<br/><i>whatever disabled was</i>"]
+    F -- "false" --> UL["unlocked: disabled_by_admin = false<br/>disabled = false if the address is verified,<br/>true (waiting for its link) if not"]
+    F -- "no, or the value it already has" --> C{"disabled: v<br/>is v a change<br/>of the stored value?"}
+    P -- "the lock, and a change of disabled<br/>that disagrees with it" --> R400["400: two directions in one body,<br/>nothing written"]
     C -- "no: the form sent back" --> K["disabled_by_admin as it was"]
     C -- yes --> M["disabled = v<br/>disabled_by_admin = v<br/><i>one statement</i>"]
 
@@ -226,9 +230,30 @@ flowchart TD
   registration whose link is still out, and that is nobody disabling it. The
   statement compares what it is sent with the row it writes, so the check
   and the write cannot be split.
-- **So a registration that was never enabled cannot be "disabled".** There
-  is no change to make, and its link still opens it. An administrator shuts
-  such a registration by deleting it, or by enabling and then disabling it.
+- **So `disabled` alone cannot shut a registration that was never
+  enabled**: there is no change to make, and its link would still open it.
+  **The lock is therefore a field of its own**, `disabled_by_admin`, read
+  and written. `true` locks an account whatever `disabled` already is;
+  `false` takes the lock off, and the account is enabled if its address is
+  proven and waits for its link if not. A value equal to the stored one is
+  no change, for either field, so a form that sends back what it read is
+  still safe. **When the body carries the lock, a change of `disabled`
+  beside it has to agree with it**, whether or not the lock is itself a
+  change: "enable" with "locked", or "disable" with "not locked", is a 400
+  that writes nothing (`lockMayChange`). Dropping a lock equal to the stored
+  one before comparing the two would leave a `disabled` that enables a
+  locked account, and the same body sent again would lock it. An account
+  that may not change the target at all hears its 403 before that 400.
+  Unlocking leaves an unverified account waiting for its link, also one an
+  administrator had enabled by hand before: `disabled: false` in the same
+  body opens it, as it always could. It is the usual shape: an
+  administrator's block beside the verification, each its own flag. The
+  table holds the pair too: `users_locked_is_disabled`, a locked account is
+  a disabled one.
+- **The lock is the account's sign-in, as `disabled` is.** On an account
+  with the `admin` flag it is set and taken off only by an account that has
+  the flag, and the last enabled one is locked by nobody
+  ([security.md](security.md#an-administrator-account-is-locked-only-by-one)).
 - **The verification is a statement of its own** (`UsersRepository.Verify`),
   not the general update with two fields. It decides from the row it writes:
   the flow's copy of the account comes through the cache. The same statement
@@ -244,7 +269,10 @@ Nothing in a request maps to `verified`: `UpdateUserInput` has no such field,
 so no update can mark an address proven. `disabled_by_admin` is set by
 whoever holds the grant for `POST /users` or `PUT /users/{user_id}`, not only
 by the administrator account: it does not say who, it says "a disable that a
-link must respect". It is in no answer of the API.
+link must respect". The reads answer it (`GET /users`,
+`GET /users/{user_id}`, `/me`), and the users lists filter, sort and select
+by it, so a client can tell an account an administrator shut from a
+registration waiting for its link.
 
 `TestAnAccountAnAdministratorDisabledIsNotOpenedByItsLink` holds it against a
 running service with the mail server;
@@ -253,6 +281,15 @@ running service with the mail server;
 `TestVerifyUserAnswersTheRowAsItAnswersItsOwnCopy` and
 `TestAnAccountAnAdministratorCreatesIsStoredVerifiedAndDisabled` where the
 pull request gate runs.
+
+`TestTheAdministratorsLockIsAFieldOfItsOwn` holds the lock the same way: a
+registration that was never enabled is shut by it and its link then opens
+nothing; unlocked before its address is proven it waits for its link; a form
+that sends back what it read changes nothing; two directions in one body are
+a 400; the list answers and filters by it; and on an account with the flag
+it is the flag's. `TestTheLockIsAFieldOfItsOwn`,
+`TestTheLockOnAnAdministratorAccountIsAnAdministrators` and
+`TestABodyInTwoDirectionsIsRefusedWhole` where the pull request gate runs.
 
 ### And so does registration
 

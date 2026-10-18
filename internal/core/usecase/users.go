@@ -454,17 +454,25 @@ func (ref *UsersService) UpdateByID(ctx context.Context, input *domain.UpdateUse
 		}
 	}
 
-	// Nor is an account's sign-in (disabled, local_account), when the
-	// account has the `admin` flag. Judged against the stored row too, read
-	// only when the body carries one of the two.
+	// Nor is an account's sign-in (disabled, the lock, local_account), when
+	// the account has the `admin` flag. Judged against the stored row too,
+	// read only when the body carries one of the three.
 	if touchesSignIn(input) {
 		stored, err := ref.repository.SelectByID(ctx, input.ID)
 		if err != nil {
 			return o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
 		}
 
+		twoDirections := lockMayChange(input, stored)
+
 		if err := ref.administratorSignInMayChange(ctx, input, stored); err != nil {
 			return o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
+		}
+
+		// Last: an account that may not change the sign-in at all hears
+		// that, and nothing about what the row holds.
+		if twoDirections != nil {
+			return o11y.RecordError(ctx, span, start, twoDirections, ref.metrics, attrs)
 		}
 	}
 
@@ -585,16 +593,67 @@ func sameAddress(stored, sent string) bool {
 // whether, or how, an account signs in. Whether it is a change is judged
 // against the stored row (administratorSignInMayChange).
 func touchesSignIn(input *domain.UpdateUserInput) bool {
-	return input.Disabled != nil || input.LocalAccount != nil
+	return input.Disabled != nil || input.DisabledByAdmin != nil || input.LocalAccount != nil
 }
 
-// administratorSignInMayChange refuses a change of `disabled` or of
-// `local_account` on an account with the `admin` flag, unless an account
-// with the flag asks (guardAdministrator). In either direction: disabling
-// it, or making it a federated account, takes its sign-in away, and is
-// refused for everybody on the last such account that can still sign in;
-// enabling it, or making it a local account again, undoes what an
-// administrator did.
+// lockMayChange takes out of the update what is no change of the lock or of
+// `disabled`, and says whether the body pulls the account in two directions.
+//
+// `disabled` alone cannot say "an administrator shut this account" for a
+// registration whose link is still out: the account is disabled already,
+// the value is no change, and a form sends it back with every rename. So
+// the lock is a field of its own (`disabled_by_admin`): true locks whatever
+// `disabled` is, false unlocks.
+//
+// A client may send both. A value equal to the stored one is no change and
+// is dropped, for either field: what is left is what the client changed.
+//
+// When the body carries the lock, a CHANGE of `disabled` beside it has to
+// agree with the lock the body states, whether or not that lock is itself a
+// change. A locked account that is told `disabled: false` with
+// `disabled_by_admin: true` is told to be enabled and to stay locked, and
+// cannot be both: with the lock dropped as "no change" first, the `disabled`
+// that was left would enable the account and take the lock off, and the same
+// body sent again would lock it, and so on. The mirror, `disabled: true`
+// with `disabled_by_admin: false` on an enabled account, is "disabled, and
+// not by an administrator", which no account an administrator disables is.
+// Both are refused whole.
+//
+// The refusal is returned, not acted on: the caller asks who may change the
+// account first (administratorSignInMayChange), so that an account that may
+// not change it at all hears that, and nothing about what the row holds.
+func lockMayChange(input *domain.UpdateUserInput, stored *domain.User) (twoDirections error) {
+	if input.DisabledByAdmin == nil {
+		return nil
+	}
+
+	lock := *input.DisabledByAdmin
+
+	if input.Disabled != nil {
+		if *input.Disabled == isDisabled(stored) {
+			input.Disabled = nil
+		} else if *input.Disabled != lock {
+			twoDirections = &domain.InvalidInputError{
+				Field:   domain.FieldDisabledByAdmin,
+				Message: "disabled and disabled_by_admin change the account in two directions",
+			}
+		}
+	}
+
+	if lock == (stored.DisabledByAdmin != nil && *stored.DisabledByAdmin) {
+		input.DisabledByAdmin = nil
+	}
+
+	return twoDirections
+}
+
+// administratorSignInMayChange refuses a change of `disabled`, of the lock
+// (`disabled_by_admin`) or of `local_account` on an account with the `admin`
+// flag, unless an account with the flag asks (guardAdministrator). In either
+// direction: disabling or locking it, or making it a federated account,
+// takes its sign-in away, and is refused for everybody on the last such
+// account that can still sign in; enabling or unlocking it, or making it a
+// local account again, undoes what an administrator did.
 //
 // What is refused is a change, not the field: a client sends the whole form
 // back, `disabled: false` and the rest, with every edit, and a user manager
@@ -626,6 +685,19 @@ func (ref *UsersService) administratorSignInMayChange(ctx context.Context, input
 			if err := guardAdministrator(ctx, ref.repository, stored, input.CallerID, administratorEnabled, false); err != nil {
 				return err
 			}
+		}
+	}
+
+	// The lock, when it is here, is a change (lockMayChange): locking takes
+	// the sign-in away as disabling does, and unlocking gives it back.
+	if input.DisabledByAdmin != nil {
+		action, locks := administratorEnabled, false
+		if *input.DisabledByAdmin {
+			action, locks = administratorDisabled, true
+		}
+
+		if err := guardAdministrator(ctx, ref.repository, stored, input.CallerID, action, locks); err != nil {
+			return err
 		}
 	}
 

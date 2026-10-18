@@ -164,16 +164,17 @@ func (ref *UsersHandler) getByID(w http.ResponseWriter, r *http.Request) {
 	}
 
 	userResponse := payload.UserResponse{
-		ID:           out.ID,
-		CreatedAt:    out.CreatedAt,
-		UpdatedAt:    out.UpdatedAt,
-		Disabled:     out.Disabled,
-		Verified:     out.Verified,
-		Admin:        out.Admin,
-		LocalAccount: out.LocalAccount,
-		FirstName:    out.FirstName,
-		LastName:     out.LastName,
-		Email:        out.Email,
+		ID:              out.ID,
+		CreatedAt:       out.CreatedAt,
+		UpdatedAt:       out.UpdatedAt,
+		Disabled:        out.Disabled,
+		DisabledByAdmin: out.DisabledByAdmin,
+		Verified:        out.Verified,
+		Admin:           out.Admin,
+		LocalAccount:    out.LocalAccount,
+		FirstName:       out.FirstName,
+		LastName:        out.LastName,
+		Email:           out.Email,
 	}
 
 	if err := respond.WriteJSONData(w, http.StatusOK, userResponse); err != nil {
@@ -306,16 +307,16 @@ func (ref *UsersHandler) create(w http.ResponseWriter, r *http.Request) {
 //
 //	@ID				01982303-f0f9-7e3c-a186-f186a3418768
 //	@Summary		Update user
-//	@Description	Update existing user account details by ID. Only the administrator account (the admin flag, not the Administrator role) changes an e-mail address, or changes disabled or local_account on an account that has the flag; from anyone else such a change is a 403. Values equal to the stored ones are accepted.
+//	@Description	Update existing user account details by ID. Only the administrator account (the admin flag, not the Administrator role) changes an e-mail address, or changes disabled, disabled_by_admin or local_account on an account that has the flag; from anyone else such a change is a 403. Values equal to the stored ones are accepted.
 //	@Tags			Users
 //	@Accept			json
 //	@Produce		json
 //	@Param			user_id	path		string						true	"User unique identifier"	Format(uuid)
 //	@Param			body	body		payload.UpdateUserRequest	true	"User update details including name, email, or profile changes"
 //	@Success		200		{object}	payload.HTTPMessage			"User updated successfully"
-//	@Failure		400		{object}	payload.HTTPMessage			"Invalid user ID or request body"
+//	@Failure		400		{object}	payload.HTTPMessage			"Invalid user ID or request body; or disabled and disabled_by_admin changing the account in two directions"
 //	@Failure		401		{object}	payload.HTTPMessage			"Missing or invalid authentication token"
-//	@Failure		403		{object}	payload.HTTPMessage			"Insufficient permissions; a change of e-mail address, or of disabled or local_account on an administrator account, by an account that is not one; or the last enabled administrator account"
+//	@Failure		403		{object}	payload.HTTPMessage			"Insufficient permissions; a change of e-mail address, or of disabled, disabled_by_admin or local_account on an administrator account, by an account that is not one; or the last enabled administrator account"
 //	@Failure		404		{object}	payload.HTTPMessage			"User not found"
 //	@Failure		409		{object}	payload.HTTPMessage			"Email already in use by another user"
 //	@Failure		413		{object}	payload.HTTPMessage			"Request body larger than http.server.max.body.bytes"
@@ -359,13 +360,14 @@ func (ref *UsersHandler) updateByID(w http.ResponseWriter, r *http.Request) {
 	}
 
 	input := &domain.UpdateUserInput{
-		ID:           userID,
-		CallerID:     callerID,
-		FirstName:    req.FirstName,
-		LastName:     req.LastName,
-		Email:        req.Email,
-		Disabled:     req.Disabled,
-		LocalAccount: req.LocalAccount,
+		ID:              userID,
+		CallerID:        callerID,
+		FirstName:       req.FirstName,
+		LastName:        req.LastName,
+		Email:           req.Email,
+		Disabled:        req.Disabled,
+		DisabledByAdmin: req.DisabledByAdmin,
+		LocalAccount:    req.LocalAccount,
 	}
 
 	if err := ref.service.UpdateByID(ctx, input); err != nil {
@@ -390,6 +392,15 @@ func (ref *UsersHandler) updateByID(w http.ResponseWriter, r *http.Request) {
 		if _, ok := errors.AsType[*domain.UserNotFoundError](err); ok {
 			e := o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
 			respond.WriteJSONMessage(w, r, http.StatusNotFound, e.Error())
+			return
+		}
+
+		// A body that pulls the account in two directions: disabled and the
+		// administrator's lock (UsersService.lockMayChange). That refusal
+		// alone: any other InvalidInputError from here is a fault.
+		if refusal, ok := errors.AsType[*domain.InvalidInputError](err); ok && refusal.Field == domain.FieldDisabledByAdmin {
+			e := o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
+			respond.WriteJSONMessage(w, r, http.StatusBadRequest, e.Error())
 			return
 		}
 
@@ -561,16 +572,17 @@ func (ref *UsersHandler) list(w http.ResponseWriter, r *http.Request) {
 
 	for i, user := range outList.Items {
 		outResponse.Items[i] = payload.UserResponse{
-			ID:           user.ID,
-			CreatedAt:    user.CreatedAt,
-			UpdatedAt:    user.UpdatedAt,
-			Disabled:     user.Disabled,
-			Verified:     user.Verified,
-			Admin:        user.Admin,
-			LocalAccount: user.LocalAccount,
-			FirstName:    user.FirstName,
-			LastName:     user.LastName,
-			Email:        user.Email,
+			ID:              user.ID,
+			CreatedAt:       user.CreatedAt,
+			UpdatedAt:       user.UpdatedAt,
+			Disabled:        user.Disabled,
+			DisabledByAdmin: user.DisabledByAdmin,
+			Verified:        user.Verified,
+			Admin:           user.Admin,
+			LocalAccount:    user.LocalAccount,
+			FirstName:       user.FirstName,
+			LastName:        user.LastName,
+			Email:           user.Email,
 		}
 	}
 
@@ -666,16 +678,17 @@ func (ref *UsersHandler) listByRoleID(w http.ResponseWriter, r *http.Request) {
 
 	for i, user := range outList.Items {
 		outResponse.Items[i] = payload.UserResponse{
-			ID:           user.ID,
-			CreatedAt:    user.CreatedAt,
-			UpdatedAt:    user.UpdatedAt,
-			Disabled:     user.Disabled,
-			Verified:     user.Verified,
-			Admin:        user.Admin,
-			LocalAccount: user.LocalAccount,
-			FirstName:    user.FirstName,
-			LastName:     user.LastName,
-			Email:        user.Email,
+			ID:              user.ID,
+			CreatedAt:       user.CreatedAt,
+			UpdatedAt:       user.UpdatedAt,
+			Disabled:        user.Disabled,
+			DisabledByAdmin: user.DisabledByAdmin,
+			Verified:        user.Verified,
+			Admin:           user.Admin,
+			LocalAccount:    user.LocalAccount,
+			FirstName:       user.FirstName,
+			LastName:        user.LastName,
+			Email:           user.Email,
 		}
 	}
 
@@ -773,16 +786,17 @@ func (ref *UsersHandler) listByProjectID(w http.ResponseWriter, r *http.Request)
 
 	for i, user := range outList.Items {
 		outResponse.Items[i] = payload.UserResponse{
-			ID:           user.ID,
-			CreatedAt:    user.CreatedAt,
-			UpdatedAt:    user.UpdatedAt,
-			Disabled:     user.Disabled,
-			Verified:     user.Verified,
-			Admin:        user.Admin,
-			LocalAccount: user.LocalAccount,
-			FirstName:    user.FirstName,
-			LastName:     user.LastName,
-			Email:        user.Email,
+			ID:              user.ID,
+			CreatedAt:       user.CreatedAt,
+			UpdatedAt:       user.UpdatedAt,
+			Disabled:        user.Disabled,
+			DisabledByAdmin: user.DisabledByAdmin,
+			Verified:        user.Verified,
+			Admin:           user.Admin,
+			LocalAccount:    user.LocalAccount,
+			FirstName:       user.FirstName,
+			LastName:        user.LastName,
+			Email:           user.Email,
 		}
 	}
 

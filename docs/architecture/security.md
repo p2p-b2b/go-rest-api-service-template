@@ -390,7 +390,7 @@ manage.
 
 ```mermaid
 flowchart TD
-    R["PUT /users/{user_id} (disabled, local_account)<br/>DELETE /users/{user_id}<br/>DELETE /users/{user_id}/roles<br/>DELETE /roles/{role_id}/users"] --> T{"has the account<br/>the admin flag?"}
+    R["PUT /users/{user_id} (disabled, disabled_by_admin, local_account)<br/>DELETE /users/{user_id}<br/>DELETE /users/{user_id}/roles<br/>DELETE /roles/{role_id}/users"] --> T{"has the account<br/>the admin flag?"}
     T -- no --> X["as before: the grant decides"]
     T -- yes --> C{"is it a change?<br/>(the update only: compared<br/>with the stored row)"}
     C -- "no: the value sent back;<br/>it is taken out of the update" --> X

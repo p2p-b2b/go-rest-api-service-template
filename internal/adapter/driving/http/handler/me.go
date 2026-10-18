@@ -179,16 +179,17 @@ func (ref *MeHandler) authz(w http.ResponseWriter, r *http.Request) {
 	}
 
 	userResponse := payload.UserResponse{
-		ID:           user.ID,
-		CreatedAt:    user.CreatedAt,
-		UpdatedAt:    user.UpdatedAt,
-		Disabled:     user.Disabled,
-		Verified:     user.Verified,
-		Admin:        user.Admin,
-		LocalAccount: user.LocalAccount,
-		FirstName:    user.FirstName,
-		LastName:     user.LastName,
-		Email:        user.Email,
+		ID:              user.ID,
+		CreatedAt:       user.CreatedAt,
+		UpdatedAt:       user.UpdatedAt,
+		Disabled:        user.Disabled,
+		DisabledByAdmin: user.DisabledByAdmin,
+		Verified:        user.Verified,
+		Admin:           user.Admin,
+		LocalAccount:    user.LocalAccount,
+		FirstName:       user.FirstName,
+		LastName:        user.LastName,
+		Email:           user.Email,
 	}
 
 	// Typed for the wire; the map stays generic through the core because OPA
@@ -360,16 +361,17 @@ func (ref *MeHandler) getByID(w http.ResponseWriter, r *http.Request) {
 	}
 
 	outResponse := payload.UserResponse{
-		ID:           out.ID,
-		CreatedAt:    out.CreatedAt,
-		UpdatedAt:    out.UpdatedAt,
-		Disabled:     out.Disabled,
-		Verified:     out.Verified,
-		Admin:        out.Admin,
-		LocalAccount: out.LocalAccount,
-		FirstName:    out.FirstName,
-		LastName:     out.LastName,
-		Email:        out.Email,
+		ID:              out.ID,
+		CreatedAt:       out.CreatedAt,
+		UpdatedAt:       out.UpdatedAt,
+		Disabled:        out.Disabled,
+		DisabledByAdmin: out.DisabledByAdmin,
+		Verified:        out.Verified,
+		Admin:           out.Admin,
+		LocalAccount:    out.LocalAccount,
+		FirstName:       out.FirstName,
+		LastName:        out.LastName,
+		Email:           out.Email,
 	}
 
 	if err := respond.WriteJSONData(w, http.StatusOK, outResponse); err != nil {
