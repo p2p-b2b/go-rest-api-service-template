@@ -273,20 +273,42 @@ func (ref *UsersRepository) UpdateByID(ctx context.Context, input *domain.Update
 		args = append(args, nil)
 	}
 
-	// disabled_by_admin follows a CHANGE of disabled, and is read here from
-	// the row as it was before this statement: a client sends the whole form
-	// back, so "disabled: true" arrives with every rename of a registration
-	// whose link has not been followed, and that is nobody disabling it. This
-	// statement is the only one that sets disabled for somebody else; the
-	// verification has one of its own (Verify).
+	if input.DisabledByAdmin != nil {
+		args = append(args, *input.DisabledByAdmin)
+	} else {
+		args = append(args, nil)
+	}
+
+	// Two ways to the administrator's lock, both judged against the row as
+	// it was before this statement.
+	//
+	// $8, the lock itself, when the body carries it. True locks: disabled,
+	// and marked, whatever disabled already was. That is how a registration
+	// whose link is still out is shut: it is disabled already, so
+	// "disabled: true" for it is no change. False on a locked row unlocks:
+	// the mark goes, and the account is enabled if its address is proven and
+	// waits for its link if not (or is what $6 says, when the body says).
+	//
+	// Without $8, the mark follows a CHANGE of disabled ($6): a client sends
+	// the whole form back, so "disabled: true" arrives with every rename of
+	// a registration whose link has not been followed, and that is nobody
+	// disabling it.
+	//
+	// This statement is the only one that sets disabled for somebody else;
+	// the verification has one of its own (Verify).
 	query := `
         UPDATE users SET
             first_name    = COALESCE(NULLIF($2, first_name), first_name),
             last_name     = COALESCE(NULLIF($3, last_name), last_name),
             email         = COALESCE(NULLIF($4, email), email),
             password_hash = COALESCE(NULLIF($5, password_hash), password_hash),
-            disabled      = COALESCE($6, disabled),
+            disabled = CASE
+                WHEN $8::boolean IS TRUE THEN TRUE
+                WHEN $8::boolean IS FALSE AND disabled_by_admin THEN COALESCE($6::boolean, NOT verified)
+                ELSE COALESCE($6::boolean, disabled)
+            END,
             disabled_by_admin = CASE
+                WHEN $8::boolean IS NOT NULL THEN $8::boolean
                 WHEN $6::boolean IS NULL OR $6::boolean = disabled THEN disabled_by_admin
                 ELSE $6::boolean
             END,
@@ -433,6 +455,7 @@ func (ref *UsersRepository) SelectByID(ctx context.Context, id uuid.UUID) (*doma
             email,
             password_hash,
             disabled,
+            disabled_by_admin,
             verified,
             admin,
             local_account,
@@ -454,6 +477,7 @@ func (ref *UsersRepository) SelectByID(ctx context.Context, id uuid.UUID) (*doma
 		&item.Email,
 		&item.PasswordHash,
 		&item.Disabled,
+		&item.DisabledByAdmin,
 		&item.Verified,
 		&item.Admin,
 		&item.LocalAccount,
@@ -656,6 +680,7 @@ func (ref *UsersRepository) SelectByEmail(ctx context.Context, email string) (*d
             email,
             password_hash,
             disabled,
+            disabled_by_admin,
             verified,
             local_account,
             created_at,
@@ -676,6 +701,7 @@ func (ref *UsersRepository) SelectByEmail(ctx context.Context, email string) (*d
 		&item.Email,
 		&item.PasswordHash,
 		&item.Disabled,
+		&item.DisabledByAdmin,
 		&item.Verified,
 		&item.LocalAccount,
 		&item.CreatedAt,
@@ -722,6 +748,7 @@ func (ref *UsersRepository) SelectByRoleID(ctx context.Context, roleID uuid.UUID
 		"email",
 		"password_hash",
 		"disabled",
+		"disabled_by_admin",
 		"verified",
 		"local_account",
 		"created_at",
@@ -920,6 +947,7 @@ func (ref *UsersRepository) SelectByProjectID(ctx context.Context, projectID uui
 		"email",
 		"password_hash",
 		"disabled",
+		"disabled_by_admin",
 		"verified",
 		"local_account",
 		"created_at",
@@ -1111,6 +1139,7 @@ func (ref *UsersRepository) Select(ctx context.Context, input *domain.SelectUser
 		"email",
 		"password_hash",
 		"disabled",
+		"disabled_by_admin",
 		"verified",
 		"local_account",
 		"created_at",
@@ -1756,6 +1785,7 @@ func (ref *UsersRepository) buildScanFields(item *domain.User, requestedFields s
 			&item.Email,
 			&item.PasswordHash,
 			&item.Disabled,
+			&item.DisabledByAdmin,
 			&item.Verified,
 			&item.LocalAccount,
 			&item.CreatedAt,
@@ -1784,6 +1814,8 @@ func (ref *UsersRepository) buildScanFields(item *domain.User, requestedFields s
 			scanFields = append(scanFields, &item.PasswordHash)
 		case "disabled":
 			scanFields = append(scanFields, &item.Disabled)
+		case "disabled_by_admin":
+			scanFields = append(scanFields, &item.DisabledByAdmin)
 		case "verified":
 			scanFields = append(scanFields, &item.Verified)
 		case "local_account":

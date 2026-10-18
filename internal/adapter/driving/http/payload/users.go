@@ -14,16 +14,18 @@ import (
 //
 //	@Description	UserResponse represents a user entity.
 type UserResponse struct {
-	CreatedAt    time.Time `json:"created_at,omitzero" example:"2021-01-01T00:00:00Z" format:"date-time"`              // Timestamp when the user account was created
-	UpdatedAt    time.Time `json:"updated_at,omitzero" example:"2021-01-01T00:00:00Z" format:"date-time"`              // Timestamp when the user account was last updated
-	Disabled     *bool     `json:"disabled,omitempty" example:"false"`                                                 // Indicates if the user account is currently disabled
-	Verified     *bool     `json:"verified,omitempty" example:"true"`                                                  // Indicates if the email address has been verified (by the verification link, by an identity provider, or by the administrator who created the account)
-	Admin        *bool     `json:"admin,omitempty" example:"false"`                                                    // Indicates if the user has administrative privileges
-	LocalAccount *bool     `json:"local_account,omitempty" example:"true"`                                             // Indicates if this is a locally managed account (vs SSO/federated)
-	FirstName    string    `json:"first_name,omitempty" example:"John" format:"string"`                                // User's first name
-	LastName     string    `json:"last_name,omitempty" example:"Doe" format:"string"`                                  // User's last name
-	Email        string    `json:"email,omitempty" example:"john.doe@example.com" format:"email"`                      // User's email address
-	ID           uuid.UUID `json:"id,omitempty,omitzero" example:"019b4b0d-a682-7e82-a25a-b0671dc354c2" format:"uuid"` // Unique identifier for the user
+	CreatedAt time.Time `json:"created_at,omitzero" example:"2021-01-01T00:00:00Z" format:"date-time"` // Timestamp when the user account was created
+	UpdatedAt time.Time `json:"updated_at,omitzero" example:"2021-01-01T00:00:00Z" format:"date-time"` // Timestamp when the user account was last updated
+	Disabled  *bool     `json:"disabled,omitempty" example:"false"`                                    // Indicates if the user account is currently disabled
+	// The administrator's lock: the account is disabled because an administrator said so, not because its registration is waiting for its verification link. A link does not enable such an account
+	DisabledByAdmin *bool     `json:"disabled_by_admin,omitempty" example:"false"`
+	Verified        *bool     `json:"verified,omitempty" example:"true"`                                                  // Indicates if the email address has been verified (by the verification link, by an identity provider, or by the administrator who created the account)
+	Admin           *bool     `json:"admin,omitempty" example:"false"`                                                    // Indicates if the user has administrative privileges
+	LocalAccount    *bool     `json:"local_account,omitempty" example:"true"`                                             // Indicates if this is a locally managed account (vs SSO/federated)
+	FirstName       string    `json:"first_name,omitempty" example:"John" format:"string"`                                // User's first name
+	LastName        string    `json:"last_name,omitempty" example:"Doe" format:"string"`                                  // User's last name
+	Email           string    `json:"email,omitempty" example:"john.doe@example.com" format:"email"`                      // User's email address
+	ID              uuid.UUID `json:"id,omitempty,omitzero" example:"019b4b0d-a682-7e82-a25a-b0671dc354c2" format:"uuid"` // Unique identifier for the user
 }
 
 // ListUsersResponse represents a list of users.
@@ -93,11 +95,13 @@ func (req *CreateUserRequest) Validate() error {
 //
 //	@Description	Request payload for updating an existing user account (all fields optional). A password is never set this way: POST /users/{user_id}/password/reset emails the account holder a reset link, so taking over an account needs its mailbox, not a grant on PUT /users.
 type UpdateUserRequest struct {
-	FirstName    *string `json:"first_name,omitempty" example:"John" format:"string" validate:"optional" minLength:"2" maxLength:"50"` // Updated first name
-	LastName     *string `json:"last_name,omitempty" example:"Doe" format:"string" validate:"optional" minLength:"2" maxLength:"50"`   // Updated last name
-	Email        *string `json:"email,omitempty" example:"john.doe@example.com" format:"email" validate:"optional"`                    // Updated email address
-	Disabled     *bool   `json:"disabled,omitempty" example:"false" validate:"optional"`                                               // Set to true to disable the account, false to enable
-	LocalAccount *bool   `json:"local_account,omitempty" example:"true" validate:"optional"`                                           // Set account type (local vs federated)
+	FirstName *string `json:"first_name,omitempty" example:"John" format:"string" validate:"optional" minLength:"2" maxLength:"50"` // Updated first name
+	LastName  *string `json:"last_name,omitempty" example:"Doe" format:"string" validate:"optional" minLength:"2" maxLength:"50"`   // Updated last name
+	Email     *string `json:"email,omitempty" example:"john.doe@example.com" format:"email" validate:"optional"`                    // Updated email address
+	Disabled  *bool   `json:"disabled,omitempty" example:"false" validate:"optional"`                                               // Set to true to disable the account, false to enable
+	// The administrator's lock. True disables the account and marks it as disabled by an administrator, whatever disabled already is: a registration waiting for its verification link is disabled already, and this is how it is shut. False takes the lock off: the account is enabled if its address is verified, and waits for its link if not (send disabled false with it to enable an unverified account by hand). A value equal to the stored one changes nothing. A change of disabled in the same body must agree with it, or the body is a 400
+	DisabledByAdmin *bool `json:"disabled_by_admin,omitempty" example:"false" validate:"optional"`
+	LocalAccount    *bool `json:"local_account,omitempty" example:"true" validate:"optional"` // Set account type (local vs federated)
 }
 
 func (req *UpdateUserRequest) Validate() error {

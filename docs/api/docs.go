@@ -6487,7 +6487,7 @@ const docTemplate = `{
                         "AccessToken": []
                     }
                 ],
-                "description": "Update existing user account details by ID. Only the administrator account (the admin flag, not the Administrator role) changes an e-mail address, or changes disabled or local_account on an account that has the flag; from anyone else such a change is a 403. Values equal to the stored ones are accepted.",
+                "description": "Update existing user account details by ID. Only the administrator account (the admin flag, not the Administrator role) changes an e-mail address, or changes disabled, disabled_by_admin or local_account on an account that has the flag; from anyone else such a change is a 403. Values equal to the stored ones are accepted.",
                 "consumes": [
                     "application/json"
                 ],
@@ -6526,7 +6526,7 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Invalid user ID or request body",
+                        "description": "Invalid user ID or request body; or disabled and disabled_by_admin changing the account in two directions",
                         "schema": {
                             "$ref": "#/definitions/payload.HTTPMessage"
                         }
@@ -6538,7 +6538,7 @@ const docTemplate = `{
                         }
                     },
                     "403": {
-                        "description": "Insufficient permissions; a change of e-mail address, or of disabled or local_account on an administrator account, by an account that is not one; or the last enabled administrator account",
+                        "description": "Insufficient permissions; a change of e-mail address, or of disabled, disabled_by_admin or local_account on an administrator account, by an account that is not one; or the last enabled administrator account",
                         "schema": {
                             "$ref": "#/definitions/payload.HTTPMessage"
                         }
@@ -10227,6 +10227,11 @@ const docTemplate = `{
                     "type": "boolean",
                     "example": false
                 },
+                "disabled_by_admin": {
+                    "description": "The administrator's lock. True disables the account and marks it as disabled by an administrator, whatever disabled already is: a registration waiting for its verification link is disabled already, and this is how it is shut. False takes the lock off: the account is enabled if its address is verified, and waits for its link if not (send disabled false with it to enable an unverified account by hand). A value equal to the stored one changes nothing. A change of disabled in the same body must agree with it, or the body is a 400",
+                    "type": "boolean",
+                    "example": false
+                },
                 "email": {
                     "description": "Updated email address",
                     "type": "string",
@@ -10323,6 +10328,11 @@ const docTemplate = `{
                 },
                 "disabled": {
                     "description": "Indicates if the user account is currently disabled",
+                    "type": "boolean",
+                    "example": false
+                },
+                "disabled_by_admin": {
+                    "description": "The administrator's lock: the account is disabled because an administrator said so, not because its registration is waiting for its verification link. A link does not enable such an account",
                     "type": "boolean",
                     "example": false
                 },

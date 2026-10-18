@@ -707,7 +707,9 @@ func assignRoleToUserInDB(t *testing.T, userID uuid.UUID, roleName string) {
 func enableUserByEmailFromDB(t *testing.T, email string) {
 	t.Helper()
 
-	query := `UPDATE users SET disabled = false WHERE email = $1;`
+	// The lock goes with it: a locked account is a disabled one, and the
+	// table holds a statement to that.
+	query := `UPDATE users SET disabled = false, disabled_by_admin = false WHERE email = $1;`
 	_, err := testDBPool.Exec(context.Background(), query, email)
 	if err != nil {
 		t.Errorf("Failed to enable user in database: %v", err)

@@ -25,6 +25,7 @@ const (
 	FieldDimension                           = "dimension"
 	FieldDimensionID                         = "dimension_id"
 	FieldDisabled                            = "disabled"
+	FieldDisabledByAdmin                     = "disabled_by_admin"
 	FieldDuration                            = "duration"
 	FieldEmail                               = "email"
 	FieldEmbeddingConfig                     = "embedding_config"
