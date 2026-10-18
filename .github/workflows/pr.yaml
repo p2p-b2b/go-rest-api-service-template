@@ -158,19 +158,23 @@ jobs:
           restore-keys: |
             gotools-${{ runner.os }}-
 
-      # The title goes through an environment variable: it is attacker-controlled
-      # text, and `${{ }}` inside `run:` would paste it into the shell.
+      # What the pull request's author writes (its title, its branch, its
+      # login) goes through environment variables: `${{ }}` inside `run:`
+      # would paste it into the shell.
       - name: Summary Information
         env:
           PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          PR_HEAD: ${{ github.event.pull_request.head.ref }}
+          PR_BASE: ${{ github.event.pull_request.base.ref }}
         run: |
           echo "# Pull Request Summary" > $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Repository:** ${{ github.repository }}" >> $GITHUB_STEP_SUMMARY
           echo "**Pull Request:** $PR_TITLE" >> $GITHUB_STEP_SUMMARY
-          echo "**Author:** ${{ github.event.pull_request.user.login }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Branch:** ${{ github.event.pull_request.head.ref }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Base:** ${{ github.event.pull_request.base.ref }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Author:** $PR_AUTHOR" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch:** $PR_HEAD" >> $GITHUB_STEP_SUMMARY
+          echo "**Base:** $PR_BASE" >> $GITHUB_STEP_SUMMARY
           echo "**Commits:** ${{ github.event.pull_request.commits }}" >> $GITHUB_STEP_SUMMARY
           echo "**Changed Files:** ${{ github.event.pull_request.changed_files }}" >> $GITHUB_STEP_SUMMARY
           echo "**Additions:** ${{ github.event.pull_request.additions }}" >> $GITHUB_STEP_SUMMARY
