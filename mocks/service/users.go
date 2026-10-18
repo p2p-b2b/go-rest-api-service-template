@@ -42,6 +42,21 @@ func (m *MockUsers) EXPECT() *MockUsersMockRecorder {
 	return m.recorder
 }
 
+// CountEnabledAdministrators mocks base method.
+func (m *MockUsers) CountEnabledAdministrators(ctx context.Context) (int, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CountEnabledAdministrators", ctx)
+	ret0, _ := ret[0].(int)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CountEnabledAdministrators indicates an expected call of CountEnabledAdministrators.
+func (mr *MockUsersMockRecorder) CountEnabledAdministrators(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CountEnabledAdministrators", reflect.TypeOf((*MockUsers)(nil).CountEnabledAdministrators), ctx)
+}
+
 // DeleteByID mocks base method.
 func (m *MockUsers) DeleteByID(ctx context.Context, input *domain.DeleteUserInput) error {
 	m.ctrl.T.Helper()
@@ -68,6 +83,21 @@ func (m *MockUsers) Insert(ctx context.Context, input *domain.InsertUserInput) e
 func (mr *MockUsersMockRecorder) Insert(ctx, input any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Insert", reflect.TypeOf((*MockUsers)(nil).Insert), ctx, input)
+}
+
+// IsEnabledAdministrator mocks base method.
+func (m *MockUsers) IsEnabledAdministrator(ctx context.Context, id uuid.UUID) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "IsEnabledAdministrator", ctx, id)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// IsEnabledAdministrator indicates an expected call of IsEnabledAdministrator.
+func (mr *MockUsersMockRecorder) IsEnabledAdministrator(ctx, id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsEnabledAdministrator", reflect.TypeOf((*MockUsers)(nil).IsEnabledAdministrator), ctx, id)
 }
 
 // LinkProjects mocks base method.
@@ -111,6 +141,21 @@ func (m *MockUsers) Select(ctx context.Context, input *domain.SelectUsersInput) 
 func (mr *MockUsersMockRecorder) Select(ctx, input any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Select", reflect.TypeOf((*MockUsers)(nil).Select), ctx, input)
+}
+
+// SelectAdministratorsAmong mocks base method.
+func (m *MockUsers) SelectAdministratorsAmong(ctx context.Context, ids []uuid.UUID) ([]uuid.UUID, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SelectAdministratorsAmong", ctx, ids)
+	ret0, _ := ret[0].([]uuid.UUID)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// SelectAdministratorsAmong indicates an expected call of SelectAdministratorsAmong.
+func (mr *MockUsersMockRecorder) SelectAdministratorsAmong(ctx, ids any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SelectAdministratorsAmong", reflect.TypeOf((*MockUsers)(nil).SelectAdministratorsAmong), ctx, ids)
 }
 
 // SelectAuthz mocks base method.

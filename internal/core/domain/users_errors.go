@@ -174,3 +174,22 @@ func (e *ProjectNotOfCallerError) Error() string {
 
 	return "invalid project_ids: " + e.ProjectID.String() + " is not one of your projects"
 }
+
+// AdministratorProtectedError refuses what would take an administrator
+// account out of its holder's hands: disabling or enabling it, making it a
+// federated or a local account, taking a role from it, deleting it. An
+// administrator account is the one with the `admin` flag, which is not the
+// Administrator role.
+//
+// It is a 403: the caller is who they say they are and holds the route's
+// grant, and this account is still not theirs to lock or unlock. Message
+// says which rule it was ("the administrator account", for a caller that is
+// not one; "the last enabled administrator account", for everybody).
+type AdministratorProtectedError struct {
+	Action  string // what was attempted: "disabled", "deleted", ...
+	Message string // which rule refused it
+}
+
+func (e *AdministratorProtectedError) Error() string {
+	return (&BaseProtectedError{Entity: "user", Action: e.Action, Message: e.Message}).Error()
+}

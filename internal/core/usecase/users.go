@@ -454,6 +454,20 @@ func (ref *UsersService) UpdateByID(ctx context.Context, input *domain.UpdateUse
 		}
 	}
 
+	// Nor is an account's sign-in (disabled, local_account), when the
+	// account has the `admin` flag. Judged against the stored row too, read
+	// only when the body carries one of the two.
+	if touchesSignIn(input) {
+		stored, err := ref.repository.SelectByID(ctx, input.ID)
+		if err != nil {
+			return o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
+		}
+
+		if err := ref.administratorSignInMayChange(ctx, input, stored); err != nil {
+			return o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
+		}
+	}
+
 	if input.Password != nil {
 		if len(*input.Password) < domain.ValidUserPasswordMinLength || len(*input.Password) > domain.ValidUserPasswordMaxLength {
 			errorValue := &domain.InvalidUserPasswordError{Message: fmt.Sprintf("password must be between %d and %d characters", domain.ValidUserPasswordMinLength, domain.ValidUserPasswordMaxLength)}
@@ -567,6 +581,72 @@ func sameAddress(stored, sent string) bool {
 	return err == nil && spelled == sent
 }
 
+// touchesSignIn reports whether the update carries a field that decides
+// whether, or how, an account signs in. Whether it is a change is judged
+// against the stored row (administratorSignInMayChange).
+func touchesSignIn(input *domain.UpdateUserInput) bool {
+	return input.Disabled != nil || input.LocalAccount != nil
+}
+
+// administratorSignInMayChange refuses a change of `disabled` or of
+// `local_account` on an account with the `admin` flag, unless an account
+// with the flag asks (guardAdministrator). In either direction: disabling
+// it, or making it a federated account, takes its sign-in away, and is
+// refused for everybody on the last such account that can still sign in;
+// enabling it, or making it a local account again, undoes what an
+// administrator did.
+//
+// What is refused is a change, not the field: a client sends the whole form
+// back, `disabled: false` and the rest, with every edit, and a user manager
+// renaming the administrator account sends what it read.
+//
+// And a value that is no change is taken out of the update, on an account
+// with the flag: the check and the write are two statements, and "as it
+// already is" from an account without the flag would undo what an
+// administrator changed in between.
+func (ref *UsersService) administratorSignInMayChange(ctx context.Context, input *domain.UpdateUserInput, stored *domain.User) error {
+	if !hasAdminFlag(stored) {
+		return nil
+	}
+
+	wasDisabled := isDisabled(stored)
+	// An account whose `local_account` was never set has no password login:
+	// the sign-in refuses it as it refuses a federated one.
+	wasLocal := stored.LocalAccount != nil && *stored.LocalAccount
+
+	if input.Disabled != nil {
+		switch {
+		case *input.Disabled == wasDisabled:
+			input.Disabled = nil
+		case *input.Disabled:
+			if err := guardAdministrator(ctx, ref.repository, stored, input.CallerID, administratorDisabled, true); err != nil {
+				return err
+			}
+		default:
+			if err := guardAdministrator(ctx, ref.repository, stored, input.CallerID, administratorEnabled, false); err != nil {
+				return err
+			}
+		}
+	}
+
+	if input.LocalAccount != nil {
+		switch {
+		case *input.LocalAccount == wasLocal:
+			input.LocalAccount = nil
+		case !*input.LocalAccount:
+			if err := guardAdministrator(ctx, ref.repository, stored, input.CallerID, administratorFederated, true); err != nil {
+				return err
+			}
+		default:
+			if err := guardAdministrator(ctx, ref.repository, stored, input.CallerID, administratorMadeLocal, false); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
 func hasAdminFlag(account *domain.User) bool {
 	return account != nil && account.Admin != nil && *account.Admin
 }
@@ -585,6 +665,18 @@ func (ref *UsersService) DeleteByID(ctx context.Context, input *domain.DeleteUse
 	if input.ID == uuid.Nil() {
 		errorValue := &domain.InvalidInputError{Message: "input is nil"}
 		return o11y.RecordError(ctx, span, start, errorValue, ref.metrics, attrs)
+	}
+
+	// An account with the `admin` flag is deleted only by one that has it,
+	// and the last that can still sign in by nobody. An account that is not
+	// there is the repository's to answer, as before.
+	stored, err := ref.repository.SelectByID(ctx, input.ID)
+	if _, missing := errors.AsType[*domain.UserNotFoundError](err); err != nil && !missing {
+		return o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
+	}
+
+	if err := guardAdministrator(ctx, ref.repository, stored, input.CallerID, administratorDeleted, true); err != nil {
+		return o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
 	}
 
 	if err := ref.repository.DeleteByID(ctx, input); err != nil {
@@ -719,6 +811,18 @@ func (ref *UsersService) UnlinkRoles(ctx context.Context, input *domain.UnlinkRo
 	span.SetAttributes(attribute.String("user.id", input.UserID.String()))
 
 	if err := input.Validate(); err != nil {
+		return o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
+	}
+
+	// An account with the `admin` flag is stripped of a role only by one
+	// that has the flag. An account that is not there is the repository's
+	// to answer, as before.
+	stored, err := ref.repository.SelectByID(ctx, input.UserID)
+	if _, missing := errors.AsType[*domain.UserNotFoundError](err); err != nil && !missing {
+		return o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
+	}
+
+	if err := guardAdministrator(ctx, ref.repository, stored, input.CallerID, administratorStripped, false); err != nil {
 		return o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
 	}
 

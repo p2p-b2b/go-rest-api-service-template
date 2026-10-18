@@ -1128,6 +1128,10 @@ func (ref *RolesRepository) handlePgError(err error, input any) error {
 				}
 			}
 		case "P0001": // Raised exception
+			if refusal := bootstrapUserLinkRefusal(pgErr, input); refusal != nil {
+				return refusal
+			}
+
 			if strings.Contains(pgErr.Message, "updated") || strings.Contains(pgErr.Message, "deleted") {
 				switch v := input.(type) {
 				case *domain.UpdateRoleInput:

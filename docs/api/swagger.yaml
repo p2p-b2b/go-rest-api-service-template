@@ -6466,7 +6466,9 @@ paths:
     delete:
       consumes:
       - application/json
-      description: Remove user associations from role
+      description: Remove user associations from role. An account with the admin flag
+        among them is stripped of the role only by an account that has the flag; the
+        whole request is refused otherwise.
       operationId: 01982303-f0f9-7e02-8bf7-c240927de056
       parameters:
       - description: Role unique identifier
@@ -6497,7 +6499,8 @@ paths:
           schema:
             $ref: '#/definitions/payload.HTTPMessage'
         "403":
-          description: Insufficient permissions
+          description: Insufficient permissions; or an administrator account among
+            the users, by an account that is not one
           schema:
             $ref: '#/definitions/payload.HTTPMessage'
         "404":
@@ -6788,7 +6791,9 @@ paths:
       - Users
   /users/{user_id}:
     delete:
-      description: Permanently remove user account by ID.
+      description: Permanently remove user account by ID. An account with the admin
+        flag is deleted only by one that has it, the last one that can sign in by
+        nobody, and the seeded administrator by nobody.
       operationId: 01982303-f0f9-7dda-84da-cedd68bca775
       parameters:
       - description: User unique identifier
@@ -6813,7 +6818,8 @@ paths:
           schema:
             $ref: '#/definitions/payload.HTTPMessage'
         "403":
-          description: Insufficient permissions
+          description: Insufficient permissions; or an administrator account, by an
+            account that is not one; the last enabled one; or the seeded administrator
           schema:
             $ref: '#/definitions/payload.HTTPMessage'
         "404":
@@ -6885,9 +6891,9 @@ paths:
       consumes:
       - application/json
       description: Update existing user account details by ID. Only the administrator
-        account (the admin flag, not the Administrator role) changes an e-mail address;
-        from anyone else a change is a 403 and nothing is written. The stored address
-        sent back is accepted.
+        account (the admin flag, not the Administrator role) changes an e-mail address,
+        or changes disabled or local_account on an account that has the flag; from
+        anyone else such a change is a 403. Values equal to the stored ones are accepted.
       operationId: 01982303-f0f9-7e3c-a186-f186a3418768
       parameters:
       - description: User unique identifier
@@ -6918,8 +6924,9 @@ paths:
           schema:
             $ref: '#/definitions/payload.HTTPMessage'
         "403":
-          description: Insufficient permissions, or a change of e-mail address by
-            an account that is not the administrator account
+          description: Insufficient permissions; a change of e-mail address, or of
+            disabled or local_account on an administrator account, by an account that
+            is not one; or the last enabled administrator account
           schema:
             $ref: '#/definitions/payload.HTTPMessage'
         "404":
@@ -7269,7 +7276,8 @@ paths:
     delete:
       consumes:
       - application/json
-      description: Remove role associations from user within project.
+      description: Remove role associations from user within project. An account with
+        the admin flag is stripped of a role only by an account that has the flag.
       operationId: 01982303-f0f9-7f23-b203-7079222718d0
       parameters:
       - description: User unique identifier
@@ -7300,7 +7308,8 @@ paths:
           schema:
             $ref: '#/definitions/payload.HTTPMessage'
         "403":
-          description: Insufficient permissions
+          description: Insufficient permissions; or an administrator account, by an
+            account that is not one
           schema:
             $ref: '#/definitions/payload.HTTPMessage'
         "404":

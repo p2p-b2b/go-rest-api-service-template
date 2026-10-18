@@ -15,6 +15,16 @@ Since `v0.0.3`.
 
 ### Security
 
+- **An administrator account is locked, and unlocked, only by one.** An
+  account with the `admin` flag is disabled or enabled, made a federated or
+  a local account, stripped of a role or deleted only by an account that
+  has the flag, and the last one that can still sign in (with a password,
+  or through an enabled provider) by nobody. A role
+  that manages users managed that account like any other. From anyone else
+  such a change is a `403`; a form that sends back the values it read is
+  unaffected. The design is in
+  [`docs/architecture/security.md`](./docs/architecture/security.md#an-administrator-account-is-locked-only-by-one).
+  ([#131](https://github.com/slashdevops/go-rest-api-service-template/pull/131))
 - **A list that fails says nothing of the cause.** A list answered an
   unexpected failure with `500` and the error's own text as the message;
   that text is the driver's or the database's, and a connection that cannot
@@ -80,6 +90,13 @@ Since `v0.0.3`.
   two apart has one case now, and it is "the session is over". (#124)
 - **`PUT /users/{user_id}` can answer `403` for a body that carries
   `email`.** A form that sends back the address it read is unaffected. (#123)
+- **Four routes can answer `403` for an account with the `admin` flag**:
+  `PUT /users/{user_id}` for a change of `disabled` or `local_account`,
+  `DELETE /users/{user_id}`, `DELETE /users/{user_id}/roles` and
+  `DELETE /roles/{role_id}/users`, when the caller does not have the flag,
+  and for everybody when it is the last such account that can sign in.
+  Deleting the seeded administrator, and taking the Administrator role from
+  it through either route, is a `403` where it was a `500`. (#131)
 - **An account created through `POST /users` is `verified`** in what the
   API answers. (#125)
 - **`GET /users/{user_id}/projects` answers fewer rows to a caller without

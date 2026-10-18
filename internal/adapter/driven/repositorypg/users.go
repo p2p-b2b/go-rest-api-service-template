@@ -391,7 +391,9 @@ func (ref *UsersRepository) DeleteByID(ctx context.Context, input *domain.Delete
 
 	result, err := ref.db.Exec(ctx, query, input.ID)
 	if err != nil {
-		return o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
+		// Through the repository's own mapping: the seeded administrator's
+		// delete is refused by a trigger, and that refusal is a 403.
+		return o11y.RecordError(ctx, span, start, ref.handlePgError(err, input), ref.metrics, attrs)
 	}
 
 	if result.RowsAffected() == 0 {
@@ -468,6 +470,140 @@ func (ref *UsersRepository) SelectByID(ctx context.Context, id uuid.UUID) (*doma
 
 	o11y.RecordSuccess(ctx, span, start, ref.metrics, attrs, "user selected successfully", attribute.String("user.id", id.String()))
 	return &item, nil
+}
+
+// enabledAdministrator is the predicate of an account with the `admin` flag
+// that may still sign in. That is not "is not disabled": an account that is
+// no longer a local one signs in through a provider, one with no identity at
+// a provider has no way in at all, and an identity at a provider that is
+// disabled is not a way in either. `admin` and `disabled` are nullable, and
+// a value that was never set is not TRUE or FALSE.
+//
+// $1 is a provider to count without, or NULL.
+//
+// One predicate for the questions asked of it (how many, is this account one
+// of them), so that "the last one" and "this one" cannot come to mean two
+// things.
+const enabledAdministrator = `
+          admin IS TRUE
+          AND disabled IS FALSE
+          AND (local_account OR EXISTS (
+                SELECT 1 FROM users_identities
+                JOIN idps ON idps.id = users_identities.idps_id
+                WHERE users_identities.users_id = users.id
+                  AND idps.enabled
+                  AND ($1::uuid IS NULL OR idps.id <> $1::uuid)
+          ))`
+
+// queryEnabledAdministrators counts them.
+const queryEnabledAdministrators = `
+        SELECT count(*) FROM users
+        WHERE` + enabledAdministrator + `;
+    `
+
+// queryIsEnabledAdministrator asks whether one account ($2) is among them.
+const queryIsEnabledAdministrator = `
+        SELECT EXISTS (
+            SELECT 1 FROM users
+            WHERE id = $2::uuid AND` + enabledAdministrator + `
+        );
+    `
+
+// CountEnabledAdministrators implements [repository.Users]: how many accounts
+// with the `admin` flag may still sign in (queryEnabledAdministrators).
+func (ref *UsersRepository) CountEnabledAdministrators(ctx context.Context) (int, error) {
+	start := time.Now()
+	ctx, span, attrs, cancel := o11y.SetupTraceWithTimeout(ctx, ref.ot.Traces.Tracer, ref.maxQueryTimeout, ref.metricsMetadata, "CountEnabledAdministrators")
+	defer cancel()
+	defer span.End()
+
+	var without *string
+
+	cslog.Trace(ctx, "sql", "query", prettyPrint(queryEnabledAdministrators, without))
+
+	var enabled int
+	if err := ref.db.QueryRow(ctx, queryEnabledAdministrators, without).Scan(&enabled); err != nil {
+		return 0, o11y.RecordError(ctx, span, start, ref.handlePgError(err, nil), ref.metrics, attrs)
+	}
+
+	o11y.RecordSuccess(ctx, span, start, ref.metrics, attrs, "enabled administrator accounts counted")
+
+	return enabled, nil
+}
+
+// IsEnabledAdministrator implements [repository.Users]: whether the account
+// is one of those CountEnabledAdministrators counts. The guard of the
+// administrator account asks it before it asks for the count: taking a
+// sign-in away from an account that has none takes nothing away.
+func (ref *UsersRepository) IsEnabledAdministrator(ctx context.Context, id uuid.UUID) (bool, error) {
+	start := time.Now()
+	ctx, span, attrs, cancel := o11y.SetupTraceWithTimeout(ctx, ref.ot.Traces.Tracer, ref.maxQueryTimeout, ref.metricsMetadata, "IsEnabledAdministrator")
+	defer cancel()
+	defer span.End()
+
+	if id == uuid.Nil() {
+		return false, o11y.RecordError(ctx, span, start, &domain.InvalidInputError{Message: "an account was asked about that was not named"}, ref.metrics, attrs)
+	}
+
+	var without *string
+
+	cslog.Trace(ctx, "sql", "query", prettyPrint(queryIsEnabledAdministrator, without, id.String()))
+
+	var among bool
+	if err := ref.db.QueryRow(ctx, queryIsEnabledAdministrator, without, id.String()).Scan(&among); err != nil {
+		return false, o11y.RecordError(ctx, span, start, ref.handlePgError(err, nil), ref.metrics, attrs)
+	}
+
+	o11y.RecordSuccess(ctx, span, start, ref.metrics, attrs, "enabled administrator account asked about")
+
+	return among, nil
+}
+
+// queryAdministratorsAmong answers which of a set of accounts have the
+// `admin` flag.
+const queryAdministratorsAmong = `
+        SELECT id FROM users WHERE id = ANY($1::uuid[]) AND admin IS TRUE ORDER BY id;
+    `
+
+// SelectAdministratorsAmong implements [repository.Users]: which of ids are
+// accounts with the `admin` flag.
+func (ref *UsersRepository) SelectAdministratorsAmong(ctx context.Context, ids []uuid.UUID) ([]uuid.UUID, error) {
+	start := time.Now()
+	ctx, span, attrs, cancel := o11y.SetupTraceWithTimeout(ctx, ref.ot.Traces.Tracer, ref.maxQueryTimeout, ref.metricsMetadata, "SelectAdministratorsAmong")
+	defer cancel()
+	defer span.End()
+
+	asked := make([]string, len(ids))
+	for i, id := range ids {
+		asked[i] = id.String()
+	}
+
+	cslog.Trace(ctx, "sql", "query", prettyPrint(queryAdministratorsAmong, asked))
+
+	rows, err := ref.db.Query(ctx, queryAdministratorsAmong, asked)
+	if err != nil {
+		return nil, o11y.RecordError(ctx, span, start, ref.handlePgError(err, nil), ref.metrics, attrs)
+	}
+	defer rows.Close()
+
+	var administrators []uuid.UUID
+
+	for rows.Next() {
+		var id uuid.UUID
+		if err := rows.Scan(&id); err != nil {
+			return nil, o11y.RecordError(ctx, span, start, ref.handlePgError(err, nil), ref.metrics, attrs)
+		}
+
+		administrators = append(administrators, id)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, o11y.RecordError(ctx, span, start, ref.handlePgError(err, nil), ref.metrics, attrs)
+	}
+
+	o11y.RecordSuccess(ctx, span, start, ref.metrics, attrs, "administrator accounts selected")
+
+	return administrators, nil
 }
 
 func (ref *UsersRepository) SelectByEmail(ctx context.Context, email string) (*domain.User, error) {
@@ -1484,6 +1620,40 @@ func (ref *UsersRepository) SelectAuthz(ctx context.Context, userID uuid.UUID) (
 	return out, nil
 }
 
+// bootstrapUserLinkMessage is what fn_protect_bootstrap_links raises when a
+// statement would take the seeded administrator out of the Administrator
+// role, as raised in 00007_roles_policies_tables.sql.
+const bootstrapUserLinkMessage = "The bootstrap administrator cannot be removed from the Administrator role."
+
+// bootstrapUserLinkRefusal answers that refusal as the 403 a protected
+// administrator account answers, for the three statements that can raise
+// it, and is nil for anything else.
+//
+// The seeded administrator keeps the Administrator role, and so is deleted
+// by nobody: a delete takes its link to the role with it. The trigger that
+// guards that link refuses the delete and both unlinks of it (from the
+// user's side and from the role's), and the refusal reached the caller as it
+// came, a 500. It is matched by the trigger's own words, since P0001 is every
+// RAISE EXCEPTION; TestTheSeededAdministratorsLinkIsA403 keeps the two in
+// step.
+func bootstrapUserLinkRefusal(pgErr *pgconn.PgError, input any) error {
+	if !strings.Contains(pgErr.Message, bootstrapUserLinkMessage) {
+		return nil
+	}
+
+	switch input.(type) {
+	case *domain.DeleteUserInput:
+		return &domain.AdministratorProtectedError{Action: "deleted", Message: theBootstrapAdministrator}
+	case *domain.UnlinkRolesFromUsersInput, *domain.UnlinkUsersFromRoleInput:
+		return &domain.AdministratorProtectedError{Action: "stripped of a role", Message: theBootstrapAdministrator}
+	}
+
+	return nil
+}
+
+// theBootstrapAdministrator is the rule bootstrapUserLinkRefusal names.
+const theBootstrapAdministrator = "the bootstrap administrator"
+
 // constraintProjectsUsersProject is the foreign key from a link to its
 // project, by the name migration 00005 declares.
 const constraintProjectsUsersProject = "projects_users_projects_id_fkey"
@@ -1536,6 +1706,10 @@ func (ref *UsersRepository) handlePgError(err error, input any) error {
 				}
 			}
 
+		case "P0001": // Raised exception
+			if refusal := bootstrapUserLinkRefusal(pgErr, input); refusal != nil {
+				return refusal
+			}
 		case "22021": // invalid byte sequence for encoding
 			return &domain.InvalidByteSequenceError{Message: pgErr.Message}
 		case "08P01": // invalid message format
