@@ -231,3 +231,45 @@ func TestALockRefusedIsA403(t *testing.T) {
 		})
 	}
 }
+
+// idpsUpdateStub records the update it is handed. Any other method panics:
+// the embedded port is nil.
+type idpsUpdateStub struct {
+	driving.IDPs
+	idp, caller uuid.UUID
+}
+
+func (s *idpsUpdateStub) UpdateByID(_ context.Context, in *domain.UpdateIDPInput) error {
+	s.idp, s.caller = in.ID, in.CallerID
+
+	return nil
+}
+
+// A change of where a provider's sign-in goes, while accounts are linked to
+// it, is the administrator account's: the handler hands on who asks.
+func TestAProvidersUpdatePassesTheCaller(t *testing.T) {
+	t.Parallel()
+
+	idp, caller := uuid.NewV7(), uuid.NewV7()
+	stub := &idpsUpdateStub{}
+
+	h, err := NewIDPsHandler(IDPsHandlerConf{Service: stub, OT: handlerTelemetry(t)})
+	if err != nil {
+		t.Fatalf("NewIDPsHandler: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodPut, "/auth/idps/"+idp.String(), strings.NewReader(`{"client_id":"another-client"}`))
+	req.Header.Set("Content-Type", "application/json")
+	req.SetPathValue("idp_id", idp.String())
+
+	rec := httptest.NewRecorder()
+	h.updateByID(rec, withCaller(req, caller))
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+
+	if stub.idp != idp || stub.caller != caller {
+		t.Errorf("updated %s as %s, want %s as %s", stub.idp, stub.caller, idp, caller)
+	}
+}

@@ -314,6 +314,88 @@ what an identity says of its provider. In the unit suite:
 `TestTheProvidersDeleteKeepsItForAnAccountWithNoOtherWayIn` and
 `TestWhoCountsAsAnAdministratorThatCanSignIn` (the statements, whole).
 
+## Pointing a provider elsewhere
+
+An identity is (provider, subject), and a sign-in is "this provider says
+this subject", then a session for the account. The issuer and the kind are
+what "this provider" means. `PUT /auth/idps/{idp_id}` could change both
+while the provider's identities stayed, keyed by its id: whoever holds that
+route (the Administrator role, which is not the flag) pointed the provider
+at an issuer of their own, asserted a subject that is linked, and was signed
+in as that account. A subject is not shown by the API, and at many
+providers it is no secret. It also shut, with no refusal, the door of an
+administrator account that signs in through the provider, and the counts
+went on taking the repointed provider for a door.
+
+**Another issuer or another type is a 409 while the provider has identities
+(a new provider instead). Where its sign-in goes, the client and the
+callback, may change, and while accounts are linked that change is the
+administrator account's to make.** The client and the callback together are
+a takeover too: set to an application and a host of one's own, at the real
+issuer, a linked user's ordinary sign-in sends the code to that host, and at
+a provider whose subjects are global (GitHub, Google) that code is a session
+as the user. The state does not help: it is sealed by the service and
+carries the PKCE verifier, and it is not bound to the browser that started
+the flow.
+
+```mermaid
+flowchart TD
+    P["PUT /auth/idps/{idp_id}"] --> RD{"the body carries the type,<br/>the issuer, a disable, the client<br/>or the callback?"}
+    RD -- yes --> G["the provider read once"]
+    G -- "not there" --> N1["404"]
+    G --> K["the type and the issuer:<br/>an oidc type needs an issuer (400);<br/>a disable keeps an administrator (403)"]
+    RD -- no --> S
+    K --> CL{"a change of client_id<br/>or callback_url?"}
+    CL -- no --> S
+    CL -- yes --> H{"are accounts linked to it?<br/>(HasIdentities)"}
+    H -- no --> S
+    H -- yes --> A{"has the caller the flag,<br/>and is it not disabled?"}
+    A -- no --> F["403 AdministratorOnlyError:<br/>client_id, or callback_url"]
+    A -- "no caller reached the use-case" --> W["500"]
+    A -- yes --> S["one statement: UPDATE ... WHERE id AND<br/>(type and issuer as stored, or sent back as stored,<br/>OR no identity at the provider)"]
+    S -- "a row was written" --> OK["200"]
+    S -- "nothing was written" --> R{"is the provider there?"}
+    R -- no --> N["404"]
+    R -- yes --> C["409 IDPInUseError: cannot be pointed at<br/>another issuer or type: still used by<br/>at least one linked account"]
+```
+
+- **The type and the issuer, in the update's own statement**
+  (`queryUpdateIDP`), as the delete's rule is in its: the provider is kept
+  by the rows as they are when it runs. A value equal to the stored one is
+  no change: a form sends the whole provider back, and a github provider's
+  sends an empty issuer, which is its stored one. A provider nobody is
+  linked to may be pointed anywhere.
+- **For everybody, the administrator account too.** The identities are the
+  accounts', and the issuer is what says who they are; a provider for
+  another issuer is a provider of its own.
+- **The client and the callback are the administrator account's while
+  accounts are linked** (`signInMayChange`). An application registered
+  again, or a frontend that moved, is ordinary, and it is the account that
+  answers for every account that does it. It may shut doors, its own
+  included: whether the identities match afterwards is the provider's to
+  say (some issue one subject per application), and that is not refused.
+  The 403 tells a caller with the providers' grant that accounts are linked
+  to the provider, which the grant otherwise does not show; it says nothing
+  of which. The check and the write are two statements.
+- **The secret, the name, the logo, the switches** change as before. A
+  secret alone does not move the sign-in: the code is issued to the stored
+  client.
+- **Not closed here:** the check reads the identities as they are when the
+  update runs. A sign-in already in flight, or one that reads the provider
+  through a cached copy, may store an identity under a provider that was
+  just repointed because nobody was linked to it.
+
+`TestAProviderIsNotRepointedUnderItsIdentities` holds it against a running
+service: another issuer under an identity, by the role and by the flag;
+another type; the type and issuer sent back with a new name; a github
+provider's form; a provider nobody is linked to; the client and the callback
+under an identity, by the role and by the flag, and where nobody is linked;
+a missing provider. In the unit suite:
+`TestAProvidersUpdateKeepsItForItsIdentities` (the statement, whole),
+`TestAnUpdateThatWroteNothingSaysWhy`,
+`TestWhereAProvidersSignInGoesIsTheAdministratorsWhileAccountsAreLinked`
+and `TestAProvidersUpdatePassesTheCaller`.
+
 ## What it used to do, and why that was wrong
 
 - endpoints chosen by the type's *name*, so `parseUserInfo(raw, idp.Name)`

@@ -298,9 +298,9 @@ Read it alongside [Adding a new entity](./adding-an-entity.md).
   instance, the frontend callback and why the API sets no cookie, identity by
   provider subject in `users_identities` and the takeover that matching on
   email allowed, PKCE, nonce and the verified ID token, linking from the
-  profile, what each provider is trusted for, and what a provider's delete
-  and disable are held to (no account left without a way in, and never the
-  last administrator account's).
+  profile, what each provider is trusted for, and what a provider's delete,
+  disable and repoint are held to (no account left without a way in, and
+  never the last administrator account's).
 - [Security](./security.md) — the common middleware chain, outermost first,
   and the two positions that were wrong (recovery nowhere, CORS before the
   limiter); the headers every response carries; the body bound and the

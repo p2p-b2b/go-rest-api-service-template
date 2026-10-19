@@ -56,6 +56,21 @@ func (mr *MockIDPsMockRecorder) DeleteByID(ctx, input any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteByID", reflect.TypeOf((*MockIDPs)(nil).DeleteByID), ctx, input)
 }
 
+// HasIdentities mocks base method.
+func (m *MockIDPs) HasIdentities(ctx context.Context, id uuid.UUID) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "HasIdentities", ctx, id)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// HasIdentities indicates an expected call of HasIdentities.
+func (mr *MockIDPsMockRecorder) HasIdentities(ctx, id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HasIdentities", reflect.TypeOf((*MockIDPs)(nil).HasIdentities), ctx, id)
+}
+
 // Insert mocks base method.
 func (m *MockIDPs) Insert(ctx context.Context, input *domain.InsertIDPInput) error {
 	m.ctrl.T.Helper()

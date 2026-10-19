@@ -14,6 +14,8 @@ type IDPs interface {
 	Insert(ctx context.Context, input *domain.InsertIDPInput) error
 	UpdateByID(ctx context.Context, input *domain.UpdateIDPInput) error
 	DeleteByID(ctx context.Context, input *domain.DeleteIDPInput) error
+	// HasIdentities is whether any account is linked to the provider.
+	HasIdentities(ctx context.Context, id uuid.UUID) (bool, error)
 
 	SelectByID(ctx context.Context, id uuid.UUID) (*domain.IDP, error)
 	SelectByName(ctx context.Context, name string) (*domain.IDP, error)

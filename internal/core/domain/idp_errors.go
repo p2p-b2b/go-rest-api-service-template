@@ -107,11 +107,19 @@ func (e *InvalidIDPUpdateError) Error() string {
 // accounts with no way in at all.
 type IDPInUseError struct {
 	UsedBy string // what depends on it, in the singular
+	// Action is what was refused, when it is not the delete: the provider
+	// pointed at another issuer or type under its identities.
+	Action string
 	ID     uuid.UUID
 }
 
 func (e *IDPInUseError) Error() string {
-	return "identity provider cannot be deleted: still used by at least one " + e.UsedBy
+	action := e.Action
+	if action == "" {
+		action = "deleted"
+	}
+
+	return "identity provider cannot be " + action + ": still used by at least one " + e.UsedBy
 }
 
 // IDPProtectedError refuses to disable or delete an identity provider when

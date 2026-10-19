@@ -15,6 +15,20 @@ Since `v0.0.3`.
 
 ### Security
 
+- **An identity provider is not pointed elsewhere under its identities.**
+  An identity is (provider, subject), and `PUT /auth/idps/{idp_id}` could
+  change a provider's issuer and type while its identities stayed: whoever
+  holds that route (the Administrator role, which is not the `admin` flag)
+  pointed the provider at an issuer of their own, asserted a linked subject,
+  and was signed in as that account. And the client and the callback, set
+  to an application and a host of one's own at the real issuer, sent a
+  linked user's code there. While accounts are linked, another issuer or
+  type is a `409` (the update's own statement), and a change of `client_id`
+  or `callback_url` is the administrator account's to make (`403` for
+  anyone else). A provider nobody is linked to changes as before. The design
+  is in
+  [`identity-providers.md`](./docs/architecture/identity-providers.md#pointing-a-provider-elsewhere).
+  ([#138](https://github.com/slashdevops/go-rest-api-service-template/pull/138))
 - **go-jose 4.1.6**, which `go-oidc` uses to verify an identity provider's
   ID tokens on the OIDC sign-in path: two security releases, among them
   [GHSA-mgcc-cww5-fp2q](https://github.com/go-jose/go-jose/security/advisories/GHSA-mgcc-cww5-fp2q),

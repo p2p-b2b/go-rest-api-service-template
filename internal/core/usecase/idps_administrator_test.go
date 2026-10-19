@@ -15,9 +15,14 @@ import (
 )
 
 // administratorsCounted answers how many administrator accounts can sign in,
-// and how many could without one provider, and records what it was asked.
+// and how many could without one provider, and who asks; and records what it
+// was asked. The rest of the
+// accounts' questions panic: the embedded port is nil.
 type administratorsCounted struct {
+	AdministratorAccounts
 	err error
+	// accounts are the callers it knows.
+	accounts map[uuid.UUID]*domain.User
 	// errNow is what the count of all of them answers, when the count
 	// without a provider answered.
 	errNow       error
@@ -42,6 +47,14 @@ func (a *administratorsCounted) CountEnabledAdministratorsWithout(_ context.Cont
 	return a.without, a.err
 }
 
+func (a *administratorsCounted) SelectByID(_ context.Context, id uuid.UUID) (*domain.User, error) {
+	if account, ok := a.accounts[id]; ok {
+		return account, nil
+	}
+
+	return nil, &domain.UserNotFoundError{ID: id}
+}
+
 // providersStored is the identity providers' repository for an update and a
 // delete: one provider, enabled or not, and what was written. Any other
 // method panics: the embedded port is nil.
@@ -50,10 +63,23 @@ type providersStored struct {
 	deleteAnswers error
 	writes        []string
 	enabled       bool
+	clientID      string
+	callbackURL   string
+	// linked says whether accounts are linked to the provider; askedLinked
+	// counts the question, failLinked fails it.
+	linked      bool
+	askedLinked int
+	failLinked  error
 }
 
 func (p *providersStored) SelectByID(_ context.Context, id uuid.UUID) (*domain.IDP, error) {
-	return &domain.IDP{ID: id, Enabled: p.enabled}, nil
+	return &domain.IDP{ID: id, Enabled: p.enabled, ClientID: p.clientID, CallbackURL: p.callbackURL}, nil
+}
+
+func (p *providersStored) HasIdentities(context.Context, uuid.UUID) (bool, error) {
+	p.askedLinked++
+
+	return p.linked, p.failLinked
 }
 
 func (p *providersStored) UpdateByID(context.Context, *domain.UpdateIDPInput) error {
@@ -298,5 +324,93 @@ func TestTheProvidersServiceNeedsItsCount(t *testing.T) {
 	missing, ok := errors.AsType[*domain.InvalidRepositoryError](err)
 	if !ok || !strings.Contains(missing.Message, "Administrators") {
 		t.Fatalf("got %T (%v), want the service to refuse to start without its Administrators", err, err)
+	}
+}
+
+// Where a provider's sign-in goes, its client and its callback, is the
+// administrator account's to change while accounts are linked to it. Set to
+// an application of one's own at the same issuer, and a host of one's own, a
+// linked user's ordinary sign-in handed the code over; at a provider whose
+// subjects are global that was a session as that user.
+func TestWhereAProvidersSignInGoesIsTheAdministratorsWhileAccountsAreLinked(t *testing.T) {
+	t.Parallel()
+
+	flagged, flaggedOff, roleOnly := uuid.NewV7(), uuid.NewV7(), uuid.NewV7()
+	accounts := map[uuid.UUID]*domain.User{
+		flagged:    {ID: flagged, Admin: new(true), Disabled: new(false)},
+		flaggedOff: {ID: flaggedOff, Admin: new(true), Disabled: new(true)},
+		roleOnly:   {ID: roleOnly, Admin: new(false), Disabled: new(false)},
+	}
+
+	const stored, callback = "client-id", "https://app.example/auth/idp/callback"
+
+	for name, c := range map[string]struct {
+		client, callbackURL *string
+		caller              uuid.UUID
+		linked              bool
+		failing             error
+		// refused names the field of the 403; fault: a route wired
+		// without its caller.
+		refused string
+		fault   bool
+		asked   int
+	}{
+		"the_client_and_callback_sent_back_as_they_are":  {client: new(stored), callbackURL: new(callback), caller: roleOnly, linked: true},
+		"neither_in_the_body":                            {caller: roleOnly, linked: true},
+		"the_client_where_nobody_is_linked":              {client: new("other"), caller: roleOnly, asked: 1},
+		"the_callback_where_nobody_is_linked":            {callbackURL: new("https://elsewhere.example/cb"), caller: roleOnly, asked: 1},
+		"the_client_by_the_administrator_account":        {client: new("other"), caller: flagged, linked: true, asked: 1},
+		"the_callback_by_the_administrator_account":      {callbackURL: new("https://elsewhere.example/cb"), caller: flagged, linked: true, asked: 1},
+		"the_client_by_an_account_without_the_flag":      {client: new("other"), caller: roleOnly, linked: true, asked: 1, refused: domain.FieldClientID},
+		"the_callback_by_an_account_without_the_flag":    {callbackURL: new("https://elsewhere.example/cb"), caller: roleOnly, linked: true, asked: 1, refused: domain.FieldCallbackURL},
+		"the_client_by_a_disabled_administrator_account": {client: new("other"), caller: flaggedOff, linked: true, asked: 1, refused: domain.FieldClientID},
+		"the_client_by_an_account_that_is_not_there":     {client: new("other"), caller: uuid.NewV7(), linked: true, asked: 1, refused: domain.FieldClientID},
+		"the_client_with_no_caller":                      {client: new("other"), linked: true, asked: 1, fault: true},
+		"the_question_fails":                             {client: new("other"), caller: flagged, failing: errors.New("the database is away"), asked: 1},
+	} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			repo := &providersStored{enabled: true, clientID: stored, callbackURL: callback, linked: c.linked, failLinked: c.failing}
+			administrators := &administratorsCounted{now: 2, without: 2, accounts: accounts}
+
+			err := providersService(t, repo, administrators, &slotsCounted{}).UpdateByID(t.Context(), &domain.UpdateIDPInput{
+				ID: uuid.NewV7(), CallerID: c.caller, ClientID: c.client, CallbackURL: c.callbackURL, Name: new("Renamed provider"),
+			})
+
+			if repo.askedLinked != c.asked {
+				t.Errorf("asked whether accounts are linked %d times, want %d", repo.askedLinked, c.asked)
+			}
+
+			switch {
+			case c.failing != nil:
+				if !errors.Is(err, c.failing) {
+					t.Fatalf("got %v, want the question's own failure", err)
+				}
+			case c.fault:
+				if !errors.Is(err, errAdministratorChangeWithoutCaller) {
+					t.Fatalf("got %T (%v), want the fault of a route wired without its caller", err, err)
+				}
+			case c.refused != "":
+				refusal, ok := errors.AsType[*domain.AdministratorOnlyError](err)
+				if !ok || refusal.Field != c.refused {
+					t.Fatalf("got %T (%v), want the 403 on %s", err, err, c.refused)
+				}
+			default:
+				if err != nil {
+					t.Fatalf("refused: %v", err)
+				}
+
+				if len(repo.writes) != 1 {
+					t.Fatalf("writes = %v, want the update", repo.writes)
+				}
+
+				return
+			}
+
+			if len(repo.writes) != 0 {
+				t.Errorf("the provider was written all the same: %v", repo.writes)
+			}
+		})
 	}
 }
