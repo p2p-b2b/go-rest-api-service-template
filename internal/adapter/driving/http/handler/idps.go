@@ -291,7 +291,7 @@ func (ref *IDPsHandler) create(w http.ResponseWriter, r *http.Request) {
 //
 //	@ID				0198e7ea-3755-7a35-9e30-6a9392e8e7a1
 //	@Summary		Update IDP
-//	@Description	Modify an existing Identity Provider configuration. Disabling it is refused (403) when that would leave no administrator account that can sign in.
+//	@Description	Modify an existing Identity Provider configuration. Disabling it is refused (403) when that would leave no administrator account that can sign in. While accounts are linked to it, another issuer or type is a 409, and a client_id or callback_url change is the administrator account's (403).
 //	@Tags			Authentication,Identity Providers (IDPs)
 //	@Accept			json
 //	@Produce		json
@@ -300,9 +300,9 @@ func (ref *IDPsHandler) create(w http.ResponseWriter, r *http.Request) {
 //	@Success		200		{object}	payload.HTTPMessage			"IDP updated successfully"
 //	@Failure		400		{object}	payload.HTTPMessage			"Invalid UUID format, request body, or validation failure"
 //	@Failure		401		{object}	payload.HTTPMessage			"Missing or invalid authentication token"
-//	@Failure		403		{object}	payload.HTTPMessage			"Insufficient permissions; or disabling it would leave no administrator account that can sign in"
+//	@Failure		403		{object}	payload.HTTPMessage			"Insufficient permissions; or disabling it would leave no administrator account that can sign in; or a change of client_id or callback_url, while accounts are linked to it, by an account that is not the administrator account"
 //	@Failure		404		{object}	payload.HTTPMessage			"IDP not found"
-//	@Failure		409		{object}	payload.HTTPMessage			"IDP name already exists"
+//	@Failure		409		{object}	payload.HTTPMessage			"IDP name already exists; or another issuer_url or idp_type_id while accounts are linked to it"
 //	@Failure		413		{object}	payload.HTTPMessage			"Request body larger than http.server.max.body.bytes"
 //	@Failure		415		{object}	payload.HTTPMessage			"Body not declared as application/json"
 //	@Failure		429		{object}	payload.HTTPMessage			"Too many requests -- RATE_LIMIT_EXCEEDED is the budget, RATE_LIMIT_UNAVAILABLE the limiter's own store"
@@ -334,8 +334,18 @@ func (ref *IDPsHandler) updateByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Who asks: a change of the client of a provider an administrator
+	// account signs in through is that account's to make.
+	callerID, err := getUserIDFromContext(ctx)
+	if err != nil {
+		e := o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
+		respond.WriteInternalError(w, r, e)
+		return
+	}
+
 	input := &domain.UpdateIDPInput{
 		ID:            idpID,
+		CallerID:      callerID,
 		IDPTypeID:     req.IDPTypeID,
 		Name:          req.Name,
 		Description:   req.Description,
@@ -352,6 +362,21 @@ func (ref *IDPsHandler) updateByID(w http.ResponseWriter, r *http.Request) {
 		if _, ok := errors.AsType[*domain.IDPProtectedError](err); ok {
 			e := o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
 			respond.WriteJSONMessage(w, r, http.StatusForbidden, e.Error())
+			return
+		}
+
+		// A change of the client or the callback, while accounts are linked,
+		// by an account that is not the administrator account.
+		if _, ok := errors.AsType[*domain.AdministratorOnlyError](err); ok {
+			e := o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
+			respond.WriteJSONMessage(w, r, http.StatusForbidden, e.Error())
+			return
+		}
+
+		// Another issuer or type while accounts are linked to it.
+		if _, ok := errors.AsType[*domain.IDPInUseError](err); ok {
+			e := o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
+			respond.WriteJSONMessage(w, r, http.StatusConflict, e.Error())
 			return
 		}
 

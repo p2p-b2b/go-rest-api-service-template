@@ -26,9 +26,9 @@ type IDPsServiceConf struct {
 	IDPTypes repository.IDPTypes
 
 	// Administrators answers how many administrator accounts could sign in
-	// with and without a provider. A provider's disable and its delete ask
-	// it: without it either could leave none.
-	Administrators  AdministratorCount
+	// with and without a provider, and who asks. A provider's disable, its
+	// delete and a change of where its sign-in goes ask it.
+	Administrators  ProviderAdministrators
 	CacheService    cache.Cache
 	Cipher          cipher.Cipher
 	ResourcesLimits ResourcesLimitsServiceConsumer
@@ -36,18 +36,19 @@ type IDPsServiceConf struct {
 	MetricsPrefix   string
 }
 
-// AdministratorCount is what the guard of an identity provider reads: how
-// many accounts with the `admin` flag can still sign in, and how many could
-// if one provider were not there. The users repository provides it.
-type AdministratorCount interface {
-	CountEnabledAdministrators(ctx context.Context) (int, error)
+// ProviderAdministrators is what the guard of an identity provider reads:
+// how many accounts with the `admin` flag can still sign in, how many could
+// if one provider were not there, and who asks. The users repository
+// provides it.
+type ProviderAdministrators interface {
+	AdministratorAccounts
 	CountEnabledAdministratorsWithout(ctx context.Context, idpID uuid.UUID) (int, error)
 }
 
 type IDPsService struct {
 	repository      repository.IDPs
 	idpTypes        repository.IDPTypes
-	administrators  AdministratorCount
+	administrators  ProviderAdministrators
 	cacheService    cache.Cache
 	cipher          cipher.Cipher
 	resourcesLimits ResourcesLimitsServiceConsumer
@@ -348,15 +349,25 @@ func (ref *IDPsService) UpdateByID(ctx context.Context, input *domain.UpdateIDPI
 		return o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
 	}
 
-	// The kind and the issuer after this update, whichever of the two moved:
-	// a row changing to the oidc kind needs an issuer, and an oidc row may not
-	// clear its issuer.
-	if input.IDPTypeID != nil || input.IssuerURL != nil {
-		current, err := ref.repository.SelectByID(ctx, input.ID)
+	// The provider as it is, read once when the body carries something it
+	// is judged against: the kind and the issuer, the disable, the client
+	// and the callback.
+	var current *domain.IDP
+
+	if input.IDPTypeID != nil || input.IssuerURL != nil || (input.Enabled != nil && !*input.Enabled) || input.ClientID != nil || input.CallbackURL != nil {
+		var err error
+
+		current, err = ref.repository.SelectByID(ctx, input.ID)
 		if err != nil {
 			return o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
 		}
+	}
 
+	// The kind and the issuer after this update, whichever of the two moved:
+	// a row changing to the oidc kind needs an issuer, and an oidc row may not
+	// clear its issuer. Pointing a provider at another issuer or type while it
+	// has identities is refused by the update's own statement.
+	if input.IDPTypeID != nil || input.IssuerURL != nil {
 		typeID, issuer := current.IDPType.ID, current.IssuerURL
 
 		if input.IDPTypeID != nil {
@@ -377,16 +388,15 @@ func (ref *IDPsService) UpdateByID(ctx context.Context, input *domain.UpdateIDPI
 	// of deleting it, and it is allowed, unless it would leave no
 	// administrator account that can sign in.
 	if input.Enabled != nil && !*input.Enabled {
-		current, err := ref.repository.SelectByID(ctx, input.ID)
-		if err != nil {
-			return o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
-		}
-
 		if current.Enabled {
 			if err := ref.keepsAnAdministrator(ctx, input.ID, idpDisabled); err != nil {
 				return o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
 			}
 		}
+	}
+
+	if err := ref.signInMayChange(ctx, input, current); err != nil {
+		return o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
 	}
 
 	if input.ClientSecret != nil && *input.ClientSecret != "" {
@@ -424,6 +434,58 @@ func (ref *IDPsService) UpdateByID(ctx context.Context, input *domain.UpdateIDPI
 		attribute.String("idp.id", input.ID.String()))
 
 	return nil
+}
+
+// signInMayChange holds a change of where a provider's sign-in goes, its
+// client or its callback, to the `admin` flag while accounts are linked to
+// the provider.
+//
+// The issuer says who an account is; the client and the callback say whose
+// application receives the code. Set to an application of one's own at the
+// same issuer, and to a host of one's own, a linked user's ordinary sign-in
+// handed the code over, and at a provider whose subjects are global (GitHub,
+// Google) the code signed whoever held it in as that user. While accounts
+// are linked, that change is the administrator account's to make: an
+// application registered again, or a frontend that moved, is ordinary, and
+// it is the account that answers for every account. With nobody linked
+// there is nobody to take over, and the role changes them as before.
+//
+// A value equal to the stored one is no change (a form sends everything
+// back); an empty one is refused by validation first. The issuer and the
+// kind are not this rule's: a change of either is refused while accounts are
+// linked, by the update's statement. The check and the write are two
+// statements, as every check of this kind is.
+func (ref *IDPsService) signInMayChange(ctx context.Context, input *domain.UpdateIDPInput, current *domain.IDP) error {
+	field := ""
+
+	switch {
+	case input.ClientID != nil && *input.ClientID != "" && *input.ClientID != current.ClientID:
+		field = domain.FieldClientID
+	case input.CallbackURL != nil && *input.CallbackURL != "" && *input.CallbackURL != current.CallbackURL:
+		field = domain.FieldCallbackURL
+	default:
+		return nil
+	}
+
+	linked, err := ref.repository.HasIdentities(ctx, input.ID)
+	if err != nil {
+		return err
+	}
+
+	if !linked {
+		return nil
+	}
+
+	asked, err := isAdministratorAccount(ctx, ref.administrators, input.CallerID)
+	if err != nil {
+		return err
+	}
+
+	if asked {
+		return nil
+	}
+
+	return &domain.AdministratorOnlyError{Entity: "identity provider", Field: field}
 }
 
 // What is done to a provider, in the words of the refusal.

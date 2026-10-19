@@ -230,7 +230,50 @@ func (ref *IDPsRepository) UpdateByID(ctx context.Context, input *domain.UpdateI
 
 	args = append(args, input.Enabled, input.AutoProvision)
 
-	query := `
+	cslog.Trace(ctx, "sql", "query", prettyPrint(queryUpdateIDP))
+
+	result, err := ref.db.Exec(ctx, queryUpdateIDP, args...)
+	if err != nil {
+		return o11y.RecordError(ctx, span, start, ref.handlePgError(err, input), ref.metrics, attrs)
+	}
+
+	if result.RowsAffected() == 0 {
+		// Nothing was written: the provider is not there, or the statement
+		// kept it from being pointed elsewhere under its identities. Which
+		// of the two is a read of its own.
+		var exists bool
+
+		cslog.Trace(ctx, "sql", "query", prettyPrint(queryIDPExists, input.ID.String()))
+
+		if err := ref.db.QueryRow(ctx, queryIDPExists, input.ID).Scan(&exists); err != nil {
+			return o11y.RecordError(ctx, span, start, ref.handlePgError(err, input), ref.metrics, attrs)
+		}
+
+		return o11y.RecordError(ctx, span, start, idpNotRepointed(exists, input.ID), ref.metrics, attrs)
+	}
+
+	o11y.RecordSuccess(ctx, span, start, ref.metrics, attrs, "idp updated successfully", attribute.String("idp.id", input.ID.String()))
+
+	return nil
+}
+
+// queryUpdateIDP writes a provider's update, unless it points the provider
+// at another issuer or another type while the provider has identities.
+//
+// An identity is (provider, subject): "this provider says this subject",
+// then a session for the account. The issuer and the kind are what "this
+// provider" means. Pointed at an issuer of their own, whoever holds the
+// update's grant asserted an existing subject and was signed in as that
+// account; the identities were kept, keyed by the provider's id. So a change
+// of either is refused while identities exist (a new provider instead).
+// A value equal to the stored one is no change: a form sends the whole
+// provider back. The client may change at the same issuer, which the
+// use-case holds, with the callback, to the `admin` flag while accounts
+// are linked (IDPsService.signInMayChange).
+//
+// The condition is in the statement that writes, as the delete's is, so that
+// the provider is kept by the rows as they are when it runs.
+const queryUpdateIDP = `
         UPDATE idps SET
             idp_types      = COALESCE(NULLIF($2::uuid, idp_types), idp_types),
             name           = COALESCE(NULLIF($3, name), name),
@@ -243,23 +286,56 @@ func (ref *IDPsRepository) UpdateByID(ctx context.Context, input *domain.UpdateI
             enabled        = COALESCE($10::boolean, enabled),
             auto_provision = COALESCE($11::boolean, auto_provision),
             updated_at     = CURRENT_TIMESTAMP
-        WHERE id = $1;
+        WHERE id = $1
+          AND (
+                (     ($2::uuid IS NULL OR $2::uuid = idp_types)
+                  AND ($6::varchar IS NULL OR NULLIF($6::varchar, '') IS NOT DISTINCT FROM issuer_url)
+                )
+                OR NOT EXISTS (SELECT 1 FROM users_identities WHERE idps_id = $1)
+          );
     `
 
-	cslog.Trace(ctx, "sql", "query", prettyPrint(query))
+// queryIDPHasIdentities asks whether any account is linked to a provider.
+const queryIDPHasIdentities = `SELECT EXISTS (SELECT 1 FROM users_identities WHERE idps_id = $1);`
 
-	result, err := ref.db.Exec(ctx, query, args...)
-	if err != nil {
-		return o11y.RecordError(ctx, span, start, ref.handlePgError(err, input), ref.metrics, attrs)
+// HasIdentities implements [repository.IDPs]: whether any account is linked
+// to the provider. A change of where its sign-in goes is the administrator
+// account's then (IDPsService.signInMayChange).
+func (ref *IDPsRepository) HasIdentities(ctx context.Context, id uuid.UUID) (bool, error) {
+	start := time.Now()
+	ctx, span, attrs, cancel := o11y.SetupTraceWithTimeout(ctx, ref.ot.Traces.Tracer, ref.maxQueryTimeout, ref.metricsMetadata, "HasIdentities")
+	defer cancel()
+	defer span.End()
+
+	if id == uuid.Nil() {
+		return false, o11y.RecordError(ctx, span, start, &domain.InvalidInputError{Message: "a provider was asked about that was not named"}, ref.metrics, attrs)
 	}
-	if result.RowsAffected() == 0 {
-		err := &domain.IDPNotFoundError{Message: fmt.Sprintf("idp with id '%s' not found", input.ID.String())}
-		return o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
+
+	cslog.Trace(ctx, "sql", "query", prettyPrint(queryIDPHasIdentities, id.String()))
+
+	var linked bool
+	if err := ref.db.QueryRow(ctx, queryIDPHasIdentities, id).Scan(&linked); err != nil {
+		return false, o11y.RecordError(ctx, span, start, ref.handlePgError(err, nil), ref.metrics, attrs)
 	}
 
-	o11y.RecordSuccess(ctx, span, start, ref.metrics, attrs, "idp updated successfully", attribute.String("idp.id", input.ID.String()))
+	o11y.RecordSuccess(ctx, span, start, ref.metrics, attrs, "identities at a provider asked about")
 
-	return nil
+	return linked, nil
+}
+
+// idpRepointedUnder is what still uses a provider that is not pointed
+// elsewhere, in the words of the 409.
+const idpRepointedUnder = "linked account"
+
+// idpNotRepointed is what an update that wrote nothing answers: the provider
+// is not there (404), or it is, and the statement kept it from another
+// issuer or type under its identities (409).
+func idpNotRepointed(exists bool, id uuid.UUID) error {
+	if exists {
+		return &domain.IDPInUseError{Action: "pointed at another issuer or type", UsedBy: idpRepointedUnder, ID: id}
+	}
+
+	return &domain.IDPNotFoundError{Message: fmt.Sprintf("idp with id '%s' not found", id.String())}
 }
 
 // queryDeleteIDP deletes an identity provider unless an account's only way in

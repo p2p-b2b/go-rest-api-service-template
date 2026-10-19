@@ -783,7 +783,7 @@ const docTemplate = `{
                         "AccessToken": []
                     }
                 ],
-                "description": "Modify an existing Identity Provider configuration. Disabling it is refused (403) when that would leave no administrator account that can sign in.",
+                "description": "Modify an existing Identity Provider configuration. Disabling it is refused (403) when that would leave no administrator account that can sign in. While accounts are linked to it, another issuer or type is a 409, and a client_id or callback_url change is the administrator account's (403).",
                 "consumes": [
                     "application/json"
                 ],
@@ -835,7 +835,7 @@ const docTemplate = `{
                         }
                     },
                     "403": {
-                        "description": "Insufficient permissions; or disabling it would leave no administrator account that can sign in",
+                        "description": "Insufficient permissions; or disabling it would leave no administrator account that can sign in; or a change of client_id or callback_url, while accounts are linked to it, by an account that is not the administrator account",
                         "schema": {
                             "$ref": "#/definitions/payload.HTTPMessage"
                         }
@@ -847,7 +847,7 @@ const docTemplate = `{
                         }
                     },
                     "409": {
-                        "description": "IDP name already exists",
+                        "description": "IDP name already exists; or another issuer_url or idp_type_id while accounts are linked to it",
                         "schema": {
                             "$ref": "#/definitions/payload.HTTPMessage"
                         }

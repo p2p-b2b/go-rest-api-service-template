@@ -6818,7 +6818,7 @@ Status: Internal Server Error
 PUT /auth/idps/{idp_id}
 ```
 
-Modify an existing Identity Provider configuration. Disabling it is refused (403) when that would leave no administrator account that can sign in.
+Modify an existing Identity Provider configuration. Disabling it is refused (403) when that would leave no administrator account that can sign in. While accounts are linked to it, another issuer or type is a 409, and a client_id or callback_url change is the administrator account's (403).
 
 #### Consumes
   * application/json
@@ -6842,9 +6842,9 @@ Modify an existing Identity Provider configuration. Disabling it is refused (403
 | [200](#0198e7ea-3755-7a35-9e30-6a9392e8e7a1-200) | OK | IDP updated successfully |  | [schema](#0198e7ea-3755-7a35-9e30-6a9392e8e7a1-200-schema) |
 | [400](#0198e7ea-3755-7a35-9e30-6a9392e8e7a1-400) | Bad Request | Invalid UUID format, request body, or validation failure |  | [schema](#0198e7ea-3755-7a35-9e30-6a9392e8e7a1-400-schema) |
 | [401](#0198e7ea-3755-7a35-9e30-6a9392e8e7a1-401) | Unauthorized | Missing or invalid authentication token |  | [schema](#0198e7ea-3755-7a35-9e30-6a9392e8e7a1-401-schema) |
-| [403](#0198e7ea-3755-7a35-9e30-6a9392e8e7a1-403) | Forbidden | Insufficient permissions; or disabling it would leave no administrator account that can sign in |  | [schema](#0198e7ea-3755-7a35-9e30-6a9392e8e7a1-403-schema) |
+| [403](#0198e7ea-3755-7a35-9e30-6a9392e8e7a1-403) | Forbidden | Insufficient permissions; or disabling it would leave no administrator account that can sign in; or a change of client_id or callback_url, while accounts are linked to it, by an account that is not the administrator account |  | [schema](#0198e7ea-3755-7a35-9e30-6a9392e8e7a1-403-schema) |
 | [404](#0198e7ea-3755-7a35-9e30-6a9392e8e7a1-404) | Not Found | IDP not found |  | [schema](#0198e7ea-3755-7a35-9e30-6a9392e8e7a1-404-schema) |
-| [409](#0198e7ea-3755-7a35-9e30-6a9392e8e7a1-409) | Conflict | IDP name already exists |  | [schema](#0198e7ea-3755-7a35-9e30-6a9392e8e7a1-409-schema) |
+| [409](#0198e7ea-3755-7a35-9e30-6a9392e8e7a1-409) | Conflict | IDP name already exists; or another issuer_url or idp_type_id while accounts are linked to it |  | [schema](#0198e7ea-3755-7a35-9e30-6a9392e8e7a1-409-schema) |
 | [413](#0198e7ea-3755-7a35-9e30-6a9392e8e7a1-413) | Request Entity Too Large | Request body larger than http.server.max.body.bytes |  | [schema](#0198e7ea-3755-7a35-9e30-6a9392e8e7a1-413-schema) |
 | [415](#0198e7ea-3755-7a35-9e30-6a9392e8e7a1-415) | Unsupported Media Type | Body not declared as application/json |  | [schema](#0198e7ea-3755-7a35-9e30-6a9392e8e7a1-415-schema) |
 | [429](#0198e7ea-3755-7a35-9e30-6a9392e8e7a1-429) | Too Many Requests | Too many requests -- RATE_LIMIT_EXCEEDED is the budget, RATE_LIMIT_UNAVAILABLE the limiter's own store |  | [schema](#0198e7ea-3755-7a35-9e30-6a9392e8e7a1-429-schema) |
@@ -6880,7 +6880,7 @@ Status: Unauthorized
 
 [PayloadHTTPMessage](#payload-http-message)
 
-##### <span id="0198e7ea-3755-7a35-9e30-6a9392e8e7a1-403"></span> 403 - Insufficient permissions; or disabling it would leave no administrator account that can sign in
+##### <span id="0198e7ea-3755-7a35-9e30-6a9392e8e7a1-403"></span> 403 - Insufficient permissions; or disabling it would leave no administrator account that can sign in; or a change of client_id or callback_url, while accounts are linked to it, by an account that is not the administrator account
 Status: Forbidden
 
 ###### <span id="0198e7ea-3755-7a35-9e30-6a9392e8e7a1-403-schema"></span> Schema
@@ -6898,7 +6898,7 @@ Status: Not Found
 
 [PayloadHTTPMessage](#payload-http-message)
 
-##### <span id="0198e7ea-3755-7a35-9e30-6a9392e8e7a1-409"></span> 409 - IDP name already exists
+##### <span id="0198e7ea-3755-7a35-9e30-6a9392e8e7a1-409"></span> 409 - IDP name already exists; or another issuer_url or idp_type_id while accounts are linked to it
 Status: Conflict
 
 ###### <span id="0198e7ea-3755-7a35-9e30-6a9392e8e7a1-409-schema"></span> Schema

@@ -185,6 +185,10 @@ type UpdateIDPInput struct {
 	Enabled       *bool
 	AutoProvision *bool
 	ID            uuid.UUID
+	// CallerID is who asks, on PUT /auth/idps/{idp_id}: a change of the
+	// client or the callback of a provider accounts are linked to is the
+	// administrator account's to make (IDPsService.signInMayChange).
+	CallerID uuid.UUID
 }
 
 func (ref *UpdateIDPInput) Validate() error {
