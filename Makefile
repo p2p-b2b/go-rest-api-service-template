@@ -257,6 +257,10 @@ go-mod-update: go-mod-tidy ## Update go.mod and go.sum, then check the graph bui
 	$(foreach DEP, $(PROJECT_DEPENDENCIES), \
 		$(call exec_cmd, go get -u $(DEP)) \
 	)
+# Then every package the code and its tests import: an indirect module is
+# raised only as far as a direct one requires it, and that left go-jose, on
+# the OIDC path, two security releases behind.
+	$(call exec_cmd, go get -u -t ./...)
 	$(call exec_cmd, go mod tidy)
 	@printf "👉 Checking the updated graph builds (go mod tidy accepts one that does not)...\n"
 	$(call exec_cmd, go build ./...)

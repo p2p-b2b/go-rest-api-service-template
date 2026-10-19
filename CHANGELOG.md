@@ -15,6 +15,16 @@ Since `v0.0.3`.
 
 ### Security
 
+- **go-jose 4.1.6**, which `go-oidc` uses to verify an identity provider's
+  ID tokens on the OIDC sign-in path: two security releases, among them
+  [GHSA-mgcc-cww5-fp2q](https://github.com/go-jose/go-jose/security/advisories/GHSA-mgcc-cww5-fp2q),
+  the algorithm checked against the key's curve when verifying, and no
+  panic on an empty CBC-HMAC ciphertext or an invalid key. JWK parsing now
+  refuses RSA moduli over 4096 bits; providers publish 2048-bit keys.
+  `make go-mod-update` had left it behind: it raised an indirect module
+  only as far as a direct one required it, and now also runs
+  `go get -u -t ./...`.
+  ([#137](https://github.com/slashdevops/go-rest-api-service-template/pull/137))
 - **The `admin` flag is granted, and taken back, only by an account that
   has it.** `PUT /users/{user_id}` accepts `admin`; it is not a grant of the
   policy engine, so the route's grant (the `UserManager`'s, the
