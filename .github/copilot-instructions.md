@@ -273,9 +273,11 @@ the binary before it reads anything. `PROJECT_NAME` is parsed from the `module`
 directive, never grepped. The frontend is
 `~/git/github.com/slashdevops/go-rest-api-service-template-frontend`
 (`pnpm run dev`; `pnpm run test:e2e` needs core and the dev env). An API shape
-change is a two-repo change. `make go-mod-update` upgrades transitively and ends
-with `go build ./...` and the three-tag `go vet`: `go mod tidy` accepts a graph that
-does not build, and one such graph broke OPA once.
+change is a two-repo change. `make go-mod-update` upgrades the direct modules, then
+every package the code imports (`go get -u -t ./...`: an indirect module is otherwise
+raised only as far as a direct one requires, and go-jose sat two security releases
+behind), and ends with `go build ./...` and the three-tag `go vet`: `go mod tidy`
+accepts a graph that does not build, and one such graph broke OPA once.
 → [`docs/development/dev-stack.md`](../docs/development/dev-stack.md)
 
 ## Post-change checklist
