@@ -56,7 +56,7 @@ func TestTheLockIsAFieldOfItsOwn(t *testing.T) {
 		"the_lock_sent_back_as_read_is_no_change":      {stored: row(true, true), lock: new(true), handed: "disabled=- lock=-"},
 		"no_lock_sent_back_as_read_is_no_change":       {stored: row(true, false), lock: new(false), handed: "disabled=- lock=-"},
 		"no_lock_in_the_body_leaves_disabled_as_it_is": {stored: row(true, false), disabled: new(true), handed: "disabled=true lock=-"},
-		// disabled may be NULL here: a value never set is not disabled.
+		// A row read without its `disabled` is not disabled.
 		"a_row_whose_disabled_was_never_set_is_locked": {stored: &domain.User{ID: uuid.NewV7(), DisabledByAdmin: new(false)}, disabled: new(false), lock: new(true), handed: "disabled=- lock=true"},
 		"and_enabled_with_the_lock_sent_back_as_read":  {stored: &domain.User{ID: uuid.NewV7(), DisabledByAdmin: new(false)}, disabled: new(false), lock: new(false), handed: "disabled=- lock=-"},
 		// Both fields, as a form that knows both sends them.

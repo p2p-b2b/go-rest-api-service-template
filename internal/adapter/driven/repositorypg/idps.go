@@ -353,8 +353,9 @@ func idpNotRepointed(exists bool, id uuid.UUID) error {
 // The condition is in the statement that deletes, so that the provider is
 // kept by the rows as they are when it runs. Not the foreign key: ON DELETE
 // NO ACTION would keep the provider while any identity exists, also the one
-// of an account that signs in with its password. `local_account` is
-// nullable, and a value never set is no password login.
+// of an account that signs in with its password. `local_account` is NOT
+// NULL; a database created before it was may still hold a NULL, which the
+// statement reads as no password login.
 const queryDeleteIDP = `
         DELETE FROM idps
         WHERE id = $1

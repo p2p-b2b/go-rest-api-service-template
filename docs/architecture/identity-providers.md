@@ -225,7 +225,7 @@ assign the app to the users who should sign in.
 
 A provider's delete takes its identities with it: `users_identities.idps_id`
 cascades. It asked nothing first. An account that signs in through that
-provider and has no password (`local_account` false, or never set) was left
+provider and has no password (`local_account` false) was left
 with no way in at all, for nobody to sign in to. A provider created again
 does not give it back, since its sign-in finds an account with the address
 that is not linked, which it refuses. Recovery by e-mail sends such an

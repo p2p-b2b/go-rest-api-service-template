@@ -375,7 +375,7 @@ func TestWhichAccountsAreAdministratorsAndCanSignIn(t *testing.T) {
 	require.NoError(t, err)
 
 	// One account of each kind, written as the columns are.
-	create := func(admin *bool, disabled, local bool) uuid.UUID {
+	create := func(admin, disabled, local bool) uuid.UUID {
 		firstName, lastName, email := generateUserData(t)
 		id := createUserInDB(t, firstName, lastName, email, generatePassword(t))
 
@@ -390,21 +390,20 @@ func TestWhichAccountsAreAdministratorsAndCanSignIn(t *testing.T) {
 	before, err := users.CountEnabledAdministrators(ctx)
 	require.NoError(t, err)
 
-	enabled := create(new(true), false, true)
+	enabled := create(true, false, true)
 
 	afterOne, err := users.CountEnabledAdministrators(ctx)
 	require.NoError(t, err)
 	require.Equal(t, before+1, afterOne, "an enabled local account with the flag is one that can sign in")
 
-	disabled := create(new(true), true, true)
-	stranded := create(new(true), false, false) // federated, with no identity at any provider
-	ordinary := create(new(false), false, true)
-	unflagged := create(nil, false, true)
+	disabled := create(true, true, true)
+	stranded := create(true, false, false) // federated, with no identity at any provider
+	ordinary := create(false, false, true)
 
 	stillOne, err := users.CountEnabledAdministrators(ctx)
 	require.NoError(t, err)
 	assert.Equal(t, afterOne, stillOne,
-		"a disabled account, a federated one with no identity, an account without the flag and one whose flag was never set are not administrators that can sign in")
+		"a disabled account, a federated one with no identity and an account without the flag are not administrators that can sign in")
 
 	// A federated account that has an identity can.
 	admin := getAdminUserTokens(t)
@@ -425,7 +424,7 @@ func TestWhichAccountsAreAdministratorsAndCanSignIn(t *testing.T) {
 	assert.Equal(t, withIdentity+1, federated, "a federated account with the flag and an identity can sign in")
 
 	// Each account is asked the same question the count answers.
-	for id, want := range map[uuid.UUID]bool{enabled: true, stranded: true, disabled: false, ordinary: false, unflagged: false, uuid.NewV7(): false} {
+	for id, want := range map[uuid.UUID]bool{enabled: true, stranded: true, disabled: false, ordinary: false, uuid.NewV7(): false} {
 		among, err := users.IsEnabledAdministrator(ctx, id)
 		require.NoError(t, err)
 		assert.Equal(t, want, among, "is %s an administrator that can sign in", id)
@@ -445,12 +444,12 @@ func TestWhichAccountsAreAdministratorsAndCanSignIn(t *testing.T) {
 	assert.False(t, among, "the account whose only identity is at a disabled provider cannot sign in")
 
 	// And which of a set have the flag.
-	found, err := users.SelectAdministratorsAmong(ctx, []uuid.UUID{ordinary, enabled, unflagged, disabled, uuid.NewV7(), stranded})
+	found, err := users.SelectAdministratorsAmong(ctx, []uuid.UUID{ordinary, enabled, disabled, uuid.NewV7(), stranded})
 	require.NoError(t, err)
 	assert.ElementsMatch(t, []uuid.UUID{enabled, disabled, stranded}, found,
-		"the flag, whatever else the account is; not an account without it, one that never had it set, or one that is not there")
+		"the flag, whatever else the account is; not an account without it, or one that is not there")
 
-	none, err := users.SelectAdministratorsAmong(ctx, []uuid.UUID{ordinary, unflagged})
+	none, err := users.SelectAdministratorsAmong(ctx, []uuid.UUID{ordinary})
 	require.NoError(t, err)
 	assert.Empty(t, none)
 }

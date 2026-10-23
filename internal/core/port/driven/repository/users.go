@@ -22,8 +22,8 @@ type Users interface {
 	DeleteByID(ctx context.Context, input *domain.DeleteUserInput) error
 
 	SelectByID(ctx context.Context, id uuid.UUID) (*domain.User, error)
-	// SelectDisabled is whether the account is disabled (a value never set
-	// is not), or a UserNotFoundError: the one column an account's standing
+	// SelectDisabled is whether the account is disabled, or a
+	// UserNotFoundError: the one column an account's standing
 	// is made of, read on every authenticated request.
 	SelectDisabled(ctx context.Context, id uuid.UUID) (bool, error)
 	SelectByEmail(ctx context.Context, email string) (*domain.User, error)

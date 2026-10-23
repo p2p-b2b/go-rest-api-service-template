@@ -604,8 +604,8 @@ func (ref *UsersService) addressMayChange(ctx context.Context, input *domain.Upd
 
 // callerIsAdministrator reports whether the caller is the administrator
 // account: an account that is there, with the flag, and not disabled. An
-// account that is not there, a flag that was never set, and an account that
-// is disabled are not the administrator's: a disabled account does not sign
+// account that is not there, a row read without its flag, and an account
+// that is disabled are not the administrator's: a disabled account does not sign
 // in, and a token it still holds is not a reason to let it write an address.
 func (ref *UsersService) callerIsAdministrator(ctx context.Context, callerID uuid.UUID) (bool, error) {
 	caller, err := ref.repository.SelectByID(ctx, callerID)
@@ -772,7 +772,7 @@ func (ref *UsersService) administratorSignInMayChange(ctx context.Context, input
 	}
 
 	wasDisabled := isDisabled(stored)
-	// An account whose `local_account` was never set has no password login:
+	// An account read without its `local_account` has no password login:
 	// the sign-in refuses it as it refuses a federated one.
 	wasLocal := stored.LocalAccount != nil && *stored.LocalAccount
 
