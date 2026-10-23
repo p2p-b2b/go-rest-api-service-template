@@ -444,6 +444,45 @@ func (ref *UsersRepository) DeleteByID(ctx context.Context, input *domain.Delete
 	return nil
 }
 
+// `disabled` is nullable, and a value that was never set is not TRUE.
+const queryUserDisabled = `
+        SELECT disabled IS TRUE FROM users WHERE id = $1::uuid;
+    `
+
+// SelectDisabled implements [repository.Users]: whether the account is
+// disabled, or a UserNotFoundError when there is no such account.
+//
+// It is read on every authenticated request (UsersService.Standing), so it
+// reads that column and nothing else: SelectByID reads the whole row, the
+// password hash included, for one boolean.
+func (ref *UsersRepository) SelectDisabled(ctx context.Context, id uuid.UUID) (bool, error) {
+	start := time.Now()
+	ctx, span, attrs, cancel := o11y.SetupTraceWithTimeout(ctx, ref.ot.Traces.Tracer, ref.maxQueryTimeout, ref.metricsMetadata, "SelectDisabled")
+	defer cancel()
+	defer span.End()
+
+	if !domain.IsUUIDV7(id) {
+		errorType := &domain.InvalidUserIDError{Message: "user ID cannot be empty"}
+		return false, o11y.RecordError(ctx, span, start, errorType, ref.metrics, attrs)
+	}
+
+	span.SetAttributes(attribute.String("user.id", id.String()))
+
+	var disabled bool
+	if err := ref.db.QueryRow(ctx, queryUserDisabled, id).Scan(&disabled); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			errorType := &domain.UserNotFoundError{ID: id}
+			return false, o11y.RecordError(ctx, span, start, errorType, ref.metrics, attrs)
+		}
+
+		return false, o11y.RecordError(ctx, span, start, ref.handlePgError(err, nil), ref.metrics, attrs)
+	}
+
+	o11y.RecordSuccess(ctx, span, start, ref.metrics, attrs, "user's standing read")
+
+	return disabled, nil
+}
+
 func (ref *UsersRepository) SelectByID(ctx context.Context, id uuid.UUID) (*domain.User, error) {
 	start := time.Now()
 	ctx, span, attrs, cancel := o11y.SetupTraceWithTimeout(ctx, ref.ot.Traces.Tracer, ref.maxQueryTimeout, ref.metricsMetadata, "SelectByID")

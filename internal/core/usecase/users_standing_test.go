@@ -17,23 +17,25 @@ import (
 )
 
 // standingUsers holds a few accounts, or fails its one read. Any other method
-// panics: the embedded port is nil.
+// panics: the embedded port is nil. The standing reads one column
+// (SelectDisabled) and not the row with its password hash, so a SelectByID
+// here would be the regression, and it panics.
 type standingUsers struct {
 	repository.Users
 	accounts map[uuid.UUID]*domain.User
 	err      error
 }
 
-func (s *standingUsers) SelectByID(_ context.Context, id uuid.UUID) (*domain.User, error) {
+func (s *standingUsers) SelectDisabled(_ context.Context, id uuid.UUID) (bool, error) {
 	if s.err != nil {
-		return nil, s.err
+		return false, s.err
 	}
 
 	if account, ok := s.accounts[id]; ok {
-		return account, nil
+		return account.Disabled != nil && *account.Disabled, nil
 	}
 
-	return nil, &domain.UserNotFoundError{ID: id}
+	return false, &domain.UserNotFoundError{ID: id}
 }
 
 // wrongCache answers what it was told, whatever the repository holds.

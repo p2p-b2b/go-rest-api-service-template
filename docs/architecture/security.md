@@ -341,9 +341,13 @@ role. The role is a set of grants and can be given; no route sets the flag.
 flowchart TD
     R["PUT /users/{user_id}"] --> E{"does the body<br/>carry an address?"}
     E -- no --> W["as before: the grant decides"]
-    E -- yes --> S{"is it the stored address?<br/>(the same bytes, or the stored one<br/>in the service's spelling)"}
-    S -- "yes: the form sent back;<br/>it is taken out of the update" --> W
-    S -- no --> C{"is the caller an enabled<br/>account with users.admin?"}
+    E -- yes --> S{"is it the stored address?"}
+    S -- "the same bytes: the form sent back;<br/>it is taken out of the update" --> W
+    S -- "the stored one in the<br/>service's spelling" --> P{"is the caller an enabled<br/>account with users.admin?"}
+    P -- "yes: the row is respelled" --> W
+    P -- "no, or the update names no caller:<br/>no change; taken out of the update" --> W
+    P -- "the caller cannot be read" --> U["500; nothing is written"]
+    S -- "no: a change" --> C{"is the caller an enabled<br/>account with users.admin?"}
     C -- yes --> W
     C -- no --> F["403 AdministratorOnlyError:<br/>user email can be changed only<br/>by the administrator account<br/><i>nothing of the body is written</i>"]
     S -- "no account with that id" --> N["404"]
@@ -358,6 +362,12 @@ flowchart TD
   spelling `ValidateEmail` gives every address, for a row older than that
   spelling. Nothing looser: a comparison that folds case folds more than
   case, and the statement compares bytes.
+- **The administrator account respells.** For it only the same bytes are no
+  change: it writes a row's address in the service's spelling. A row older
+  than that spelling cannot sign in, since a sign-in looks the address up as
+  the service spells it, and the account that may change an address was the
+  one account that could not correct it: its form sent the address back
+  spelled, and that was "the stored one".
 - **The whole body is refused**, not the address alone: a body that was
   partly written would answer 403 and have changed the account.
 - **Not its own address either.** An account does not change its address

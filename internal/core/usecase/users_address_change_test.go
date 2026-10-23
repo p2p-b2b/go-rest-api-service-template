@@ -161,7 +161,25 @@ func TestOnlyTheAdministratorAccountChangesAnAddress(t *testing.T) {
 		// service made of it: no change, and the row is not rewritten.
 		"an_older_rows_address_sent_back": {
 			input: domain.UpdateUserInput{ID: older, CallerID: manager, Email: new("older.holder@example.com")},
+			want:  written, reads: 2,
+		},
+		// The administrator account may write it in the service's spelling:
+		// such a row cannot sign in, since a sign-in looks the address up
+		// as the service spells it. For that account only the same bytes
+		// are no change.
+		"an_older_rows_address_respelled_by_the_administrator_account": {
+			input: domain.UpdateUserInput{ID: older, CallerID: administrator, Email: new("older.holder@example.com")},
+			want:  written, reads: 2, address: "older.holder@example.com",
+		},
+		"an_older_rows_address_sent_back_with_no_caller": {
+			input: domain.UpdateUserInput{ID: older, Email: new("older.holder@example.com")},
 			want:  written, reads: 1,
+		},
+		// Whether the caller may respell it is not known, and the rest of
+		// the body is not written without it.
+		"the_caller_of_a_respelling_cannot_be_read": {
+			input: domain.UpdateUserInput{ID: older, CallerID: unreadable, Email: new("older.holder@example.com"), FirstName: new("Jane")},
+			want:  unread, reads: 2,
 		},
 		// A long s for an s. A comparison that folds case calls the two
 		// equal; no lowering turns one into the other; the statement

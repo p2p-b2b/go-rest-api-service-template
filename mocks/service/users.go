@@ -248,6 +248,21 @@ func (mr *MockUsersMockRecorder) SelectByRoleID(ctx, roleID, input any) *gomock.
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SelectByRoleID", reflect.TypeOf((*MockUsers)(nil).SelectByRoleID), ctx, roleID, input)
 }
 
+// SelectDisabled mocks base method.
+func (m *MockUsers) SelectDisabled(ctx context.Context, id uuid.UUID) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SelectDisabled", ctx, id)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// SelectDisabled indicates an expected call of SelectDisabled.
+func (mr *MockUsersMockRecorder) SelectDisabled(ctx, id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SelectDisabled", reflect.TypeOf((*MockUsers)(nil).SelectDisabled), ctx, id)
+}
+
 // UnlinkProjects mocks base method.
 func (m *MockUsers) UnlinkProjects(ctx context.Context, input *domain.UnlinkProjectsFromUserInput) error {
 	m.ctrl.T.Helper()

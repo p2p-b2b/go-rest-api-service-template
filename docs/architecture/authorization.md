@@ -141,7 +141,9 @@ flowchart TD
 - **Read from the database on every request**, not from the cache
   (`UsersService.Standing`). The cached account lives twelve hours and an
   invalidation is best effort: a failed one would leave a disabled account
-  working for half a day. One read by primary key per authenticated request.
+  working for half a day. One read by primary key per authenticated request,
+  of the one column it needs (`SelectDisabled`): it read the whole row, the
+  password hash included, for one boolean.
 - **A read that fails is not permission to continue**: a 500. It fails
   closed.
 - **Not on logout.** And nothing is revoked at the disable: the refusal is
