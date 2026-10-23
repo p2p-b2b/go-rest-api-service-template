@@ -325,7 +325,9 @@ func (ref *UsersService) Create(ctx context.Context, input *domain.CreateUserInp
 // hours and an invalidation is best effort: a failed one would leave an
 // account that was disabled working for half a day, on the one read that
 // decides whether "disabled" means anything. It is one read by primary key
-// for every authenticated request.
+// for every authenticated request, of the one column it needs
+// (SelectDisabled): it used to read the whole row, the password hash
+// included.
 func (ref *UsersService) Standing(ctx context.Context, id uuid.UUID) (domain.AccountStanding, error) {
 	start := time.Now()
 	ctx, span, attrs := o11y.SetupTrace(ctx, ref.ot.Traces.Tracer, ref.metricsMetadata, "Standing")
@@ -333,7 +335,7 @@ func (ref *UsersService) Standing(ctx context.Context, id uuid.UUID) (domain.Acc
 
 	span.SetAttributes(attribute.String("user.id", id.String()))
 
-	account, err := ref.repository.SelectByID(ctx, id)
+	disabled, err := ref.repository.SelectDisabled(ctx, id)
 	if _, gone := errors.AsType[*domain.UserNotFoundError](err); gone {
 		o11y.RecordSuccess(ctx, span, start, ref.metrics, attrs, "the account is not there")
 
@@ -344,7 +346,7 @@ func (ref *UsersService) Standing(ctx context.Context, id uuid.UUID) (domain.Acc
 		return domain.AccountUnknown, o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
 	}
 
-	if account.Disabled != nil && *account.Disabled {
+	if disabled {
 		o11y.RecordSuccess(ctx, span, start, ref.metrics, attrs, "the account is disabled")
 
 		return domain.AccountDisabled, nil
@@ -545,14 +547,41 @@ var errAddressChangeWithoutCaller = errors.New("an account's e-mail address was 
 //
 // Both rows are read from the repository and not through the cache: the
 // answer decides who may have the account.
+//
+// The administrator account is the exception to the spelling: it may write a
+// row's address in the service's spelling, which is no change to anybody
+// else. Such a row cannot sign in, since a sign-in looks the address up as
+// the service spells it, and the account that may change an address was the
+// one account that could not correct it: its form sends the address back
+// spelled, and that was "the stored one". For that account only the same
+// bytes are no change.
 func (ref *UsersService) addressMayChange(ctx context.Context, input *domain.UpdateUserInput) error {
 	stored, err := ref.repository.SelectByID(ctx, input.ID)
 	if err != nil {
 		return err
 	}
 
-	if sameAddress(stored.Email, *input.Email) {
+	if stored.Email == *input.Email {
 		input.Email = nil
+
+		return nil
+	}
+
+	if sameAddress(stored.Email, *input.Email) {
+		respells := false
+
+		if input.CallerID != uuid.Nil() {
+			asked, err := ref.callerIsAdministrator(ctx, input.CallerID)
+			if err != nil {
+				return err
+			}
+
+			respells = asked
+		}
+
+		if !respells {
+			input.Email = nil
+		}
 
 		return nil
 	}
@@ -561,24 +590,34 @@ func (ref *UsersService) addressMayChange(ctx context.Context, input *domain.Upd
 		return errAddressChangeWithoutCaller
 	}
 
-	// An account that is not there, a flag that was never set, and an
-	// account that is disabled are not the administrator's: a disabled
-	// account does not sign in, and a token it still holds is not a reason
-	// to let it write an address.
-	caller, err := ref.repository.SelectByID(ctx, input.CallerID)
-	if _, gone := errors.AsType[*domain.UserNotFoundError](err); gone {
-		return &domain.AdministratorOnlyError{Entity: "user", Field: domain.FieldEmail}
-	}
-
+	asked, err := ref.callerIsAdministrator(ctx, input.CallerID)
 	if err != nil {
 		return err
 	}
 
-	if hasAdminFlag(caller) && !isDisabled(caller) {
+	if asked {
 		return nil
 	}
 
 	return &domain.AdministratorOnlyError{Entity: "user", Field: domain.FieldEmail}
+}
+
+// callerIsAdministrator reports whether the caller is the administrator
+// account: an account that is there, with the flag, and not disabled. An
+// account that is not there, a flag that was never set, and an account that
+// is disabled are not the administrator's: a disabled account does not sign
+// in, and a token it still holds is not a reason to let it write an address.
+func (ref *UsersService) callerIsAdministrator(ctx context.Context, callerID uuid.UUID) (bool, error) {
+	caller, err := ref.repository.SelectByID(ctx, callerID)
+	if _, gone := errors.AsType[*domain.UserNotFoundError](err); gone {
+		return false, nil
+	}
+
+	if err != nil {
+		return false, err
+	}
+
+	return hasAdminFlag(caller) && !isDisabled(caller), nil
 }
 
 // sameAddress reports whether sent is the stored address: byte for byte, or

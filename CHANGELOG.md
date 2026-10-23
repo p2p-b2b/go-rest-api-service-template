@@ -219,6 +219,14 @@ Since `v0.0.3`.
 
 ### Fixed
 
+- The administrator account can correct an account whose stored address is
+  not in the service's spelling (mixed case from before that spelling): its
+  form sent the address back spelled, and that was taken as no change, while
+  such a row cannot sign in, since a sign-in looks the address up as the
+  service spells it. For the administrator account only the same bytes are
+  no change; for anybody else the spelled address still is. (#142)
+- An account's standing, read on every authenticated request, is one column
+  (`SelectDisabled`), not the whole row with its password hash. (#142)
 - A link that names an id twice links it once: `POST /projects/{project_id}/users`,
   `/users/{user_id}/roles`, `/roles/{role_id}/users` and
   `/roles/{role_id}/policies` answered `500` for `[A, A]` (a user's projects
