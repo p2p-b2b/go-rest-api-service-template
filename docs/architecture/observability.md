@@ -156,6 +156,11 @@ flowchart TD
   repository call was `refused`, whatever the request goes on to do; the
   use-case recovers from it and its own call is `ok`. The request's own
   outcome is the handler layer's.
+- **A call is recorded with its operation.** Two not-found returns of the
+  identity providers' repository recorded with `nil` attributes, and a
+  suite run showed `app_calls_total` series with an outcome and no
+  `app_layer`, `app_domain` or `app_action`, which no panel reads.
+  `TestNoCallIsRecordedWithoutItsOperation` fails on a recorder given `nil`.
 - **A repository records the error it returns.** Two of
   `ProjectsRepository.Insert`'s returns recorded the driver's error and then
   returned the mapped one: a name that already exists was a failure at the

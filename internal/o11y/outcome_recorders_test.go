@@ -156,3 +156,74 @@ func TestARepositoryRecordsTheErrorItReturns(t *testing.T) {
 		t.Errorf("read %d repository files: the guard is reading nothing", read)
 	}
 }
+
+// TestNoCallIsRecordedWithoutItsOperation: a call is recorded with the
+// attributes SetupTrace returned (the layer, the domain, the action). Two
+// not-found returns of the identity providers' repository recorded with
+// nil instead, and a suite run showed what that makes: app_calls_total
+// series with an outcome and no app_layer, app_domain or app_action, which
+// no layer's panel reads.
+func TestNoCallIsRecordedWithoutItsOperation(t *testing.T) {
+	t.Parallel()
+
+	root := repoRoot(t)
+	fset := token.NewFileSet()
+
+	// The position of the attributes in each recorder's arguments.
+	attrsAt := map[string]int{"RecordError": 5, "RecordSuccess": 4, "RecordResult": 4}
+
+	var calls int
+
+	err := filepath.Walk(filepath.Join(root, "internal"), func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if info.IsDir() || !strings.HasSuffix(path, ".go") || strings.HasSuffix(path, "_test.go") {
+			return nil
+		}
+
+		file, err := parser.ParseFile(fset, path, nil, 0)
+		if err != nil {
+			return err
+		}
+
+		ast.Inspect(file, func(n ast.Node) bool {
+			call, ok := n.(*ast.CallExpr)
+			if !ok {
+				return true
+			}
+
+			sel, ok := call.Fun.(*ast.SelectorExpr)
+			if !ok {
+				return true
+			}
+
+			if pkg, ok := sel.X.(*ast.Ident); !ok || pkg.Name != "o11y" {
+				return true
+			}
+
+			at, ok := attrsAt[sel.Sel.Name]
+			if !ok || len(call.Args) <= at {
+				return true
+			}
+
+			calls++
+
+			if id, ok := call.Args[at].(*ast.Ident); ok && id.Name == "nil" {
+				t.Errorf("%s: o11y.%s records a call with no attributes: no layer, domain or action", fset.Position(call.Pos()), sel.Sel.Name)
+			}
+
+			return true
+		})
+
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("walking the tree: %v", err)
+	}
+
+	if calls < 500 {
+		t.Errorf("read %d recorder calls: the guard is reading nothing", calls)
+	}
+}
