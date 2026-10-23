@@ -842,8 +842,11 @@ bookmarks still resolve.
 - **`service_name` and `instance` variables.** One Grafana can serve this
   service and the template it came from, or several replicas. Without the
   variable their series are summed together and nothing says so.
-- **Restart and FATAL annotations, read from Loki.** A deploy that explains a
+- **Restart and stop annotations, read from Loki.** A deploy that explains a
   step change in every panel at once is worth more than any single panel.
+  "Restarts" reads `application initialization completed`; "Stopped on an
+  error" reads `application stopped on an error`
+  ([below](#a-replica-that-stops-says-so)).
 - **Links from a metric panel to the matching log lines.** A spike and the
   lines that produced it used to be two separate searches.
 - **`clamp_min` on every ratio.** An error-rate panel that divides by zero while
@@ -851,6 +854,48 @@ bookmarks still resolve.
 
 They are generated rather than hand-written, because hand-edited JSON is how
 six dashboards ended up with three spellings of the same query.
+
+## A replica that stops says so
+
+The second annotation was "Fatal", on `severity_text` `FATAL`, a level this
+service has no way to write: it marked nothing. And a replica that stopped did
+not reach the log store at all. When a first load before serving failed (the
+revoked tokens, the rate limit rules, the token lifetimes), `Run` returned the
+error and `main` ended on `log.Fatalf`, which wrote it at INFO, through slog's
+default, and exited with the exporter's batch unsent. Measured with
+`revoked_tokens` renamed for a moment: the log store held nothing of that
+replica, not even its start line.
+
+```mermaid
+flowchart TD
+    B["the builder, from the database phase on"] -- "fails" --> E
+    B --> R["App.Run"]
+    R --> L{"a first load before serving<br/>(revoked tokens, rate limit rules,<br/>token lifetimes)"}
+    L -- ok --> SV["serve; on a signal, Shutdown<br/>(telemetry shut down last)"]
+    L -- "fails" --> SG{"a signal cancelled it?"}
+    SG -- yes --> I["received shutdown signal at INFO,<br/>flushed; exit 0"]
+    SG -- no --> E["stopOnError: one line at ERROR,<br/>application stopped on an error"]
+    E --> F["telemetry.Shutdown:<br/>the batch is exported"]
+    F --> X["main exits 1, writes nothing more"]
+    F -. "the collector is down" .-> O["log.output keeps the line<br/>(the standard sink)"]
+    X --> G["Grafana: Stopped on an error"]
+```
+
+`App.stopOnError` writes the line and shuts the telemetry down before it
+returns; `main` exits 1. It is every failure of the builder from the database
+phase on, and each of `Run`'s first loads; a failure in the configuration or
+the telemetry phase is written to stderr only, with no exporter to flush yet.
+A signal that arrives while a first load runs is the shutdown's INFO line and
+exit 0: a rollout stopping a replica that was still starting. Measured the same
+way after the change: the log store has the start line, the failed load's
+`operation_failed` and the stop line at ERROR.
+
+`TestAReplicaThatCannotServeSaysSoBeforeItStops`,
+`TestASignalWhileStartingIsNotAnError` and
+`TestEveryFailureAfterTheTelemetryIsWrittenAndFlushed` hold it;
+`TestDashboardFiltersNameWhatTheServiceWrites` holds every line filter of a
+dashboard to a message the service writes, every severity filter to one a
+record is exported at, and both annotations to every dashboard.
 
 ## Related
 

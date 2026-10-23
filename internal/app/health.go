@@ -535,9 +535,12 @@ func (a *App) checkMailHealth(ctx context.Context) ComponentHealth {
 	}
 
 	return ComponentHealth{
-		Name:         "mail_service",
-		Status:       ComponentStatusHealthy,
-		Message:      "mail transport reachable at " + address,
+		Name:   "mail_service",
+		Status: ComponentStatusHealthy,
+		// What the dial established, and no more: the port accepts
+		// connections. It said "mail transport reachable", which a stopped
+		// mail server behind a port that is still published says too.
+		Message:      "the mail transport's port accepts connections at " + address + "; delivery is not verified",
 		LastChecked:  time.Now(),
 		ResponseTime: &responseTime,
 		Details: map[string]any{

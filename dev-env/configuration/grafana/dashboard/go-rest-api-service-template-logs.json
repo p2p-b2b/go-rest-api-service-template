@@ -131,13 +131,13 @@
         "enable": true,
         "hide": false,
         "iconColor": "red",
-        "name": "Fatal",
+        "name": "Stopped on an error",
         "target": {
-          "expr": "{service_name=~\"$service_name\"} | severity_text=`FATAL`",
+          "expr": "{service_name=~\"$service_name\"} |= `application stopped on an error`",
           "refId": "AnnoF"
         },
-        "textFormat": "fatal",
-        "titleFormat": "fatal"
+        "textFormat": "stopped on an error",
+        "titleFormat": "stopped"
       }
     ]
   },
@@ -650,7 +650,7 @@
     },
     {
       "type": "logs",
-      "title": "Errors and fatals",
+      "title": "Errors",
       "description": "Click a line to expand its attributes; the trace id links straight to the trace.",
       "datasource": {
         "type": "loki",

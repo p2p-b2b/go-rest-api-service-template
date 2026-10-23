@@ -232,6 +232,16 @@ Since `v0.0.3`.
 
 ### Fixed
 
+- A replica that stops says so. A first load before serving that failed, or a
+  failure of the start from the database on, ended the process with nothing
+  in the log store, not even its start line (`log.Fatalf` wrote at INFO and
+  exited before the exporter's batch was sent). It writes `application
+  stopped on an error` at ERROR and flushes first, and the dashboards' "Fatal"
+  annotation, on a level the service never writes, is "Stopped on an error"
+  on that line. A signal while starting is INFO and exit 0. (#145)
+- `/health/detailed` says what its mail probe checks: "the mail transport's
+  port accepts connections at <address>; delivery is not verified", not
+  "mail transport reachable". (#145)
 - The administrator account can correct an account whose stored address is
   not in the service's spelling (mixed case from before that spelling): its
   form sent the address back spelled, and that was taken as no change, while

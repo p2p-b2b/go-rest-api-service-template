@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"testing/synctest"
 	"time"
 
 	"github.com/slashdevops/go-rest-api-service-template/internal/adapter/driving/http/server"
@@ -64,17 +65,31 @@ func mustAtoi(t *testing.T, s string) int {
 	return n
 }
 
+// TestTimeCheckMeasuresEveryComponent: the check is timed, start to end.
+//
+// It ran on the wall clock and asserted a positive duration, which a check
+// that builds a struct can fail: it can take less than the clock's
+// resolution. In a synctest bubble the clock moves only when the bubble
+// sleeps, so the check takes exactly as long as it sleeps, and the test says
+// what it means: the number is the check's duration.
 func TestTimeCheckMeasuresEveryComponent(t *testing.T) {
-	got := timeCheck(func() ComponentHealth {
-		return ComponentHealth{Name: "structural", Status: ComponentStatusHealthy}
-	})
+	synctest.Test(t, func(t *testing.T) {
+		const took = 7 * time.Millisecond
 
-	if got.ResponseTime == nil {
-		t.Fatal("ResponseTime = nil; every component's check is measured now")
-	}
-	if *got.ResponseTime <= 0 {
-		t.Errorf("ResponseTime = %v, want a positive duration", *got.ResponseTime)
-	}
+		got := timeCheck(func() ComponentHealth {
+			time.Sleep(took)
+
+			return ComponentHealth{Status: ComponentStatusHealthy}
+		})
+
+		if got.ResponseTime == nil {
+			t.Fatal("ResponseTime = nil; every component's check is measured now")
+		}
+
+		if *got.ResponseTime != took {
+			t.Errorf("ResponseTime = %v, want the check's %v", *got.ResponseTime, took)
+		}
+	})
 }
 
 func TestTimeCheckKeepsAMoreSpecificMeasurement(t *testing.T) {
@@ -190,6 +205,12 @@ func TestMailHealthReportsAReachableTransport(t *testing.T) {
 
 	if got.Status != ComponentStatusHealthy {
 		t.Errorf("status = %q, want healthy (message: %q)", got.Status, got.Message)
+	}
+
+	// The message says what the dial established, and no more: it said
+	// "mail transport reachable" while every send could be failing.
+	if !strings.Contains(got.Message, "port accepts connections") || !strings.Contains(got.Message, "delivery is not verified") || strings.Contains(got.Message, "reachable") {
+		t.Errorf("message = %q, want what was checked: the port accepts connections, delivery not verified", got.Message)
 	}
 
 	// The probe's limits belong in the payload: a reachable host says nothing

@@ -1,6 +1,7 @@
 package app
 
 import (
+	"cmp"
 	"context"
 	"time"
 
@@ -144,12 +145,20 @@ func (b *AppBuilder) Build() (*App, error) {
 		}
 	}
 
+	// From here a failure is written at ERROR and the telemetry flushed
+	// before main exits: the database unreachable at boot, or the seeded
+	// password refused, left nothing in the log store, its phase lines
+	// included.
+	stop := func(err error) (*App, error) {
+		return nil, cmp.Or(app.stopOnError(b.ctx, err), err)
+	}
+
 	// Initialize database
 	if !b.skipDatabase {
 		if b.dbPool == nil {
 			dbStart := time.Now()
 			if err := app.initDatabase(b.ctx); err != nil {
-				return nil, err
+				return stop(err)
 			}
 			app.startupMetrics.DatabaseDuration = time.Since(dbStart)
 			metrics.recordPhase("database", app.startupMetrics.DatabaseDuration)
@@ -164,7 +173,7 @@ func (b *AppBuilder) Build() (*App, error) {
 	if b.repositories == nil {
 		reposStart := time.Now()
 		if err := app.initRepositories(); err != nil {
-			return nil, err
+			return stop(err)
 		}
 		app.startupMetrics.RepositoriesDuration = time.Since(reposStart)
 		metrics.recordPhase("repositories", app.startupMetrics.RepositoriesDuration)
@@ -175,7 +184,7 @@ func (b *AppBuilder) Build() (*App, error) {
 	// With the pool up and before anything serves: a deployment that kept the
 	// seeded administrator's password does not get to serve at all.
 	if err := app.checkSeededAdmin(b.ctx); err != nil {
-		return nil, err
+		return stop(err)
 	}
 
 	// The HTTP client comes before the mail service, which needs it for the API
@@ -187,7 +196,7 @@ func (b *AppBuilder) Build() (*App, error) {
 		if b.mailServer == nil {
 			mailStart := time.Now()
 			if err := app.initMailService(b.ctx); err != nil {
-				return nil, err
+				return stop(err)
 			}
 			app.startupMetrics.MailServiceDuration = time.Since(mailStart)
 			metrics.recordPhase("mail_service", app.startupMetrics.MailServiceDuration)
@@ -200,7 +209,7 @@ func (b *AppBuilder) Build() (*App, error) {
 	if b.services == nil {
 		servicesStart := time.Now()
 		if err := app.initServices(b.ctx); err != nil {
-			return nil, err
+			return stop(err)
 		}
 		app.startupMetrics.ServicesDuration = time.Since(servicesStart)
 		metrics.recordPhase("services", app.startupMetrics.ServicesDuration)
@@ -217,7 +226,7 @@ func (b *AppBuilder) Build() (*App, error) {
 	if b.handlers == nil {
 		handlersStart := time.Now()
 		if err := app.initHandlers(); err != nil {
-			return nil, err
+			return stop(err)
 		}
 		app.startupMetrics.HandlersDuration = time.Since(handlersStart)
 		metrics.recordPhase("handlers", app.startupMetrics.HandlersDuration)
@@ -228,7 +237,7 @@ func (b *AppBuilder) Build() (*App, error) {
 	// Initialize HTTP server
 	httpServerStart := time.Now()
 	if err := app.initHTTPServer(b.ctx); err != nil {
-		return nil, err
+		return stop(err)
 	}
 	app.startupMetrics.HTTPServerDuration = time.Since(httpServerStart)
 	metrics.recordPhase("http_server", app.startupMetrics.HTTPServerDuration)

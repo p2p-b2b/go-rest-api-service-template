@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"os"
 
 	"github.com/slashdevops/go-rest-api-service-template/internal/app"
@@ -134,13 +133,16 @@ func main() {
 	// Note: configuration loading happens inside NewApp, which sets up the logger
 	application, err := app.NewApp(ctx)
 	if err != nil {
-		// Use fmt.Fprintf for errors before logger is initialized
+		// Before the telemetry exists this is the only record; after it,
+		// NewApp has written the error at ERROR and flushed it already.
 		fmt.Fprintf(os.Stderr, "Failed to initialize application: %v\n", err)
 		os.Exit(1)
 	}
 
-	// Run application
+	// Run has written the error at ERROR and flushed the telemetry: a
+	// second line here would be the same failure twice, and log.Fatalf
+	// exits before an exporter's batch is sent.
 	if err := application.Run(ctx); err != nil {
-		log.Fatalf("Application error: %v", err)
+		os.Exit(1)
 	}
 }

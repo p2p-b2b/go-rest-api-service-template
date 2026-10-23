@@ -158,21 +158,21 @@ func (a *App) Run(ctx context.Context) error {
 	// Fatal on failure: see startRevokedAccessTokensMirror. A process that
 	// cannot build the denylist must not serve as though nothing is revoked.
 	if err := a.startRevokedAccessTokensMirror(ctx); err != nil {
-		return err
+		return a.stopOnError(ctx, err)
 	}
 
 	// Fatal, and it must be BEFORE the server starts serving. The rule set is
 	// the only source of budgets now, so a replica that begins accepting
 	// requests without it is a replica limiting nothing.
 	if err := a.startRateLimitRulesMirror(ctx); err != nil {
-		return err
+		return a.stopOnError(ctx, err)
 	}
 
 	// Fatal, before serving, for the same reason: the row is the only source
 	// of token lifetimes, and a login served before it loaded would have
 	// nothing to sign with.
 	if err := a.startTokenLifetimesMirror(ctx); err != nil {
-		return err
+		return a.stopOnError(ctx, err)
 	}
 
 	// Start HTTP server
@@ -193,6 +193,44 @@ func (a *App) Run(ctx context.Context) error {
 	}
 
 	return a.Shutdown()
+}
+
+// stoppedOnAnError is the line a replica writes when it stops because it
+// cannot serve. The dashboards' "Stopped on an error" annotation reads it.
+const stoppedOnAnError = "application stopped on an error"
+
+// stopOnError ends a start that cannot serve: one line at ERROR that says the
+// replica stopped and why, and then the telemetry shut down, so that the line
+// and every record before it reach the log store. main exits 1 on the error
+// and writes nothing more. log.Fatalf wrote it at INFO, through slog's
+// default, and exited with the exporter's last batch unsent: a replica that
+// stopped on its first load left nothing in the log store, its start
+// included.
+//
+// A signal that arrived while a first load ran is a rollout stopping a
+// replica that was still starting, and the load's error is only its
+// cancellation: nobody has to act, so it is the shutdown's INFO line, no
+// annotation, and exit 0.
+func (a *App) stopOnError(ctx context.Context, err error) error {
+	if ctx.Err() != nil {
+		slog.InfoContext(ctx, "received shutdown signal", "cause", context.Cause(ctx))
+		a.shutdownTelemetry()
+
+		return nil
+	}
+
+	slog.ErrorContext(ctx, stoppedOnAnError, "error", err)
+	a.shutdownTelemetry()
+
+	return err
+}
+
+// shutdownTelemetry flushes the telemetry, when there is any: a builder may
+// skip it.
+func (a *App) shutdownTelemetry() {
+	if a.telemetry != nil {
+		a.telemetry.Shutdown()
+	}
 }
 
 // Shutdown gracefully shuts down the application
