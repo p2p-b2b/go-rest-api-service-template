@@ -949,9 +949,11 @@ func (ref *RolesRepository) LinkUsers(ctx context.Context, input *domain.LinkUse
 	}
 
 	query := `
-        -- insert the new users
+        -- insert the new users. DISTINCT: a body may name one twice, and
+        -- ON CONFLICT DO UPDATE refuses to touch one row twice in one
+        -- statement (SQLSTATE 21000), which was a 500.
         INSERT INTO users_roles (roles_id, users_id)
-        SELECT * FROM UNNEST($1::uuid[], $2::uuid[]) -- Use appropriate type casting for your UUIDs
+        SELECT DISTINCT * FROM UNNEST($1::uuid[], $2::uuid[])
         ON CONFLICT (roles_id, users_id)
         DO UPDATE SET updated_at = NOW();
     `
@@ -1037,9 +1039,11 @@ func (ref *RolesRepository) LinkPolicies(ctx context.Context, input *domain.Link
 	}
 
 	query := `
-        -- insert the new policies
+        -- insert the new policies. DISTINCT: a body may name one twice, and
+        -- ON CONFLICT DO UPDATE refuses to touch one row twice in one
+        -- statement (SQLSTATE 21000), which was a 500.
         INSERT INTO roles_policies (roles_id, policies_id)
-        SELECT * FROM UNNEST($1::uuid[], $2::uuid[]) -- Use appropriate type casting for your UUIDs
+        SELECT DISTINCT * FROM UNNEST($1::uuid[], $2::uuid[])
         ON CONFLICT (roles_id, policies_id)
         DO UPDATE SET updated_at = NOW();
     `

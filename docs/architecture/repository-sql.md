@@ -29,3 +29,12 @@ the reachable injection each one was written against.
   pattern to follow — new query builders should use `text/template` plus explicit
   sanitisation.
 
+- **A link names each pair once.** The bulk links (a project's users, a
+  user's projects, a user's roles, a role's users, a role's policies) are one
+  statement each: `INSERT ... SELECT DISTINCT * FROM UNNEST($1::uuid[],
+  $2::uuid[]) ON CONFLICT ... DO UPDATE`. Postgres refuses to update one row
+  twice in one statement (SQLSTATE 21000), so without `DISTINCT` a body that
+  named an id twice was a `500`. Naming it twice is naming it: one link, a
+  `200`. `TestEveryLinkStatementSelectsEachPairOnce` reads the repository's
+  source for every such statement, and `TestALinkThatNamesAnIdTwiceLinksItOnce`
+  sends each route a repeated id against a running service.
