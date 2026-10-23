@@ -15,6 +15,21 @@ Since `v0.0.3`.
 
 ### Security
 
+- **A reset link is bound to the address it was mailed to.** A link mailed
+  to an address the account no longer has set the password until it
+  expired, and so did one mailed before an administrator disabled the
+  account. The password is written by a statement of its own, only while
+  the account has the address in the link, is a local account and is not
+  disabled; anything else is one `401`, "the link is not valid for the
+  account", and the link is spent. Every reset token has carried the
+  address, so links already in a mailbox are bound too.
+  `POST /users/{user_id}/password/reset` reads the account from the
+  database, not the cache, and mails the address it has now. A link
+  followed a second time answered `500`; it is the documented `401`. On
+  the administrator's route a stored address that is not a valid one
+  answered `500`, not the documented `400`, and a `429` now carries
+  `Retry-After`.
+  ([#147](https://github.com/slashdevops/go-rest-api-service-template/pull/147))
 - **A role an administrator account holds is not deleted by another
   account.** `DELETE /roles/{role_id}` takes the role from every account
   that holds it, and an account with the `admin` flag was stripped of it by

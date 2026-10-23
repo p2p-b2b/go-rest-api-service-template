@@ -7499,7 +7499,7 @@ Status: Internal Server Error
 POST /auth/password/reset
 ```
 
-Set new password using the token from password recovery email.
+Set a new password with the token of a password recovery email. The link is bound to the account and the address it was mailed to: it writes nothing on an account whose address changed since, that is disabled or that is no longer a local account (401).
 
 #### Consumes
   * application/json
@@ -7521,7 +7521,7 @@ Set new password using the token from password recovery email.
 |------|--------|-------------|:-----------:|--------|
 | [200](#01991917-2720-758d-8104-94a0368acecb-200) | OK | Password reset successful |  | [schema](#01991917-2720-758d-8104-94a0368acecb-200-schema) |
 | [400](#01991917-2720-758d-8104-94a0368acecb-400) | Bad Request | Invalid request body or password validation error |  | [schema](#01991917-2720-758d-8104-94a0368acecb-400-schema) |
-| [401](#01991917-2720-758d-8104-94a0368acecb-401) | Unauthorized | Invalid, expired, or already used reset token |  | [schema](#01991917-2720-758d-8104-94a0368acecb-401-schema) |
+| [401](#01991917-2720-758d-8104-94a0368acecb-401) | Unauthorized | Invalid, expired, or already used reset token, or one that is no longer valid for the account it was mailed to |  | [schema](#01991917-2720-758d-8104-94a0368acecb-401-schema) |
 | [403](#01991917-2720-758d-8104-94a0368acecb-403) | Forbidden | Insufficient permissions |  | [schema](#01991917-2720-758d-8104-94a0368acecb-403-schema) |
 | [413](#01991917-2720-758d-8104-94a0368acecb-413) | Request Entity Too Large | Request body larger than http.server.max.body.bytes |  | [schema](#01991917-2720-758d-8104-94a0368acecb-413-schema) |
 | [415](#01991917-2720-758d-8104-94a0368acecb-415) | Unsupported Media Type | Body not declared as application/json |  | [schema](#01991917-2720-758d-8104-94a0368acecb-415-schema) |
@@ -7549,7 +7549,7 @@ Status: Bad Request
 
 [PayloadHTTPMessage](#payload-http-message)
 
-##### <span id="01991917-2720-758d-8104-94a0368acecb-401"></span> 401 - Invalid, expired, or already used reset token
+##### <span id="01991917-2720-758d-8104-94a0368acecb-401"></span> 401 - Invalid, expired, or already used reset token, or one that is no longer valid for the account it was mailed to
 Status: Unauthorized
 
 ###### <span id="01991917-2720-758d-8104-94a0368acecb-401-schema"></span> Schema
@@ -9434,7 +9434,7 @@ Status: Internal Server Error
 POST /users/{user_id}/password/reset
 ```
 
-Email the account holder a password-reset link. PUT /users/{user_id} used to accept a new password outright, so a grant on it was a takeover of any account; a reset link needs the mailbox as well. Answers 202 whether or not the address can be reached, and says nothing about why.
+Email the account holder a password-reset link, to the address it has now. PUT /users/{user_id} used to accept a new password outright, so a grant on it was a takeover of any account; a reset link needs the mailbox as well. Answers 202 whether or not the address can be reached, and says nothing about why.
 
 #### Produces
   * application/json
@@ -9452,11 +9452,11 @@ Email the account holder a password-reset link. PUT /users/{user_id} used to acc
 | Code | Status | Description | Has headers | Schema |
 |------|--------|-------------|:-----------:|--------|
 | [202](#01a07662-d5ca-7c8f-aa04-0a29d6cad3bd-202) | Accepted | Reset email requested |  | [schema](#01a07662-d5ca-7c8f-aa04-0a29d6cad3bd-202-schema) |
-| [400](#01a07662-d5ca-7c8f-aa04-0a29d6cad3bd-400) | Bad Request | Invalid user ID format |  | [schema](#01a07662-d5ca-7c8f-aa04-0a29d6cad3bd-400-schema) |
+| [400](#01a07662-d5ca-7c8f-aa04-0a29d6cad3bd-400) | Bad Request | Invalid user ID format, or a stored address the recovery refuses |  | [schema](#01a07662-d5ca-7c8f-aa04-0a29d6cad3bd-400-schema) |
 | [401](#01a07662-d5ca-7c8f-aa04-0a29d6cad3bd-401) | Unauthorized | Missing or invalid authentication token |  | [schema](#01a07662-d5ca-7c8f-aa04-0a29d6cad3bd-401-schema) |
 | [403](#01a07662-d5ca-7c8f-aa04-0a29d6cad3bd-403) | Forbidden | Insufficient permissions |  | [schema](#01a07662-d5ca-7c8f-aa04-0a29d6cad3bd-403-schema) |
 | [404](#01a07662-d5ca-7c8f-aa04-0a29d6cad3bd-404) | Not Found | User not found |  | [schema](#01a07662-d5ca-7c8f-aa04-0a29d6cad3bd-404-schema) |
-| [429](#01a07662-d5ca-7c8f-aa04-0a29d6cad3bd-429) | Too Many Requests | Too many requests -- RATE_LIMIT_EXCEEDED is the budget, RATE_LIMIT_UNAVAILABLE the limiter's own store |  | [schema](#01a07662-d5ca-7c8f-aa04-0a29d6cad3bd-429-schema) |
+| [429](#01a07662-d5ca-7c8f-aa04-0a29d6cad3bd-429) | Too Many Requests | Too many requests -- RATE_LIMIT_EXCEEDED is the budget, RATE_LIMIT_UNAVAILABLE the limiter's own store; or the address's recovery budget is spent |  | [schema](#01a07662-d5ca-7c8f-aa04-0a29d6cad3bd-429-schema) |
 | [500](#01a07662-d5ca-7c8f-aa04-0a29d6cad3bd-500) | Internal Server Error | Internal server error |  | [schema](#01a07662-d5ca-7c8f-aa04-0a29d6cad3bd-500-schema) |
 
 #### Responses
@@ -9471,7 +9471,7 @@ Status: Accepted
 
 [PayloadHTTPMessage](#payload-http-message)
 
-##### <span id="01a07662-d5ca-7c8f-aa04-0a29d6cad3bd-400"></span> 400 - Invalid user ID format
+##### <span id="01a07662-d5ca-7c8f-aa04-0a29d6cad3bd-400"></span> 400 - Invalid user ID format, or a stored address the recovery refuses
 Status: Bad Request
 
 ###### <span id="01a07662-d5ca-7c8f-aa04-0a29d6cad3bd-400-schema"></span> Schema
@@ -9507,7 +9507,7 @@ Status: Not Found
 
 [PayloadHTTPMessage](#payload-http-message)
 
-##### <span id="01a07662-d5ca-7c8f-aa04-0a29d6cad3bd-429"></span> 429 - Too many requests -- RATE_LIMIT_EXCEEDED is the budget, RATE_LIMIT_UNAVAILABLE the limiter's own store
+##### <span id="01a07662-d5ca-7c8f-aa04-0a29d6cad3bd-429"></span> 429 - Too many requests -- RATE_LIMIT_EXCEEDED is the budget, RATE_LIMIT_UNAVAILABLE the limiter's own store; or the address's recovery budget is spent
 Status: Too Many Requests
 
 ###### <span id="01a07662-d5ca-7c8f-aa04-0a29d6cad3bd-429-schema"></span> Schema

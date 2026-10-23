@@ -27,7 +27,7 @@ by its `token_type` claim. There is no other kind of credential.
 | `access` | 5 min | `sub`, `email`, `jti` | **no** — see [what is not revocable](#what-is-not-revocable) |
 | `refresh` | 24 h | `sub`, `email`, `jti` | yes, by logout — and spent by each use, see [rotation](#refresh-tokens-are-single-use) |
 | `personal_access` | 1 h – 365 d | `sub`, `jti` = its own row id | yes, by deleting or disabling the row |
-| `password_reset` | 15 min | `sub`, `jti` | single-purpose |
+| `password_reset` | 15 min | `sub`, `email`, `jti` | single-use; bound to the address it was mailed to, see [the reset](#a-reset-link-is-bound-to-the-address-it-was-mailed-to) |
 | `verification` | 24 h | `sub` | single-purpose; travels in a header, not a URL |
 | IdP `state` | short | `sub`, `idp` | single-use is an open item |
 
@@ -160,7 +160,7 @@ columns on `users`:
 | column     | set by                                            | read by                                   |
 | ---------- | ------------------------------------------------- | ----------------------------------------- |
 | `verified` | the verification link; an IdP registration; `POST /users` (the administrator vouches for the address) | verify, resend, recovery                  |
-| `disabled` | the verification link (to `false`, unless an administrator disabled the account); administrators | login, refresh, recovery, and every request that carries an access token (`RequireActiveAccount`) |
+| `disabled` | the verification link (to `false`, unless an administrator disabled the account); administrators | login, refresh, recovery, the reset's statement, and every request that carries an access token (`RequireActiveAccount`) |
 | `disabled_by_admin` | `POST /users` (stored disabled, by an administrator); `PUT /users/{user_id}`: the field itself, or a **change** of `disabled` | the verification's statement, the update's (an unlock), and every user answer and list |
 
 `disabled` alone decides whether an account may sign in. A registration an
@@ -181,6 +181,87 @@ flowchart LR
 The answer on the wire is the same `200` in every row; only the inbox differs.
 The verification mail carries no more than a fresh registration would have
 sent to the same address, so nothing new can be provoked by asking.
+
+### A reset link is bound to the address it was mailed to
+
+A reset link proved two things it no longer proved: that its holder reads the
+address it went to, and that the account was one a reset was mailed to. It was
+bound to the account and its expiry only. The use-case wrote the password
+through the general update and never compared the token's `email` claim with
+the stored address, as the verification does. So:
+
+- a link mailed to an address the account no longer has worked until it
+  expired, after an administrator corrected the address;
+- a link mailed before an administrator disabled the account gave the locked
+  account a new password (it gave no access: a disabled account does not sign
+  in);
+- `POST /users/{user_id}/password/reset` read the account through the cache
+  and then the address through the cache again. After an address was
+  corrected, a failed invalidation mailed the previous one until the entry
+  expired.
+
+Now the password is written by a statement of its own,
+`UsersRepository.ResetPassword`, only on that id, at the address in the token,
+on a local account that is not disabled, as the row is when the link is
+followed. A statement that writes nothing is the one `401` of a link that is
+not valid, "the link is not valid for the account", whichever condition
+failed (the account is gone, its address changed, it is disabled, it is no
+longer a local account): which it was is not the holder's to learn; it is on
+the span (`authn.reset.refused_reason`) and in one DEBUG line for an operator.
+The link is spent first, as before, and each of those wants a new one. The
+administrator's route hands the recovery the account's id
+(`AuthnService.RecoverPasswordOf`), which reads the row from the repository
+(`UsersService.StoredAccount`) and mails the address the row has.
+
+The reset's handler mapped none of the token's refusals: a link followed a
+second time answered `500`, not the `401` the route documents. Every refusal
+of the link is that `401` now. The administrator's route had two of the same
+kind: a stored address the recovery's rule refuses (`ValidateEmail`'s
+`ValidationError`, singular, which it did not match) answered `500`, not its
+`400`, and its `429` did not say when to come back; it sends `Retry-After`,
+as the public route does (`TestAnAdministratorsResetAnswersEachRefusalAsDocumented`).
+
+```mermaid
+flowchart TD
+    A["POST /users/{user_id}/password/reset<br/>(an administrator)"] --> O["RecoverPasswordOf:<br/>the row, from the repository"]
+    O -- "no such account" --> N["404"]
+    O -- "a stored address that fails<br/>the address rule" --> B1["400"]
+    O --> T{"the stored address's<br/>recovery budget"}
+    T -- spent --> X["429, Retry-After"]
+    R["POST /auth/password/recover<br/>(the address typed)"] -- "not an address" --> B2["400"]
+    R --> T2{"the typed address's<br/>recovery budget"}
+    T2 -- spent --> X
+    T2 --> G["the account by that address"]
+    G -- "no such account" --> S
+    T --> M{"local, verified, enabled?"}
+    G --> M
+    M -- "unverified" --> VM["the verification mail"]
+    M -- "otherwise not" --> S["nothing is sent"]
+    M -- yes --> L["a reset link to the row's address:<br/>sub, email, jti"]
+    L --> F["POST /auth/password/reset"]
+    F -- "a password the choosing<br/>rule refuses" --> B3["400, the link is not spent"]
+    F -- "no email claim" --> E1["401, the link is not spent"]
+    F --> C{"spent before?"}
+    C -- yes --> E2["401, already used"]
+    C -- "no: spent now" --> W["UPDATE users SET password_hash<br/>WHERE id AND email = the claim<br/>AND local_account AND NOT disabled"]
+    W -- "a row" --> OK["200"]
+    W -- "no row: gone, another address,<br/>disabled or federated" --> E3["401, the link is not valid<br/>for the account"]
+```
+
+The public route needs no change for the cache: it looks the account up by
+what the person typed. A stale entry for an old address mails that address a
+link, and the link is now refused; the owner typing the new address finds
+no entry under it and gets a working one. The exact `email = $2` is
+deliberate, as in the verification: a link mailed before an address was
+respelled, even in case only, was mailed to another address. Every reset
+token has carried the address, so a link mailed before this change is bound
+too.
+
+`TestAResetLinkIsBoundToTheAccountAsItIsNow` holds it against a running
+service with the mail server; `TestAResetLinkWritesOnlyTheAccountItWasMailedTo`
+holds the statement where the pull request gate runs, and
+`TestAnAdministratorsResetIsMailedToTheStoredAddress` the administrator's
+route.
 
 ### An account an administrator disabled is not opened by its link
 

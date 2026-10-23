@@ -45,6 +45,48 @@ type fakeUserStore struct {
 	// and verifyErr what it answers.
 	verified  []string
 	verifyErr error
+	// stored is the repository's copy of an account when it is not what
+	// byID, the cached copy, holds: StoredAccount and ResetPassword read it.
+	stored map[uuid.UUID]*domain.User
+	// resets is every password ResetPassword wrote, as "id address".
+	resets []string
+}
+
+// StoredAccount answers the repository's copy: stored, or byID when the two
+// agree.
+func (f *fakeUserStore) StoredAccount(_ context.Context, id uuid.UUID) (*domain.User, error) {
+	if u, ok := f.stored[id]; ok {
+		return u, nil
+	}
+
+	if u, ok := f.byID[id]; ok {
+		return u, nil
+	}
+
+	return nil, &domain.UserNotFoundError{ID: id}
+}
+
+// ResetPassword writes only what the repository's statement would: the
+// account as stored, at that address, local and not disabled.
+func (f *fakeUserStore) ResetPassword(ctx context.Context, id uuid.UUID, address, _ string) error {
+	u, err := f.StoredAccount(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	local := u.LocalAccount != nil && *u.LocalAccount
+	// As the statement's `disabled IS FALSE`: no answer is not "enabled".
+	disabled := u.Disabled == nil || *u.Disabled
+
+	if u.Email != address || !local || disabled {
+		return &domain.UserNotFoundError{ID: id}
+	}
+
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.resets = append(f.resets, id.String()+" "+address)
+
+	return nil
 }
 
 func (f *fakeUserStore) GetByEmail(_ context.Context, email string) (*domain.User, error) {

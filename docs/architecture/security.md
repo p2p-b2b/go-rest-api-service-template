@@ -375,8 +375,11 @@ flowchart TD
   address, with the old one confirming the new, is a feature to build.
 - **Both accounts are read from the repository, not the cache**, and a
   disabled account with the flag is not one that may ask.
-- **The flows that update an account for itself** (the profile, the
-  verification, a password reset) carry no address and name no caller.
+- **The flow that updates an account for itself** (the profile) carries
+  no address and names no caller. The verification of an address and a
+  password reset are not updates: each is a statement of its own, held to
+  the address its link was mailed to
+  ([the reset](authentication.md#a-reset-link-is-bound-to-the-address-it-was-mailed-to)).
 
 `TestOnlyTheAdministratorAccountChangesAnotherAccountsAddress` holds it
 against a running service with the mail server;
@@ -468,10 +471,11 @@ flowchart TD
   passed the database's error on as it came, a 500, to an administrator
   account (anyone else is refused by the guard first); each is the same
   403 now. The trigger is the backstop and stays.
-- **The flows that update an account for itself** (the profile, a password
-  reset) carry neither field and name no caller. The verification of an
-  address is a statement of its own, and opens nothing on an account with
-  the flag.
+- **The flow that updates an account for itself** (the profile) carries
+  neither field and names no caller. The verification of an address is a
+  statement of its own, and opens nothing on an account with the flag; so
+  is a password reset, which writes the password and nothing else, on an
+  account that is not disabled.
 
 `TestAnAdministratorAccountIsNotAUserManagersToLock` holds it against a
 running service, through the four routes and in both directions;

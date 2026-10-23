@@ -10,6 +10,7 @@ import (
 	"uuid"
 
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/slashdevops/go-rest-api-service-template/internal/core/domain"
 	"github.com/slashdevops/go-rest-api-service-template/internal/core/port/driven/cache"
@@ -430,6 +431,88 @@ func (ref *UsersService) whyNotVerified(ctx context.Context, id uuid.UUID, notFo
 // is there, is not verified, and has another address. A link proves the
 // address it went to and no other.
 var ErrVerifiedAddressIsNotTheAccounts = errors.New("the address the link was mailed to is not the account's")
+
+// ResetPassword writes the password a reset link was followed for, on the
+// account the link was mailed to as it is now (the repository's statement:
+// that id, that address, a local account, not disabled). No such account is
+// a UserNotFoundError, whichever condition failed.
+func (ref *UsersService) ResetPassword(ctx context.Context, id uuid.UUID, address, passwordHash string) error {
+	start := time.Now()
+	ctx, span, attrs := o11y.SetupTrace(ctx, ref.ot.Traces.Tracer, ref.metricsMetadata, "ResetPassword")
+	defer span.End()
+
+	span.SetAttributes(attribute.String("user.id", id.String()))
+
+	if err := ref.repository.ResetPassword(ctx, id, address, passwordHash); err != nil {
+		if _, none := errors.AsType[*domain.UserNotFoundError](err); none {
+			ref.whyResetRefused(ctx, span, id, address)
+		}
+
+		return o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
+	}
+
+	if ref.cacheService != nil {
+		if err := ref.cacheService.Invalidate(ctx, cache.Identifier{Type: "user", ID: id.String()}); err != nil {
+			slog.WarnContext(ctx, "failed to invalidate cache", slog.Any("error", err), "user_id", id.String())
+		}
+	}
+
+	o11y.RecordSuccess(ctx, span, start, ref.metrics, attrs, "password reset",
+		attribute.String("user.id", id.String()))
+
+	return nil
+}
+
+// whyResetRefused says, on the span and at DEBUG, which condition of the
+// reset's statement failed: the holder hears one 401 whatever it was, and an
+// operator asked why a link does not work should not need the database. A
+// read that fails says so and nothing else; the refusal stands either way.
+func (ref *UsersService) whyResetRefused(ctx context.Context, span trace.Span, id uuid.UUID, address string) {
+	reason := "the account is not there"
+
+	stored, err := ref.repository.SelectByID(ctx, id)
+
+	_, gone := errors.AsType[*domain.UserNotFoundError](err)
+
+	switch {
+	case err != nil && !gone:
+		reason = "the account could not be read"
+	case err != nil:
+	case stored.Email != address:
+		reason = "the account's address is not the one the link was mailed to"
+	case stored.LocalAccount == nil || !*stored.LocalAccount:
+		reason = "the account is not a local account"
+	case stored.Disabled == nil || *stored.Disabled:
+		reason = "the account is disabled"
+	default:
+		reason = "the account changed between the statement and this read"
+	}
+
+	span.SetAttributes(attribute.String("authn.reset.refused_reason", reason))
+	slog.DebugContext(ctx, "reset link refused", "reason", reason)
+}
+
+// StoredAccount returns the account as the repository has it, without its
+// credentials and never from the cache. GetByID is cached for twelve hours
+// and its invalidation is best effort: where a reset link is mailed is not
+// decided from it, or a failed invalidation after an address was corrected
+// mails the previous one.
+func (ref *UsersService) StoredAccount(ctx context.Context, id uuid.UUID) (*domain.User, error) {
+	start := time.Now()
+	ctx, span, attrs := o11y.SetupTrace(ctx, ref.ot.Traces.Tracer, ref.metricsMetadata, "StoredAccount")
+	defer span.End()
+
+	span.SetAttributes(attribute.String("user.id", id.String()))
+
+	stored, err := ref.repository.SelectByID(ctx, id)
+	if err != nil {
+		return nil, o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
+	}
+
+	o11y.RecordSuccess(ctx, span, start, ref.metrics, attrs, "user found", attribute.String("user.id", id.String()))
+
+	return withoutCredentials(stored), nil
+}
 
 func (ref *UsersService) UpdateByID(ctx context.Context, input *domain.UpdateUserInput) error {
 	start := time.Now()

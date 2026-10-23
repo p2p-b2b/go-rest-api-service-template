@@ -6,8 +6,10 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
+	"uuid"
 
 	"go.opentelemetry.io/otel/attribute"
 
@@ -23,16 +25,16 @@ import (
 type UsersHandlerConf struct {
 	Service driving.Users
 	// Recoverer sends the password-reset email. It is the authn service's
-	// RecoverPassword, narrowed to the one method this handler needs.
+	// RecoverPasswordOf, narrowed to the one method this handler needs.
 	Recoverer     PasswordRecoverer
 	OT            *o11y.OpenTelemetry
 	MetricsPrefix string
 }
 
-// PasswordRecoverer sends a reset link to an address, saying nothing about
-// whether the address exists.
+// PasswordRecoverer sends an account a reset link, to the address its row
+// has, saying nothing about whether one could be sent.
 type PasswordRecoverer interface {
-	RecoverPassword(ctx context.Context, input *domain.RecoverPasswordInput) error
+	RecoverPasswordOf(ctx context.Context, userID uuid.UUID) error
 }
 
 // UsersHandler represents the handler for the user.
@@ -1283,16 +1285,16 @@ func (ref *UsersHandler) selectAuthz(w http.ResponseWriter, r *http.Request) {
 //
 //	@ID				01a07662-d5ca-7c8f-aa04-0a29d6cad3bd
 //	@Summary		Send password reset email
-//	@Description	Email the account holder a password-reset link. PUT /users/{user_id} used to accept a new password outright, so a grant on it was a takeover of any account; a reset link needs the mailbox as well. Answers 202 whether or not the address can be reached, and says nothing about why.
+//	@Description	Email the account holder a password-reset link, to the address it has now. PUT /users/{user_id} used to accept a new password outright, so a grant on it was a takeover of any account; a reset link needs the mailbox as well. Answers 202 whether or not the address can be reached, and says nothing about why.
 //	@Tags			Users
 //	@Produce		json
 //	@Param			user_id	path		string				true	"User unique identifier"	Format(uuid)
 //	@Success		202		{object}	payload.HTTPMessage	"Reset email requested"
-//	@Failure		400		{object}	payload.HTTPMessage	"Invalid user ID format"
+//	@Failure		400		{object}	payload.HTTPMessage	"Invalid user ID format, or a stored address the recovery refuses"
 //	@Failure		401		{object}	payload.HTTPMessage	"Missing or invalid authentication token"
 //	@Failure		403		{object}	payload.HTTPMessage	"Insufficient permissions"
 //	@Failure		404		{object}	payload.HTTPMessage	"User not found"
-//	@Failure		429		{object}	payload.HTTPMessage	"Too many requests -- RATE_LIMIT_EXCEEDED is the budget, RATE_LIMIT_UNAVAILABLE the limiter's own store"
+//	@Failure		429		{object}	payload.HTTPMessage	"Too many requests -- RATE_LIMIT_EXCEEDED is the budget, RATE_LIMIT_UNAVAILABLE the limiter's own store; or the address's recovery budget is spent"
 //	@Failure		500		{object}	payload.HTTPMessage	"Internal server error"
 //	@Router			/users/{user_id}/password/reset [post]
 //	@Security		AccessToken
@@ -1308,24 +1310,31 @@ func (ref *UsersHandler) resetPassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := ref.service.GetByID(ctx, userID)
-	if err != nil {
-		if _, ok := errors.AsType[*domain.UserNotFoundError](err); ok {
-			e := o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
+	// The recovery reads the account and its address from the repository,
+	// not from the cache: a corrected address is the one mailed. It answers
+	// alike for a disabled or federated account; the reason is on its span
+	// and in its log, not in this response. An account that is not there is
+	// its 404.
+	if err := ref.recoverer.RecoverPasswordOf(ctx, userID); err != nil {
+		e := o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
+
+		switch {
+		case isErr[*domain.UserNotFoundError](err):
 			respond.WriteJSONMessage(w, r, http.StatusNotFound, e.Error())
-			return
+		case isErr[*domain.TooManyRecoveryRequestsError](err):
+			// The address's budget is the public route's; so is the header
+			// that says when it is back.
+			throttled, _ := errors.AsType[*domain.TooManyRecoveryRequestsError](err)
+			w.Header().Set("Retry-After", strconv.Itoa(retryAfterSeconds(throttled.RetryAfter)))
+			respond.WriteJSONMessage(w, r, http.StatusTooManyRequests, e.Error())
+		case isErr[*domain.ValidationError](err), isErr[*domain.ValidationErrors](err), isErr[*domain.InvalidInputError](err):
+			// A stored address the recovery's rule refuses is ValidateEmail's
+			// ValidationError, singular.
+			respond.WriteJSONMessage(w, r, http.StatusBadRequest, e.Error())
+		default:
+			respond.WriteInternalError(w, r, e)
 		}
 
-		e := o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
-		respond.WriteInternalError(w, r, e)
-		return
-	}
-
-	// RecoverPassword answers alike for a disabled or federated account; the
-	// reason is on its span and in its log, not in this response.
-	if err := ref.recoverer.RecoverPassword(ctx, &domain.RecoverPasswordInput{Email: user.Email}); err != nil {
-		e := o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
-		respond.WriteInternalError(w, r, e)
 		return
 	}
 
