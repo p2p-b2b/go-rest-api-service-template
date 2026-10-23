@@ -406,7 +406,7 @@ func TestProductsListing(t *testing.T) {
 		out, err := parserResponseBody[payload.ListProductsResponse](t, response)
 		require.NoError(t, err)
 
-		assert.GreaterOrEqual(t, len(out.Items), created, "The unscoped list must see at least this project's products")
+		assert.GreaterOrEqual(t, len(out.Items), created, "The administrator account's list must see at least this project's products")
 	})
 }
 

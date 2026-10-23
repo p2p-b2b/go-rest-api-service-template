@@ -15,6 +15,17 @@ Since `v0.0.3`.
 
 ### Security
 
+- **A list with no project in its path is held to its caller.**
+  `GET /products` answered every project's products to whoever held its
+  grant, and the seeded `ProjectMember` role holds it: a member read the
+  products, ids and names of projects it does not belong to.
+  `GET /resources_limits` answered every project's and every user's usage
+  rows, with their ids, to any holder of `GET *` (the seeded `ReadOnly`).
+  The products list is now the products of the caller's projects; the
+  usage list the caller's projects' rows and the caller's own. The
+  administrator account (the `admin` flag, not the `Administrator` role)
+  is answered every row of both, and alone the system's usage rows.
+  ([#148](https://github.com/slashdevops/go-rest-api-service-template/pull/148))
 - **A reset link is bound to the address it was mailed to.** A link mailed
   to an address the account no longer has set the password until it
   expired, and so did one mailed before an administrator disabled the

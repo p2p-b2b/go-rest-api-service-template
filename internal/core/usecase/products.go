@@ -287,7 +287,8 @@ func (ref *ProductsService) ListByProjectID(ctx context.Context, projectID, user
 	return out, nil
 }
 
-// List returns products across every project the caller can see.
+// List returns the products of the caller's projects (the repository holds
+// the list to input.CallerID).
 func (ref *ProductsService) List(ctx context.Context, input *domain.ListProductsInput) (*domain.ListProductsOutput, error) {
 	start := time.Now()
 	ctx, span, attrs := o11y.SetupTrace(ctx, ref.ot.Traces.Tracer, ref.metricsMetadata, "List")

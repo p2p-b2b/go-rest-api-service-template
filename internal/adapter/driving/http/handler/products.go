@@ -479,7 +479,7 @@ func (ref *ProductsHandler) listByProjectID(w http.ResponseWriter, r *http.Reque
 //
 //	@ID				01982303-f0f9-7e63-92ba-141813745b06
 //	@Summary		List products
-//	@Description	List products across every project, with filtering, sorting, partial fields and pagination.
+//	@Description	List the products of the projects the caller may see, with filtering, sorting, partial fields and pagination: every project's for the administrator account (the admin flag, not the Administrator role), the projects one is a member of for anyone else.
 //	@Tags			Products
 //	@Produce		json
 //	@Param			sort		query		string							false	"Comma-separated sort fields, e.g. name ASC"
@@ -501,10 +501,21 @@ func (ref *ProductsHandler) list(w http.ResponseWriter, r *http.Request) {
 	ctx, span, attrs := o11y.SetupTraceHTTP(r, ref.ot.Traces.Tracer, ref.metricsMetadata, "list")
 	defer span.End()
 
+	// The products of the caller's projects, or of every project for the
+	// administrator account: the list is held to who asks.
+	callerID, err := getUserIDFromContext(ctx)
+	if err != nil {
+		e := o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
+		respond.WriteInternalError(w, r, e)
+		return
+	}
+
 	input, ok := ref.listInput(w, r, ctx, span, start, attrs)
 	if !ok {
 		return
 	}
+
+	input.CallerID = callerID
 
 	out, err := ref.service.List(ctx, input)
 	if err != nil {

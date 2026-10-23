@@ -223,6 +223,9 @@ type SelectResourcesLimitsInput struct {
 	Filter    string
 	Fields    string
 	Paginator Paginator
+	// CallerID is who asks: the list is the rows of the caller's projects
+	// and the caller's own, or every row for the administrator account.
+	CallerID uuid.UUID
 }
 
 func (ref *SelectResourcesLimitsInput) Validate() error {

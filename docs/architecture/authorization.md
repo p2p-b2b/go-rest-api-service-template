@@ -350,3 +350,59 @@ both on, and the refusal with its type),
 `TestProjectsOfCaller` (the check),
 `TestAUsersProjectLinksAreCheckedBeforeTheyAreWritten` (both writes ask
 first, with the caller) and `TestALinksTwoForeignKeysAreToldApart`.
+
+## A list with no project in its path is held to its caller
+
+A project's list is held by its path: the membership check holds
+`/projects/{project_id}/…` to the caller. Two lists have no project in their
+path, so that check holds them to nothing, and each answered every row of
+the deployment to whoever held its grant:
+
+- `GET /products` is granted to the seeded `ProjectMember`, whose work is
+  inside the projects it is a member of. A member read every project's
+  products, with each project's id and name.
+- `GET /resources_limits` is the usage list, granted through `GET *` (the
+  seeded `ReadOnly` is enough). Its rows belong to a scope (a project, a
+  user, or the system), and a holder read every project's and every user's
+  usage, with their ids.
+
+Each is held to who asks in its statement now, with the caller as `$1`:
+
+- **The products** of the projects the projects list answers the caller
+  (`view_projects_users`): every project's for the administrator account
+  (the `admin` flag), the projects one is a member of for anyone else.
+- **The usage rows**: every row for the administrator account; for anyone
+  else a project's rows for the projects they are a member of, and their own
+  user's rows, which is what `GET /projects/{project_id}/resources_limits`
+  and `GET /me/resources_limits` already answer them. The system's rows are
+  the deployment's totals, not anyone's project, and are the administrator
+  account's alone.
+
+"The administrator account" is the flag, not the `Administrator` role: an
+account with the role and no flag is answered its own projects' rows, as
+`GET /projects` answers it. A list asked for with no caller is refused
+before anything is read, never answered unscoped. The scope is the
+statement's `WHERE`; the filter and the pager attach to it with `AND`, so
+neither can open a `WHERE` of its own after it.
+
+```mermaid
+flowchart TD
+    R["GET /products<br/>GET /resources_limits"] --> A{"the route's grant?"}
+    A -- no --> F["403"]
+    A -- yes --> C{"a caller on the request?"}
+    C -- no --> E["refused: the list is not read"]
+    C -- yes --> Q["one statement, the caller as $1"]
+    Q --> AD{"the caller has<br/>the admin flag?"}
+    AD -- yes --> ALL["every row"]
+    AD -- no --> P["products: those of the caller's projects<br/>usage: the caller's projects' rows<br/>and the caller's own"]
+    ALL --> W["then the filter, then the page"]
+    P --> W
+```
+
+Against a running service: `TestTheProductsListIsTheCallers` and
+`TestTheUsageListIsTheCallers` (a member of one of two projects is answered
+its own; the administrator account every row). The unit suite has no
+database: `TestTheBareListsAreHeldToTheCaller` reads each statement (its
+scope whole, the caller as its one argument, the refusal before the read),
+and `TestTheBareListsHandTheCallerOn` holds the two handlers to passing the
+caller.

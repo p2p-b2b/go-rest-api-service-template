@@ -199,7 +199,7 @@ func (ref *ResourcesLimitsHandler) statusForProject(w http.ResponseWriter, r *ht
 //
 //	@ID				01994754-5db8-7904-80f3-91417f2a4003
 //	@Summary		List resource limits
-//	@Description	Retrieve a paginated list of resource limits in the system with optional filtering, sorting, and field selection
+//	@Description	Retrieve a paginated list of resource usage and limits. The administrator account (the admin flag, not the Administrator role) is answered every row; anyone else the rows of the projects they are a member of and their own user's rows
 //	@Tags			Resources Limits
 //	@Produce		json
 //	@Param			sort		query		string								false	"Comma-separated list of fields to sort by"
@@ -221,6 +221,15 @@ func (ref *ResourcesLimitsHandler) list(w http.ResponseWriter, r *http.Request) 
 	ctx, span, attrs := o11y.SetupTraceHTTP(r, ref.ot.Traces.Tracer, ref.metricsMetadata, "list")
 	defer span.End()
 
+	// The rows of the caller's projects and its own, or every row for the
+	// administrator account: the list is held to who asks.
+	callerID, err := getUserIDFromContext(ctx)
+	if err != nil {
+		e := o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
+		respond.WriteInternalError(w, r, e)
+		return
+	}
+
 	// parse the query parameters
 	params := map[string]any{
 		"sort":      r.URL.Query().Get("sort"),
@@ -239,9 +248,10 @@ func (ref *ResourcesLimitsHandler) list(w http.ResponseWriter, r *http.Request) 
 	}
 
 	input := &domain.ListResourcesLimitsInput{
-		Sort:   sort,
-		Filter: filter,
-		Fields: fields,
+		CallerID: callerID,
+		Sort:     sort,
+		Filter:   filter,
+		Fields:   fields,
 		Paginator: domain.Paginator{
 			NextToken: nextToken,
 			PrevToken: prevToken,

@@ -3218,7 +3218,7 @@ Status: Internal Server Error
 GET /products
 ```
 
-List products across every project, with filtering, sorting, partial fields and pagination.
+List the products of the projects the caller may see, with filtering, sorting, partial fields and pagination: every project's for the administrator account (the admin flag, not the Administrator role), the projects one is a member of for anyone else.
 
 #### Produces
   * application/json
@@ -7609,7 +7609,7 @@ Status: Internal Server Error
 GET /resources_limits
 ```
 
-Retrieve a paginated list of resource limits in the system with optional filtering, sorting, and field selection
+Retrieve a paginated list of resource usage and limits. The administrator account (the admin flag, not the Administrator role) is answered every row; anyone else the rows of the projects they are a member of and their own user's rows
 
 #### Produces
   * application/json

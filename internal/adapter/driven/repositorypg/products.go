@@ -498,11 +498,11 @@ func (ref *ProductsRepository) SelectByProjectID(ctx context.Context, projectID,
 	return ref.collectPage(ctx, span, start, attrs, rows, input, tokenDirection, "SelectByProjectID")
 }
 
-// Select returns a page of products across every project.
-//
-// There is no membership predicate here on purpose: this backs `GET /products`,
-// which is authorised as its own resource. A deployment that does not want it
-// reachable removes the policy, not the endpoint.
+// Select returns a page of the products of the caller's projects: every
+// project's for the administrator account, the projects the caller is a
+// member of for anyone else, as GET /projects answers them. It backs
+// `GET /products`, which has no project in its path for the membership check
+// to hold, so the statement holds it to the caller.
 func (ref *ProductsRepository) Select(ctx context.Context, input *domain.SelectProductsInput) (*domain.SelectProductsOutput, error) {
 	start := time.Now()
 	ctx, span, attrs, cancel := o11y.SetupTraceWithTimeout(ctx, ref.ot.Traces.Tracer, ref.maxQueryTimeout, ref.metricsMetadata, "Select")
@@ -516,6 +516,12 @@ func (ref *ProductsRepository) Select(ctx context.Context, input *domain.SelectP
 
 	if err := input.Validate(); err != nil {
 		return nil, o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
+	}
+
+	// Never "no scope": a list that does not know who asks answers nobody.
+	if input.CallerID == uuid.Nil() {
+		errorValue := &domain.InvalidInputError{Message: "the products list was asked for with no caller"}
+		return nil, o11y.RecordError(ctx, span, start, errorValue, ref.metrics, attrs)
 	}
 
 	sqlFieldsPrefix := "prd."
@@ -544,16 +550,24 @@ func (ref *ProductsRepository) Select(ctx context.Context, input *domain.SelectP
 		sortQuery = injectPrefixToSortFields(sqlFieldsPrefix, input.Sort, domain.ProductsSortFields)
 	}
 
-	// `WHERE 1=1` so buildPaginationCriteria's `AND ...` has something to
-	// attach to, the same shape the project-scoped query gets from its
-	// membership predicate.
+	// The list has no project in its path, so the membership check holds
+	// nothing, and it answered every project's products to whoever held its
+	// grant: the seeded ProjectMember role, whose projects are the ones it
+	// is a member of. It answers what the projects list answers now
+	// (view_projects_users): every project's products to the administrator
+	// account, and to anyone else those of the projects they are a member
+	// of. The caller is $1. The scope is the statement's WHERE, so the
+	// filter and the pager attach to it with AND, as on the project's list.
 	queryTemplate := `
         WITH prd AS (
             SELECT
                 {{.QueryColumns}}
             FROM products AS prd
                 LEFT JOIN projects AS prjs ON prd.projects_id = prjs.id
-            WHERE 1 = 1
+            WHERE EXISTS (
+                SELECT 1 FROM view_projects_users AS callers
+                WHERE callers.user_id = $1 AND callers.id = prd.projects_id
+            )
             {{ .QueryWhere }}
             GROUP BY prd.id, prjs.id
             ORDER BY {{.QueryInternalSort}}
@@ -592,7 +606,7 @@ func (ref *ProductsRepository) Select(ctx context.Context, input *domain.SelectP
 	query := tpl.String()
 	cslog.Trace(ctx, "sql", "query", prettyPrint(query))
 
-	rows, err := ref.db.Query(ctx, query)
+	rows, err := ref.db.Query(ctx, query, input.CallerID)
 	if err != nil {
 		return nil, o11y.RecordError(ctx, span, start, ref.handlePgError(err, input), ref.metrics, attrs)
 	}

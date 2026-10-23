@@ -2924,7 +2924,7 @@ const docTemplate = `{
                         "AccessToken": []
                     }
                 ],
-                "description": "List products across every project, with filtering, sorting, partial fields and pagination.",
+                "description": "List the products of the projects the caller may see, with filtering, sorting, partial fields and pagination: every project's for the administrator account (the admin flag, not the Administrator role), the projects one is a member of for anyone else.",
                 "produces": [
                     "application/json"
                 ],
@@ -5105,7 +5105,7 @@ const docTemplate = `{
                         "AccessToken": []
                     }
                 ],
-                "description": "Retrieve a paginated list of resource limits in the system with optional filtering, sorting, and field selection",
+                "description": "Retrieve a paginated list of resource usage and limits. The administrator account (the admin flag, not the Administrator role) is answered every row; anyone else the rows of the projects they are a member of and their own user's rows",
                 "produces": [
                     "application/json"
                 ],

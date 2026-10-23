@@ -181,6 +181,11 @@ type SelectProductsInput struct {
 	Filter    string
 	Fields    string
 	Paginator Paginator
+	// CallerID is who asks, on GET /products: the list is the products of
+	// the projects the projects list answers the caller (every project for
+	// the administrator account). A project's list is held by its path and
+	// leaves this nil.
+	CallerID uuid.UUID
 }
 
 func (ref *SelectProductsInput) Validate() error {

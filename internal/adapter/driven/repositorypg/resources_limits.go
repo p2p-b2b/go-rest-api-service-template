@@ -134,6 +134,12 @@ func (ref *ResourcesLimitsRepository) Select(ctx context.Context, input *domain.
 		return nil, o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
 	}
 
+	// Never "no scope": a list that does not know who asks answers nobody.
+	if input.CallerID == uuid.Nil() {
+		errorValue := &domain.InvalidInputError{Message: "the usage list was asked for with no caller"}
+		return nil, o11y.RecordError(ctx, span, start, errorValue, ref.metrics, attrs)
+	}
+
 	// if no fields are provided, select all fields
 	sqlFieldsPrefix := "rls."
 	fieldsArray := []string{
@@ -154,7 +160,7 @@ func (ref *ResourcesLimitsRepository) Select(ctx context.Context, input *domain.
 	var filterQuery string
 	if input.Filter != "" {
 		filterSentence := injectFieldExpressions(sqlFieldsPrefix, input.Filter, domain.ResourcesLimitsFilterFields, resourcesLimitsFilterExpressions)
-		filterQuery = fmt.Sprintf("WHERE (%s)", filterSentence)
+		filterQuery = fmt.Sprintf("AND (%s)", filterSentence)
 	}
 
 	var sortQuery string
@@ -164,7 +170,17 @@ func (ref *ResourcesLimitsRepository) Select(ctx context.Context, input *domain.
 		sortQuery = injectPrefixToSortFields(sqlFieldsPrefix, input.Sort, domain.ResourcesLimitsSortFields)
 	}
 
-	// query template
+	// The list's rows belong to a scope (scope_type and scope_id name a
+	// project, a user, or the system), not to a project, and it answered
+	// every row, each project's and each user's with its id, to whoever held
+	// its grant (the seeded ReadOnly role is enough). The administrator
+	// account (the admin flag) is answered every row; anyone else a
+	// project's rows for the projects they are a member of, and their own
+	// user's rows, which is what GET /projects/{project_id}/resources_limits
+	// (membership-checked) and GET /me/resources_limits answer them already.
+	// The system's rows are the deployment's totals, not anyone's project,
+	// and are the administrator's alone. The caller is $1. The scope is the
+	// statement's WHERE, so the filter and the pager attach to it with AND.
 	queryTemplate := `
         WITH rls AS (
             SELECT
@@ -176,6 +192,14 @@ func (ref *ResourcesLimitsRepository) Select(ctx context.Context, input *domain.
 		            ON  rls.scope_type = rl.scope_type
 		            AND rls.resource_type = rl.resource_type
 		            AND rls.scope_id = rl.scope_id
+            WHERE (
+                EXISTS (SELECT 1 FROM users AS caller WHERE caller.id = $1 AND caller.admin IS TRUE)
+                OR (rls.scope_type = 'user' AND rls.scope_id = $1)
+                OR (rls.scope_type = 'project' AND EXISTS (
+                    SELECT 1 FROM projects_users AS membership
+                    WHERE membership.projects_id = rls.scope_id AND membership.users_id = $1
+                ))
+            )
             {{ .QueryWhere }}
             ORDER BY {{.QueryInternalSort}}
             LIMIT {{.QueryLimit}}
@@ -203,7 +227,7 @@ func (ref *ResourcesLimitsRepository) Select(ctx context.Context, input *domain.
 		return nil, o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
 	}
 
-	queryValues.QueryWhere, queryValues.QueryInternalSort = buildPaginationCriteria("rls", tokenDirection, id, serial, filterQuery, false)
+	queryValues.QueryWhere, queryValues.QueryInternalSort = buildPaginationCriteria("rls", tokenDirection, id, serial, filterQuery, true)
 
 	// render the template on query variable
 	var tpl bytes.Buffer
@@ -217,7 +241,7 @@ func (ref *ResourcesLimitsRepository) Select(ctx context.Context, input *domain.
 	cslog.Trace(ctx, "sql", "query", prettyPrint(query))
 
 	// execute the query
-	rows, err := ref.db.Query(ctx, query)
+	rows, err := ref.db.Query(ctx, query, input.CallerID)
 	if err != nil {
 		return nil, o11y.RecordError(ctx, span, start, ref.handlePgError(err, nil), ref.metrics, attrs)
 	}
