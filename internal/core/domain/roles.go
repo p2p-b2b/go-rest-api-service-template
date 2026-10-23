@@ -128,6 +128,10 @@ func (ref *UpdateRoleInput) Validate() error {
 
 type DeleteRoleInput struct {
 	ID uuid.UUID
+	// CallerID is who asks. A role's delete takes it from every account
+	// that holds it, and an account with the `admin` flag is stripped of a
+	// role only by an account that has the flag.
+	CallerID uuid.UUID
 }
 
 func (ref *DeleteRoleInput) Validate() error {

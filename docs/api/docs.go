@@ -5603,7 +5603,7 @@ const docTemplate = `{
                         }
                     },
                     "403": {
-                        "description": "Insufficient permissions",
+                        "description": "Insufficient permissions, a system role, or a role an account with the admin flag holds and the caller has no flag",
                         "schema": {
                             "$ref": "#/definitions/payload.HTTPMessage"
                         }

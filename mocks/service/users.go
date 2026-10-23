@@ -173,6 +173,21 @@ func (mr *MockUsersMockRecorder) SelectAdministratorsAmong(ctx, ids any) *gomock
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SelectAdministratorsAmong", reflect.TypeOf((*MockUsers)(nil).SelectAdministratorsAmong), ctx, ids)
 }
 
+// SelectAdministratorsHolding mocks base method.
+func (m *MockUsers) SelectAdministratorsHolding(ctx context.Context, roleID uuid.UUID) ([]uuid.UUID, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SelectAdministratorsHolding", ctx, roleID)
+	ret0, _ := ret[0].([]uuid.UUID)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// SelectAdministratorsHolding indicates an expected call of SelectAdministratorsHolding.
+func (mr *MockUsersMockRecorder) SelectAdministratorsHolding(ctx, roleID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SelectAdministratorsHolding", reflect.TypeOf((*MockUsers)(nil).SelectAdministratorsHolding), ctx, roleID)
+}
+
 // SelectAuthz mocks base method.
 func (m *MockUsers) SelectAuthz(ctx context.Context, userID uuid.UUID) (*domain.SelectAuthzOutput, error) {
 	m.ctrl.T.Helper()

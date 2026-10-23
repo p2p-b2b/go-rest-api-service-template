@@ -28,6 +28,10 @@ type administratorRepository struct {
 	writes     []string
 	// written is the last update the statement was handed.
 	written *domain.UpdateUserInput
+	// holders are the accounts that hold each role; holdersErr is what
+	// reading them answers instead, when set.
+	holders    map[uuid.UUID][]uuid.UUID
+	holdersErr error
 }
 
 func (r *administratorRepository) SelectByID(_ context.Context, id uuid.UUID) (*domain.User, error) {
@@ -61,6 +65,14 @@ func (r *administratorRepository) IsEnabledAdministrator(_ context.Context, id u
 
 // errTheDatabaseIsDown is the failure of an account's read.
 var errTheDatabaseIsDown = errors.New("the database is down")
+
+func (r *administratorRepository) SelectAdministratorsHolding(ctx context.Context, roleID uuid.UUID) ([]uuid.UUID, error) {
+	if r.holdersErr != nil {
+		return nil, r.holdersErr
+	}
+
+	return r.SelectAdministratorsAmong(ctx, r.holders[roleID])
+}
 
 func (r *administratorRepository) SelectAdministratorsAmong(_ context.Context, ids []uuid.UUID) ([]uuid.UUID, error) {
 	var found []uuid.UUID
@@ -628,4 +640,121 @@ func TestARoleIsNotTakenFromAnAdministratorAccountThroughTheRole(t *testing.T) {
 			}
 		})
 	}
+}
+
+// rolesDeleteRepository holds a few roles and records the delete of one;
+// another is the repository's 404. Any other method panics: the embedded
+// port is nil.
+type rolesDeleteRepository struct {
+	repository.Roles
+	roles   map[uuid.UUID]bool
+	deleted bool
+}
+
+func (r *rolesDeleteRepository) DeleteByID(_ context.Context, in *domain.DeleteRoleInput) error {
+	if !r.roles[in.ID] {
+		return &domain.RoleNotFoundError{RoleID: in.ID.String()}
+	}
+
+	r.deleted = true
+
+	return nil
+}
+
+// The same strip, of every holder at once: DELETE /roles/{role_id} takes the
+// role from every account that holds it, by the links' cascade. While an
+// account with the flag holds it, the delete is the flag's, as the unlink is.
+func TestARoleIsNotTakenFromAnAdministratorAccountByItsDelete(t *testing.T) {
+	t.Parallel()
+
+	held, unheld := uuid.NewV7(), uuid.NewV7()
+
+	for name, c := range map[string]struct {
+		role    uuid.UUID
+		caller  uuid.UUID
+		refused bool
+		fault   bool
+		missing bool
+	}{
+		"a_role_only_ordinary_accounts_hold":       {role: unheld, caller: managerAcct},
+		"a_role_an_administrator_account_holds":    {role: held, caller: managerAcct, refused: true},
+		"by_an_administrator_account":              {role: held, caller: adminB},
+		"by_a_disabled_administrator_account":      {role: held, caller: adminOff, refused: true},
+		"held_by_an_administrator_with_no_caller":  {role: held, fault: true},
+		"held_by_nobody_with_no_caller_as_before":  {role: unheld},
+		"one_that_is_not_there_is_the_repositorys": {role: uuid.NewV7(), caller: managerAcct, missing: true},
+	} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			administrators := administratorAccounts(2)
+			administrators.holders = map[uuid.UUID][]uuid.UUID{
+				held:   {ordinary, adminA},
+				unheld: {ordinary, unflaggedAcct},
+			}
+
+			roles := &rolesDeleteRepository{roles: map[uuid.UUID]bool{held: true, unheld: true}}
+
+			svc, err := NewRolesService(RolesServiceConf{Guard: &GrantGuard{}, Repository: roles, Administrators: administrators, OT: testOT(t)})
+			if err != nil {
+				t.Fatalf("NewRolesService: %v", err)
+			}
+
+			err = svc.DeleteByID(t.Context(), &domain.DeleteRoleInput{ID: c.role, CallerID: c.caller})
+
+			switch {
+			case c.fault:
+				if !errors.Is(err, errAdministratorChangeWithoutCaller) {
+					t.Fatalf("got %T (%v), want the fault of a route wired without its caller", err, err)
+				}
+
+				if roles.deleted {
+					t.Error("the role was deleted all the same")
+				}
+			case c.refused:
+				refusedAs(t, err, theAdministratorAccount)
+
+				if roles.deleted {
+					t.Error("the role was deleted all the same")
+				}
+			case c.missing:
+				if _, ok := errors.AsType[*domain.RoleNotFoundError](err); !ok {
+					t.Fatalf("got %T (%v), want the repository's 404", err, err)
+				}
+			default:
+				if err != nil {
+					t.Fatalf("refused: %v", err)
+				}
+
+				if !roles.deleted {
+					t.Error("nothing was deleted")
+				}
+			}
+		})
+	}
+
+	// A read of the holders that fails is no answer: the delete is not done.
+	t.Run("a_failed_read_of_its_holders_deletes_nothing", func(t *testing.T) {
+		t.Parallel()
+
+		fault := errors.New("the database is gone")
+
+		administrators := administratorAccounts(2)
+		administrators.holdersErr = fault
+
+		roles := &rolesDeleteRepository{roles: map[uuid.UUID]bool{unheld: true}}
+
+		svc, err := NewRolesService(RolesServiceConf{Guard: &GrantGuard{}, Repository: roles, Administrators: administrators, OT: testOT(t)})
+		if err != nil {
+			t.Fatalf("NewRolesService: %v", err)
+		}
+
+		if err := svc.DeleteByID(t.Context(), &domain.DeleteRoleInput{ID: unheld, CallerID: managerAcct}); !errors.Is(err, fault) {
+			t.Errorf("got %v, want the read's fault", err)
+		}
+
+		if roles.deleted {
+			t.Error("the role was deleted with its holders unread")
+		}
+	})
 }

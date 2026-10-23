@@ -367,7 +367,7 @@ func (ref *RolesHandler) updateByID(w http.ResponseWriter, r *http.Request) {
 //	@Success		200		{object}	payload.HTTPMessage	"Role deleted successfully"
 //	@Failure		400		{object}	payload.HTTPMessage	"Invalid role ID format"
 //	@Failure		401		{object}	payload.HTTPMessage	"Missing or invalid authentication token"
-//	@Failure		403		{object}	payload.HTTPMessage	"Insufficient permissions"
+//	@Failure		403		{object}	payload.HTTPMessage	"Insufficient permissions, a system role, or a role an account with the admin flag holds and the caller has no flag"
 //	@Failure		404		{object}	payload.HTTPMessage	"Role not found"
 //	@Failure		429		{object}	payload.HTTPMessage	"Too many requests -- RATE_LIMIT_EXCEEDED is the budget, RATE_LIMIT_UNAVAILABLE the limiter's own store"
 //	@Failure		500		{object}	payload.HTTPMessage	"Internal server error"
@@ -385,11 +385,28 @@ func (ref *RolesHandler) deleteByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Who asks: the delete takes the role from every account that holds it,
+	// and an account with the `admin` flag is stripped of a role only by one
+	// that has it. A request that reaches here with no caller is a route
+	// wired without its middleware.
+	callerID, err := getUserIDFromContext(ctx)
+	if err != nil {
+		respond.WriteInternalError(w, r, o11y.RecordError(ctx, span, start, err, ref.metrics, attrs))
+		return
+	}
+
 	input := &domain.DeleteRoleInput{
-		ID: roleID,
+		ID:       roleID,
+		CallerID: callerID,
 	}
 
 	if err := ref.service.DeleteByID(ctx, input); err != nil {
+		if _, ok := errors.AsType[*domain.AdministratorProtectedError](err); ok {
+			e := o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
+			respond.WriteJSONMessage(w, r, http.StatusForbidden, e.Error())
+			return
+		}
+
 		if _, ok := errors.AsType[*domain.RoleNotFoundError](err); ok {
 			e := o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
 			respond.WriteJSONMessage(w, r, http.StatusNotFound, e.Error())

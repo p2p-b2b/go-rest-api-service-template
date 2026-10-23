@@ -15,6 +15,12 @@ Since `v0.0.3`.
 
 ### Security
 
+- **A role an administrator account holds is not deleted by another
+  account.** `DELETE /roles/{role_id}` takes the role from every account
+  that holds it, and an account with the `admin` flag was stripped of it by
+  a caller without the flag, where the unlink of that one account was
+  refused. While an account with the flag holds the role, its delete is a
+  `403` unless the caller has the flag. (#143)
 - **Go 1.27.3**, for
   [GO-2026-6809](https://pkg.go.dev/vuln/GO-2026-6809): `crypto/x509`
   distrusts compromised intermediate certificates. On 1.27.2 it is reached
