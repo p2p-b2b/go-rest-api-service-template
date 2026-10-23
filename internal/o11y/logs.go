@@ -163,10 +163,10 @@ func (ref *OpenTelemetryLogger) SetupLogs() error {
 
 	otel.SetLoggerProvider(lp)
 
-	ref.Handler = otelslog.NewHandler(ref.name,
+	ref.Handler = textValuesHandler{Handler: otelslog.NewHandler(ref.name,
 		otelslog.WithLoggerProvider(lp),
 		otelslog.WithSource(ref.addSource),
-	)
+	)}
 
 	return nil
 }

@@ -232,6 +232,12 @@ Since `v0.0.3`.
 
 ### Fixed
 
+- An id reaches the log store as the id. The OpenTelemetry bridge exported a
+  `uuid.UUID` as an array of sixteen integers, a named string type as
+  "unhandled: …" and a slice of ids as arrays of integers, so a filter on
+  `user_id` in Loki matched nothing (stdout showed the id). The exported
+  handler gives such values as they read; a nil pointer is left as it is.
+  (#146)
 - A replica that stops says so. A first load before serving that failed, or a
   failure of the start from the database on, ended the process with nothing
   in the log store, not even its start line (`log.Fatalf` wrote at INFO and
