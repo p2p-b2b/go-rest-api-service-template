@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS users (
     -- an update touches disabled and never verified. An account an
     -- administrator creates is stored verified: the administrator vouches for
     -- the address, and no link is mailed for it.
-    disabled BOOLEAN DEFAULT TRUE,
+    disabled BOOLEAN NOT NULL DEFAULT TRUE,
     verified BOOLEAN NOT NULL DEFAULT FALSE,
     -- disabled_by_admin says whose doing a disabled account is. "Disabled until
     -- the link is followed" and "disabled by an administrator" were the same
@@ -42,8 +42,27 @@ CREATE TABLE IF NOT EXISTS users (
     -- and set it by hand on the unverified, disabled rows that an
     -- administrator disabled, which that statement leaves unmarked.
     disabled_by_admin BOOLEAN NOT NULL DEFAULT FALSE,
-    admin BOOLEAN DEFAULT FALSE,
-    local_account BOOLEAN DEFAULT TRUE,
+    -- disabled, admin and local_account are NOT NULL: a NULL was read three
+    -- ways. With `disabled` NULL and the flag, the sign-in and the account's
+    -- standing took the account for enabled, while the count of enabled
+    -- administrator accounts (`disabled IS FALSE`) left it out; the
+    -- projects' view, which splits on `admin = TRUE` and `admin = FALSE`,
+    -- gave an account with `admin` NULL no project at all. A flag is set or
+    -- it is not.
+    --
+    -- Made NOT NULL in this file after it first shipped, as the rule is
+    -- before a first deploy. goose does not see an edit, so a database
+    -- created from an earlier version keeps the nullable columns: recreate
+    -- it, or
+    --   UPDATE users SET disabled = COALESCE(disabled, TRUE),
+    --                    admin = COALESCE(admin, FALSE),
+    --                    local_account = COALESCE(local_account, TRUE);
+    --   ALTER TABLE users ALTER COLUMN disabled SET NOT NULL,
+    --                     ALTER COLUMN admin SET NOT NULL,
+    --                     ALTER COLUMN local_account SET NOT NULL;
+    -- which gives a value never set the column's default.
+    admin BOOLEAN NOT NULL DEFAULT FALSE,
+    local_account BOOLEAN NOT NULL DEFAULT TRUE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
 

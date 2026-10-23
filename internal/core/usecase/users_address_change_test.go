@@ -95,11 +95,12 @@ func TestOnlyTheAdministratorAccountChangesAnAddress(t *testing.T) {
 			administrator: {ID: administrator, Email: "admin@example.com", Admin: new(true), Disabled: new(false)},
 			// A row older than the spelling every address is given now.
 			older: {ID: older, Email: "Older.Holder@Example.com", Admin: new(false)},
-			// The column is nullable: a flag that was never set.
+			// A row read without its flag (a nil Admin) is not the
+			// administrator's.
 			unflagged: {ID: unflagged, Email: "unflagged@example.com"},
 			// An account with the flag that was disabled.
 			locked: {ID: locked, Email: "locked@example.com", Admin: new(true), Disabled: new(true)},
-			// The column is nullable here too: never set is not disabled.
+			// A row read without its `disabled` is not disabled.
 			neverLocked: {ID: neverLocked, Email: "never@example.com", Admin: new(true)},
 		}
 	}

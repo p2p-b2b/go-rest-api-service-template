@@ -502,7 +502,7 @@ account with one request.
 ```mermaid
 flowchart TD
     R["PUT /users/{user_id}<br/>body: admin"] --> S["the stored account,<br/>read from the repository"]
-    S --> E{"is it the value<br/>the account already has?<br/>(never set counts as not set)"}
+    S --> E{"is it the value<br/>the account already has?"}
     S -- "no such account" --> NF["404"]
     S -- "the read fails" --> IE["500"]
     E -- yes --> N["no change: taken out of the update,<br/>the rest of the body is judged as before"]
@@ -521,9 +521,12 @@ flowchart TD
   form sends back what it read: `admin: false` for an account that never had
   the flag is no change, whoever sends it, and it is taken out of the update
   so that the statement is handed only what an administrator account
-  changed. `users.admin` is nullable, and a flag that was never set is not
-  set: `false` for such a row is no change either, and the row is left as it
-  is.
+  changed. `users.admin` is `NOT NULL`, and so are `disabled` and
+  `local_account`: a NULL was read three ways (the sign-in and the account's
+  standing took a NULL `disabled` for enabled while the count of enabled
+  administrator accounts left it out; the projects' view, which splits on
+  `admin = TRUE` and `admin = FALSE`, gave a NULL `admin` no project). A flag
+  is set or it is not (`TestEveryFlagOfAnAccountIsNotNull`).
 - **Taking it back is the guard's** (`guardAdministrator`), as disabling the
   account is: it takes the account out of the set that can do these things.
   The last one that can still sign in keeps it, whoever asks; a disabled

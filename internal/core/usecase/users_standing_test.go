@@ -79,7 +79,7 @@ func TestAnAccountsStandingIsReadFromTheRepository(t *testing.T) {
 		return map[uuid.UUID]*domain.User{
 			enabled:  {ID: enabled, Disabled: new(false)},
 			disabled: {ID: disabled, Disabled: new(true)},
-			// The column is nullable: never set is not disabled.
+			// A row read without its `disabled` is not disabled.
 			neverSet: {ID: neverSet},
 			staleOff: {ID: staleOff, Disabled: new(true)},
 		}

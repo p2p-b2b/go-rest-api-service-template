@@ -134,6 +134,13 @@ Since `v0.0.3`.
 
 ### Upgrade notes
 
+- **`users.disabled`, `users.admin` and `users.local_account` are `NOT NULL`**
+  (`00002_users_tables.sql`, edited in place). A database created from an
+  earlier version keeps the nullable columns, and the migration tool does
+  not see the edit: recreate it, or run the statements the migration's
+  comment gives, which set a value never set to the column's default and
+  then add `NOT NULL`. A NULL was read three ways (the sign-in, the count of
+  enabled administrator accounts, the projects' view). (#144)
 - **The `users` table has a trigger**, `tr_protect_bootstrap_administrator`:
   the seeded account keeps its `admin` flag. Added to the file that creates
   the table; a database created from an earlier version does not have it

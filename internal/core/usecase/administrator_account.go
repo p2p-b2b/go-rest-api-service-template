@@ -120,8 +120,8 @@ func guardAdministrator(ctx context.Context, accounts AdministratorAccounts, tar
 // isAdministratorAccount reports whether id is an account with the `admin`
 // flag that may act: one that is not disabled. It is read from the
 // repository, not the cache: the answer decides who may have, or lock, an
-// account. An account that is not there, and a flag that was never set, are
-// not the administrator's.
+// account. An account that is not there, and a row read without its flag,
+// are not the administrator's.
 //
 // A disabled account does not sign in, and is asked about all the same: it
 // is the account an administrator locked, and the one thing it must not be

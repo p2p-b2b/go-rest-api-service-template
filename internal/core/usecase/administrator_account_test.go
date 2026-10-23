@@ -111,8 +111,9 @@ func (r *administratorRepository) UnlinkRoles(context.Context, *domain.UnlinkRol
 
 // The accounts of these tests: six with the `admin` flag (two enabled, one
 // disabled, one federated with no identity, one federated with one, one
-// whose `local_account` was never set); a user manager; an ordinary
-// account; one whose flag was never set.
+// read without its `local_account`); a user manager; an ordinary account;
+// one read without its flag (a nil Admin). The columns are NOT NULL; a nil
+// field is a row read without it.
 var (
 	adminA, adminB, adminOff = uuid.NewV7(), uuid.NewV7(), uuid.NewV7()
 	adminFederated           = uuid.NewV7()
@@ -303,7 +304,7 @@ func TestAUsersUpdateDoesNotLockAnAdministratorAccount(t *testing.T) {
 		"an_administrator_makes_a_federated_one_local": {input: domain.UpdateUserInput{ID: adminFederated, CallerID: adminB, LocalAccount: new(true)}, handed: "disabled=- local=true"},
 		"a_user_manager_enables_an_ordinary_one":       {input: domain.UpdateUserInput{ID: ordinaryOff, CallerID: managerAcct, Disabled: new(false), LocalAccount: new(true)}, handed: "disabled=false local=true"},
 		"an_unlock_that_names_no_caller_is_a_fault":    {input: domain.UpdateUserInput{ID: adminOff, Disabled: new(false)}, fault: true},
-		// An account whose `local_account` was never set has no password
+		// An account read without its `local_account` has no password
 		// login: false is no change, true makes it a local account.
 		"a_user_manager_sends_local_account_false_where_it_was_never_set": {
 			input: domain.UpdateUserInput{ID: adminNeverSet, CallerID: managerAcct, FirstName: new("Jane"), LocalAccount: new(false)}, handed: "disabled=- local=-",

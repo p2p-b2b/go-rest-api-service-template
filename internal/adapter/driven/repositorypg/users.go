@@ -279,9 +279,9 @@ func (ref *UsersRepository) UpdateByID(ctx context.Context, input *domain.Update
 		args = append(args, nil)
 	}
 
-	// $9, the `admin` flag, when the body carries it: TRUE or FALSE, never
-	// NULL. The column is nullable and a flag that was never set is not
-	// set; this statement leaves such a row as it is unless it is told.
+	// $9, the `admin` flag, when the body carries it: TRUE or FALSE. The
+	// column is NOT NULL; this statement leaves the row's value as it is
+	// unless it is told.
 	if input.Admin != nil {
 		args = append(args, *input.Admin)
 	} else {
@@ -444,7 +444,8 @@ func (ref *UsersRepository) DeleteByID(ctx context.Context, input *domain.Delete
 	return nil
 }
 
-// `disabled` is nullable, and a value that was never set is not TRUE.
+// `disabled` is NOT NULL; `IS TRUE` is kept so that the statement reads the
+// same against a database created before it was.
 const queryUserDisabled = `
         SELECT disabled IS TRUE FROM users WHERE id = $1::uuid;
     `
@@ -549,8 +550,9 @@ func (ref *UsersRepository) SelectByID(ctx context.Context, id uuid.UUID) (*doma
 // that may still sign in. That is not "is not disabled": an account that is
 // no longer a local one signs in through a provider, one with no identity at
 // a provider has no way in at all, and an identity at a provider that is
-// disabled is not a way in either. `admin` and `disabled` are nullable, and
-// a value that was never set is not TRUE or FALSE.
+// disabled is not a way in either. `admin` and `disabled` are NOT NULL; the
+// comparisons stay `IS TRUE`/`IS FALSE`, which read the same against a
+// database created before they were.
 //
 // $1 is a provider to count without, or NULL.
 //

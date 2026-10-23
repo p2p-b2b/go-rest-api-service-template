@@ -5,11 +5,13 @@ package integration
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"testing"
 
 	"uuid"
 
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -77,22 +79,15 @@ func TestTheAdminFlagIsGrantedThroughTheAPI(t *testing.T) {
 	}
 
 	// The flag as the row has it: nil is a flag that was never set.
-	stored := func(t *testing.T, user uuid.UUID) *bool {
+	// The flag as the row has it.
+	has := func(t *testing.T, user uuid.UUID) bool {
 		t.Helper()
 
-		var flag *bool
+		var flag bool
 
 		require.NoError(t, testDBPool.QueryRow(context.Background(), `SELECT admin FROM users WHERE id = $1`, user).Scan(&flag))
 
 		return flag
-	}
-
-	has := func(t *testing.T, user uuid.UUID) bool {
-		t.Helper()
-
-		flag := stored(t, user)
-
-		return flag != nil && *flag
 	}
 
 	// The flag as a read of the API answers it.
@@ -165,17 +160,17 @@ func TestTheAdminFlagIsGrantedThroughTheAPI(t *testing.T) {
 		require.Equal(t, http.StatusOK, status, body)
 		assert.True(t, has(t, flagged))
 
-		// A flag that was never set is not set, and "false" for it is no
-		// change either: the row is left as it is.
+		// And there is no third value: a flag is set or it is not, so the
+		// projects' view, the membership read and the lists' scope read the
+		// account alike. A statement by hand is refused by the column.
 		_, err := testDBPool.Exec(ctx, `UPDATE users SET admin = NULL WHERE id = $1`, newcomerID)
-		require.NoError(t, err)
+		require.Error(t, err, "the table took a NULL flag")
 
-		status, body = send(t, usersUpdateEndpoint, manager, map[string]any{"first_name": "Renamed", "admin": false}, newcomerID.String())
-		require.Equal(t, http.StatusOK, status, body)
-		assert.Nil(t, stored(t, newcomerID), "an unchanged flag was written")
-
-		_, err = testDBPool.Exec(ctx, `UPDATE users SET admin = FALSE WHERE id = $1`, newcomerID)
-		require.NoError(t, err)
+		pgErr, ok := errors.AsType[*pgconn.PgError](err)
+		require.True(t, ok, "not a Postgres error: %v", err)
+		assert.Equal(t, "23502", pgErr.Code, "not a not-null violation: %v", err)
+		assert.Equal(t, "admin", pgErr.ColumnName)
+		assert.False(t, has(t, newcomerID))
 	})
 
 	// The flag is every project, read from the row at each request: granted,
@@ -258,6 +253,9 @@ func TestTheAdminFlagIsGrantedThroughTheAPI(t *testing.T) {
 
 		_, err = testDBPool.Exec(ctx, `UPDATE users SET admin = NULL WHERE id = $1`, seededAdministrator)
 		require.Error(t, err, "the table let the seeded account's flag be unset")
+		// A NULL is refused by the column for every row; the trigger, which
+		// runs before the column's check, says it first for this one.
+		assert.Contains(t, err.Error(), "The bootstrap administrator keeps the admin flag.")
 
 		// And only the flag: the value it has is written like any other.
 		_, err = testDBPool.Exec(ctx, `UPDATE users SET admin = TRUE WHERE id = $1`, seededAdministrator)
