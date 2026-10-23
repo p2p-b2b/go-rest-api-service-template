@@ -118,7 +118,7 @@ func (ref *UsersRepository) PingContext(ctx context.Context) error {
 	return nil
 }
 
-func (ref *UsersRepository) Insert(ctx context.Context, input *domain.InsertUserInput) error {
+func (ref *UsersRepository) Insert(ctx context.Context, input *domain.InsertUserInput) (err error) {
 	start := time.Now()
 	ctx, span, attrs, cancel := o11y.SetupTraceWithTimeout(ctx, ref.ot.Traces.Tracer, ref.maxQueryTimeout, ref.metricsMetadata, "Insert")
 	defer cancel()
@@ -135,24 +135,13 @@ func (ref *UsersRepository) Insert(ctx context.Context, input *domain.InsertUser
 
 	span.SetAttributes(attribute.String("user.id", input.ID.String()))
 
-	tx, txErr := ref.db.Begin(ctx)
-	if txErr != nil {
-		return o11y.RecordError(ctx, span, start, txErr, ref.metrics, attrs)
+	tx, err := ref.db.Begin(ctx)
+	if err != nil {
+		return o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
 	}
-
-	defer func() {
-		if txErr != nil {
-			if err := tx.Rollback(ctx); err != nil {
-				e := o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
-				slog.ErrorContext(ctx, "operation failed", "error", e)
-			}
-		} else {
-			if err := tx.Commit(ctx); err != nil {
-				e := o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
-				slog.ErrorContext(ctx, "operation failed", "error", e)
-			}
-		}
-	}()
+	defer endTx(ctx, tx, &err, func(e error) error {
+		return o11y.RecordError(ctx, span, start, ref.handlePgError(e, input), ref.metrics, attrs)
+	})
 
 	// insert the user
 	query1 := `
@@ -177,7 +166,7 @@ func (ref *UsersRepository) Insert(ctx context.Context, input *domain.InsertUser
 		disabled = *input.Disabled
 	}
 
-	_, txErr = tx.Exec(ctx, query1,
+	_, err = tx.Exec(ctx, query1,
 		input.ID,
 		input.FirstName,
 		input.LastName,
@@ -189,9 +178,9 @@ func (ref *UsersRepository) Insert(ctx context.Context, input *domain.InsertUser
 		// Only a row that is stored disabled is disabled by anybody.
 		disabled && input.DisabledByAdmin,
 	)
-	if txErr != nil {
-		txErr = ref.handlePgError(txErr, input)
-		return o11y.RecordError(ctx, span, start, txErr, ref.metrics, attrs)
+	if err != nil {
+		err = ref.handlePgError(err, input)
+		return o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
 	}
 
 	// select from roles where default is true and link to the new user
@@ -207,9 +196,9 @@ func (ref *UsersRepository) Insert(ctx context.Context, input *domain.InsertUser
     `
 
 	cslog.Trace(ctx, "sql", "query", prettyPrint(query2, input.ID.String()))
-	_, txErr = tx.Exec(ctx, query2, input.ID)
-	if txErr != nil {
-		return o11y.RecordError(ctx, span, start, txErr, ref.metrics, attrs)
+	_, err = tx.Exec(ctx, query2, input.ID)
+	if err != nil {
+		return o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
 	}
 
 	cslog.Trace(ctx, "repository.Users.Insert", "user.id", input.ID)

@@ -38,3 +38,38 @@ the reachable injection each one was written against.
   `200`. `TestEveryLinkStatementSelectsEachPairOnce` reads the repository's
   source for every such statement, and `TestALinkThatNamesAnIdTwiceLinksItOnce`
   sends each route a repeated id against a running service.
+
+## A transaction is ended by the error the caller receives
+
+`endTx` (`repositorypg/tx.go`) ends a transaction: it rolls back when the
+method is returning an error and commits when it is returning nil, and it
+reads **the value the caller receives**, through a pointer to the named
+result. A failed COMMIT becomes that result. A deferred closure that commits
+"when `txErr` is nil" reads a local instead: it commits on every error path
+that returns without setting it, and a failed COMMIT inside it can only be
+logged, while the method has already answered nil.
+
+`UsersRepository.Insert` and `ProjectsRepository.Insert` were written that
+way. Both set the local on every error path, so neither committed a partial
+write; but a COMMIT that failed was logged and the method returned nil, and
+the route answered 201 for an account or a project that was never stored.
+
+```mermaid
+flowchart TD
+    B["Begin"] --> D["defer endTx(ctx, tx, &err, record)"]
+    D --> W["the method's statements"]
+    W -- "a statement fails" --> E["return the error"]
+    W -- "all ran" --> N["return nil"]
+    E --> R["endTx: rollback; a rollback that fails is logged,<br/>unless the context is gone"]
+    N --> C{"endTx: COMMIT"}
+    C -- ok --> OK["the caller receives nil"]
+    C -- fails --> F["the caller receives the COMMIT's error,<br/>through record (span, metrics, mapped)"]
+```
+
+`TestNoTransactionIsEndedInADeferredClosure` fails on a `Commit` inside a
+deferred function literal, on a deferred `Commit`, and on `endTx` given a
+pointer to anything but the method's named result, anywhere in the package.
+`TestEndTx` and `TestEndTxReachesTheCaller` hold the helper. A deferred
+`Rollback` before an explicit `Commit` (the resource limits' and the rate
+limits' transactions) is not among the shapes refused: after a commit it does
+nothing, and it decides nothing.

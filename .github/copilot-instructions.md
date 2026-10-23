@@ -211,6 +211,7 @@ mechanism, the diagram and the measurement.
 - **Values go through `$n` placeholders**, never `fmt.Sprintf`. `repositorypg/roles.go` `UpdateByID` records the injection this stops.
 - **Identifiers that must be interpolated** (a schema or table name computed at runtime) go through `pgx.Identifier{schema, table}.Sanitize()`.
 - **A value that cannot be a placeholder** (distance operator, sort direction) is checked against an allow-list first.
+- **A transaction is ended by `endTx`, which reads the error the caller receives**, never by a deferred closure that commits when a local is nil (`TestNoTransactionIsEndedInADeferredClosure`): a failed COMMIT inside such a closure was logged and the method answered nil, a 201 for a row that was never stored.
 - Existing `html/template` SQL builders are a wart, not a pattern; new builders use `text/template` plus explicit sanitisation.
 - **A filter or sort field is one the list's statement can evaluate.** `TestEveryListFieldCanBeFilteredAndSortedBy` asks every list route for each field of its allow-lists. A field shown from a joined relation is written with the expression the list selects it by (`injectFieldExpressions`), never the listed relation's prefix; a field no column serves is in neither allow-list. A new list adds its row to `listFieldsByRoute`.
 

@@ -273,6 +273,12 @@ Since `v0.0.3`.
 
 ### Fixed
 
+- **A failed COMMIT is the answer, not a log line.** Creating an account
+  or a project ended its transaction in a deferred closure that logged a
+  failed COMMIT and returned nil: the route answered `201` for a row that
+  was never stored. Every transaction is ended by `endTx`, which reads the
+  error the method returns, and a COMMIT that fails becomes that error.
+  ([#150](https://github.com/slashdevops/go-rest-api-service-template/pull/150))
 - An id reaches the log store as the id. The OpenTelemetry bridge exported a
   `uuid.UUID` as an array of sixteen integers, a named string type as
   "unhandled: …" and a slice of ids as arrays of integers, so a filter on
