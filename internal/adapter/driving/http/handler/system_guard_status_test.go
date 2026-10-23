@@ -76,7 +76,9 @@ func TestSystemRoleDeleteAnswers403NotServerError(t *testing.T) {
 	mux := http.NewServeMux()
 	h.RegisterRoutes(mux)
 
-	req := httptest.NewRequest(http.MethodDelete, "/roles/"+id.String(), nil)
+	// The delete is held to who asks (an account with the flag may lose the
+	// role), so it reads the caller the authentication put there.
+	req := withCaller(httptest.NewRequest(http.MethodDelete, "/roles/"+id.String(), nil), uuid.NewV7())
 	rec := httptest.NewRecorder()
 	mux.ServeHTTP(rec, req)
 

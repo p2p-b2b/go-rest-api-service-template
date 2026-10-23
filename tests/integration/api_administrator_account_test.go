@@ -159,6 +159,64 @@ func TestAnAdministratorAccountIsNotAUserManagersToLock(t *testing.T) {
 		assert.True(t, ordinaryHasRole, "part of a refused body was done")
 	})
 
+	// And of every holder at once: a role's delete takes it from each account
+	// that holds it, by the links' cascade. While an account with the flag
+	// holds it, the delete is the flag's.
+	t.Run("nor_by_deleting_the_role", func(t *testing.T) {
+		role := func(t *testing.T, holders ...uuid.UUID) uuid.UUID {
+			t.Helper()
+
+			id := uuid.NewV7()
+
+			_, err := testDBPool.Exec(ctx, `INSERT INTO roles (id, name, description) VALUES ($1, $2, 'held')`, id, "held-"+id.String())
+			require.NoError(t, err)
+
+			t.Cleanup(func() { deleteRoleByIDFromDB(t, id) })
+
+			for _, holder := range holders {
+				_, err := testDBPool.Exec(ctx, `INSERT INTO users_roles (users_id, roles_id) VALUES ($1, $2)`, holder, id)
+				require.NoError(t, err)
+			}
+
+			return id
+		}
+
+		exists := func(t *testing.T, id uuid.UUID) bool {
+			t.Helper()
+
+			var found bool
+
+			require.NoError(t, testDBPool.QueryRow(context.Background(), `SELECT EXISTS (SELECT 1 FROM roles WHERE id = $1)`, id).Scan(&found))
+
+			return found
+		}
+
+		// A system role is refused whoever asks, and in its own words. First,
+		// and required: were its trigger ever gone, this would delete the
+		// seeded ReadOnly role from every account in the suite's database.
+		status, body := send(t, rolesDeleteEndpoint, roleOnly, nil, readOnly.String())
+		require.Equal(t, http.StatusForbidden, status, body)
+		assert.NotContains(t, body, administratorAccount, "a system role's delete took the guard's words, not the trigger's")
+
+		held := role(t, ordinary, flagged)
+
+		status, body = send(t, rolesDeleteEndpoint, roleOnly, nil, held.String())
+		assert.Equal(t, http.StatusForbidden, status, body)
+		assert.Contains(t, body, administratorAccount)
+		assert.True(t, exists(t, held), "a role an account with the flag holds was deleted by an account without the flag")
+
+		// Every other role stays the role manager's to delete.
+		unheld := role(t, ordinary)
+
+		status, body = send(t, rolesDeleteEndpoint, roleOnly, nil, unheld.String())
+		require.Equal(t, http.StatusOK, status, body)
+		assert.False(t, exists(t, unheld))
+
+		status, body = send(t, rolesDeleteEndpoint, administrator, nil, held.String())
+		require.Equal(t, http.StatusOK, status, body)
+		assert.False(t, exists(t, held))
+	})
+
 	t.Run("every_other_account_stays_the_roles_to_manage", func(t *testing.T) {
 		status, body := send(t, usersUpdateEndpoint, manager, map[string]any{"disabled": true}, ordinary.String())
 		require.Equal(t, http.StatusOK, status, body)

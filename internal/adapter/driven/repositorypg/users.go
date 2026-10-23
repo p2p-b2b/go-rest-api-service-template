@@ -656,6 +656,63 @@ const queryAdministratorsAmong = `
         SELECT id FROM users WHERE id = ANY($1::uuid[]) AND admin IS TRUE ORDER BY id;
     `
 
+// queryAdministratorsHolding answers which accounts with the `admin` flag
+// hold a role ($1), if its delete would take it from them. A system role's
+// delete takes it from nobody: its trigger refuses the delete whoever asks,
+// and that refusal says why.
+const queryAdministratorsHolding = `
+        SELECT users.id FROM users
+        JOIN users_roles ON users_roles.users_id = users.id
+        JOIN roles ON roles.id = users_roles.roles_id
+        WHERE users_roles.roles_id = $1 AND users.admin IS TRUE AND NOT roles.system
+        ORDER BY users.id;
+    `
+
+// SelectAdministratorsHolding implements [repository.Users]: which accounts
+// with the `admin` flag the role's delete would strip of it
+// (queryAdministratorsHolding).
+func (ref *UsersRepository) SelectAdministratorsHolding(ctx context.Context, roleID uuid.UUID) ([]uuid.UUID, error) {
+	start := time.Now()
+	ctx, span, attrs, cancel := o11y.SetupTraceWithTimeout(ctx, ref.ot.Traces.Tracer, ref.maxQueryTimeout, ref.metricsMetadata, "SelectAdministratorsHolding")
+	defer cancel()
+	defer span.End()
+
+	cslog.Trace(ctx, "sql", "query", prettyPrint(queryAdministratorsHolding, roleID))
+
+	administrators, err := ref.selectAccountIDs(ctx, queryAdministratorsHolding, roleID)
+	if err != nil {
+		return nil, o11y.RecordError(ctx, span, start, ref.handlePgError(err, nil), ref.metrics, attrs)
+	}
+
+	o11y.RecordSuccess(ctx, span, start, ref.metrics, attrs, "administrator accounts selected",
+		attribute.String("role.id", roleID.String()))
+
+	return administrators, nil
+}
+
+// selectAccountIDs runs a statement that answers a column of account ids.
+// The caller's span records how it ended.
+func (ref *UsersRepository) selectAccountIDs(ctx context.Context, query string, args ...any) ([]uuid.UUID, error) {
+	rows, err := ref.db.Query(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var ids []uuid.UUID
+
+	for rows.Next() {
+		var id uuid.UUID
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+
+		ids = append(ids, id)
+	}
+
+	return ids, rows.Err()
+}
+
 // SelectAdministratorsAmong implements [repository.Users]: which of ids are
 // accounts with the `admin` flag.
 func (ref *UsersRepository) SelectAdministratorsAmong(ctx context.Context, ids []uuid.UUID) ([]uuid.UUID, error) {

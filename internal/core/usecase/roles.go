@@ -223,6 +223,10 @@ func (ref *RolesService) DeleteByID(ctx context.Context, input *domain.DeleteRol
 		return o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
 	}
 
+	if err := ref.administratorsKeepTheRole(ctx, input); err != nil {
+		return o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
+	}
+
 	if err := ref.repository.DeleteByID(ctx, input); err != nil {
 		return o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
 	}
@@ -571,11 +575,37 @@ func (ref *RolesService) administratorsAreNotStripped(ctx context.Context, input
 		return err
 	}
 
+	return ref.strippedOnlyByAnAdministrator(ctx, administrators, input.CallerID)
+}
+
+// administratorsKeepTheRole refuses a role's delete while an account with
+// the `admin` flag holds it, unless an administrator account asks. The
+// delete takes the role from every account that holds it, by the links'
+// cascade: it is the unlink of every holder at once, and is refused as the
+// unlink is, in its words. A role nobody with the flag holds, and one that
+// is not there, go on to the repository, which answers the 404.
+//
+// The check and the delete are two statements, as the unlink's are: a role
+// given to an account with the flag in between is taken from it again, which
+// is the most the window allows.
+func (ref *RolesService) administratorsKeepTheRole(ctx context.Context, input *domain.DeleteRoleInput) error {
+	administrators, err := ref.administrators.SelectAdministratorsHolding(ctx, input.ID)
+	if err != nil {
+		return err
+	}
+
+	return ref.strippedOnlyByAnAdministrator(ctx, administrators, input.CallerID)
+}
+
+// strippedOnlyByAnAdministrator is the refusal both share: accounts with the
+// flag that would lose a role lose it only to an account with the flag. No
+// such account, and nobody needs to be asked.
+func (ref *RolesService) strippedOnlyByAnAdministrator(ctx context.Context, administrators []uuid.UUID, callerID uuid.UUID) error {
 	if len(administrators) == 0 {
 		return nil
 	}
 
-	asked, err := isAdministratorAccount(ctx, ref.administrators, input.CallerID)
+	asked, err := isAdministratorAccount(ctx, ref.administrators, callerID)
 	if err != nil {
 		return err
 	}

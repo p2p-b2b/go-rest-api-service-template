@@ -400,7 +400,7 @@ manage.
 
 ```mermaid
 flowchart TD
-    R["PUT /users/{user_id} (disabled, disabled_by_admin, local_account)<br/>DELETE /users/{user_id}<br/>DELETE /users/{user_id}/roles<br/>DELETE /roles/{role_id}/users"] --> T{"has the account<br/>the admin flag?"}
+    R["PUT /users/{user_id} (disabled, disabled_by_admin, local_account)<br/>DELETE /users/{user_id}<br/>DELETE /users/{user_id}/roles<br/>DELETE /roles/{role_id}/users<br/>DELETE /roles/{role_id} (every holder)"] --> T{"has the account<br/>the admin flag?"}
     T -- no --> X["as before: the grant decides"]
     T -- yes --> C{"is it a change?<br/>(the update only: compared<br/>with the stored row)"}
     C -- "no: the value sent back;<br/>it is taken out of the update" --> X
@@ -420,7 +420,13 @@ flowchart TD
   several users: it asks which of them have the flag
   (`SelectAdministratorsAmong`) and refuses them all unless the caller is an
   administrator account (`isAdministratorAccount`), as the guard does; a
-  role is no sign-in, so nothing there is counted.
+  role is no sign-in, so nothing there is counted. **A role's delete is the
+  same strip, of every holder at once**: it takes the role from each account
+  that holds it, by the links' cascade, so while an account with the flag
+  holds it, the delete is refused unless the caller has the flag
+  (`SelectAdministratorsHolding`). A system role's delete is refused by its
+  trigger whoever asks, in its own words, and holds nobody here. The check
+  and the delete are two statements, as the unlink's are.
 - **The flag, not the Administrator role.** The role is a set of grants, and
   grants can be given. An account with the role and no flag is refused like
   any other.

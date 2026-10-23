@@ -41,6 +41,10 @@ type Users interface {
 	// SelectAdministratorsAmong answers which of ids are accounts with the
 	// `admin` flag.
 	SelectAdministratorsAmong(ctx context.Context, ids []uuid.UUID) ([]uuid.UUID, error)
+	// SelectAdministratorsHolding answers which accounts with the `admin`
+	// flag the role's delete would strip of it: its holders, unless it is a
+	// system role, whose delete is refused whoever asks.
+	SelectAdministratorsHolding(ctx context.Context, roleID uuid.UUID) ([]uuid.UUID, error)
 	SelectByRoleID(ctx context.Context, roleID uuid.UUID, input *domain.ListUsersInput) (*domain.ListUsersOutput, error)
 	SelectByProjectID(ctx context.Context, projectID uuid.UUID, input *domain.SelectUsersInput) (*domain.SelectUsersOutput, error)
 	Select(ctx context.Context, input *domain.SelectUsersInput) (*domain.SelectUsersOutput, error)

@@ -17,6 +17,7 @@ type AdministratorAccounts interface {
 	CountEnabledAdministrators(ctx context.Context) (int, error)
 	IsEnabledAdministrator(ctx context.Context, id uuid.UUID) (bool, error)
 	SelectAdministratorsAmong(ctx context.Context, ids []uuid.UUID) ([]uuid.UUID, error)
+	SelectAdministratorsHolding(ctx context.Context, roleID uuid.UUID) ([]uuid.UUID, error)
 }
 
 // errAdministratorChangeWithoutCaller is what a change to an administrator

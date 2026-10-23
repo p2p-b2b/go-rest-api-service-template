@@ -4948,7 +4948,7 @@ Permanently remove role and all associations
 | [200](#01982303-f0fa-7007-aaf6-462c0b8702ec-200) | OK | Role deleted successfully |  | [schema](#01982303-f0fa-7007-aaf6-462c0b8702ec-200-schema) |
 | [400](#01982303-f0fa-7007-aaf6-462c0b8702ec-400) | Bad Request | Invalid role ID format |  | [schema](#01982303-f0fa-7007-aaf6-462c0b8702ec-400-schema) |
 | [401](#01982303-f0fa-7007-aaf6-462c0b8702ec-401) | Unauthorized | Missing or invalid authentication token |  | [schema](#01982303-f0fa-7007-aaf6-462c0b8702ec-401-schema) |
-| [403](#01982303-f0fa-7007-aaf6-462c0b8702ec-403) | Forbidden | Insufficient permissions |  | [schema](#01982303-f0fa-7007-aaf6-462c0b8702ec-403-schema) |
+| [403](#01982303-f0fa-7007-aaf6-462c0b8702ec-403) | Forbidden | Insufficient permissions, a system role, or a role an account with the admin flag holds and the caller has no flag |  | [schema](#01982303-f0fa-7007-aaf6-462c0b8702ec-403-schema) |
 | [404](#01982303-f0fa-7007-aaf6-462c0b8702ec-404) | Not Found | Role not found |  | [schema](#01982303-f0fa-7007-aaf6-462c0b8702ec-404-schema) |
 | [429](#01982303-f0fa-7007-aaf6-462c0b8702ec-429) | Too Many Requests | Too many requests -- RATE_LIMIT_EXCEEDED is the budget, RATE_LIMIT_UNAVAILABLE the limiter's own store |  | [schema](#01982303-f0fa-7007-aaf6-462c0b8702ec-429-schema) |
 | [500](#01982303-f0fa-7007-aaf6-462c0b8702ec-500) | Internal Server Error | Internal server error |  | [schema](#01982303-f0fa-7007-aaf6-462c0b8702ec-500-schema) |
@@ -4983,7 +4983,7 @@ Status: Unauthorized
 
 [PayloadHTTPMessage](#payload-http-message)
 
-##### <span id="01982303-f0fa-7007-aaf6-462c0b8702ec-403"></span> 403 - Insufficient permissions
+##### <span id="01982303-f0fa-7007-aaf6-462c0b8702ec-403"></span> 403 - Insufficient permissions, a system role, or a role an account with the admin flag holds and the caller has no flag
 Status: Forbidden
 
 ###### <span id="01982303-f0fa-7007-aaf6-462c0b8702ec-403-schema"></span> Schema

@@ -63,6 +63,15 @@ func (s *rolesUnlinkStub) UnlinkUsers(_ context.Context, in *domain.UnlinkUsersF
 	return s.refusal
 }
 
+// DeleteByID records the role a delete is about as its one "user": the
+// delete takes the role from every account that holds it.
+func (s *rolesUnlinkStub) DeleteByID(_ context.Context, in *domain.DeleteRoleInput) error {
+	s.asked++
+	s.caller, s.users = in.CallerID, []uuid.UUID{in.ID}
+
+	return s.refusal
+}
+
 func handlerTelemetry(t *testing.T) *o11y.OpenTelemetry {
 	t.Helper()
 
@@ -133,6 +142,29 @@ func lockingRequests(t *testing.T) map[string]lockingRequest {
 				return json(http.MethodDelete, "/users/"+user.String()+"/roles", `{"role_ids":["`+other.String()+`"]}`, map[string]string{"user_id": user.String()})
 			},
 			heard: ofUsers,
+		},
+		// A role's delete takes it from every account that holds it. The
+		// request is about the role, which stands in for the account here.
+		"a_roles_delete": {
+			serve: func(_ *usersLockStub, roles *rolesUnlinkStub) http.HandlerFunc {
+				h, err := NewRolesHandler(RolesHandlerConf{Service: roles, OT: handlerTelemetry(t)})
+				if err != nil {
+					t.Fatalf("NewRolesHandler: %v", err)
+				}
+
+				return h.deleteByID
+			},
+			request: func(role, _ uuid.UUID) *http.Request {
+				return json(http.MethodDelete, "/roles/"+role.String(), "", map[string]string{"role_id": role.String()})
+			},
+			heard: func(_ *usersLockStub, roles *rolesUnlinkStub) (uuid.UUID, uuid.UUID, int) {
+				about := uuid.Nil()
+				if len(roles.users) == 1 {
+					about = roles.users[0]
+				}
+
+				return about, roles.caller, roles.asked
+			},
 		},
 		"a_roles_users": {
 			serve: func(_ *usersLockStub, roles *rolesUnlinkStub) http.HandlerFunc {
