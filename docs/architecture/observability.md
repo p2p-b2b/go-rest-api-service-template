@@ -897,6 +897,29 @@ way after the change: the log store has the start line, the failed load's
 dashboard to a message the service writes, every severity filter to one a
 record is exported at, and both annotations to every dashboard.
 
+## An id reaches the log store as the id
+
+The OpenTelemetry slog bridge converts an attribute of kind Any by reflection
+and matches scalars by their exact built-in type: a `uuid.UUID`, a `[16]byte`,
+was exported as an array of sixteen integers; a named string type
+(`domain.ResourcesLimitsScopeType`) as `"unhandled: (…) system"`; a slice of
+ids as arrays of integers. stdout's handlers ask a value for its text and
+wrote the id, so nothing local showed it, and a filter on `user_id` in the log
+store matched nothing. Measured: `POST /auth/verify` for a verified address
+writes `user_id`, exported as `[1,152,34,…]` before this change and as the id
+after it.
+
+The exported handler is wrapped once (`o11y.textValuesHandler`): an
+attribute, a group's members and attributes bound with `With` included,
+reaches the bridge as it reads: a value with a text form as that text, a
+named scalar as its `String()` or underlying value, a slice of values with a
+text form as their texts. An error stays the bridge's, which makes it the
+record's error. A value whose text cannot be read -- a nil pointer, whose
+value-receiver `MarshalText` panics, or a read that panics or fails -- is
+left as it is, as slog's own handlers leave it: a line of the log is never
+worth a request. The tests run records through the real bridge into a
+recording processor.
+
 ## Related
 
 - [`internal/o11y`](../../internal/o11y) — the package comment is the API tour.
