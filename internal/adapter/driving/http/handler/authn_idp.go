@@ -225,8 +225,8 @@ func (ref *AuthnIDPsHandler) start(w http.ResponseWriter, r *http.Request, actio
 //	@Param			error	query		string						false	"The provider's error code, for example access_denied"
 //	@Success		200		{object}	payload.IDPCallbackResponse	"The outcome"
 //	@Failure		400		{object}	payload.HTTPMessage			"A state that is missing, spent, expired or minted for another provider, or a missing code"
-//	@Failure		401		{object}	payload.HTTPMessage			"The provider refused the sign-in, or the identity is not linked to an account here"
-//	@Failure		404		{object}	payload.HTTPMessage			"Unknown or disabled identity provider, the provider was deleted while signing in, or the account the flow was started for no longer exists"
+//	@Failure		401		{object}	payload.HTTPMessage			"The provider refused the sign-in, the identity is not linked to an account here, or the provider was changed while signing in"
+//	@Failure		404		{object}	payload.HTTPMessage			"Unknown or disabled identity provider, or the account the flow was started for no longer exists"
 //	@Failure		409		{object}	payload.HTTPMessage			"The identity is already linked to an account, or registration is closed: the user limit has been reached"
 //	@Failure		429		{object}	payload.HTTPMessage			"Too many requests"
 //	@Failure		500		{object}	payload.HTTPMessage			"Internal server error"
@@ -505,10 +505,10 @@ func (ref *AuthnIDPsHandler) writeCallbackError(w http.ResponseWriter, r *http.R
 	case isType[*domain.IDPNotFoundError](err):
 		respond.WriteJSONMessage(w, r, http.StatusNotFound, e.Error())
 	case isType[*domain.UserIdentityNotFoundError](err):
-		// The identity's insert found no provider, or no account, behind
-		// its foreign key: the provider was deleted while signing in, or
-		// the account a link was started for is gone. Neither is the
-		// service's fault, and both answered 500.
+		// The identity's insert found no account behind its foreign key:
+		// the account a link was started for is gone. Not the service's
+		// fault, and it answered 500. (A provider deleted while signing in
+		// is IDPChangedDuringSignInError: the insert reads its row.)
 		respond.WriteJSONMessage(w, r, http.StatusNotFound, e.Error())
 	case isType[*domain.UserIdentityAlreadyLinkedError](err):
 		respond.WriteJSONMessage(w, r, http.StatusConflict, e.Error())
@@ -517,7 +517,7 @@ func (ref *AuthnIDPsHandler) writeCallbackError(w http.ResponseWriter, r *http.R
 		// reached: registration is closed, as POST /users answers it. It
 		// answered 500.
 		respond.WriteJSONMessage(w, r, http.StatusConflict, e.Error())
-	case isType[*domain.IDPIdentityNotLinkedError](err), isType[*domain.InvalidCredentialsError](err):
+	case isType[*domain.IDPIdentityNotLinkedError](err), isType[*domain.InvalidCredentialsError](err), isType[*domain.IDPChangedDuringSignInError](err):
 		respond.WriteJSONMessage(w, r, http.StatusUnauthorized, e.Error())
 	case isType[*domain.IDPUnreachableError](err):
 		respond.WriteJSONMessage(w, r, http.StatusServiceUnavailable, e.Error())

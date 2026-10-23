@@ -158,7 +158,7 @@ func (ref *IDPsRepository) Insert(ctx context.Context, input *domain.InsertIDPIn
 	return nil
 }
 
-func (ref *IDPsRepository) UpdateByID(ctx context.Context, input *domain.UpdateIDPInput) error {
+func (ref *IDPsRepository) UpdateByID(ctx context.Context, input *domain.UpdateIDPInput) (err error) {
 	start := time.Now()
 	ctx, span, attrs, cancel := o11y.SetupTraceWithTimeout(ctx, ref.ot.Traces.Tracer, ref.maxQueryTimeout, ref.metricsMetadata, "UpdateByID")
 	defer cancel()
@@ -230,26 +230,43 @@ func (ref *IDPsRepository) UpdateByID(ctx context.Context, input *domain.UpdateI
 
 	args = append(args, input.Enabled, input.AutoProvision)
 
+	tx, err := ref.db.Begin(ctx)
+	if err != nil {
+		return o11y.RecordError(ctx, span, start, ref.handlePgError(err, input), ref.metrics, attrs)
+	}
+	defer endTx(ctx, tx, &err, func(e error) error {
+		return o11y.RecordError(ctx, span, start, ref.handlePgError(e, input), ref.metrics, attrs)
+	})
+
+	// The row first, FOR UPDATE, as the delete takes it: an identity's
+	// insert holds KEY SHARE on it until it commits, which an UPDATE that
+	// changes no key column would not wait for, and its "no identities"
+	// would be read without the identity being written. Waiting here, the
+	// statement below reads the identities as they are then (READ COMMITTED
+	// takes a snapshot per statement); and an insert that comes second waits
+	// for this one and reads the provider as it is left (queryLinkIdentity).
+	cslog.Trace(ctx, "sql", "query", prettyPrint(queryLockIDPForUpdate, input.ID.String()))
+
+	var there bool
+	if err = tx.QueryRow(ctx, queryLockIDPForUpdate, input.ID).Scan(&there); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return o11y.RecordError(ctx, span, start, idpNotRepointed(false, input.ID), ref.metrics, attrs)
+		}
+
+		return o11y.RecordError(ctx, span, start, ref.handlePgError(err, input), ref.metrics, attrs)
+	}
+
 	cslog.Trace(ctx, "sql", "query", prettyPrint(queryUpdateIDP))
 
-	result, err := ref.db.Exec(ctx, queryUpdateIDP, args...)
+	result, err := tx.Exec(ctx, queryUpdateIDP, args...)
 	if err != nil {
 		return o11y.RecordError(ctx, span, start, ref.handlePgError(err, input), ref.metrics, attrs)
 	}
 
 	if result.RowsAffected() == 0 {
-		// Nothing was written: the provider is not there, or the statement
-		// kept it from being pointed elsewhere under its identities. Which
-		// of the two is a read of its own.
-		var exists bool
-
-		cslog.Trace(ctx, "sql", "query", prettyPrint(queryIDPExists, input.ID.String()))
-
-		if err := ref.db.QueryRow(ctx, queryIDPExists, input.ID).Scan(&exists); err != nil {
-			return o11y.RecordError(ctx, span, start, ref.handlePgError(err, input), ref.metrics, attrs)
-		}
-
-		return o11y.RecordError(ctx, span, start, idpNotRepointed(exists, input.ID), ref.metrics, attrs)
+		// The provider is there, under the lock: the statement kept it from
+		// being pointed elsewhere under its identities.
+		return o11y.RecordError(ctx, span, start, idpNotRepointed(true, input.ID), ref.metrics, attrs)
 	}
 
 	o11y.RecordSuccess(ctx, span, start, ref.metrics, attrs, "idp updated successfully", attribute.String("idp.id", input.ID.String()))
@@ -373,8 +390,13 @@ const queryDeleteIDP = `
           );
     `
 
-// queryIDPExists tells a provider that is not there from one an update kept.
+// queryIDPExists asks whether a provider is there.
 const queryIDPExists = `SELECT EXISTS (SELECT 1 FROM idps WHERE id = $1);`
+
+// queryLockIDPForUpdate takes the provider's row before the update's own
+// statement, in the update's transaction, and says whether it is there
+// (UpdateByID; queryLockIDPForDelete is the delete's).
+const queryLockIDPForUpdate = `SELECT TRUE FROM idps WHERE id = $1 FOR UPDATE;`
 
 // queryLockIDPForDelete takes the provider's row before the delete's check,
 // in the delete's transaction, and says whether it is there.
@@ -389,7 +411,8 @@ const queryIDPExists = `SELECT EXISTS (SELECT 1 FROM idps WHERE id = $1);`
 // so this waits for the insert instead, and the delete's statement, run
 // after it, reads the identities as they are then (READ COMMITTED takes a
 // snapshot per statement). Held first, it makes the insert wait, and the
-// insert's foreign key then finds no provider: nothing is stored.
+// insert's statement then finds no provider: nothing is stored (a 401,
+// queryLinkIdentity).
 const queryLockIDPForDelete = `SELECT TRUE FROM idps WHERE id = $1 FOR UPDATE;`
 
 // queryLockAccountsOfIDP takes the rows of the accounts with an identity at

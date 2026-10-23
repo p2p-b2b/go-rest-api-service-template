@@ -239,7 +239,7 @@ sequenceDiagram
     else the identity cannot be stored, or anything else fails
         DB->>DB: ROLLBACK: no account, no roles, no identity
         S->>L: give the slot back (detached, its own deadline)
-        DB-->>U: the refusal (409 linked meanwhile, 404 the provider deleted meanwhile, 401 the address taken meanwhile) or the fault (500)
+        DB-->>U: the refusal (409 linked meanwhile, 401 the provider changed or the address taken meanwhile) or the fault (500)
     end
 ```
 
@@ -266,7 +266,8 @@ another account, or for a local one, is refused),
 | ID token fails iss/aud/exp/signature, or wrong nonce | 401 | go-oidc's text is logged, never returned |
 | identity unknown and not provisionable | 401, one wording | see above |
 | identity already linked elsewhere (link) | 409 | the other account keeps it |
-| a first sign-in's identity cannot be stored (linked meanwhile, the provider deleted meanwhile, a fault) | 409, 404, or 500 | no account is stored either, and the users slot is given back: see above |
+| a first sign-in's identity cannot be stored (linked meanwhile, a fault) | 409, or 500 | no account is stored either, and the users slot is given back: see above |
+| the provider was deleted, or pointed at another issuer or type, while signing in | 401, "the identity provider changed while signing in; sign in again" | nothing is stored under a provider that did not vouch for the subject: see "Pointing a provider elsewhere" |
 | a first sign-in when the users limit is reached | 409 | registration is closed; it answered 500 |
 | provider disabled | 404 at start, at the callback, and absent from `/auth/idp/available` | a half-configured provider is never offered |
 
@@ -388,7 +389,7 @@ sequenceDiagram
         D->>DB: SELECT ... FOR UPDATE (the row is there)
         S->>DB: INSERT users_identities: its foreign key waits
         D->>DB: DELETE, COMMIT
-        DB-->>S: no provider: the insert fails, and its transaction with it
+        DB-->>S: the row read again: gone, nothing inserted (401), its transaction rolled back
     else the provider is not there
         D->>DB: SELECT ... FOR UPDATE: no row
         D-->>D: 404
@@ -494,19 +495,19 @@ flowchart TD
     RD -- yes --> G["the provider read once"]
     G -- "not there" --> N1["404"]
     G --> K["the type and the issuer:<br/>an oidc type needs an issuer (400);<br/>a disable keeps an administrator (403)"]
-    RD -- no --> S
+    RD -- no --> L
     K --> CL{"a change of client_id<br/>or callback_url?"}
-    CL -- no --> S
+    CL -- no --> L
     CL -- yes --> H{"are accounts linked to it?<br/>(HasIdentities)"}
-    H -- no --> S
+    H -- no --> L
     H -- yes --> A{"has the caller the flag,<br/>and is it not disabled?"}
     A -- no --> F["403 AdministratorOnlyError:<br/>client_id, or callback_url"]
     A -- "no caller reached the use-case" --> W["500"]
-    A -- yes --> S["one statement: UPDATE ... WHERE id AND<br/>(type and issuer as stored, or sent back as stored,<br/>OR no identity at the provider)"]
+    A -- yes --> L["in one transaction: the provider's row<br/>FOR UPDATE (queryLockIDPForUpdate),<br/>which waits for an identity being stored"]
+    L -- "not there" --> N["404"]
+    L --> S["one statement: UPDATE ... WHERE id AND<br/>(type and issuer as stored, or sent back as stored,<br/>OR no identity at the provider)"]
     S -- "a row was written" --> OK["200"]
-    S -- "nothing was written" --> R{"is the provider there?"}
-    R -- no --> N["404"]
-    R -- yes --> C["409 IDPInUseError: cannot be pointed at<br/>another issuer or type: still used by<br/>at least one linked account"]
+    S -- "nothing was written" --> C["409 IDPInUseError: cannot be pointed at<br/>another issuer or type: still used by<br/>at least one linked account"]
 ```
 
 - **The type and the issuer, in the update's own statement**
@@ -530,20 +531,90 @@ flowchart TD
 - **The secret, the name, the logo, the switches** change as before. A
   secret alone does not move the sign-in: the code is issued to the stored
   client.
-- **Not closed here:** the check reads the identities as they are when the
-  update runs. A sign-in already in flight, or one that reads the provider
-  through a cached copy, may store an identity under a provider that was
-  just repointed because nobody was linked to it. Unlike the delete, the
-  update does not wait for an identity's insert: an `UPDATE` that changes no
-  key column takes `FOR NO KEY UPDATE`, which does not conflict with the
-  insert's `KEY SHARE`.
+- **An identity is stored only under the provider as the sign-in used it.**
+  The check above reads the identities as they are when the update runs,
+  and a sign-in reads the provider when it starts, perhaps through the
+  cached copy (best-effort invalidation). A sign-in in flight while the
+  provider is repointed, because nobody was linked to it yet, stored an
+  identity that an issuer of someone else's had asserted: the update did
+  not wait for the identity's insert, since an `UPDATE` that changes no key
+  column takes only `FOR NO KEY UPDATE`, which does not conflict with the
+  insert's `KEY SHARE`. So the update and the identity's insert take the
+  provider's row against each other, and the insert names the provider it
+  signed in with:
+
+  - The update takes the row `FOR UPDATE` in its transaction before its
+    statement (`queryLockIDPForUpdate`).
+  - The insert is `INSERT ... SELECT ... FROM idps WHERE id AND idp_types
+    AND issuer_url ... FOR KEY SHARE OF idps` (`queryLinkIdentity`), with
+    the type and the issuer the sign-in used (`LinkUserIdentityInput`; the
+    issuer compared as the reads answer it, `''` for a github provider,
+    whether the row holds NULL or `''`). The foreign key says the provider
+    is there; this says it is still the provider that vouched for the
+    subject. A row that was updated meanwhile is read again, by Postgres,
+    before the insert writes.
+  - Nothing written is a 401 `IDPChangedDuringSignInError` ("the identity
+    provider changed while signing in; sign in again"). On a first sign-in
+    the identity is written in the account's transaction, so no account is
+    stored either; a link answers the same, and so does a provider deleted
+    while the sign-in was under way.
+  - A sign-in that read the provider from a cached copy older than a
+    repoint is refused the same way, and again on every attempt until the
+    copy is invalidated or expires: the repoint invalidates it, best
+    effort. It is a sign-in that does not happen, never one under the
+    wrong issuer.
+
+  Whichever comes first, the other waits for its commit and then reads what
+  it wrote:
+
+  ```mermaid
+  sequenceDiagram
+      participant S as sign-in (insert)
+      participant DB as idps row
+      participant U as PUT (update)
+      alt the insert first
+          S->>DB: FOR KEY SHARE, issuer and type as signed in: matches
+          U->>DB: FOR UPDATE (waits)
+          S->>DB: commit (the identity stored)
+          DB-->>U: lock granted
+          U->>DB: UPDATE ... OR no identity: reads the identity
+          U-->>U: nothing written → 409 IDPInUseError
+      else the update first
+          U->>DB: FOR UPDATE
+          S->>DB: FOR KEY SHARE (waits)
+          U->>DB: UPDATE (another issuer), commit
+          DB-->>S: the row read again: the issuer differs
+          S-->>S: nothing written → 401, no identity, no account
+      end
+  ```
+
+  A change of the name, the secret or the switches leaves the type and the
+  issuer as they were, and the sign-in goes on. The client and the
+  callback are not in the insert's condition: a change of those while
+  accounts are linked is the flag's, and a sign-in in flight then still
+  holds the code issued to the client it started with.
 
 `TestAProviderIsNotRepointedUnderItsIdentities` holds it against a running
 service: another issuer under an identity, by the role and by the flag;
 another type; the type and issuer sent back with a new name; a github
 provider's form; a provider nobody is linked to; the client and the callback
 under an identity, by the role and by the flag, and where nobody is linked;
-a missing provider. In the unit suite:
+a missing provider. `TestASignInStoresNothingUnderAProviderRepointedMeanwhile`
+holds a first sign-in at the provider's token endpoint, repoints the
+provider, and lets it go: a 401, no identity, no account; on the code
+before, a 200 and an identity under an issuer that never vouched for it.
+`TestASignInWaitsForARepointUnderWay` is the other order: the repoint
+played by a transaction of the test's own (the row `FOR UPDATE`, then the
+new issuer), held open while the sign-in stores its identity: the insert
+waits, reads the row again after the commit, and stores nothing (401); on
+the code before, the foreign key waited too, found the provider there, and
+answered 200. `TestARepointWaitsForAnIdentityBeingStored` stores an
+identity in a transaction of its own while the repoint is sent: the update
+waits, and after the commit it is a 409 with the issuer unchanged; on the
+code before, a 200 and the provider pointed elsewhere. In the unit suite:
+`TestAnIdentityIsStoredOnlyUnderTheProviderItSignedInWith` (the insert's
+statement, the lock, the update's order, and the arguments in the
+statement's order at both inserts),
 `TestAProvidersUpdateKeepsItForItsIdentities` (the statement, whole),
 `TestAnUpdateThatWroteNothingSaysWhy`,
 `TestWhereAProvidersSignInGoesIsTheAdministratorsWhileAccountsAreLinked`

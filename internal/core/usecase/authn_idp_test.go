@@ -74,6 +74,8 @@ type identityKey struct {
 type fakeIdentities struct {
 	mu    sync.Mutex
 	links map[identityKey]domain.UserIdentity
+	// linked is what Link was handed, in order.
+	linked []domain.LinkUserIdentityInput
 }
 
 func newFakeIdentities() *fakeIdentities {
@@ -83,6 +85,8 @@ func newFakeIdentities() *fakeIdentities {
 func (f *fakeIdentities) Link(_ context.Context, in *domain.LinkUserIdentityInput) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
+
+	f.linked = append(f.linked, *in)
 
 	k := identityKey{in.IDPID, in.Subject}
 	if _, exists := f.links[k]; exists {
@@ -261,7 +265,7 @@ func newIDPFixture(t *testing.T, info *domain.UserInfo) *idpFixture {
 		idp: &domain.IDP{
 			ID: uuid.NewV7(), Name: "Test", Enabled: true, AutoProvision: true, ClientID: "c", ClientSecret: "s",
 			CallbackURL: "https://app.example/cb", IssuerURL: "https://issuer.example",
-			IDPType: domain.IDPTypes{Name: "Okta", Kind: domain.IDPTypeKindOIDC},
+			IDPType: domain.IDPTypes{ID: uuid.NewV7(), Name: "Okta", Kind: domain.IDPTypeKindOIDC},
 		},
 	}
 
@@ -391,7 +395,12 @@ func TestIDPCallbackProvisionsAndLinks(t *testing.T) {
 	}
 
 	registration := f.authn.registered[0]
-	want := domain.LinkUserIdentityInput{UserID: registration.ID, IDPID: f.idp.ID, Subject: "sub-new", Email: "new@example.com"}
+	// With the provider as the sign-in used it, which the insert holds the
+	// row to: a provider pointed elsewhere meanwhile stores nothing.
+	want := domain.LinkUserIdentityInput{
+		UserID: registration.ID, IDPID: f.idp.ID, Subject: "sub-new", Email: "new@example.com",
+		IssuerURL: f.idp.IssuerURL, IDPTypeID: f.idp.IDPType.ID,
+	}
 
 	if registration.Identity == nil || *registration.Identity != want {
 		t.Fatalf("the registration carried the identity %+v, want %+v", registration.Identity, want)
@@ -466,6 +475,12 @@ func TestIDPCallbackLinkAttachesToTheStartingAccount(t *testing.T) {
 
 	if out.EventType != domain.IDPEventTypeLink || out.Linked != me || out.Login != nil {
 		t.Fatalf("expected a link to %s with no session, got %+v", me, out)
+	}
+
+	// With the provider as the sign-in used it, which the insert holds the
+	// row to: a provider pointed elsewhere meanwhile stores nothing.
+	if len(f.identities.linked) != 1 || f.identities.linked[0].IssuerURL != f.idp.IssuerURL || f.identities.linked[0].IDPTypeID != f.idp.IDPType.ID {
+		t.Fatalf("the link carried %+v, want the issuer %q and the kind %s it signed in with", f.identities.linked, f.idp.IssuerURL, f.idp.IDPType.ID)
 	}
 
 	// Now the identity is known and signs in as me.

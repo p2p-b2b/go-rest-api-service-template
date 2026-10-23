@@ -31,10 +31,35 @@ const (
 // queryLinkIdentity stores an account's identity at a provider: the link of
 // an existing account (Link), and the identity of an account provisioned
 // from it, in the account's own transaction (UsersRepository.Insert).
+//
+// Only under the provider the sign-in used: the row is read with the issuer
+// and the kind the sign-in's token came from ($5, $6), FOR KEY SHARE. The
+// issuer is compared as the reads answer it, ” for a github provider,
+// whether a writer stored NULL or ”. A provider may be pointed at another
+// issuer or type while nobody is linked to it (IDPsRepository.UpdateByID);
+// a sign-in already in flight, or one that read the provider through a
+// cached copy, would have stored an identity under the provider as it is
+// now, for a subject another issuer asserted. The repoint takes the row FOR
+// UPDATE first, which conflicts with KEY SHARE: an insert that comes second
+// waits for it and then reads the row as it was left, and inserts nothing
+// when it changed; a repoint that comes second waits for the insert and
+// sees its identity (409). No row inserted is the refusal
+// (linkIdentityRefused).
 const queryLinkIdentity = `
         INSERT INTO users_identities (users_id, idps_id, subject, email)
-        VALUES ($1, $2, $3, $4);
+        SELECT $1, idps.id, $3, $4
+        FROM idps
+        WHERE idps.id = $2
+          AND idps.idp_types = $6
+          AND COALESCE(idps.issuer_url, '') = $5
+        FOR KEY SHARE OF idps;
     `
+
+// linkIdentityRefused is what an identity's insert that stored nothing
+// answers: the provider is not as the sign-in used it, or not there.
+func linkIdentityRefused() error {
+	return &domain.IDPChangedDuringSignInError{}
+}
 
 type UsersIdentitiesRepositoryConfig struct {
 	DB              *pgxpool.Pool
@@ -129,8 +154,13 @@ func (ref *UsersIdentitiesRepository) Link(ctx context.Context, input *domain.Li
 
 	cslog.Trace(ctx, "sql", "query", prettyPrint(queryLinkIdentity))
 
-	if _, err := ref.db.Exec(ctx, queryLinkIdentity, input.UserID, input.IDPID, input.Subject, input.Email); err != nil {
+	result, err := ref.db.Exec(ctx, queryLinkIdentity, input.UserID, input.IDPID, input.Subject, input.Email, input.IssuerURL, input.IDPTypeID)
+	if err != nil {
 		return o11y.RecordError(ctx, span, start, ref.handlePgError(err), ref.metrics, attrs)
+	}
+
+	if result.RowsAffected() == 0 {
+		return o11y.RecordError(ctx, span, start, linkIdentityRefused(), ref.metrics, attrs)
 	}
 
 	o11y.RecordSuccess(ctx, span, start, ref.metrics, attrs, "identity linked")

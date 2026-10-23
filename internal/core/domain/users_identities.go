@@ -35,8 +35,16 @@ type UserIdentity struct {
 type LinkUserIdentityInput struct {
 	Subject string
 	Email   string
-	UserID  uuid.UUID
-	IDPID   uuid.UUID
+	// IssuerURL and IDPTypeID are the provider as the sign-in used it: the
+	// issuer whose token proved the subject, and its kind. The identity is
+	// stored only while the provider's row still says the same, so a sign-in
+	// through a provider that was pointed elsewhere meanwhile, or read from
+	// a stale cached copy, stores nothing. IssuerURL is "" for a kind with
+	// no issuer (github).
+	IssuerURL string
+	UserID    uuid.UUID
+	IDPID     uuid.UUID
+	IDPTypeID uuid.UUID
 }
 
 func (ref *LinkUserIdentityInput) Validate() error {
@@ -44,6 +52,7 @@ func (ref *LinkUserIdentityInput) Validate() error {
 
 	errs.Add(ValidateUUID(ref.UserID, 7, FieldUserID))
 	errs.Add(ValidateUUID(ref.IDPID, 7, FieldIDPID))
+	errs.Add(ValidateUUID(ref.IDPTypeID, 7, FieldIDPTypeID))
 
 	if ref.Subject == "" {
 		errs.AddError(FieldSubject, "the provider's subject is required", "REQUIRED")
@@ -124,4 +133,15 @@ type IDPIdentityNotLinkedError struct{}
 
 func (e *IDPIdentityNotLinkedError) Error() string {
 	return "this identity is not linked to an account here; sign in with your password and link the provider from your profile, or ask an administrator"
+}
+
+// IDPChangedDuringSignInError refuses an identity whose provider was pointed
+// at another issuer or type, or deleted, while the sign-in ran: the subject
+// was proven by the provider as it was, and is not stored under the
+// provider as it is. Nothing of the sign-in is stored; signing in again
+// reads the provider as it is now.
+type IDPChangedDuringSignInError struct{}
+
+func (e *IDPChangedDuringSignInError) Error() string {
+	return "the identity provider changed while signing in; sign in again"
 }

@@ -374,7 +374,10 @@ func (ref *AuthnIDPsService) signIn(ctx context.Context, idp *domain.IDP, info *
 		Password:       uuid.NewV7().String(), // random and never used; the account has no password
 		Disabled:       new(false),
 		RegisterMethod: domain.RegisterMethodOAuth,
-		Identity:       &domain.LinkUserIdentityInput{UserID: userID, IDPID: idp.ID, Subject: info.Subject, Email: info.Email},
+		Identity: &domain.LinkUserIdentityInput{
+			UserID: userID, IDPID: idp.ID, Subject: info.Subject, Email: info.Email,
+			IssuerURL: idp.IssuerURL, IDPTypeID: idp.IDPType.ID,
+		},
 	}); err != nil {
 		// The address was free at the check above and is taken now: a local
 		// registration, or this same first sign-in arriving twice. It is the
@@ -420,6 +423,7 @@ func (ref *AuthnIDPsService) link(ctx context.Context, idp *domain.IDP, info *do
 
 	if err := ref.usersIdentities.Link(ctx, &domain.LinkUserIdentityInput{
 		UserID: userID, IDPID: idp.ID, Subject: info.Subject, Email: info.Email,
+		IssuerURL: idp.IssuerURL, IDPTypeID: idp.IDPType.ID,
 	}); err != nil {
 		return nil, err
 	}
