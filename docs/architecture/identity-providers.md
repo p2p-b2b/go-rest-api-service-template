@@ -295,9 +295,83 @@ flowchart TD
   whatever its provider's state. That is the delete's rule, because
   enabling a provider gives its identities back and deleting one does not.
 - **The count and the write are two statements**, as every check of this
-  kind in the service is. The delete's own rule is one statement, which is
-  one snapshot: the two providers of an account that has no other way in,
-  deleted in the same instant, each see the other's identity and both go.
+  kind in the service is.
+- **A delete waits for a sign-in through the provider.** An identity's
+  insert (a first sign-in's, a link) holds a `KEY SHARE` lock on the
+  provider's row, through its foreign key, until it commits. The delete's
+  statement read its condition on a snapshot without that identity, waited
+  for the lock, and went ahead after it without reading the condition again
+  (the row had been locked, not changed): its cascade removed the identity
+  just written, and an account that had just signed in had no way in. The
+  delete is one transaction now and takes the row `FOR UPDATE` first
+  (`queryLockIDPForDelete`), which waits for the insert; its statement then
+  reads the identities as they are (READ COMMITTED takes a snapshot per
+  statement). The lock also says whether the provider is there.
+
+```mermaid
+sequenceDiagram
+    participant S as an identity's insert (a sign-in, a link)
+    participant DB as idps row
+    participant D as the provider's delete (one transaction)
+    alt the insert first
+        S->>DB: INSERT users_identities (KEY SHARE on the row)
+        D->>DB: SELECT ... FOR UPDATE: waits
+        S->>DB: COMMIT
+        DB-->>D: the lock
+        D->>DB: DELETE ... WHERE NOT EXISTS (only way in): sees the identity
+        D-->>D: 409, nothing deleted
+    else the delete first
+        D->>DB: SELECT ... FOR UPDATE (the row is there)
+        S->>DB: INSERT users_identities: its foreign key waits
+        D->>DB: DELETE, COMMIT
+        DB-->>S: no provider: the insert fails, no identity is stored
+    else the provider is not there
+        D->>DB: SELECT ... FOR UPDATE: no row
+        D-->>D: 404
+    end
+```
+
+  A first sign-in here is still two writes, the account and then its
+  identity: when the delete comes first, the account the sign-in registered
+  stays, with no identity. Writing both in one transaction is what closes
+  that, and it is not done yet.
+- **An account's ways in are removed one at a time.** The delete's rule
+  reads an account's other identities, and it held only its own provider's
+  row: the two providers of an account that has no other way in, deleted in
+  the same instant, each saw the other's identity and both went, and so did
+  a delete and an unlink of the account's other identity. Every write that
+  removes a way in takes the account's row first, `FOR NO KEY UPDATE`: the
+  provider's delete takes the rows of the accounts linked to it, in the
+  order of their ids, after its own row (`queryLockAccountsOfIDP`), and the
+  unlink, which is one transaction now, takes the account's row and then
+  deletes with the rule in its statement (`queryUnlinkIdentity`; the
+  use-case's `keepsAWayIn` is still asked first, and answers the ordinary
+  case). The second write waits for the first and reads what it left: a
+  409, and the account keeps its last way in. Each keeps its own rule (the
+  delete's counts an identity at a disabled provider, which enabling the
+  provider gives back; the unlink's does not, above): what is serialised is
+  the reading, not the rules. A provider's disable takes no account's row,
+  and the count of administrator accounts that can sign in
+  (`keepsAnAdministrator`) is a statement of its own before either write:
+  two deletes or disables of an administrator account's two providers can
+  each pass it. `FOR NO KEY UPDATE` does not conflict with the `KEY SHARE`
+  an identity's insert takes on the account, so a sign-in into the account
+  is not held, and the id order keeps two deletes that share accounts from
+  deadlocking: the second waits for the first.
+
+```mermaid
+sequenceDiagram
+    participant A as delete of provider A
+    participant X as account X's row
+    participant B as an unlink of B, or delete of provider B
+    A->>X: SELECT ... FOR NO KEY UPDATE (after A's own row)
+    B->>X: SELECT ... FOR NO KEY UPDATE: waits
+    A->>A: DELETE: X still has its identity at B, so A goes
+    A-->>X: COMMIT
+    X-->>B: the lock
+    B->>B: DELETE with its rule: X has no other way in now
+    B-->>B: 409, nothing removed: X keeps B
+```
 
 `TestAnIdentityProvidersDeleteStrandsNobody` holds the delete against a
 running service (an account whose only way in it is, a disabled one, one
@@ -312,7 +386,20 @@ what an identity says of its provider. In the unit suite:
 `TestTheProvidersServiceNeedsItsCount`, `TestAnUnlinkKeepsAWayIn`,
 `TestADeleteThatDeletedNothingSaysWhy`,
 `TestTheProvidersDeleteKeepsItForAnAccountWithNoOtherWayIn` and
-`TestWhoCountsAsAnAdministratorThatCanSignIn` (the statements, whole).
+`TestWhoCountsAsAnAdministratorThatCanSignIn` (the statements, whole),
+`TestAProvidersDeleteLocksItsRowBeforeItsCheck` (the two locks, and that the
+delete runs after them in its transaction) and
+`TestAnUnlinkTakesTheAccountBeforeItsRule` (the unlink's lock, its statement
+and their order). Against a running service,
+`TestAProvidersDeleteWaitsForASignInThroughIt` plays the first race: a
+transaction of its own holds an account's identity uncommitted, the delete
+is seen waiting on its lock, and after the commit it is a 409 with the
+identity kept (it was a 200, and the account had no way in).
+`TestAnAccountsWaysInAreRemovedOneAtATime` plays the four others the same
+way (a provider's delete under an unlink of the account's other identity
+and under the delete of its other provider, an unlink under each of the
+two): a 409 each, the account keeping one identity; on the code before, a
+200 and an account with none.
 
 ## Pointing a provider elsewhere
 
@@ -383,7 +470,10 @@ flowchart TD
 - **Not closed here:** the check reads the identities as they are when the
   update runs. A sign-in already in flight, or one that reads the provider
   through a cached copy, may store an identity under a provider that was
-  just repointed because nobody was linked to it.
+  just repointed because nobody was linked to it. Unlike the delete, the
+  update does not wait for an identity's insert: an `UPDATE` that changes no
+  key column takes `FOR NO KEY UPDATE`, which does not conflict with the
+  insert's `KEY SHARE`.
 
 `TestAProviderIsNotRepointedUnderItsIdentities` holds it against a running
 service: another issuer under an identity, by the role and by the flag;

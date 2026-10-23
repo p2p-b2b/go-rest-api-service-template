@@ -15,6 +15,21 @@ Since `v0.0.3`.
 
 ### Security
 
+- **A provider's delete waits for a sign-in through it, and an account's
+  ways in are removed one at a time.** A delete of an identity provider
+  read its rule (no account whose only way in is an identity there) before
+  an identity being written committed, then went ahead without reading it
+  again, and its cascade removed the identity just stored. And two writes
+  that each removed one of an account's two ways in -- the deletes of its
+  two providers, or a delete and an unlink -- each saw the other way in and
+  both went. Either way an account was left that nobody could sign in to.
+  The delete is one transaction that takes the provider's row `FOR UPDATE`
+  and the linked accounts' rows `FOR NO KEY UPDATE` before its rule; the
+  unlink takes the account's row and holds its rule in the statement that
+  deletes. The second write waits and answers `409`. Not closed yet: a
+  first sign-in writes the account and its identity separately, so when the
+  delete comes first the account it registered is left with no identity.
+  ([#149](https://github.com/slashdevops/go-rest-api-service-template/pull/149))
 - **A list with no project in its path is held to its caller.**
   `GET /products` answered every project's products to whoever held its
   grant, and the seeded `ProjectMember` role holds it: a member read the

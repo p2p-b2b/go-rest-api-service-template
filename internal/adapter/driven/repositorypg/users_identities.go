@@ -135,8 +135,43 @@ func (ref *UsersIdentitiesRepository) Link(ctx context.Context, input *domain.Li
 	return nil
 }
 
-// Unlink implements [repository.UsersIdentities].
-func (ref *UsersIdentitiesRepository) Unlink(ctx context.Context, input *domain.UnlinkUserIdentityInput) error {
+// queryLockAccountForUnlink takes the account's row before the unlink's
+// statement, as a provider's delete takes the rows of the accounts linked to
+// it (queryLockAccountsOfIDP): two writes that each remove one of an
+// account's ways in are one at a time, and the second reads what the first
+// left. FOR NO KEY UPDATE does not hold a sign-in's identity insert.
+const queryLockAccountForUnlink = `SELECT TRUE FROM users WHERE id = $1 FOR NO KEY UPDATE;`
+
+// queryUnlinkIdentity removes an identity unless it is the account's only way
+// in: an account with no password and no identity at another enabled
+// provider. The use-case asks the same first (keepsAWayIn); this statement,
+// under the account's lock, is what holds when a provider's delete or
+// another unlink took the other way in meanwhile, which the use-case's two
+// reads did not see.
+const queryUnlinkIdentity = `
+        DELETE FROM users_identities
+        WHERE users_id = $1 AND idps_id = $2
+          AND EXISTS (
+                SELECT 1 FROM users
+                WHERE users.id = $1
+                  AND (
+                        users.local_account IS TRUE
+                        OR EXISTS (
+                              SELECT 1 FROM users_identities AS other
+                              JOIN idps ON idps.id = other.idps_id
+                              WHERE other.users_id = $1 AND other.idps_id <> $2 AND idps.enabled
+                        )
+                  )
+          );
+    `
+
+// queryIdentityExists tells an identity the unlink kept from one that is not
+// there.
+const queryIdentityExists = `SELECT EXISTS (SELECT 1 FROM users_identities WHERE users_id = $1 AND idps_id = $2);`
+
+// Unlink implements [repository.UsersIdentities]: one transaction, the
+// account's row taken first, and the rule in the statement that deletes.
+func (ref *UsersIdentitiesRepository) Unlink(ctx context.Context, input *domain.UnlinkUserIdentityInput) (err error) {
 	start := time.Now()
 	ctx, span, attrs, cancel := o11y.SetupTraceWithTimeout(ctx, ref.ot.Traces.Tracer, ref.maxQueryTimeout, ref.metricsMetadata, "Unlink")
 	defer cancel()
@@ -150,17 +185,55 @@ func (ref *UsersIdentitiesRepository) Unlink(ctx context.Context, input *domain.
 		return o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
 	}
 
-	const query = `DELETE FROM users_identities WHERE users_id = $1 AND idps_id = $2;`
-
-	cslog.Trace(ctx, "sql", "query", prettyPrint(query))
-
-	result, err := ref.db.Exec(ctx, query, input.UserID, input.IDPID)
+	tx, err := ref.db.Begin(ctx)
 	if err != nil {
 		return o11y.RecordError(ctx, span, start, ref.handlePgError(err), ref.metrics, attrs)
 	}
+	defer endTx(ctx, tx, &err, func(e error) error {
+		return o11y.RecordError(ctx, span, start, ref.handlePgError(e), ref.metrics, attrs)
+	})
+
+	cslog.Trace(ctx, "sql", "query", prettyPrint(queryLockAccountForUnlink, input.UserID.String()))
+
+	// Run to its end, its row dropped: an account that is not there has no
+	// identity either, which the delete below answers.
+	if _, err = tx.Exec(ctx, queryLockAccountForUnlink, input.UserID); err != nil {
+		err = o11y.RecordError(ctx, span, start, ref.handlePgError(err), ref.metrics, attrs)
+
+		return err
+	}
+
+	cslog.Trace(ctx, "sql", "query", prettyPrint(queryUnlinkIdentity, input.UserID.String(), input.IDPID.String()))
+
+	result, err := tx.Exec(ctx, queryUnlinkIdentity, input.UserID, input.IDPID)
+	if err != nil {
+		err = o11y.RecordError(ctx, span, start, ref.handlePgError(err), ref.metrics, attrs)
+
+		return err
+	}
 
 	if result.RowsAffected() == 0 {
-		return o11y.RecordError(ctx, span, start, &domain.UserIdentityNotFoundError{Message: "this account has no identity at that provider"}, ref.metrics, attrs)
+		// Nothing was removed: no such identity, or the statement kept the
+		// account's only way in. Which of the two is a read under the lock.
+		var there bool
+
+		cslog.Trace(ctx, "sql", "query", prettyPrint(queryIdentityExists, input.UserID.String(), input.IDPID.String()))
+
+		if err = tx.QueryRow(ctx, queryIdentityExists, input.UserID, input.IDPID).Scan(&there); err != nil {
+			err = o11y.RecordError(ctx, span, start, ref.handlePgError(err), ref.metrics, attrs)
+
+			return err
+		}
+
+		if there {
+			err = o11y.RecordError(ctx, span, start, &domain.UserIdentityAlreadyLinkedError{Message: domain.UnlinkOnlyWayInMessage}, ref.metrics, attrs)
+
+			return err
+		}
+
+		err = o11y.RecordError(ctx, span, start, &domain.UserIdentityNotFoundError{Message: "this account has no identity at that provider"}, ref.metrics, attrs)
+
+		return err
 	}
 
 	o11y.RecordSuccess(ctx, span, start, ref.metrics, attrs, "identity unlinked")
