@@ -882,8 +882,11 @@ func (ref *ProjectsRepository) LinkUsers(ctx context.Context, input *domain.Link
 	}
 
 	query := `
+        -- insert the new users. DISTINCT: a body may name one twice, and
+        -- ON CONFLICT DO UPDATE refuses to touch one row twice in one
+        -- statement (SQLSTATE 21000), which was a 500.
         INSERT INTO projects_users (projects_id, users_id)
-        SELECT * FROM UNNEST($1::uuid[], $2::uuid[])
+        SELECT DISTINCT * FROM UNNEST($1::uuid[], $2::uuid[])
         ON CONFLICT (projects_id, users_id)
         DO UPDATE SET updated_at = NOW();
     `

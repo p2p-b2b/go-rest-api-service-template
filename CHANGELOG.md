@@ -219,6 +219,10 @@ Since `v0.0.3`.
 
 ### Fixed
 
+- A link that names an id twice links it once: `POST /projects/{project_id}/users`,
+  `/users/{user_id}/roles`, `/roles/{role_id}/users` and
+  `/roles/{role_id}/policies` answered `500` for `[A, A]` (a user's projects
+  already did not). (#141)
 - A product's `409` and `404` are in this service's words: a name that is
   taken in the project, an id that is taken, a project that is gone. They
   ended in PostgreSQL's sentence (`duplicate key value violates unique

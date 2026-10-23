@@ -1341,9 +1341,11 @@ func (ref *UsersRepository) LinkRoles(ctx context.Context, input *domain.LinkRol
 	}
 
 	query := `
-        -- insert the new roles
+        -- insert the new roles. DISTINCT: a body may name one twice, and
+        -- ON CONFLICT DO UPDATE refuses to touch one row twice in one
+        -- statement (SQLSTATE 21000), which was a 500.
         INSERT INTO users_roles (users_id, roles_id)
-        SELECT * FROM UNNEST($1::uuid[], $2::uuid[]) -- Use appropriate type casting for your UUIDs
+        SELECT DISTINCT * FROM UNNEST($1::uuid[], $2::uuid[])
         ON CONFLICT (users_id, roles_id)
         DO UPDATE SET updated_at = NOW();
     `
