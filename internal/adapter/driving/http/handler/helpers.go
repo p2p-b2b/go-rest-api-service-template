@@ -294,8 +294,18 @@ const uuidDecodeFailure = "invalid uuid"
 // used to read one value and ignore the rest.
 //
 // The error is for [respond.WriteDecodeError], which turns it into one 400
-// wording (or 413 when the body was cut by the size bound).
+// wording (or 413 when the body was cut by the size bound). Every failure is
+// marked as a [respond.DecodeError]: it is the caller's to fix, whatever
+// type the decoder gave it, and [respond.IsRefusal] reads the mark.
 func decodeJSONBody(r *http.Request, dst any) error {
+	if err := decodeJSONBodyInto(r, dst); err != nil {
+		return &respond.DecodeError{Err: err}
+	}
+
+	return nil
+}
+
+func decodeJSONBodyInto(r *http.Request, dst any) error {
 	dec := json.NewDecoder(r.Body)
 	dec.DisallowUnknownFields()
 

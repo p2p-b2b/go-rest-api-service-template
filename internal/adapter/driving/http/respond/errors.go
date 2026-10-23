@@ -48,6 +48,35 @@ func WriteInternalError(w http.ResponseWriter, r *http.Request, err error) {
 	writeJSONMessage(w, r, http.StatusInternalServerError, "", InternalServerErrorMessage)
 }
 
+// DecodeError marks an error that came from decoding a request's body. It is
+// transparent: its message is the wrapped error's, and so is everything
+// errors.Is and errors.AsType find in it. The decoder's errors have no type
+// of ours -- they are encoding/json's, or io's -- so nothing could tell that
+// such an error is the caller's to fix, which it always is:
+// [WriteDecodeError] answers every one with a 400 or a 413. [IsRefusal]
+// needs to know that: without the mark, a client posting malformed JSON
+// would count as a failure of the service.
+type DecodeError struct {
+	Err error
+}
+
+func (e *DecodeError) Error() string { return e.Err.Error() }
+
+func (e *DecodeError) Unwrap() error { return e.Err }
+
+// IsRefusal reports whether err is one the service answers by telling the
+// caller what they got wrong: a status below 500 in the one table of errors
+// and statuses ([StatusFor]), or a body that could not be decoded, which is
+// answered by [WriteDecodeError] and is in no table. An error the table does
+// not know is a 500, and so a failure.
+func IsRefusal(err error) bool {
+	if _, undecodable := errors.AsType[*DecodeError](err); undecodable {
+		return true
+	}
+
+	return StatusFor(err) < http.StatusInternalServerError
+}
+
 // WriteDecodeError answers a failed request-body decode.
 //
 // A body cut by the size bound is 413, so a client learns to send less
