@@ -558,6 +558,17 @@ flowchart TD
     the identity is written in the account's transaction, so no account is
     stored either; a link answers the same, and so does a provider deleted
     while the sign-in was under way.
+  - **An existing identity is found the same way.** The sign-in looks the
+    identity up by the provider, the subject, and the kind and issuer it
+    used (`SelectBySubject`). Read by the provider and the subject alone, a
+    sign-in held at the old issuer, or reading a cached copy, proved a
+    subject with an issuer the provider no longer trusts and was signed in
+    as the account linked to that subject under the new one: a takeover of
+    any account linked after the repoint, by whoever answers for the old
+    issuer. Not found under the provider as it signed in, the identity is
+    one this provider does not know, and the insert that would provision it
+    refuses the provider as changed (401); with provisioning off it is the
+    401 of an identity that is not linked.
   - A sign-in that read the provider from a cached copy older than a
     repoint is refused the same way, and again on every attempt until the
     copy is invalidated or expires: the repoint invalidates it, best
@@ -611,7 +622,14 @@ the code before, the foreign key waited too, found the provider there, and
 answered 200. `TestARepointWaitsForAnIdentityBeingStored` stores an
 identity in a transaction of its own while the repoint is sent: the update
 waits, and after the commit it is a 409 with the issuer unchanged; on the
-code before, a 200 and the provider pointed elsewhere. In the unit suite:
+code before, a 200 and the provider pointed elsewhere.
+`TestASignInDoesNotSignInUnderAProviderRepointedMeanwhile` is the read
+side: a sign-in held at the old issuer while the provider is repointed and
+an account is linked to the same subject under the new one is a 401, and
+nobody is signed in; on the code before, and with the insert's check alone,
+a 200 and a session for that account. In the unit suite:
+`TestAnIdentityIsFoundOnlyUnderTheProviderItSignedInWith` (the lookup's
+condition and its arguments), `TestAKnownIdentityIsLookedUpUnderTheProviderAsItSignedIn`,
 `TestAnIdentityIsStoredOnlyUnderTheProviderItSignedInWith` (the insert's
 statement, the lock, the update's order, and the arguments in the
 statement's order at both inserts),

@@ -15,12 +15,17 @@ Since `v0.0.3`.
 
 ### Security
 
-- **An identity is stored only under the provider it signed in with.** A
-  provider may be pointed at another issuer while nobody is linked to it,
-  and a first sign-in (or a link) already under way, or one that read the
-  provider from the cache, stored its identity under the provider as it
-  was now: a subject the old issuer proved, at a provider that trusts
-  another one, which could then sign in as that account by asserting it.
+- **An identity is stored, and found, only under the provider it signed in
+  with.** A provider may be pointed at another issuer while nobody is
+  linked to it, and a first sign-in (or a link) already under way, or one
+  that read the provider from the cache, stored its identity under the
+  provider as it was now: a subject the old issuer proved, at a provider
+  that trusts another one, which could then sign in as that account by
+  asserting it. Such a sign-in also found an existing identity by the
+  provider and the subject alone, and was signed in as any account linked
+  to that subject under the new issuer: a takeover, by whoever answers for
+  the old issuer, of an account linked after the repoint. The lookup names
+  the issuer and the type the sign-in used, as the insert does.
   And a repoint did not wait for an identity being stored, and went through
   under it. The identity's insert reads the provider's row with the issuer
   and the type the sign-in used, `FOR KEY SHARE`, and stores nothing when

@@ -311,3 +311,56 @@ func TestARepointWaitsForAnIdentityBeingStored(t *testing.T) {
 	require.NoError(t, testDBPool.QueryRow(context.Background(), `SELECT issuer_url FROM idps WHERE id = $1`, idp).Scan(&issuer))
 	assert.Equal(t, before.srv.URL, issuer, "the provider was pointed elsewhere")
 }
+
+// TestASignInDoesNotSignInUnderAProviderRepointedMeanwhile: the read side of
+// the same race. A sign-in that read the provider at one issuer, held there
+// (or reading it from a cached copy), proves a subject with that issuer; the
+// provider is pointed at another issuer meanwhile, nobody being linked, and
+// an account is linked to the same subject under the new one. The identity
+// was found by the provider and the subject alone, and the held sign-in was
+// signed in as that account. It is found only under the provider as the
+// sign-in used it now: this one knows no such identity, and the insert that
+// would provision it refuses the provider as changed (401). Nobody is
+// signed in, and the account keeps its identity.
+func TestASignInDoesNotSignInUnderAProviderRepointedMeanwhile(t *testing.T) {
+	admin := getAdminUserTokens(t)
+	t.Cleanup(func() { deleteUserByIDFromDB(t, admin.UserID) })
+
+	before, after := newFakeProvider(t), newFakeProvider(t)
+	idp := createOIDCIDP(t, admin.AccessToken, before, true)
+
+	// The account linked under the new issuer, to the subject the old one
+	// is about to assert.
+	firstName, lastName, victimEmail := generateUserData(t)
+	victim := createUserInDB(t, firstName, lastName, victimEmail, generatePassword(t))
+	t.Cleanup(func() { deleteUserByIDFromDB(t, victim) })
+
+	_, _, email := generateUserData(t)
+	t.Cleanup(func() { deleteUserByEmailFromDB(t, email) })
+
+	// holdASignIn asserts the subject "sub-"+email.
+	signIn := holdASignIn(t, before, idp, email)
+
+	response, err := sendHTTPRequest(t, context.WithoutCancel(t.Context()), idpsUpdateEndpoint.Clone().RewriteSlugs(idp),
+		map[string]any{"issuer_url": after.srv.URL}, map[string]string{"Authorization": "Bearer " + admin.AccessToken})
+	require.NoError(t, err)
+
+	text := readResponseBody(t, response)
+	response.Body.Close()
+	require.Equal(t, http.StatusOK, response.StatusCode, text)
+
+	_, err = testDBPool.Exec(context.Background(), `INSERT INTO users_identities (users_id, idps_id, subject, email) VALUES ($1, $2, $3, $4)`,
+		victim, idp, "sub-"+email, victimEmail)
+	require.NoError(t, err)
+
+	signIn.release()
+
+	status, body := signIn.wait(t)
+	assert.Equal(t, http.StatusUnauthorized, status, "a subject the old issuer proved signed in as the account linked under the new one: %s", body)
+	assert.NotContains(t, body, "access_token", "a session was answered")
+	assert.Contains(t, body, changedDuringSignIn, "a 401 that is not this refusal")
+
+	var identities int
+	require.NoError(t, testDBPool.QueryRow(context.Background(), `SELECT count(*) FROM users_identities WHERE idps_id = $1`, idp).Scan(&identities))
+	assert.Equal(t, 1, identities, "the account's identity is the provider's only one")
+}

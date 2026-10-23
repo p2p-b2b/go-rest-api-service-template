@@ -57,18 +57,18 @@ func (mr *MockUsersIdentitiesMockRecorder) Link(ctx, input any) *gomock.Call {
 }
 
 // SelectBySubject mocks base method.
-func (m *MockUsersIdentities) SelectBySubject(ctx context.Context, idpID uuid.UUID, subject string) (*domain.UserIdentity, error) {
+func (m *MockUsersIdentities) SelectBySubject(ctx context.Context, idpID, idpTypeID uuid.UUID, issuerURL, subject string) (*domain.UserIdentity, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SelectBySubject", ctx, idpID, subject)
+	ret := m.ctrl.Call(m, "SelectBySubject", ctx, idpID, idpTypeID, issuerURL, subject)
 	ret0, _ := ret[0].(*domain.UserIdentity)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // SelectBySubject indicates an expected call of SelectBySubject.
-func (mr *MockUsersIdentitiesMockRecorder) SelectBySubject(ctx, idpID, subject any) *gomock.Call {
+func (mr *MockUsersIdentitiesMockRecorder) SelectBySubject(ctx, idpID, idpTypeID, issuerURL, subject any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SelectBySubject", reflect.TypeOf((*MockUsersIdentities)(nil).SelectBySubject), ctx, idpID, subject)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SelectBySubject", reflect.TypeOf((*MockUsersIdentities)(nil).SelectBySubject), ctx, idpID, idpTypeID, issuerURL, subject)
 }
 
 // SelectByUserID mocks base method.

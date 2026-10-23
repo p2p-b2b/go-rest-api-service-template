@@ -29,8 +29,12 @@ type UsersIdentities interface {
 	// the caller asked to remove something that was not there.
 	Unlink(ctx context.Context, input *domain.UnlinkUserIdentityInput) error
 
-	// SelectBySubject answers "whose identity is this".
-	SelectBySubject(ctx context.Context, idpID uuid.UUID, subject string) (*domain.UserIdentity, error)
+	// SelectBySubject answers "whose identity is this", under the provider
+	// as the sign-in used it: its kind and its issuer ("" for a kind with
+	// none). An identity under a provider that was pointed at another
+	// issuer or type since the sign-in read it is not found: the subject was
+	// proven by an issuer that no longer vouches for it.
+	SelectBySubject(ctx context.Context, idpID, idpTypeID uuid.UUID, issuerURL, subject string) (*domain.UserIdentity, error)
 
 	// SelectByUserID lists an account's identities, for the profile page.
 	SelectByUserID(ctx context.Context, userID uuid.UUID) ([]domain.UserIdentity, error)

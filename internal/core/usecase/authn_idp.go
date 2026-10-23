@@ -316,7 +316,7 @@ func (ref *AuthnIDPsService) Callback(ctx context.Context, idpID uuid.UUID, stat
 // signIn resolves the identity and ends with a session, or creates the
 // account first when every condition for that holds.
 func (ref *AuthnIDPsService) signIn(ctx context.Context, idp *domain.IDP, info *domain.UserInfo, eventType domain.IDPEventType) (*domain.IDPCallbackOutput, error) {
-	identity, err := ref.usersIdentities.SelectBySubject(ctx, idp.ID, info.Subject)
+	identity, err := ref.usersIdentities.SelectBySubject(ctx, idp.ID, idp.IDPType.ID, idp.IssuerURL, info.Subject)
 
 	switch {
 	case err == nil:

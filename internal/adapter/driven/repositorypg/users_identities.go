@@ -34,9 +34,10 @@ const (
 //
 // Only under the provider the sign-in used: the row is read with the issuer
 // and the kind the sign-in's token came from ($5, $6), FOR KEY SHARE. The
-// issuer is compared as the reads answer it, ” for a github provider,
-// whether a writer stored NULL or ”. A provider may be pointed at another
-// issuer or type while nobody is linked to it (IDPsRepository.UpdateByID);
+// issuer is compared as the reads answer it, the empty string for a github
+// provider, whether a writer stored NULL or an empty one. A provider may be
+// pointed at another issuer or type while nobody is linked to it
+// (IDPsRepository.UpdateByID);
 // a sign-in already in flight, or one that read the provider through a
 // cached copy, would have stored an identity under the provider as it is
 // now, for a subject another issuer asserted. The repoint takes the row FOR
@@ -275,7 +276,7 @@ func (ref *UsersIdentitiesRepository) Unlink(ctx context.Context, input *domain.
 }
 
 // SelectBySubject implements [repository.UsersIdentities].
-func (ref *UsersIdentitiesRepository) SelectBySubject(ctx context.Context, idpID uuid.UUID, subject string) (*domain.UserIdentity, error) {
+func (ref *UsersIdentitiesRepository) SelectBySubject(ctx context.Context, idpID, idpTypeID uuid.UUID, issuerURL, subject string) (*domain.UserIdentity, error) {
 	start := time.Now()
 	ctx, span, attrs, cancel := o11y.SetupTraceWithTimeout(ctx, ref.ot.Traces.Tracer, ref.maxQueryTimeout, ref.metricsMetadata, "SelectBySubject")
 	defer cancel()
@@ -285,19 +286,28 @@ func (ref *UsersIdentitiesRepository) SelectBySubject(ctx context.Context, idpID
 		return nil, o11y.RecordError(ctx, span, start, &domain.InvalidInputError{Message: "idp and subject are required"}, ref.metrics, attrs)
 	}
 
+	// Under the provider as the sign-in used it, as queryLinkIdentity
+	// stores one: a sign-in that read the provider before it was pointed at
+	// another issuer, held at the old issuer or through a cached copy,
+	// proved its subject with an issuer the provider no longer trusts. Read
+	// by the provider and the subject alone, it signed in as the account
+	// linked to that subject under the new issuer. Not found here, it is an
+	// identity this provider does not know, and the insert that would
+	// provision it refuses the provider as changed.
 	const query = `
         SELECT ui.users_id, ui.idps_id, ui.subject, ui.email, ui.linked_at, idp.name, idpt.name, idp.enabled
         FROM users_identities AS ui
             JOIN idps AS idp ON idp.id = ui.idps_id
             JOIN idp_types AS idpt ON idpt.id = idp.idp_types
-        WHERE ui.idps_id = $1 AND ui.subject = $2;
+        WHERE ui.idps_id = $1 AND ui.subject = $2
+          AND idp.idp_types = $3 AND COALESCE(idp.issuer_url, '') = $4;
     `
 
-	cslog.Trace(ctx, "sql", "query", prettyPrint(query, idpID, subject))
+	cslog.Trace(ctx, "sql", "query", prettyPrint(query, idpID, subject, idpTypeID, issuerURL))
 
 	var item domain.UserIdentity
 
-	err := ref.db.QueryRow(ctx, query, idpID, subject).Scan(&item.UserID, &item.IDPID, &item.Subject, &item.Email, &item.LinkedAt, &item.IDPName, &item.IDPTypeName, &item.IDPEnabled)
+	err := ref.db.QueryRow(ctx, query, idpID, subject, idpTypeID, issuerURL).Scan(&item.UserID, &item.IDPID, &item.Subject, &item.Email, &item.LinkedAt, &item.IDPName, &item.IDPTypeName, &item.IDPEnabled)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			// The ordinary answer for a first sign-in; an error so the caller
@@ -383,8 +393,11 @@ func identityPgError(err error) error {
 		case strings.Contains(pgErr.ConstraintName, constraintUsersIdentitiesUserIDP):
 			return &domain.UserIdentityAlreadyLinkedError{Message: "this account already has an identity at that provider"}
 		}
-	case "23503": // foreign key: the user or the idp is gone
-		return &domain.UserIdentityNotFoundError{Message: "the account or the provider does not exist"}
+	case "23503": // foreign key: the account is gone
+		// The account: the provider's row is read and held by the insert's
+		// own statement (queryLinkIdentity), so a provider that is gone is
+		// no row inserted, not this.
+		return &domain.UserIdentityNotFoundError{Message: "the account does not exist"}
 	}
 
 	return err

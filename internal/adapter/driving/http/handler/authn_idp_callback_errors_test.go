@@ -41,7 +41,7 @@ func TestAFirstSignInsRefusalsAreAnsweredAsDocumented(t *testing.T) {
 	}{
 		"the_identity_was_linked_meanwhile": {err: &domain.UserIdentityAlreadyLinkedError{}, status: http.StatusConflict},
 		"the_account_a_link_was_started_for_is_gone": {
-			err:    &domain.UserIdentityNotFoundError{Message: "the account or the provider does not exist"},
+			err:    &domain.UserIdentityNotFoundError{Message: "the account does not exist"},
 			status: http.StatusNotFound,
 		},
 		"the_users_limit_is_reached": {
