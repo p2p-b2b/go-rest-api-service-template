@@ -229,7 +229,7 @@ sequenceDiagram
     U->>S: RegisterUser(account + identity)
     S->>L: reserve a slot
     alt the limit is reached
-        L-->>U: refused, nothing stored
+        L-->>U: 409, registration is closed: nothing stored
     end
     S->>DB: BEGIN, INSERT users, users_roles, users_identities
     alt every statement ran
@@ -239,7 +239,7 @@ sequenceDiagram
     else the identity cannot be stored, or anything else fails
         DB->>DB: ROLLBACK: no account, no roles, no identity
         S->>L: give the slot back (detached, its own deadline)
-        DB-->>U: the refusal (409 linked meanwhile, 401 the address was taken meanwhile) or the fault (500)
+        DB-->>U: the refusal (409 linked meanwhile, 404 the provider deleted meanwhile, 401 the address taken meanwhile) or the fault (500)
     end
 ```
 
@@ -266,7 +266,8 @@ another account, or for a local one, is refused),
 | ID token fails iss/aud/exp/signature, or wrong nonce | 401 | go-oidc's text is logged, never returned |
 | identity unknown and not provisionable | 401, one wording | see above |
 | identity already linked elsewhere (link) | 409 | the other account keeps it |
-| a first sign-in's identity cannot be stored (linked meanwhile, a fault) | 409, or 500 | no account is stored either, and the users slot is given back: see below |
+| a first sign-in's identity cannot be stored (linked meanwhile, the provider deleted meanwhile, a fault) | 409, 404, or 500 | no account is stored either, and the users slot is given back: see above |
+| a first sign-in when the users limit is reached | 409 | registration is closed; it answered 500 |
 | provider disabled | 404 at start, at the callback, and absent from `/auth/idp/available` | a half-configured provider is never offered |
 
 ## Configuring a provider

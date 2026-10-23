@@ -6442,8 +6442,8 @@ Called by the frontend callback route with the state and code from the provider,
 | [200](#01988e60-89e5-72ee-9db4-db5cd7535717-200) | OK | The outcome |  | [schema](#01988e60-89e5-72ee-9db4-db5cd7535717-200-schema) |
 | [400](#01988e60-89e5-72ee-9db4-db5cd7535717-400) | Bad Request | A state that is missing, spent, expired or minted for another provider, or a missing code |  | [schema](#01988e60-89e5-72ee-9db4-db5cd7535717-400-schema) |
 | [401](#01988e60-89e5-72ee-9db4-db5cd7535717-401) | Unauthorized | The provider refused the sign-in, or the identity is not linked to an account here |  | [schema](#01988e60-89e5-72ee-9db4-db5cd7535717-401-schema) |
-| [404](#01988e60-89e5-72ee-9db4-db5cd7535717-404) | Not Found | Unknown or disabled identity provider |  | [schema](#01988e60-89e5-72ee-9db4-db5cd7535717-404-schema) |
-| [409](#01988e60-89e5-72ee-9db4-db5cd7535717-409) | Conflict | The identity is already linked to an account |  | [schema](#01988e60-89e5-72ee-9db4-db5cd7535717-409-schema) |
+| [404](#01988e60-89e5-72ee-9db4-db5cd7535717-404) | Not Found | Unknown or disabled identity provider, the provider was deleted while signing in, or the account the flow was started for no longer exists |  | [schema](#01988e60-89e5-72ee-9db4-db5cd7535717-404-schema) |
+| [409](#01988e60-89e5-72ee-9db4-db5cd7535717-409) | Conflict | The identity is already linked to an account, or registration is closed: the user limit has been reached |  | [schema](#01988e60-89e5-72ee-9db4-db5cd7535717-409-schema) |
 | [429](#01988e60-89e5-72ee-9db4-db5cd7535717-429) | Too Many Requests | Too many requests |  | [schema](#01988e60-89e5-72ee-9db4-db5cd7535717-429-schema) |
 | [500](#01988e60-89e5-72ee-9db4-db5cd7535717-500) | Internal Server Error | Internal server error |  | [schema](#01988e60-89e5-72ee-9db4-db5cd7535717-500-schema) |
 | [503](#01988e60-89e5-72ee-9db4-db5cd7535717-503) | Service Unavailable | The identity provider is not reachable |  | [schema](#01988e60-89e5-72ee-9db4-db5cd7535717-503-schema) |
@@ -6478,7 +6478,7 @@ Status: Unauthorized
 
 [PayloadHTTPMessage](#payload-http-message)
 
-##### <span id="01988e60-89e5-72ee-9db4-db5cd7535717-404"></span> 404 - Unknown or disabled identity provider
+##### <span id="01988e60-89e5-72ee-9db4-db5cd7535717-404"></span> 404 - Unknown or disabled identity provider, the provider was deleted while signing in, or the account the flow was started for no longer exists
 Status: Not Found
 
 ###### <span id="01988e60-89e5-72ee-9db4-db5cd7535717-404-schema"></span> Schema
@@ -6487,7 +6487,7 @@ Status: Not Found
 
 [PayloadHTTPMessage](#payload-http-message)
 
-##### <span id="01988e60-89e5-72ee-9db4-db5cd7535717-409"></span> 409 - The identity is already linked to an account
+##### <span id="01988e60-89e5-72ee-9db4-db5cd7535717-409"></span> 409 - The identity is already linked to an account, or registration is closed: the user limit has been reached
 Status: Conflict
 
 ###### <span id="01988e60-89e5-72ee-9db4-db5cd7535717-409-schema"></span> Schema

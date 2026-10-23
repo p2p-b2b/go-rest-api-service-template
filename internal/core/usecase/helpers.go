@@ -132,6 +132,12 @@ const resourceSlotReleaseTimeout = 10 * time.Second
 // of its own, keeping the request's span and operation; and under a failure
 // holder of its own, so that a release that fails does not replace the
 // creation's failure in the request's, which the access line names.
+//
+// One window goes the other way: a request cancelled while its COMMIT is in
+// flight hears an error from the driver although the server may have
+// committed, and the release then gives back a slot the account holds. The
+// counter is one low, which lets one account past the hard limit until
+// reconciliation runs. It is the width of a COMMIT's round trip.
 func ReleaseResourceSlot(params ResourceLimitCheckParams) {
 	ctx, cancel := context.WithTimeout(o11y.WithFailure(context.WithoutCancel(params.Ctx)), resourceSlotReleaseTimeout)
 	defer cancel()

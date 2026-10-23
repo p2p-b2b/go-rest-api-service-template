@@ -24,7 +24,10 @@ Since `v0.0.3`.
   transaction now, and the slot is given back off the request's context, so
   a client that walks away does not leave the count one too high. An
   address taken during the sign-in is answered as an identity that is not
-  linked, instead of "registered" and a mail to the address's owner.
+  linked (`401`); it mailed the address's owner as the registration form
+  does, and then answered `500`. A first sign-in when the users limit is
+  reached is a `409`, as `POST /users` answers it, and one whose provider
+  was deleted meanwhile a `404`; both answered `500`.
   ([#151](https://github.com/slashdevops/go-rest-api-service-template/pull/151))
 - **A provider's delete waits for a sign-in through it, and an account's
   ways in are removed one at a time.** A delete of an identity provider
