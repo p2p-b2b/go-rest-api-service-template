@@ -265,6 +265,13 @@ Since `v0.0.3`.
 
 ### Changed
 
+- **A refused call is not a red span.** A span under the server span
+  carries `app.outcome`, and its status follows it: a failed call is
+  `Error` with an `exception` event, as before; a refused one (a 4xx) has
+  its status left unset and a `refused` event with the error's type and
+  text. A trace backend's `status = error` was every request a client got
+  wrong; it is the failures now.
+  ([#155](https://github.com/slashdevops/go-rest-api-service-template/pull/155))
 - **A call says how it ended: `app.outcome` is `ok`, `refused` or
   `failed`,** on `app_calls_total` and `app_call_duration_seconds`.
   `successful="false"` counted a request the service refused (a bad field,

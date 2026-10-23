@@ -255,6 +255,47 @@ func errorType(err error) string {
 	}
 }
 
+// EventRefused is the span event a refused call carries in place of an Error
+// status.
+const EventRefused = "refused"
+
+// markSpan says on the span how a call that returned err ended.
+//
+// # A refused call is not a red span
+//
+// Every call that returned an error used to be marked Error, with an
+// exception event. A request answered 404 was then a trace with a red span
+// at every layer it passed through, and a trace backend's "status = error"
+// was a list of the requests clients got wrong. The server span has
+// followed the HTTP rule since it was introduced (only a 5xx is an Error);
+// the spans under it did not.
+//
+// So the status follows the outcome the metrics already record
+// (app.outcome, see SetRefusalClassifier):
+//
+//   - failed: Error, and the error as an exception event, as before.
+//   - refused: the status is left unset, as OpenTelemetry asks of a 4xx on
+//     the server side, and the refusal is an event named "refused" with the
+//     error's type and text. It is still on the span, for whoever opens the
+//     trace of a complaint; it is not what an error search returns.
+//
+// It is decided per call, as the metric is, and for the same reason: a span
+// ends when its call returns, before anything knows how the request will be
+// answered, and a status cannot be set on a span that has ended.
+func markSpan(span trace.Span, outcome string, err error) {
+	if outcome == OutcomeRefused {
+		span.AddEvent(EventRefused, trace.WithAttributes(
+			attribute.String("error.type", errorType(err)),
+			attribute.String("error.message", err.Error()),
+		))
+
+		return
+	}
+
+	span.SetStatus(codes.Error, err.Error())
+	span.RecordError(err)
+}
+
 // LayerMetrics holds the metrics instruments for the handler package.
 type LayerMetrics struct {
 	Counter   metric.Int64Counter
@@ -279,9 +320,14 @@ func RecordResult(
 	finalAttrs := make([]attribute.KeyValue, len(baseAttrs))
 	copy(finalAttrs, baseAttrs)
 
+	outcome := Outcome(err)
+
+	// On the span as well, so a trace can be asked for by how a call ended
+	// ({ span.app.outcome = "failed" }) the way the metrics are.
+	span.SetAttributes(attribute.String(AttrOutcome, outcome))
+
 	if err != nil {
-		span.SetStatus(codes.Error, err.Error())
-		span.RecordError(err)
+		markSpan(span, outcome, err)
 
 		pc, file, line, ok := runtime.Caller(2)
 		if !ok {
@@ -327,7 +373,7 @@ func RecordResult(
 	// `successful` cannot tell a refusal from a failure, and the dashboards
 	// read `app.outcome` now (see SetRefusalClassifier).
 	finalAttrs = append(finalAttrs,
-		attribute.String(AttrOutcome, Outcome(err)),
+		attribute.String(AttrOutcome, outcome),
 		attribute.Bool(AttrSuccessful, err == nil),
 	)
 

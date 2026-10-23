@@ -132,6 +132,9 @@ flowchart TD
     OK --> M["app_calls_total and app_call_duration_seconds,<br/>with successful kept beside it for one release"]
     R --> M
     F --> M
+    OK --> SO["span: status Ok"]
+    R --> SR["span: status left unset,<br/>a 'refused' event with the error's type and text"]
+    F --> SF["span: status Error,<br/>the error as an exception event"]
 ```
 
 - **One list.** What makes an error a refusal is how the service answers it,
@@ -197,6 +200,37 @@ An error ratio is therefore the failed calls over all calls:
 100 * sum(rate(app_calls_total{app_layer="handler",app_outcome="failed"}[$__rate_interval]))
     / clamp_min(sum(rate(app_calls_total{app_layer="handler"}[$__rate_interval])), 0.001)
 ```
+
+### The span says the same
+
+A span carries `app.outcome` too, and its status follows it:
+
+| The call | Span status | On the span |
+| --- | --- | --- |
+| `ok` | Ok | nothing more |
+| `refused` | **unset** | an event named `refused`, with `error.type` and `error.message` |
+| `failed` | Error | the error as an `exception` event, as before |
+
+Every call that returned an error used to be marked Error. A request answered
+404 was then a trace with a red span at every layer it passed through, and a
+trace backend's `status = error` was a list of the requests clients got
+wrong. The server span has followed the HTTP rule since it was introduced,
+only a 5xx is an Error; the spans under it did not.
+
+- **Unset, not Ok.** It is what OpenTelemetry asks of a 4xx on the server
+  side: the call did not succeed, and it is not the service's error either.
+- **An event, not an exception.** The refusal stays on the span for whoever
+  opens the trace of a complaint. It is not an `exception` event, which is
+  what a fault is and what a backend highlights.
+- **Per call, as the metric is,** and for the same reason plus one: a span
+  ends when its call returns, and a status cannot be set on a span that has
+  ended. Nothing below the middleware could wait for the HTTP status.
+- **Ask a trace backend by outcome**: `{ span.app.outcome = "failed" }` is
+  the calls that failed; `{ status = error }` now returns the same traces,
+  and no refused request among them.
+
+`TestARefusedCallIsNotARedSpan` and its neighbours in
+`o11y/span_outcome_test.go` hold the three rows.
 
 ### One name means one description
 
