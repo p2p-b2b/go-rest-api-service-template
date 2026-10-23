@@ -170,8 +170,33 @@ func TestProductsCRUD(t *testing.T) {
 
 		defer response.Body.Close()
 
+		body := readResponseBody(t, response)
 		assert.Equal(t, http.StatusConflict, response.StatusCode,
-			"A duplicate name within one project must conflict. Message: %s", readResponseBody(t, response))
+			"A duplicate name within one project must conflict. Message: %s", body)
+
+		// In this service's words: Postgres's sentence, "duplicate key
+		// value violates unique constraint ...", was the answer's text.
+		assert.Contains(t, body, "the name is taken")
+		assert.NotContains(t, body, "duplicate key", "the database's sentence reached the caller")
+		assert.NotContains(t, body, "unique_project_product_name", "the constraint's name reached the caller")
+	})
+
+	t.Run("an_id_that_is_taken_is_409_in_our_words", func(t *testing.T) {
+		taken := createProduct(t, adminToken, project.ID, generateRandomName(t, "product"), "the first one")
+
+		response, err := sendHTTPRequest(t, t.Context(), productsCreateEndpoint.RewriteSlugs(project.ID.String()), map[string]any{
+			"id":          taken.String(),
+			"name":        generateRandomName(t, "product"),
+			"description": "asks for an id that is taken",
+		}, accessTokenHeader)
+		require.NoError(t, err)
+
+		defer response.Body.Close()
+
+		body := readResponseBody(t, response)
+		assert.Equal(t, http.StatusConflict, response.StatusCode, body)
+		assert.Contains(t, body, "the id is taken")
+		assert.NotContains(t, body, "duplicate key", "the database's sentence reached the caller")
 	})
 
 	t.Run("the_same_name_in_another_project_is_allowed", func(t *testing.T) {
