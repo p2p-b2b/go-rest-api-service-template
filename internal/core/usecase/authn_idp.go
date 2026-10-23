@@ -467,7 +467,7 @@ func (ref *AuthnIDPsService) UnlinkIdentity(ctx context.Context, userID, idpID u
 		}
 
 		if !keepsAWayIn(items, idpID) {
-			return o11y.RecordError(ctx, span, start, &domain.UserIdentityAlreadyLinkedError{Message: "this is the only way into the account; set a password or link another provider first"}, ref.metrics, attrs)
+			return o11y.RecordError(ctx, span, start, &domain.UserIdentityAlreadyLinkedError{Message: domain.UnlinkOnlyWayInMessage}, ref.metrics, attrs)
 		}
 	}
 

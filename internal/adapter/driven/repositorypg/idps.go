@@ -373,8 +373,45 @@ const queryDeleteIDP = `
           );
     `
 
-// queryIDPExists tells a provider that is not there from one the delete kept.
+// queryIDPExists tells a provider that is not there from one an update kept.
 const queryIDPExists = `SELECT EXISTS (SELECT 1 FROM idps WHERE id = $1);`
+
+// queryLockIDPForDelete takes the provider's row before the delete's check,
+// in the delete's transaction, and says whether it is there.
+//
+// An identity's insert (a first sign-in, a link) takes a KEY SHARE lock on
+// the provider's row through its foreign key. The delete alone read its
+// NOT EXISTS on a snapshot without an identity whose insert had not
+// committed, then waited for that lock, and once the insert committed it
+// went ahead without reading its condition again -- the row had been
+// locked, not changed -- and its cascade removed the identity just
+// written: an account with no way in. FOR UPDATE conflicts with KEY SHARE,
+// so this waits for the insert instead, and the delete's statement, run
+// after it, reads the identities as they are then (READ COMMITTED takes a
+// snapshot per statement). Held first, it makes the insert wait, and the
+// insert's foreign key then finds no provider: nothing is stored.
+const queryLockIDPForDelete = `SELECT TRUE FROM idps WHERE id = $1 FOR UPDATE;`
+
+// queryLockAccountsOfIDP takes the rows of the accounts with an identity at
+// the provider, in the order of their ids, after the provider's own lock and
+// before the delete's statement.
+//
+// The delete's rule reads an account's other ways in; it held only its own
+// provider's row, so a write that took another of them meanwhile -- the
+// delete of the account's other provider, an unlink -- was not seen, and
+// both went: the account had no way in. Every write that removes a way in
+// takes the account's row first (UsersIdentitiesRepository.Unlink too), so
+// they are one at a time, and the second reads what the first left. FOR NO
+// KEY UPDATE, not FOR UPDATE: it does not conflict with the KEY SHARE an
+// identity's insert takes on the account through its foreign key, so a
+// sign-in into the account is not held, and the id order keeps two deletes
+// that share accounts from deadlocking: the second waits for the first.
+const queryLockAccountsOfIDP = `
+        SELECT id FROM users
+        WHERE id IN (SELECT users_id FROM users_identities WHERE idps_id = $1)
+        ORDER BY id
+        FOR NO KEY UPDATE;
+    `
 
 // idpOnlyWayIn is what still uses a provider that cannot be deleted, in the
 // words of the 409.
@@ -391,7 +428,7 @@ func idpNotDeleted(exists bool, id uuid.UUID) error {
 	return &domain.IDPNotFoundError{ID: id}
 }
 
-func (ref *IDPsRepository) DeleteByID(ctx context.Context, input *domain.DeleteIDPInput) error {
+func (ref *IDPsRepository) DeleteByID(ctx context.Context, input *domain.DeleteIDPInput) (err error) {
 	start := time.Now()
 	ctx, span, attrs, cancel := o11y.SetupTraceWithTimeout(ctx, ref.ot.Traces.Tracer, ref.maxQueryTimeout, ref.metricsMetadata, "DeleteByID")
 	defer cancel()
@@ -408,28 +445,60 @@ func (ref *IDPsRepository) DeleteByID(ctx context.Context, input *domain.DeleteI
 
 	span.SetAttributes(attribute.String("idp.id", input.ID.String()))
 
-	cslog.Trace(ctx, "sql", "query", prettyPrint(queryDeleteIDP, input.ID.String()))
-
-	result, err := ref.db.Exec(ctx, queryDeleteIDP, input.ID)
+	// One transaction: the provider's row, then the rows of the accounts
+	// linked to it, then the delete, whose rule reads the identities as they
+	// are under both locks.
+	tx, err := ref.db.Begin(ctx)
 	if err != nil {
 		return o11y.RecordError(ctx, span, start, ref.handlePgError(err, input), ref.metrics, attrs)
 	}
+	defer endTx(ctx, tx, &err, func(e error) error {
+		return o11y.RecordError(ctx, span, start, ref.handlePgError(e, input), ref.metrics, attrs)
+	})
 
-	if result.RowsAffected() == 0 {
-		// Nothing was deleted, and the caller is told why: the provider is
-		// not there (this returned nil, "for security", and the use-case
-		// gave a usage slot back for a delete that deleted nothing), or the
-		// statement kept it for an account. Which of the two is a read of
-		// its own.
-		var exists bool
+	cslog.Trace(ctx, "sql", "query", prettyPrint(queryLockIDPForDelete, input.ID.String()))
 
-		cslog.Trace(ctx, "sql", "query", prettyPrint(queryIDPExists, input.ID.String()))
+	// The lock also says whether the provider is there: a delete that
+	// deleted nothing is told why (this returned nil, "for security", and
+	// the use-case gave a usage slot back for a delete that deleted
+	// nothing).
+	var there bool
+	if err = tx.QueryRow(ctx, queryLockIDPForDelete, input.ID).Scan(&there); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			err = o11y.RecordError(ctx, span, start, idpNotDeleted(false, input.ID), ref.metrics, attrs)
 
-		if err := ref.db.QueryRow(ctx, queryIDPExists, input.ID).Scan(&exists); err != nil {
-			return o11y.RecordError(ctx, span, start, ref.handlePgError(err, input), ref.metrics, attrs)
+			return err
 		}
 
-		return o11y.RecordError(ctx, span, start, idpNotDeleted(exists, input.ID), ref.metrics, attrs)
+		err = o11y.RecordError(ctx, span, start, ref.handlePgError(err, input), ref.metrics, attrs)
+
+		return err
+	}
+
+	cslog.Trace(ctx, "sql", "query", prettyPrint(queryLockAccountsOfIDP, input.ID.String()))
+
+	// Run to its end, its rows dropped: the locks are what it is for.
+	if _, err = tx.Exec(ctx, queryLockAccountsOfIDP, input.ID); err != nil {
+		err = o11y.RecordError(ctx, span, start, ref.handlePgError(err, input), ref.metrics, attrs)
+
+		return err
+	}
+
+	cslog.Trace(ctx, "sql", "query", prettyPrint(queryDeleteIDP, input.ID.String()))
+
+	result, err := tx.Exec(ctx, queryDeleteIDP, input.ID)
+	if err != nil {
+		err = o11y.RecordError(ctx, span, start, ref.handlePgError(err, input), ref.metrics, attrs)
+
+		return err
+	}
+
+	if result.RowsAffected() == 0 {
+		// The provider is there, under the lock: the statement kept it for
+		// an account.
+		err = o11y.RecordError(ctx, span, start, idpNotDeleted(true, input.ID), ref.metrics, attrs)
+
+		return err
 	}
 
 	o11y.RecordSuccess(ctx, span, start, ref.metrics, attrs, "idp deleted successfully", attribute.String("idp.id", input.ID.String()))

@@ -94,6 +94,13 @@ func (e *UserIdentityNotFoundError) Error() string {
 	return e.Message
 }
 
+// UnlinkOnlyWayInMessage is the refusal of an unlink that would leave an
+// account with no way in: no password, and no identity at another enabled
+// provider. The use-case says it first; the unlink's statement, which reads
+// the account's identities under its row's lock, says it when an unlink or
+// a provider's delete took the other way in meanwhile.
+const UnlinkOnlyWayInMessage = "this is the only way into the account; set a password or link another provider first"
+
 // UserIdentityAlreadyLinkedError: the provider identity belongs to another
 // account, or this account already has an identity at that provider.
 type UserIdentityAlreadyLinkedError struct {
