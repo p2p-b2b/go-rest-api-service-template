@@ -266,14 +266,15 @@ Since `v0.0.3`.
 ### Changed
 
 - **One table says which side of 500 each error is on.** `respond.StatusFor`
-  maps every domain error a handler answers to its status, read off the
-  handlers' own arms; `respond.IsRefusal` says whether an error is the
+  maps each domain error the handlers answer, through an arm or one they
+  build themselves, to its status, read off the handlers' own arms; `respond.IsRefusal` says whether an error is the
   caller's to fix (below 500, or a body that could not be decoded, which
   the decoder now marks as a `respond.DecodeError`); `respond.WriteError`
   answers with the table's status. No answer changes: the handlers keep
   their arms, and `TestEveryArmAgreesWithTheTable` holds every arm to the
-  table's side of 500. A fork that adds an error type a handler answers
-  below 500 adds a row.
+  table's side of 500. A span for a body that could not be decoded names
+  `*respond.DecodeError` as its exception type. A fork that adds an error
+  type a handler answers below 500 adds a row.
   ([#153](https://github.com/slashdevops/go-rest-api-service-template/pull/153))
 - **Dependencies updated** with `make go-mod-update`: OPA 1.21.2, goose
   3.29.0, c3e 0.0.3, qfv 1.0.5 (the parsers answer as with 1.0.4),

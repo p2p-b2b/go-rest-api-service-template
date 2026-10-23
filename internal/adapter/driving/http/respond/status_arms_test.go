@@ -40,11 +40,18 @@ type arm struct {
 // whose status cannot be read fails the test, so that a new shape is read
 // rather than skipped.
 //
+// A function that answers whether an error is one of its types
+// (`isBadRequest`) is read as the types it names, wherever a condition calls
+// it. An error the handler package builds itself and answers without an arm
+// (a path id that is not a uuid, a page token that does not parse) must be
+// in the table, so that it is not taken for a failure; its status is the
+// builder's call site's, and is not read.
+//
 // What is not an arm is not held: a handler that answers the error of
 // getUserIDFromContext (an InvalidJWTError the middleware should have made
-// impossible) with a 500 does it without naming the type.
+// impossible) with a 500, a 400 or a 401 does it without naming the type.
 func TestEveryArmAgreesWithTheTable(t *testing.T) {
-	arms := handlerArms(t)
+	arms, built := handlerArms(t)
 
 	table := map[string]int{}
 	for _, row := range statusTable {
@@ -52,6 +59,18 @@ func TestEveryArmAgreesWithTheTable(t *testing.T) {
 	}
 
 	types := map[string]bool{}
+
+	for name := range built {
+		if _, exempt := notRequests[name]; exempt {
+			continue
+		}
+
+		if _, known := table[name]; !known {
+			t.Errorf("the handler package builds %s and the table has no row for it: an error the handlers answer is not in the one table of statuses", name)
+		}
+
+		types[name] = true
+	}
 
 	for _, a := range arms {
 		types[a.typeName] = true
@@ -73,7 +92,7 @@ func TestEveryArmAgreesWithTheTable(t *testing.T) {
 	}
 
 	// The table names nothing the handlers do not answer: a row no arm
-	// reads is a guess about a status nobody gives.
+	// reads and no handler builds is a guess about a status nobody gives.
 	for name := range table {
 		if !types[name] {
 			t.Errorf("the table has a row for %s, which no handler answers", name)
@@ -85,13 +104,22 @@ func TestEveryArmAgreesWithTheTable(t *testing.T) {
 	// would pass on nothing.
 	t.Logf("read %d arms over %d types", len(arms), len(types))
 
-	if len(arms) < 300 || len(types) < 45 {
+	if len(arms) < 300 || len(types) < 50 {
 		t.Errorf("read %d arms over %d types, want the handler package", len(arms), len(types))
 	}
 }
 
-// handlerArms reads every arm of the handler package.
-func handlerArms(t *testing.T) []arm {
+// notRequests are the domain errors the handler package builds that are no
+// request's answer.
+var notRequests = map[string]string{
+	"*domain.InvalidServiceError":         "a constructor's refusal of a missing dependency, at startup",
+	"*domain.InvalidOTConfigurationError": "a constructor's refusal of a missing dependency, at startup",
+	"*domain.InternalServerError":         "the 500 by its name",
+}
+
+// handlerArms reads every arm of the handler package, and the domain error
+// types it builds.
+func handlerArms(t *testing.T) ([]arm, map[string]bool) {
 	t.Helper()
 
 	files, err := filepath.Glob(filepath.Join(handlerDir, "*.go"))
@@ -101,7 +129,7 @@ func handlerArms(t *testing.T) []arm {
 
 	fset := token.NewFileSet()
 
-	var arms []arm
+	var parsed []*ast.File
 
 	for _, path := range files {
 		if strings.HasSuffix(path, "_test.go") {
@@ -113,21 +141,72 @@ func handlerArms(t *testing.T) []arm {
 			t.Fatalf("parse %s: %v", path, err)
 		}
 
+		parsed = append(parsed, file)
+	}
+
+	// The predicates first: a function of one error that returns whether
+	// it is one of the types it names.
+	predicates := map[string][]string{}
+	built := map[string]bool{}
+
+	for _, file := range parsed {
+		for _, decl := range file.Decls {
+			if fn, ok := decl.(*ast.FuncDecl); ok && fn.Recv == nil && fn.Body != nil && len(fn.Body.List) == 1 {
+				if ret, ok := fn.Body.List[0].(*ast.ReturnStmt); ok && len(ret.Results) == 1 && returnsBool(fn) {
+					if types := typesIn(ret.Results[0], nil, nil); len(types) > 0 {
+						predicates[fn.Name.Name] = types
+					}
+				}
+			}
+		}
+
+		ast.Inspect(file, func(n ast.Node) bool {
+			if lit, ok := n.(*ast.CompositeLit); ok {
+				if sel, ok := lit.Type.(*ast.SelectorExpr); ok {
+					if pkg, ok := sel.X.(*ast.Ident); ok && pkg.Name == "domain" && strings.HasSuffix(sel.Sel.Name, "Error") {
+						built["*domain."+sel.Sel.Name] = true
+					}
+				}
+			}
+
+			return true
+		})
+	}
+
+	var arms []arm
+
+	for _, file := range parsed {
 		for _, decl := range file.Decls {
 			fn, ok := decl.(*ast.FuncDecl)
 			if !ok || fn.Body == nil {
 				continue
 			}
 
-			arms = append(arms, armsOf(fset, fn)...)
+			if _, isPredicate := predicates[fn.Name.Name]; isPredicate {
+				continue
+			}
+
+			arms = append(arms, armsOf(fset, fn, predicates)...)
 		}
 	}
 
-	return arms
+	return arms, built
+}
+
+// returnsBool reports whether fn's one result is a bool.
+func returnsBool(fn *ast.FuncDecl) bool {
+	results := fn.Type.Results
+	if results == nil || len(results.List) != 1 {
+		return false
+	}
+
+	id, ok := results.List[0].Type.(*ast.Ident)
+
+	return ok && id.Name == "bool"
 }
 
 // armsOf reads the arms of one function.
-func armsOf(fset *token.FileSet, fn *ast.FuncDecl) []arm {
+func armsOf(fset *token.FileSet, fn *ast.FuncDecl, predicates map[string][]string) []arm {
 	// A variable an `errors.AsType[*domain.X](err)` was assigned to, in a
 	// statement of its own (`_, isX := ...`), names X wherever a condition
 	// reads it. One assigned in an if's init names X in that if only, and
@@ -176,7 +255,7 @@ func armsOf(fset *token.FileSet, fn *ast.FuncDecl) []arm {
 		for i, stmt := range block.List {
 			switch s := stmt.(type) {
 			case *ast.IfStmt:
-				types := typesIn(s.Cond, bound)
+				types := typesIn(s.Cond, bound, predicates)
 				if as, ok := s.Init.(*ast.AssignStmt); ok && len(as.Rhs) == 1 {
 					if name := domainTypeOf(as.Rhs[0]); name != "" {
 						types = append(types, name)
@@ -198,7 +277,7 @@ func armsOf(fset *token.FileSet, fn *ast.FuncDecl) []arm {
 				for _, c := range s.Body.List {
 					clause := c.(*ast.CaseClause)
 					for _, e := range clause.List {
-						if types := typesIn(e, bound); len(types) > 0 {
+						if types := typesIn(e, bound, predicates); len(types) > 0 {
 							add(types, statusIn(&ast.BlockStmt{List: clause.Body}), clause)
 						}
 					}
@@ -242,8 +321,9 @@ func domainTypeOf(e ast.Expr) string {
 	return "*domain." + sel.Sel.Name
 }
 
-// typesIn is every domain error type a condition names.
-func typesIn(cond ast.Expr, bound map[string]string) []string {
+// typesIn is every domain error type a condition names: in a call, through a
+// variable it was bound to, or through a predicate that names them.
+func typesIn(cond ast.Expr, bound map[string]string, predicates map[string][]string) []string {
 	var types []string
 
 	ast.Inspect(cond, func(n ast.Node) bool {
@@ -256,6 +336,16 @@ func typesIn(cond ast.Expr, bound map[string]string) []string {
 			types = append(types, name)
 
 			return false
+		}
+
+		if call, ok := e.(*ast.CallExpr); ok {
+			if fn, ok := call.Fun.(*ast.Ident); ok {
+				if named, ok := predicates[fn.Name]; ok {
+					types = append(types, named...)
+
+					return false
+				}
+			}
 		}
 
 		if id, ok := e.(*ast.Ident); ok {

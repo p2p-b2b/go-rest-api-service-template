@@ -925,8 +925,10 @@ recording processor.
 A refusal is an error the service answers by telling the caller what they
 got wrong, below 500; anything else is a failure of the service. The
 handlers decide that one arm at a time: an `errors.AsType`, `isType` or
-`isErr` per type and per method, 347 of them over 51 domain types, each
-answering a status. What has to agree with those answers without writing
+`isErr` per type and per method (or a predicate such as `isBadRequest`
+that names several), some 380 of them over 53 domain types, each
+answering a status; and a few errors they build themselves and answer
+without an arm, such as a path id that is not a uuid. What has to agree with those answers without writing
 one -- telling a refused call from a failed one -- cannot read them, so the
 same decision is written once more as a table: `respond.StatusFor`, read
 off the arms, with `respond.IsRefusal` on top of it (a status below 500, or
@@ -939,10 +941,13 @@ Two places that say one thing drift. `TestEveryArmAgreesWithTheTable` reads
 the handler package's source and holds every arm to the side of 500 the
 table says: an arm that answers a type below 500 finds it below 500 in the
 table, and one that answers it 500 finds it at 500 or more, or not in the
-table. A row no arm answers fails too, and so does an arm whose status it
-cannot read, so that a new way of writing one is read rather than skipped.
-Within a side the table holds the status most arms answer (a 404, where one
-idempotent delete answers 200): its side is what is relied on.
+table. An error the handler package builds must have a row (its status is
+the call site's, and is not read), a row no arm answers and no handler
+builds fails, and so does an arm whose status it cannot read, so that a new
+way of writing one is read rather than skipped. Within a side the table
+holds the status most arms answer (a 404, where a policy's delete is
+idempotent and a verification resend will not say whether an account
+exists, and both answer 200): its side is what is relied on.
 
 ```mermaid
 flowchart LR
@@ -956,11 +961,16 @@ flowchart LR
     G -. reads .- T
 ```
 
-What is not an arm is not held: a handler that answers the error of
-`getUserIDFromContext` (an `InvalidJWTError` the middleware should have
-made impossible) with a 500 does it without naming the type, and the table
-says 401 for the type. The handlers' answers have not changed: the arms
-are where they were, and nothing answers through the table yet.
+What is not an arm is not held: the error of `getUserIDFromContext` (an
+`InvalidJWTError` the middleware should have made impossible) is answered
+500 at eleven sites, 400 at nine and 401 at seven, none of them naming the
+type, and the table says 401 for it. The handlers' answers have not
+changed: the arms are where they were, and nothing answers through the
+table yet. One thing a trace shows has: a body that could not be decoded
+is recorded through its `DecodeError` mark, so its span's `exception.type`
+is `*respond.DecodeError`, with the decoder's own error in its message;
+`error_type` on the access line, which reads the bottom of the chain, is
+unchanged.
 
 ## Related
 

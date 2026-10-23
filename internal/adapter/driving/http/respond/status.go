@@ -22,8 +22,11 @@ import (
 // call from a failed one.
 //
 // Where the arms answer one type with two statuses on the same side (a 404,
-// and a 200 where a delete is idempotent), the table holds the one most of
-// them answer; its side is what is relied on.
+// and a 200 where a policy's delete is idempotent or a verification resend
+// will not say whether an account exists), the table holds the one most of
+// them answer; its side is what is relied on. An error the handlers build
+// themselves and answer without an arm (a path id that is not a uuid) is
+// in it too, so that it is not taken for a failure.
 func StatusFor(err error) int {
 	for _, row := range statusTable {
 		if row.match(err) {
@@ -80,6 +83,15 @@ var statusTable = []statusRow{
 	row[*domain.InvalidResourceError](http.StatusBadRequest),
 	row[*domain.InvalidIdentityProvidersError](http.StatusBadRequest),
 	row[*domain.ProjectNotOfCallerError](http.StatusBadRequest),
+	row[*domain.InvalidRateLimitTargetError](http.StatusBadRequest),
+	row[*domain.InvalidRateLimitStrategyError](http.StatusBadRequest),
+	// Built by the handlers' own parsers and answered 400: a path id that
+	// is not a uuid, a page token or a limit that does not parse, and a
+	// body the authentication routes could not read.
+	row[*domain.InvalidUUIDError](http.StatusBadRequest),
+	row[*domain.InvalidTokenError](http.StatusBadRequest),
+	row[*domain.InvalidLimitError](http.StatusBadRequest),
+	row[*domain.InvalidRequestError](http.StatusBadRequest),
 	row[*domain.DatatypeMismatchError](http.StatusBadRequest),
 	row[*domain.InvalidByteSequenceError](http.StatusBadRequest),
 	row[*domain.InvalidMessageFormatError](http.StatusBadRequest),
