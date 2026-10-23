@@ -15,6 +15,12 @@ Since `v0.0.3`.
 
 ### Security
 
+- **Go 1.27.3**, for
+  [GO-2026-6809](https://pkg.go.dev/vuln/GO-2026-6809): `crypto/x509`
+  distrusts compromised intermediate certificates. On 1.27.2 it is reached
+  through the SMTP mailer's certificate check and every other TLS client
+  the service runs. `make go-mod-update` raises OPA to 1.21.3 with it.
+  ([#139](https://github.com/slashdevops/go-rest-api-service-template/pull/139))
 - **An identity provider is not pointed elsewhere under its identities.**
   An identity is (provider, subject), and `PUT /auth/idps/{idp_id}` could
   change a provider's issuer and type while its identities stayed: whoever

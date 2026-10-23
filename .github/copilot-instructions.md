@@ -63,7 +63,7 @@ Two things about it are worth reading before you copy it:
 
 ## Stack
 
-- Language: Go 1.27+ (`go 1.27.2` in `go.mod`; the patch version is load-bearing, CI and `govulncheck` resolve the toolchain from it)
+- Language: Go 1.27+ (`go 1.27.3` in `go.mod`; the patch version is load-bearing, CI and `govulncheck` resolve the toolchain from it)
 - Framework: standard library (`net/http`, `slog`, `testing`)
 - Build: `make` — every target is in the Makefile
 - Live reload: `air`
