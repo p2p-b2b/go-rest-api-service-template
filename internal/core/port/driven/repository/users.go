@@ -22,6 +22,11 @@ type Users interface {
 	DeleteByID(ctx context.Context, input *domain.DeleteUserInput) error
 
 	SelectByID(ctx context.Context, id uuid.UUID) (*domain.User, error)
+	// ResetPassword writes the password hash of a reset link, in one
+	// statement, only on the account the link was mailed to as it is now:
+	// that id, that address, a local account, not disabled. Anything else
+	// is a UserNotFoundError.
+	ResetPassword(ctx context.Context, id uuid.UUID, address, passwordHash string) error
 	// SelectDisabled is whether the account is disabled, or a
 	// UserNotFoundError: the one column an account's standing
 	// is made of, read on every authenticated request.

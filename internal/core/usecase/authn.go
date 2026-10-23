@@ -38,6 +38,15 @@ type UserServiceConsumer interface {
 	Create(ctx context.Context, input *domain.CreateUserInput) error
 	GetByID(ctx context.Context, id uuid.UUID) (*domain.User, error)
 
+	// ResetPassword writes a reset link's password on the account it was
+	// mailed to, as the account is now; anything else is a
+	// UserNotFoundError.
+	ResetPassword(ctx context.Context, id uuid.UUID, address, passwordHash string) error
+
+	// StoredAccount is the account as the repository has it, without its
+	// credentials and never from the cache: where a reset link is mailed.
+	StoredAccount(ctx context.Context, id uuid.UUID) (*domain.User, error)
+
 	// Standing says whether the account may act, read from the repository
 	// and never from the cache. GetByID is cached for twelve hours and its
 	// invalidation is best effort: whether a session is issued or renewed
@@ -1062,6 +1071,53 @@ func (ref *AuthnService) RecoverPassword(ctx context.Context, input *domain.Reco
 		return ref.silentRecovery(ctx, span, start, attrs, "no account for this address")
 	}
 
+	return ref.recoverAccount(ctx, span, start, attrs, user)
+}
+
+// RecoverPasswordOf mails the account with this id a reset link: what an
+// administrator asks for (POST /users/{user_id}/password/reset). It reads the
+// account from the repository, never the cache, and mails the address the
+// row has: the route used to read the account through the cache and then
+// look the address up through the cache again, and after an administrator
+// corrected an address a failed invalidation mailed the previous one until
+// the entry expired. An account that is not there is the UserNotFoundError
+// the route answers 404 with; it is an authenticated route, and the public
+// route's silence is about addresses nobody has proven they know.
+//
+// The address's recovery budget is the public route's, spent on the stored
+// address.
+func (ref *AuthnService) RecoverPasswordOf(ctx context.Context, userID uuid.UUID) error {
+	start := time.Now()
+	ctx, span, attrs := o11y.SetupTrace(ctx, ref.ot.Traces.Tracer, ref.metricsMetadata, "RecoverPasswordOf")
+	defer span.End()
+
+	span.SetAttributes(attribute.String("user.id", userID.String()))
+
+	user, err := ref.userService.StoredAccount(ctx, userID)
+	if err != nil {
+		return o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
+	}
+
+	// The stored address passes the rule the public route holds a submitted
+	// one to, or it is the 400 the route documents.
+	if err := (&domain.RecoverPasswordInput{Email: user.Email}).Validate(); err != nil {
+		return o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
+	}
+
+	if ref.loginThrottle != nil {
+		if retryAfter, allowed := ref.loginThrottle.Attempt(throttleKey(throttlePurposeRecovery, user.Email)); !allowed {
+			errorValue := &domain.TooManyRecoveryRequestsError{RetryAfter: retryAfter}
+			return o11y.RecordError(ctx, span, start, errorValue, ref.metrics, attrs)
+		}
+	}
+
+	return ref.recoverAccount(ctx, span, start, attrs, user)
+}
+
+// recoverAccount is what both recoveries do once they have the account:
+// mail a reset link to a local, verified, enabled account, the verification
+// link to an unverified one, and nothing, silently, to any other.
+func (ref *AuthnService) recoverAccount(ctx context.Context, span trace.Span, start time.Time, attrs []attribute.KeyValue, user *domain.User) error {
 	// Only a local account has a password to recover. Saying so out loud
 	// identifies which addresses use SSO, which is exactly what an attacker
 	// choosing a target wants to know.
@@ -1119,6 +1175,11 @@ func (ref *AuthnService) RecoverPassword(ctx context.Context, input *domain.Reco
 	return nil
 }
 
+// resetLinkNotForTheAccount is what a reset link answers when the account
+// it was mailed to is no longer that account: gone, another address,
+// disabled, or not a local one. One sentence for all four.
+const resetLinkNotForTheAccount = "the link is not valid for the account"
+
 func (ref *AuthnService) ResetPassword(ctx context.Context, input *domain.ResetPasswordInput) error {
 	start := time.Now()
 	ctx, span, attrs := o11y.SetupTrace(ctx, ref.ot.Traces.Tracer, ref.metricsMetadata, "ResetPassword")
@@ -1133,16 +1194,19 @@ func (ref *AuthnService) ResetPassword(ctx context.Context, input *domain.ResetP
 		return o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
 	}
 
+	// A link is bound to the address it was mailed to, as a verification
+	// link is. The middleware verified the signature, not the claim set: a
+	// link with no address is refused as one that is not valid.
+	if input.Email == "" {
+		errorValue := &domain.InvalidJWTError{Message: "email claim is missing"}
+		return o11y.RecordError(ctx, span, start, errorValue, ref.metrics, attrs)
+	}
+
 	// Single-use, and spent BEFORE the password changes: a token that was
 	// consumed and then failed to apply costs one more link; a password that
 	// changed and then failed to record the token is a link that still works.
 	if err := ref.consumeSingleUseToken(ctx, input.TokenID, input.UserID, domain.TokenTypePasswordReset, input.TokenExpiresAt); err != nil {
 		return o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
-	}
-
-	// update user password
-	uuInput := &domain.UpdateUserInput{
-		ID: input.UserID,
 	}
 
 	if len(input.Password) < domain.ValidUserPasswordMinLength || len(input.Password) > domain.ValidUserPasswordMaxLength {
@@ -1155,9 +1219,18 @@ func (ref *AuthnService) ResetPassword(ctx context.Context, input *domain.ResetP
 		return o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
 	}
 
-	uuInput.PasswordHash = &hashPwd
+	// Written only on the account the link was mailed to, as it is now: that
+	// address, a local account, not disabled. A link mailed to an address the
+	// account no longer has worked until it expired, and so did one mailed
+	// before an administrator disabled the account. Whichever it is, the
+	// answer is the one a link that is not valid gets: which of them it was
+	// is not the holder's to learn. The link is spent either way, and each
+	// of those wants a new one.
+	if err := ref.userService.ResetPassword(ctx, input.UserID, input.Email, hashPwd); err != nil {
+		if _, none := errors.AsType[*domain.UserNotFoundError](err); none {
+			err = &domain.InvalidJWTError{Message: resetLinkNotForTheAccount}
+		}
 
-	if err := ref.userService.UpdateByID(ctx, uuInput); err != nil {
 		return o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
 	}
 

@@ -737,14 +737,14 @@ func (ref *AuthnHandler) recoverPassword(w http.ResponseWriter, r *http.Request)
 //
 //	@Id				01991917-2720-758d-8104-94a0368acecb
 //	@Summary		Reset password
-//	@Description	Set new password using the token from password recovery email.
+//	@Description	Set a new password with the token of a password recovery email. The link is bound to the account and the address it was mailed to: it writes nothing on an account whose address changed since, that is disabled or that is no longer a local account (401).
 //	@Tags			Authentication
 //	@Accept			json
 //	@Produce		json
 //	@Param			body	body		payload.ResetPasswordRequest	true	"New password to set"
 //	@Success		200		{object}	payload.HTTPMessage				"Password reset successful"
 //	@Failure		400		{object}	payload.HTTPMessage				"Invalid request body or password validation error"
-//	@Failure		401		{object}	payload.HTTPMessage				"Invalid, expired, or already used reset token"
+//	@Failure		401		{object}	payload.HTTPMessage				"Invalid, expired, or already used reset token, or one that is no longer valid for the account it was mailed to"
 //	@Failure		403		{object}	payload.HTTPMessage				"Insufficient permissions"
 //	@Failure		413		{object}	payload.HTTPMessage				"Request body larger than http.server.max.body.bytes"
 //	@Failure		415		{object}	payload.HTTPMessage				"Body not declared as application/json"
@@ -804,7 +804,12 @@ func (ref *AuthnHandler) resetPassword(w http.ResponseWriter, r *http.Request) {
 		tokenExpiresAt = time.Unix(int64(exp), 0)
 	}
 
+	// The address the link was mailed to: the password is written only while
+	// it is the account's. A token without one is the use-case's to refuse.
+	email, _ := jwtClaims["email"].(string)
+
 	input := &domain.ResetPasswordInput{
+		Email:          email,
 		UserID:         userUUID,
 		Password:       req.Password,
 		TokenID:        jti,
@@ -812,6 +817,15 @@ func (ref *AuthnHandler) resetPassword(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := ref.service.ResetPassword(ctx, input); err != nil {
+		// A link that is spent, has no address, or is no longer valid for
+		// the account it was mailed to is the 401 the route documents. The
+		// type was mapped nowhere, so a replayed link answered 500.
+		if _, ok := errors.AsType[*domain.InvalidJWTError](err); ok {
+			e := o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
+			respond.WriteJSONMessage(w, r, http.StatusUnauthorized, e.Error())
+			return
+		}
+
 		_, isInvalidByteSeq := errors.AsType[*domain.InvalidByteSequenceError](err)
 		_, isInvalidMsgFmt := errors.AsType[*domain.InvalidMessageFormatError](err)
 		_, isUndefCol := errors.AsType[*domain.UndefinedColumnError](err)

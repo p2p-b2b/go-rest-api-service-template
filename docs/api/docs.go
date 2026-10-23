@@ -1189,7 +1189,7 @@ const docTemplate = `{
                         "ResetPasswordToken": []
                     }
                 ],
-                "description": "Set new password using the token from password recovery email.",
+                "description": "Set a new password with the token of a password recovery email. The link is bound to the account and the address it was mailed to: it writes nothing on an account whose address changed since, that is disabled or that is no longer a local account (401).",
                 "consumes": [
                     "application/json"
                 ],
@@ -1226,7 +1226,7 @@ const docTemplate = `{
                         }
                     },
                     "401": {
-                        "description": "Invalid, expired, or already used reset token",
+                        "description": "Invalid, expired, or already used reset token, or one that is no longer valid for the account it was mailed to",
                         "schema": {
                             "$ref": "#/definitions/payload.HTTPMessage"
                         }
@@ -6732,7 +6732,7 @@ const docTemplate = `{
                         "AccessToken": []
                     }
                 ],
-                "description": "Email the account holder a password-reset link. PUT /users/{user_id} used to accept a new password outright, so a grant on it was a takeover of any account; a reset link needs the mailbox as well. Answers 202 whether or not the address can be reached, and says nothing about why.",
+                "description": "Email the account holder a password-reset link, to the address it has now. PUT /users/{user_id} used to accept a new password outright, so a grant on it was a takeover of any account; a reset link needs the mailbox as well. Answers 202 whether or not the address can be reached, and says nothing about why.",
                 "produces": [
                     "application/json"
                 ],
@@ -6759,7 +6759,7 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Invalid user ID format",
+                        "description": "Invalid user ID format, or a stored address the recovery refuses",
                         "schema": {
                             "$ref": "#/definitions/payload.HTTPMessage"
                         }
@@ -6783,7 +6783,7 @@ const docTemplate = `{
                         }
                     },
                     "429": {
-                        "description": "Too many requests -- RATE_LIMIT_EXCEEDED is the budget, RATE_LIMIT_UNAVAILABLE the limiter's own store",
+                        "description": "Too many requests -- RATE_LIMIT_EXCEEDED is the budget, RATE_LIMIT_UNAVAILABLE the limiter's own store; or the address's recovery budget is spent",
                         "schema": {
                             "$ref": "#/definitions/payload.HTTPMessage"
                         }

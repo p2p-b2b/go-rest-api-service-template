@@ -444,6 +444,61 @@ func (ref *UsersRepository) DeleteByID(ctx context.Context, input *domain.Delete
 	return nil
 }
 
+// queryResetPassword writes a reset link's password on the account it was
+// mailed to, as the account is now ($1 the id, $2 the address the link went
+// to, $3 the hash).
+const queryResetPassword = `
+        UPDATE users SET
+            password_hash = $3,
+            updated_at    = CURRENT_TIMESTAMP
+        WHERE id = $1
+          AND email = $2
+          AND local_account IS TRUE
+          AND disabled IS FALSE;
+    `
+
+// ResetPassword is the end of a reset link, and its only writer.
+//
+// A link is bound to the account and to the address it was mailed to: one
+// mailed to an address the account no longer has proves nothing about the
+// mailbox that holds it now, and it used to set the password until it
+// expired. And it is held to the account as it is when the link is
+// followed, in the statement that writes: a disabled account, which a link
+// mailed before the disable could still give a new password, and one that
+// is no longer a local account. Read and written in two steps, a change in
+// between would have been written past. No such row is a UserNotFoundError;
+// which it is (gone, another address, disabled, federated) is told to
+// nobody.
+func (ref *UsersRepository) ResetPassword(ctx context.Context, id uuid.UUID, address, passwordHash string) error {
+	start := time.Now()
+	ctx, span, attrs, cancel := o11y.SetupTraceWithTimeout(ctx, ref.ot.Traces.Tracer, ref.maxQueryTimeout, ref.metricsMetadata, "ResetPassword")
+	defer cancel()
+	defer span.End()
+
+	if !domain.IsUUIDV7(id) {
+		errorType := &domain.InvalidUserIDError{Message: "user ID cannot be empty"}
+		return o11y.RecordError(ctx, span, start, errorType, ref.metrics, attrs)
+	}
+
+	span.SetAttributes(attribute.String("user.id", id.String()))
+
+	cslog.Trace(ctx, "sql", "query", prettyPrint(queryResetPassword, id, address, "[hash]"))
+
+	result, err := ref.db.Exec(ctx, queryResetPassword, id, address, passwordHash)
+	if err != nil {
+		return o11y.RecordError(ctx, span, start, ref.handlePgError(err, nil), ref.metrics, attrs)
+	}
+
+	if result.RowsAffected() == 0 {
+		errorType := &domain.UserNotFoundError{ID: id}
+		return o11y.RecordError(ctx, span, start, errorType, ref.metrics, attrs)
+	}
+
+	o11y.RecordSuccess(ctx, span, start, ref.metrics, attrs, "password reset", attribute.String("user.id", id.String()))
+
+	return nil
+}
+
 // `disabled` is NOT NULL; `IS TRUE` is kept so that the statement reads the
 // same against a database created before it was.
 const queryUserDisabled = `

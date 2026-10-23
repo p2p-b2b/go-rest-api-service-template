@@ -3263,7 +3263,10 @@ paths:
     post:
       consumes:
       - application/json
-      description: Set new password using the token from password recovery email.
+      description: 'Set a new password with the token of a password recovery email.
+        The link is bound to the account and the address it was mailed to: it writes
+        nothing on an account whose address changed since, that is disabled or that
+        is no longer a local account (401).'
       operationId: 01991917-2720-758d-8104-94a0368acecb
       parameters:
       - description: New password to set
@@ -3284,7 +3287,8 @@ paths:
           schema:
             $ref: '#/definitions/payload.HTTPMessage'
         "401":
-          description: Invalid, expired, or already used reset token
+          description: Invalid, expired, or already used reset token, or one that
+            is no longer valid for the account it was mailed to
           schema:
             $ref: '#/definitions/payload.HTTPMessage'
         "403":
@@ -7059,10 +7063,11 @@ paths:
       - Authorization
   /users/{user_id}/password/reset:
     post:
-      description: Email the account holder a password-reset link. PUT /users/{user_id}
-        used to accept a new password outright, so a grant on it was a takeover of
-        any account; a reset link needs the mailbox as well. Answers 202 whether or
-        not the address can be reached, and says nothing about why.
+      description: Email the account holder a password-reset link, to the address
+        it has now. PUT /users/{user_id} used to accept a new password outright, so
+        a grant on it was a takeover of any account; a reset link needs the mailbox
+        as well. Answers 202 whether or not the address can be reached, and says nothing
+        about why.
       operationId: 01a07662-d5ca-7c8f-aa04-0a29d6cad3bd
       parameters:
       - description: User unique identifier
@@ -7079,7 +7084,7 @@ paths:
           schema:
             $ref: '#/definitions/payload.HTTPMessage'
         "400":
-          description: Invalid user ID format
+          description: Invalid user ID format, or a stored address the recovery refuses
           schema:
             $ref: '#/definitions/payload.HTTPMessage'
         "401":
@@ -7096,7 +7101,7 @@ paths:
             $ref: '#/definitions/payload.HTTPMessage'
         "429":
           description: Too many requests -- RATE_LIMIT_EXCEEDED is the budget, RATE_LIMIT_UNAVAILABLE
-            the limiter's own store
+            the limiter's own store; or the address's recovery budget is spent
           schema:
             $ref: '#/definitions/payload.HTTPMessage'
         "500":

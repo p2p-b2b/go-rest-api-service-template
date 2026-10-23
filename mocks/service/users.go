@@ -143,6 +143,20 @@ func (mr *MockUsersMockRecorder) LinkRoles(ctx, input any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LinkRoles", reflect.TypeOf((*MockUsers)(nil).LinkRoles), ctx, input)
 }
 
+// ResetPassword mocks base method.
+func (m *MockUsers) ResetPassword(ctx context.Context, id uuid.UUID, address, passwordHash string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ResetPassword", ctx, id, address, passwordHash)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ResetPassword indicates an expected call of ResetPassword.
+func (mr *MockUsersMockRecorder) ResetPassword(ctx, id, address, passwordHash any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResetPassword", reflect.TypeOf((*MockUsers)(nil).ResetPassword), ctx, id, address, passwordHash)
+}
+
 // Select mocks base method.
 func (m *MockUsers) Select(ctx context.Context, input *domain.SelectUsersInput) (*domain.SelectUsersOutput, error) {
 	m.ctrl.T.Helper()
