@@ -23,8 +23,10 @@ import (
 // that re-implemented them would prove nothing.
 
 type fakeAuthn struct {
-	loggedIn   []uuid.UUID
-	registered []*domain.RegisterUserInput
+	// registerErr is what RegisterUser answers: the create's refusal.
+	registerErr error
+	loggedIn    []uuid.UUID
+	registered  []*domain.RegisterUserInput
 }
 
 func (f *fakeAuthn) LoginUserByID(_ context.Context, id uuid.UUID, _ domain.LoginMethod) (*domain.LoginUserOutput, error) {
@@ -36,7 +38,7 @@ func (f *fakeAuthn) LoginUserByID(_ context.Context, id uuid.UUID, _ domain.Logi
 func (f *fakeAuthn) RegisterUser(_ context.Context, in *domain.RegisterUserInput) error {
 	f.registered = append(f.registered, in)
 
-	return nil
+	return f.registerErr
 }
 
 type fakeIDPs struct{ idp *domain.IDP }
@@ -370,7 +372,10 @@ func TestIDPCallbackProvisioningGates(t *testing.T) {
 }
 
 // A new identity with a verified email and no account behind it is
-// provisioned, linked, and signed in -- in that order.
+// provisioned with its identity, in one registration, and signed in. The
+// identity travels with the registration, which stores both in one
+// transaction: nothing links it separately, after an account that a failed
+// link would leave behind with no way in.
 func TestIDPCallbackProvisionsAndLinks(t *testing.T) {
 	t.Parallel()
 
@@ -385,9 +390,63 @@ func TestIDPCallbackProvisionsAndLinks(t *testing.T) {
 		t.Fatalf("expected one OAuth registration, got %+v", f.authn.registered)
 	}
 
-	link, err := f.identities.SelectBySubject(t.Context(), f.idp.ID, "sub-new")
-	if err != nil || link.UserID != out.Login.UserID {
-		t.Fatalf("the identity must be linked to the new account: %v %+v", err, link)
+	registration := f.authn.registered[0]
+	want := domain.LinkUserIdentityInput{UserID: registration.ID, IDPID: f.idp.ID, Subject: "sub-new", Email: "new@example.com"}
+
+	if registration.Identity == nil || *registration.Identity != want {
+		t.Fatalf("the registration carried the identity %+v, want %+v", registration.Identity, want)
+	}
+
+	if out.Login.UserID != registration.ID {
+		t.Errorf("signed in as %s, want the account registered, %s", out.Login.UserID, registration.ID)
+	}
+
+	if _, err := f.identities.SelectBySubject(t.Context(), f.idp.ID, "sub-new"); err == nil {
+		t.Error("the identity was linked apart from the registration")
+	}
+}
+
+// A first sign-in whose registration is refused signs nobody in: the
+// account was not stored, and neither was its identity. An address taken
+// since the check is answered as the check answers it; any other refusal is
+// the caller's to hear as it is.
+func TestIDPCallbackARefusedRegistrationSignsNobodyIn(t *testing.T) {
+	t.Parallel()
+
+	for name, tc := range map[string]struct {
+		refusal error
+		want    func(error) bool
+	}{
+		"the_address_was_taken_meanwhile": {
+			refusal: &domain.UserAlreadyExistsError{Email: "new@example.com"},
+			want: func(err error) bool {
+				_, ok := errors.AsType[*domain.IDPIdentityNotLinkedError](err)
+				return ok
+			},
+		},
+		"the_identity_is_linked_already": {
+			refusal: &domain.UserIdentityAlreadyLinkedError{},
+			want: func(err error) bool {
+				_, ok := errors.AsType[*domain.UserIdentityAlreadyLinkedError](err)
+				return ok
+			},
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			f := newIDPFixture(t, verified("sub-new", "new@example.com"))
+			f.authn.registerErr = tc.refusal
+
+			_, err := f.svc.Callback(t.Context(), f.idp.ID, f.stateFor(t, domain.IDPEventTypeLogin, uuid.Nil()), "code")
+			if !tc.want(err) {
+				t.Fatalf("got %T (%v)", err, err)
+			}
+
+			if len(f.authn.loggedIn) != 0 {
+				t.Errorf("signed in %v after a refused registration", f.authn.loggedIn)
+			}
+		})
 	}
 }
 

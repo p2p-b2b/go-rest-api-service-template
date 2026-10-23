@@ -8,9 +8,11 @@ import (
 	"regexp"
 	"strings"
 	"sync/atomic"
+	"time"
 	"uuid"
 
 	"github.com/slashdevops/go-rest-api-service-template/internal/core/domain"
+	"github.com/slashdevops/go-rest-api-service-template/internal/o11y"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -110,6 +112,10 @@ func ReserveResourceSlot(params ResourceLimitCheckParams) error {
 	return params.ResourcesLimits.ReserveUsage(params.Ctx, params.Scope, params.ResourceType)
 }
 
+// resourceSlotReleaseTimeout bounds a release, which does not run on the
+// request's context and needs an end of its own.
+const resourceSlotReleaseTimeout = 10 * time.Second
+
 // ReleaseResourceSlot returns a reservation that was claimed but not used,
 // because the creation it was claimed for failed.
 //
@@ -118,15 +124,32 @@ func ReserveResourceSlot(params ResourceLimitCheckParams) error {
 // bookkeeping error would hide what actually went wrong. A failed release
 // leaves the counter high, which is the safe direction and is what
 // reconciliation exists to repair.
+//
+// It does not run on the request's context. The request being cancelled, or
+// running out of time, is one of the ways the creation fails, and a release
+// on that context fails the same way: the counter stayed one too high for
+// every create a client walked away from. It runs detached, with a deadline
+// of its own, keeping the request's span and operation; and under a failure
+// holder of its own, so that a release that fails does not replace the
+// creation's failure in the request's, which the access line names.
+//
+// One window goes the other way: a request cancelled while its COMMIT is in
+// flight hears an error from the driver although the server may have
+// committed, and the release then gives back a slot the account holds. The
+// counter is one low, which lets one account past the hard limit until
+// reconciliation runs. It is the width of a COMMIT's round trip.
 func ReleaseResourceSlot(params ResourceLimitCheckParams) {
-	if err := params.ResourcesLimits.DecrementUsage(params.Ctx, params.Scope, params.ResourceType); err != nil {
+	ctx, cancel := context.WithTimeout(o11y.WithFailure(context.WithoutCancel(params.Ctx)), resourceSlotReleaseTimeout)
+	defer cancel()
+
+	if err := params.ResourcesLimits.DecrementUsage(ctx, params.Scope, params.ResourceType); err != nil {
 		scopeID := params.Scope.ID
 		if scopeID == nil {
 			scopeID = new(uuid.Nil())
 		}
 
 		slog.ErrorContext(
-			params.Ctx,
+			ctx,
 			"failed to release a resource reservation; the counter is now one too high until reconciliation runs",
 			"scope_type", params.Scope.Type,
 			"scope_id", scopeID,

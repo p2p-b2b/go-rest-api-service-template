@@ -226,8 +226,8 @@ func (ref *AuthnIDPsHandler) start(w http.ResponseWriter, r *http.Request, actio
 //	@Success		200		{object}	payload.IDPCallbackResponse	"The outcome"
 //	@Failure		400		{object}	payload.HTTPMessage			"A state that is missing, spent, expired or minted for another provider, or a missing code"
 //	@Failure		401		{object}	payload.HTTPMessage			"The provider refused the sign-in, or the identity is not linked to an account here"
-//	@Failure		404		{object}	payload.HTTPMessage			"Unknown or disabled identity provider"
-//	@Failure		409		{object}	payload.HTTPMessage			"The identity is already linked to an account"
+//	@Failure		404		{object}	payload.HTTPMessage			"Unknown or disabled identity provider, the provider was deleted while signing in, or the account the flow was started for no longer exists"
+//	@Failure		409		{object}	payload.HTTPMessage			"The identity is already linked to an account, or registration is closed: the user limit has been reached"
 //	@Failure		429		{object}	payload.HTTPMessage			"Too many requests"
 //	@Failure		500		{object}	payload.HTTPMessage			"Internal server error"
 //	@Failure		503		{object}	payload.HTTPMessage			"The identity provider is not reachable"
@@ -504,7 +504,18 @@ func (ref *AuthnIDPsHandler) writeCallbackError(w http.ResponseWriter, r *http.R
 		respond.WriteJSONMessage(w, r, http.StatusBadRequest, e.Error())
 	case isType[*domain.IDPNotFoundError](err):
 		respond.WriteJSONMessage(w, r, http.StatusNotFound, e.Error())
+	case isType[*domain.UserIdentityNotFoundError](err):
+		// The identity's insert found no provider, or no account, behind
+		// its foreign key: the provider was deleted while signing in, or
+		// the account a link was started for is gone. Neither is the
+		// service's fault, and both answered 500.
+		respond.WriteJSONMessage(w, r, http.StatusNotFound, e.Error())
 	case isType[*domain.UserIdentityAlreadyLinkedError](err):
+		respond.WriteJSONMessage(w, r, http.StatusConflict, e.Error())
+	case isType[*domain.ResourcesLimitsHardLimitReachedError](err):
+		// A first sign-in creates an account, and the users limit is
+		// reached: registration is closed, as POST /users answers it. It
+		// answered 500.
 		respond.WriteJSONMessage(w, r, http.StatusConflict, e.Error())
 	case isType[*domain.IDPIdentityNotLinkedError](err), isType[*domain.InvalidCredentialsError](err):
 		respond.WriteJSONMessage(w, r, http.StatusUnauthorized, e.Error())

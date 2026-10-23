@@ -360,6 +360,12 @@ func (ref *AuthnIDPsService) signIn(ctx context.Context, idp *domain.IDP, info *
 
 	userID := uuid.NewV7()
 
+	// The account and its identity are one act, and one transaction: an
+	// identity that cannot be stored stores no account. They were two
+	// writes, and an identity that failed after the account was stored left
+	// an account with no password and no identity, holding the address:
+	// nobody could sign in to it, and the person's next sign-in found an
+	// account with their email that was not linked to them.
 	if err := ref.authnService.RegisterUser(ctx, &domain.RegisterUserInput{
 		ID:             userID,
 		Email:          info.Email,
@@ -368,13 +374,20 @@ func (ref *AuthnIDPsService) signIn(ctx context.Context, idp *domain.IDP, info *
 		Password:       uuid.NewV7().String(), // random and never used; the account has no password
 		Disabled:       new(false),
 		RegisterMethod: domain.RegisterMethodOAuth,
+		Identity:       &domain.LinkUserIdentityInput{UserID: userID, IDPID: idp.ID, Subject: info.Subject, Email: info.Email},
 	}); err != nil {
-		return nil, err
-	}
+		// The address was free at the check above and is taken now: a local
+		// registration, or this same first sign-in arriving twice. It is the
+		// case the check refuses, met a moment later, and it is answered in
+		// the same words. Any other refusal of the create (the user limit,
+		// an identity already linked) and any fault is the caller's to hear
+		// as it is, and stored nothing.
+		if taken, ok := errors.AsType[*domain.UserAlreadyExistsError](err); ok && taken.Email != "" {
+			slog.InfoContext(ctx, "sign-in refused, an account with the provider's email was created while this one was being provisioned", "idp", idp.Name)
 
-	if err := ref.usersIdentities.Link(ctx, &domain.LinkUserIdentityInput{
-		UserID: userID, IDPID: idp.ID, Subject: info.Subject, Email: info.Email,
-	}); err != nil {
+			return nil, &domain.IDPIdentityNotLinkedError{}
+		}
+
 		return nil, err
 	}
 

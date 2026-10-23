@@ -201,6 +201,20 @@ func (ref *UsersRepository) Insert(ctx context.Context, input *domain.InsertUser
 		return o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
 	}
 
+	// An account provisioned from a provider identity is stored with it.
+	// They were two writes, the identity's after the account's commit, and
+	// an identity that could not be stored left an account nobody could
+	// sign in to, holding its address. One transaction: both, or neither.
+	if identity := input.Identity; identity != nil {
+		span.SetAttributes(attribute.String("idp.id", identity.IDPID.String()))
+
+		cslog.Trace(ctx, "sql", "query", prettyPrint(queryLinkIdentity, identity.UserID.String(), identity.IDPID.String()))
+
+		if _, err = tx.Exec(ctx, queryLinkIdentity, identity.UserID, identity.IDPID, identity.Subject, identity.Email); err != nil {
+			return o11y.RecordError(ctx, span, start, identityPgError(err), ref.metrics, attrs)
+		}
+	}
+
 	cslog.Trace(ctx, "repository.Users.Insert", "user.id", input.ID)
 	o11y.RecordSuccess(ctx, span, start, ref.metrics, attrs, "user inserted successfully", attribute.String("user.id", input.ID.String()))
 
