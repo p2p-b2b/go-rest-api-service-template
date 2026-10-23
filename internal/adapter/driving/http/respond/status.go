@@ -92,6 +92,11 @@ var statusTable = []statusRow{
 	row[*domain.InvalidTokenError](http.StatusBadRequest),
 	row[*domain.InvalidLimitError](http.StatusBadRequest),
 	row[*domain.InvalidRequestError](http.StatusBadRequest),
+	// Built by the payloads' Validate and answered 400 by the handler that
+	// asked: an update that sets nothing, a link body that names nothing.
+	row[*domain.InvalidUserUpdateError](http.StatusBadRequest),
+	row[*domain.InvalidIDPUpdateError](http.StatusBadRequest),
+	row[*domain.InvalidProjectLinkError](http.StatusBadRequest),
 	row[*domain.DatatypeMismatchError](http.StatusBadRequest),
 	row[*domain.InvalidByteSequenceError](http.StatusBadRequest),
 	row[*domain.InvalidMessageFormatError](http.StatusBadRequest),

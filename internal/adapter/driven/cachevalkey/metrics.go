@@ -177,12 +177,16 @@ func (i *Instruments) record(ctx context.Context, operation, entity, result stri
 
 // recordLayer mirrors the operation onto the shared per-layer instruments, so
 // the cache appears in a layer breakdown alongside handler, usecase,
-// repository, llm and mail.
+// repository and mail.
 //
 // The cache's own result vocabulary (hit / stale / miss / timeout / error) is
-// collapsed to the successful flag the shared instruments carry, because that
-// is the only outcome every layer has in common. Anything finer is on the cache
-// instruments, where it means something.
+// collapsed to the outcome the shared instruments carry (layerOutcome: an
+// error or a timeout is failed, anything else ok), because that is the only
+// outcome every layer has in common. Anything finer is on the cache
+// instruments, where it means something. The `successful` flag kept beside it
+// for one release is false for an error only, as it always was: a timeout is
+// `app_outcome="failed"` and `successful="true"`, and a ratio that moves to
+// the outcome counts timeouts it did not count before.
 func (i *Instruments) recordLayer(ctx context.Context, operation, entity, result string, took time.Duration) {
 	if i.layer == nil {
 		return

@@ -49,10 +49,13 @@ func TestARefusalIsWhatTheServiceAnswersBelow500(t *testing.T) {
 		"a_request_that_contradicts_itself": {&domain.InvalidRequestError{Message: "x"}, true},
 		"a_page_token_that_is_not_one":      {&domain.InvalidTokenError{Message: "invalid next_token"}, true},
 		"a_path_id_that_is_not_a_uuid":      {&domain.InvalidUUIDError{Message: "input is empty"}, true},
-		"a_body_that_is_not_json":           {&respond.DecodeError{Err: errors.New("invalid character 'x'")}, true},
-		"an_empty_body":                     {&respond.DecodeError{Err: io.EOF}, true},
-		"a_body_cut_by_the_size_bound":      {&respond.DecodeError{Err: &http.MaxBytesError{Limit: 1}}, true},
-		"the_same_decoder_error_unmarked":   {errors.New("invalid character 'x'"), false},
+		// Built by a payload's Validate, answered 400 in a branch that
+		// names no type.
+		"an_update_that_sets_nothing":     {&domain.InvalidUserUpdateError{}, true},
+		"a_body_that_is_not_json":         {&respond.DecodeError{Err: errors.New("invalid character 'x'")}, true},
+		"an_empty_body":                   {&respond.DecodeError{Err: io.EOF}, true},
+		"a_body_cut_by_the_size_bound":    {&respond.DecodeError{Err: &http.MaxBytesError{Limit: 1}}, true},
+		"the_same_decoder_error_unmarked": {errors.New("invalid character 'x'"), false},
 	} {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()

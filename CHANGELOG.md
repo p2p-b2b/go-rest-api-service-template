@@ -274,7 +274,8 @@ Since `v0.0.3`.
   beside it for one release: move a saved query or an alert to
   `app_outcome` before it goes. The cache and mail layers, which record on
   the pair themselves, set it too; a cache read past its timeout is a
-  failure. A login, registration, re-verification or refresh body cut by
+  failure (its `successful` stays `true`, as before, so a ratio moved to
+  the outcome counts timeouts it did not count). A login, registration, re-verification or refresh body cut by
   the size bound is answered `413`, as on every other route, instead of a
   `400` that said "failed to decode request".
   ([#154](https://github.com/slashdevops/go-rest-api-service-template/pull/154))
