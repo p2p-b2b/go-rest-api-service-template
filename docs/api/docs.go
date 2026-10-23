@@ -7455,7 +7455,7 @@ const docTemplate = `{
                 "go_version": {
                     "type": "string",
                     "format": "string",
-                    "example": "go1.27.2"
+                    "example": "go1.27.3"
                 },
                 "go_version_arch": {
                     "type": "string",

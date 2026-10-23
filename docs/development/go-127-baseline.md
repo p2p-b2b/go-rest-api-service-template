@@ -1,11 +1,11 @@
 # Go 1.27 baseline
 
-The module is `go 1.27.2`. This page records what the toolchain bump changed
+The module is `go 1.27.3`. This page records what the toolchain bump changed
 and the API differences the standard-library `uuid` migration had to absorb.
 It is the long form of the "Go 1.27 baseline" bullets in `CLAUDE.md`.
 
 
-The module is `go 1.27.2` and `go fix -diff ./...` is **clean** — the codebase is
+The module is `go 1.27.3` and `go fix -diff ./...` is **clean** — the codebase is
 already modernised, so do not introduce pre-1.21 idioms.
 
 > The patch version in `go.mod` is load-bearing, not cosmetic. CI resolves its
@@ -22,6 +22,11 @@ already modernised, so do not introduce pre-1.21 idioms.
 > judges the toolchain it runs on: the module, CI and the released binary
 > were still on 1.27.1. Check with `GOTOOLCHAIN=go<the go.mod version>
 > govulncheck ./...` when the local Go is newer than the directive.
+>
+> And with 1.27.2, measured that way: `GO-2026-6809`, "distrust compromised
+> intermediate certificates in `crypto/x509`", reachable through the SMTP
+> mailer's certificate check and every other TLS client the service runs,
+> fixed in 1.27.3. `go fix ./...` changed nothing at that bump.
 
 **A patch release can move the coverage numbers.** Until Go 1.27.1 a region
 the compiler split into several coverage blocks gave each block the whole
