@@ -265,6 +265,19 @@ Since `v0.0.3`.
 
 ### Changed
 
+- **A call says how it ended: `app.outcome` is `ok`, `refused` or
+  `failed`,** on `app_calls_total` and `app_call_duration_seconds`.
+  `successful="false"` counted a request the service refused (a bad field,
+  a row that is not there, a limit) and a call that failed (the database
+  gone) as one thing: a burst of bad requests raised every error ratio.
+  The dashboards' ratios read `app_outcome="failed"`. `successful` stays
+  beside it for one release: move a saved query or an alert to
+  `app_outcome` before it goes. The cache and mail layers, which record on
+  the pair themselves, set it too; a cache read past its timeout is a
+  failure. A login, registration, re-verification or refresh body cut by
+  the size bound is answered `413`, as on every other route, instead of a
+  `400` that said "failed to decode request".
+  ([#154](https://github.com/slashdevops/go-rest-api-service-template/pull/154))
 - **One table says which side of 500 each error is on.** `respond.StatusFor`
   maps each domain error the handlers answer, through an arm or one they
   build themselves, to its status, read off the handlers' own arms; `respond.IsRefusal` says whether an error is the

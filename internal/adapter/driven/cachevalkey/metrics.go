@@ -192,6 +192,7 @@ func (i *Instruments) recordLayer(ctx context.Context, operation, entity, result
 		attribute.String(o11y.AttrLayer, o11y.LayerCache),
 		attribute.String(o11y.AttrDomain, entity),
 		attribute.String(o11y.AttrAction, operation),
+		attribute.String(o11y.AttrOutcome, layerOutcome(result)),
 		attribute.Bool(o11y.AttrSuccessful, result != resultError),
 	}
 
@@ -210,4 +211,22 @@ func resultOf(err error) string {
 	}
 
 	return resultOK
+}
+
+// layerOutcome is the outcome the shared instruments carry for one of this
+// adapter's results. There is no refusal here: nothing a caller of the
+// service sent reaches the cache as a request it can turn down, so an error is
+// the dependency not working.
+//
+// So is a timeout. A cache that does not answer within its query timeout is
+// reported by c3e as `timeout`, not `error`, and the read falls back to the
+// database: the request succeeds and the cache did not work. Counted `ok`, it
+// would be the result of every read while the cache is unreachable, and the
+// cache layer's failed rate would stay at zero through the whole outage.
+func layerOutcome(result string) string {
+	if result == resultError || result == string(c3e.ResultTimeout) {
+		return o11y.OutcomeFailed
+	}
+
+	return o11y.OutcomeOK
 }

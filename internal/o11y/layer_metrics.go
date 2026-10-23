@@ -72,8 +72,8 @@ const (
 // "Duration of %s service calls" -- the middle one nonsense for a repository).
 // Sharing one name makes agreement mandatory, so the text lives here once.
 const (
-	metricCallsDescription        = "Calls made at a layer of the application, by domain and action"
-	metricCallDurationDescription = "Duration of a call at a layer of the application, by domain and action"
+	metricCallsDescription        = "Calls made at a layer of the application, by domain, action and outcome (ok, refused, failed)"
+	metricCallDurationDescription = "Duration of a call at a layer of the application, by domain, action and outcome (ok, refused, failed)"
 )
 
 // NewLayerMetrics builds the counter/histogram pair a handler, use case,

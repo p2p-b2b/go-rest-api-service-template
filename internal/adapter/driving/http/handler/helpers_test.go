@@ -4,8 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 
@@ -500,5 +502,125 @@ func TestABodyIDThatIsNotAUUIDHasAType(t *testing.T) {
 	ok2 := httptest.NewRequest(http.MethodPost, "/things", strings.NewReader(`{"id":"01990000-0000-7000-8000-000000000001"}`))
 	if err := decodeJSONBody(ok2, &body); err != nil {
 		t.Fatalf("a uuid was refused: %v", err)
+	}
+}
+
+// TestEveryBodyThatCannotBeDecodedIsMarked: a body the decoder turns down is
+// the caller's to fix, whatever the decoder calls its error -- and it calls
+// most of them by encoding/json's names or io's, which say nothing of the
+// kind. Unmarked, a client posting malformed JSON was counted by the layer
+// metrics as a failure of the service. The mark changes nothing else: the
+// text, what errors.Is finds, and what the caller is answered.
+func TestEveryBodyThatCannotBeDecodedIsMarked(t *testing.T) {
+	type body struct {
+		ID   uuid.UUID `json:"id"`
+		Name string    `json:"name"`
+	}
+
+	for name, c := range map[string]struct {
+		body string
+		says string
+	}{
+		"not_json":                  {`{"name":`, respond.DecodeErrorMessage},
+		"an_empty_body":             {``, respond.DecodeErrorMessage},
+		"an_unknown_field":          {`{"nope":1}`, respond.DecodeErrorMessage + ": unknown field"},
+		"a_field_of_the_wrong_type": {`{"name":1}`, respond.DecodeErrorMessage + ": field 'name' has the wrong type"},
+		"an_id_that_is_no_uuid":     {`{"id":"nope"}`, respond.DecodeErrorMessage + ": invalid uuid"},
+		"bytes_after_the_body":      {`{"name":"a"} {"name":"b"}`, respond.DecodeErrorMessage + ": unexpected data after the JSON body"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodPost, "/things", strings.NewReader(c.body))
+
+			var dst body
+
+			err := decodeJSONBody(req, &dst)
+			if err == nil {
+				t.Fatal("the body was accepted")
+			}
+
+			if _, marked := errors.AsType[*respond.DecodeError](err); !marked {
+				t.Errorf("%T is not marked as a body that could not be decoded", err)
+			}
+
+			if !respond.IsRefusal(err) {
+				t.Errorf("%v is counted as a failure of the service", err)
+			}
+
+			// The mark is transparent: the unmarked error says the same.
+			plain := decodeJSONBodyInto(httptest.NewRequest(http.MethodPost, "/things", strings.NewReader(c.body)), &dst)
+			if plain == nil || plain.Error() != err.Error() {
+				t.Errorf("marked %q, unmarked %v", err, plain)
+			}
+
+			rec := httptest.NewRecorder()
+			respond.WriteDecodeError(rec, req, err)
+
+			if rec.Code != http.StatusBadRequest || !strings.Contains(rec.Body.String(), c.says) {
+				t.Errorf("answered %d %s, want 400 saying %q", rec.Code, rec.Body.String(), c.says)
+			}
+		})
+	}
+
+	t.Run("an_empty_body_is_still_io_eof", func(t *testing.T) {
+		var dst body
+
+		err := decodeJSONBody(httptest.NewRequest(http.MethodPost, "/things", strings.NewReader("")), &dst)
+		if !errors.Is(err, io.EOF) {
+			t.Errorf("%v: two handlers accept an empty body by asking errors.Is(err, io.EOF)", err)
+		}
+	})
+
+	t.Run("a_body_that_decodes_is_no_error", func(t *testing.T) {
+		var dst body
+
+		if err := decodeJSONBody(httptest.NewRequest(http.MethodPost, "/things", strings.NewReader(`{"name":"a"}`)), &dst); err != nil {
+			t.Errorf("a body that decodes was refused: %v", err)
+		}
+	})
+}
+
+// TestNoHandlerReplacesTheDecodersError: a handler records the error
+// decodeJSONBody returned and hands it to respond.WriteDecodeError. Four
+// auth handlers threw it away and recorded a fresh "failed to decode
+// request" instead, which lost what the decoder knew: a login body cut by
+// the size bound was answered 400 with that sentence, where every other
+// route answers 413.
+func TestNoHandlerReplacesTheDecodersError(t *testing.T) {
+	entries, err := os.ReadDir(".")
+	if err != nil {
+		t.Fatalf("read: %v", err)
+	}
+
+	var callers int
+
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".go") || strings.HasSuffix(entry.Name(), "_test.go") {
+			continue
+		}
+
+		source, err := os.ReadFile(entry.Name())
+		if err != nil {
+			t.Fatalf("read: %v", err)
+		}
+
+		lines := strings.Split(string(source), "\n")
+		for i, line := range lines {
+			if !strings.Contains(line, "decodeJSONBody(r, ") || strings.Contains(line, "func decodeJSONBody") {
+				continue
+			}
+
+			callers++
+
+			// The three lines after the call: what is recorded.
+			for _, next := range lines[i+1 : min(i+4, len(lines))] {
+				if strings.Contains(next, "InvalidRequestError{") {
+					t.Errorf("%s:%d records a fresh error in place of the decoder's:\n%s", entry.Name(), i+2, strings.TrimSpace(next))
+				}
+			}
+		}
+	}
+
+	if callers < 30 {
+		t.Errorf("found %d callers of decodeJSONBody: the guard is reading nothing", callers)
 	}
 }

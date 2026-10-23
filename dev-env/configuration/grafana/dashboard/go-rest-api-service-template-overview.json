@@ -196,7 +196,7 @@
     {
       "type": "stat",
       "title": "Error rate",
-      "description": "Share of handler calls that failed. clamp_min keeps the panel blank rather than dividing by zero when the service is idle -- a NaN renders as a red 0% and reads as an outage.",
+      "description": "Share of handler calls that failed: requests the service could not serve. A refused request (a 4xx) is not in it, so a burst of bad requests does not move this number. clamp_min keeps the panel blank rather than dividing by zero when the service is idle -- a NaN renders as a red 0% and reads as an outage.",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
@@ -208,7 +208,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "100 * sum(rate(app_calls_total{app_layer=\"handler\",successful=\"false\",service_name=~\"$service_name\",service_instance_id=~\"$instance\"}[$__rate_interval])) / clamp_min(sum(rate(app_calls_total{app_layer=\"handler\",service_name=~\"$service_name\",service_instance_id=~\"$instance\"}[$__rate_interval])), 0.001)",
+          "expr": "100 * sum(rate(app_calls_total{app_layer=\"handler\",app_outcome=\"failed\",service_name=~\"$service_name\",service_instance_id=~\"$instance\"}[$__rate_interval])) / clamp_min(sum(rate(app_calls_total{app_layer=\"handler\",service_name=~\"$service_name\",service_instance_id=~\"$instance\"}[$__rate_interval])), 0.001)",
           "legendFormat": "__auto",
           "range": false,
           "instant": true,
@@ -513,7 +513,7 @@
     {
       "type": "timeseries",
       "title": "Request rate by outcome",
-      "description": "Successful and failed handler calls, stacked, so the total and the failure share are one shape.",
+      "description": "Handler calls that were ok, refused (answered with a 4xx) and failed, stacked, so the total, the refusals and the failure share are one shape.",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
@@ -525,8 +525,8 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "sum by(successful)(rate(app_calls_total{app_layer=\"handler\",service_name=~\"$service_name\",service_instance_id=~\"$instance\"}[$__rate_interval]))",
-          "legendFormat": "{{successful}}",
+          "expr": "sum by(app_outcome)(rate(app_calls_total{app_layer=\"handler\",service_name=~\"$service_name\",service_instance_id=~\"$instance\"}[$__rate_interval]))",
+          "legendFormat": "{{app_outcome}}",
           "range": true,
           "instant": false,
           "refId": "A"
@@ -765,7 +765,7 @@
     {
       "type": "timeseries",
       "title": "Error rate by layer",
-      "description": "Failures per layer. A repository failing while the handler does not means the failure is being handled; both failing means it is not.",
+      "description": "Failures per layer, refusals left out. A repository failing while the handler does not means the failure is being handled; both failing means it is not.",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
@@ -777,7 +777,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "100 * sum by(app_layer)(rate(app_calls_total{successful=\"false\",service_name=~\"$service_name\",service_instance_id=~\"$instance\"}[$__rate_interval])) / clamp_min(sum by(app_layer)(rate(app_calls_total{service_name=~\"$service_name\",service_instance_id=~\"$instance\"}[$__rate_interval])), 0.001)",
+          "expr": "100 * sum by(app_layer)(rate(app_calls_total{app_outcome=\"failed\",service_name=~\"$service_name\",service_instance_id=~\"$instance\"}[$__rate_interval])) / clamp_min(sum by(app_layer)(rate(app_calls_total{service_name=~\"$service_name\",service_instance_id=~\"$instance\"}[$__rate_interval])), 0.001)",
           "legendFormat": "{{app_layer}}",
           "range": true,
           "instant": false,

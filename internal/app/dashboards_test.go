@@ -321,3 +321,55 @@ func TestDashboardQueriesAreScopedToTheSelectedService(t *testing.T) {
 		})
 	}
 }
+
+// TestErrorPanelsCountFailuresNotRefusals: the layer instruments carry
+// app.outcome (ok, refused, failed) so that an error ratio can leave out the
+// requests the service refused on purpose. A panel that goes back to
+// `successful="false"` counts a 404 and a dead database as the same thing
+// again, and nothing but an operator misreading it would say so.
+func TestErrorPanelsCountFailuresNotRefusals(t *testing.T) {
+	t.Parallel()
+
+	var onOutcome int
+
+	for _, file := range dashboardFiles(t) {
+		body, err := os.ReadFile(file)
+		if err != nil {
+			t.Fatalf("read: %v", err)
+		}
+
+		var d dashboard
+		if err := json.Unmarshal(body, &d); err != nil {
+			t.Fatalf("%s: %v", file, err)
+		}
+
+		for _, p := range flatten(d.Panels) {
+			for _, target := range p.Targets {
+				if !strings.Contains(target.Expr, "app_calls_total") && !strings.Contains(target.Expr, "app_call_duration_seconds") {
+					continue
+				}
+
+				if strings.Contains(target.Expr, "successful") {
+					t.Errorf("%s, panel %q (id %d) reads `successful` on a layer instrument; it is app_outcome now: %s",
+						filepath.Base(file), p.Title, p.ID, target.Expr)
+				}
+
+				if strings.Contains(target.Expr, "app_outcome") {
+					onOutcome++
+
+					// An error ratio is the failed calls, and a breakdown is
+					// by the label: nothing selects "refused" as an error.
+					if strings.Contains(target.Expr, `app_outcome="refused"`) && strings.Contains(strings.ToLower(p.Title), "error") {
+						t.Errorf("%s, panel %q counts refusals as errors: %s", filepath.Base(file), p.Title, target.Expr)
+					}
+				}
+			}
+		}
+	}
+
+	// Six expressions read it today: four ratios of failed calls and two
+	// breakdowns. Fewer means a panel was moved off it.
+	if onOutcome < 6 {
+		t.Errorf("%d dashboard expressions read app_outcome, want at least 6", onOutcome)
+	}
+}

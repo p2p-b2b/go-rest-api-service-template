@@ -101,6 +101,98 @@ one family instead of three.
 since the ports refactor, and next to `service.name` and `service_name` the old
 spelling read as "the whole binary" rather than "the core".
 
+### A call says how it ended: ok, refused or failed
+
+Both instruments carry `app.outcome`:
+
+| `app_outcome` | The call returned | What it means |
+| --- | --- | --- |
+| `ok` | no error | it worked |
+| `refused` | an error the service answers with a 4xx: a bad field, a row that is not there, a wrong password, a limit | the caller got it wrong and was told so. The service worked |
+| `failed` | any other error | the service, or something it depends on, did not work |
+
+There used to be one boolean, `successful`, and `successful="false"` counted
+the last two as the same thing. A burst of bad requests -- a client in a retry
+loop on a 404, a scanner, a form that validates on the server -- raised every
+error ratio on every dashboard, and a database that had really gone away
+raised it no more than that. The number an operator reads to ask "is the
+service broken?" could not answer it.
+
+```mermaid
+flowchart TD
+    C["a call at a layer returns<br/>(RecordSuccess / RecordError)"] --> E{error?}
+    E -- no --> OK["app.outcome = ok"]
+    E -- yes --> S{"is a classifier set?<br/>(app wires it with telemetry)"}
+    S -- "no: a test, a tool" --> F["app.outcome = failed"]
+    S -- "yes: respond.IsRefusal" --> D{"a body that could not be decoded?<br/>(respond.DecodeError in the chain)"}
+    D -- yes --> R["app.outcome = refused"]
+    D -- no --> T{"respond.StatusFor(err) < 500?<br/>any error in the chain"}
+    T -- "yes: 400, 401, 403, 404, 409, 429" --> R
+    T -- "no: 503, or an error the table<br/>does not know (the driver's, an untyped one)" --> F
+    OK --> M["app_calls_total and app_call_duration_seconds,<br/>with successful kept beside it for one release"]
+    R --> M
+    F --> M
+```
+
+- **One list.** What makes an error a refusal is how the service answers it,
+  and that is one table, `respond.StatusFor`
+  ([below](#which-errors-are-refusals-one-table)). `o11y` cannot import the
+  HTTP adapter (it is imported by it), so the composition root hands the
+  question over as a function (`o11y.SetRefusalClassifier(respond.IsRefusal)`,
+  in `initTelemetry`). An error type added to the table is classified without
+  a second place to remember.
+- **A body that could not be decoded is a refusal, and is in no table.** It
+  is answered by its own helper (`respond.WriteDecodeError`: 400, or 413),
+  and its errors are `encoding/json`'s and `io`'s, with no type of ours.
+  `handler.decodeJSONBody` marks every failure as a `respond.DecodeError`,
+  and four authentication routes, which recorded a fresh "failed to decode
+  request" in place of the decoder's error, record the decoder's: a login
+  body cut by the size bound was a 400 with that sentence, where every other
+  route answers 413 (`TestNoHandlerReplacesTheDecodersError`).
+- **Decided per call, not when the request ends.** The log line waits for the
+  HTTP status because it is one line per request. A metric is one count per
+  call at a layer, recorded when the call returns. A first sign-in through an
+  identity provider looks the identity up and is told "not found": that
+  repository call was `refused`, whatever the request goes on to do; the
+  use-case recovers from it and its own call is `ok`. The request's own
+  outcome is the handler layer's.
+- **A repository records the error it returns.** Two of
+  `ProjectsRepository.Insert`'s returns recorded the driver's error and then
+  returned the mapped one: a name that already exists was a failure at the
+  repository and a 409 to the caller. They map first, and
+  `TestARepositoryRecordsTheErrorItReturns` fails on the shape.
+- **Unset, every error is a failure.** A test or a tool that serves no
+  request never sets a classifier, and calling an error a refusal needs a
+  reason.
+- **`successful` stays for one release**, on the same series, so a saved
+  query or an alert outside this repository does not go blank at the swap.
+  The dashboards here read `app_outcome`; `TestErrorPanelsCountFailuresNotRefusals`
+  fails on a panel that goes back.
+- **`cache` and `mail` say it themselves.** They mirror their operations onto
+  the shared pair in their own code, not through `o11y`'s recorder, so each
+  sets `app.outcome` there: `ok`, or `failed` for an error (and, for the
+  cache, a read past its query timeout, which falls back to the database:
+  the request is answered and the cache did not work). Neither has a
+  refusal: nothing a caller sent reaches them as a request to turn down.
+  `TestWhoeverRecordsOnTheLayerInstrumentsSaysTheOutcome` holds every
+  function that records on the pair to it. Their specialised instruments
+  keep their own `result`.
+- **The outcome is the error's, not the response's, and a handler that does
+  not answer through the table can disagree with it, in either direction.**
+  A handler that answers a 4xx of its own for an error the table calls a
+  5xx is counted `failed`; one that answers 500 whatever the error
+  (`respond.WriteInternalError` with no look at the type) is counted
+  `refused` when the error happens to be one the table calls a 4xx. Each
+  such handler should answer through `respond.WriteError`, so that the status
+  and the outcome come from the same table.
+
+An error ratio is therefore the failed calls over all calls:
+
+```promql
+100 * sum(rate(app_calls_total{app_layer="handler",app_outcome="failed"}[$__rate_interval]))
+    / clamp_min(sum(rate(app_calls_total{app_layer="handler"}[$__rate_interval])), 0.001)
+```
+
 ### One name means one description
 
 Every construction of an instrument with a given name must agree on its
@@ -634,7 +726,7 @@ value for every distinct failure in the service.
 
 It is deliberately **not** a metric attribute. The set of error types is
 bounded by the code rather than by traffic, but it is large, and the metric
-already carries `successful=false` with the layer, domain and action — which is
+already carries `app_outcome="failed"` with the layer, domain and action — which is
 the question a metric should answer. "Which error" is a log question, and the
 log line is joined to the metric by the trace id.
 
