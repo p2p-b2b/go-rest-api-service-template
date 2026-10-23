@@ -768,6 +768,12 @@ func (ref *ProductsRepository) buildScanFields(item *domain.Product, project *[]
 	return scanFields
 }
 
+// constraintProductsProjectName is the per-project unique name of a
+// product (00009_products_tables.sql). A constraint name read from Go is a
+// contract: renaming it in the migration without changing this turns the
+// name's refusal into the id's.
+const constraintProductsProjectName = "unique_project_product_name"
+
 // handlePgError maps PostgreSQL errors to domain-specific errors.
 // Returns the appropriate domain error or the original error if no mapping exists.
 func (ref *ProductsRepository) handlePgError(err error, input any) error {
@@ -775,10 +781,19 @@ func (ref *ProductsRepository) handlePgError(err error, input any) error {
 
 	if pgErr, ok := errors.AsType[*pgconn.PgError](err); ok {
 		switch pgErr.Code {
+		// The two refusals say what is wrong in this service's words,
+		// decided by the constraint's name: Postgres's sentence
+		// ("duplicate key value violates unique constraint ...", the
+		// foreign key's) was the answer's text, and a driver or server
+		// upgrade would have rewritten the API's contract.
 		case "23505": // Unique violation
-			return &domain.ProductAlreadyExistsError{Message: pgErr.Message}
-		case "23503": // Foreign key violation
-			return &domain.ProjectNotFoundError{Message: pgErr.Message}
+			if pgErr.ConstraintName == constraintProductsProjectName {
+				return &domain.ProductAlreadyExistsError{Message: "the name is taken"}
+			}
+
+			return &domain.ProductAlreadyExistsError{Message: "the id is taken"}
+		case "23503": // Foreign key violation: the project in the path is gone
+			return &domain.ProjectNotFoundError{}
 		case "22021": // Invalid byte sequence for encoding
 			return &domain.InvalidByteSequenceError{Message: pgErr.Message}
 		case "08P01": // Invalid message format

@@ -219,6 +219,11 @@ Since `v0.0.3`.
 
 ### Fixed
 
+- A product's `409` and `404` are in this service's words: a name that is
+  taken in the project, an id that is taken, a project that is gone. They
+  ended in PostgreSQL's sentence (`duplicate key value violates unique
+  constraint "unique_project_product_name"`, the foreign key's), which a
+  database or driver upgrade would have rewritten. (#140)
 - Deleting a user or an identity provider that does not exist is a `404`
   and refunds nothing. (#119)
 - `POST /users/{user_id}/projects` with a project named twice in its body
