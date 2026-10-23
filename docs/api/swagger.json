@@ -98,13 +98,13 @@
                         }
                     },
                     "401": {
-                        "description": "The provider refused the sign-in, or the identity is not linked to an account here",
+                        "description": "The provider refused the sign-in, the identity is not linked to an account here, or the provider was changed while signing in",
                         "schema": {
                             "$ref": "#/definitions/payload.HTTPMessage"
                         }
                     },
                     "404": {
-                        "description": "Unknown or disabled identity provider, the provider was deleted while signing in, or the account the flow was started for no longer exists",
+                        "description": "Unknown or disabled identity provider, or the account the flow was started for no longer exists",
                         "schema": {
                             "$ref": "#/definitions/payload.HTTPMessage"
                         }

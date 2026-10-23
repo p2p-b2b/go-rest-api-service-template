@@ -210,8 +210,15 @@ func (ref *UsersRepository) Insert(ctx context.Context, input *domain.InsertUser
 
 		cslog.Trace(ctx, "sql", "query", prettyPrint(queryLinkIdentity, identity.UserID.String(), identity.IDPID.String()))
 
-		if _, err = tx.Exec(ctx, queryLinkIdentity, identity.UserID, identity.IDPID, identity.Subject, identity.Email); err != nil {
-			return o11y.RecordError(ctx, span, start, identityPgError(err), ref.metrics, attrs)
+		linked, linkErr := tx.Exec(ctx, queryLinkIdentity, identity.UserID, identity.IDPID, identity.Subject, identity.Email, identity.IssuerURL, identity.IDPTypeID)
+		if linkErr != nil {
+			return o11y.RecordError(ctx, span, start, identityPgError(linkErr), ref.metrics, attrs)
+		}
+
+		// The provider is not as the sign-in used it: the account is not
+		// stored either, the transaction is rolled back with it.
+		if linked.RowsAffected() == 0 {
+			return o11y.RecordError(ctx, span, start, linkIdentityRefused(), ref.metrics, attrs)
 		}
 	}
 

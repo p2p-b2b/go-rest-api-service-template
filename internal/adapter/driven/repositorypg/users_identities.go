@@ -31,10 +31,36 @@ const (
 // queryLinkIdentity stores an account's identity at a provider: the link of
 // an existing account (Link), and the identity of an account provisioned
 // from it, in the account's own transaction (UsersRepository.Insert).
+//
+// Only under the provider the sign-in used: the row is read with the issuer
+// and the kind the sign-in's token came from ($5, $6), FOR KEY SHARE. The
+// issuer is compared as the reads answer it, the empty string for a github
+// provider, whether a writer stored NULL or an empty one. A provider may be
+// pointed at another issuer or type while nobody is linked to it
+// (IDPsRepository.UpdateByID);
+// a sign-in already in flight, or one that read the provider through a
+// cached copy, would have stored an identity under the provider as it is
+// now, for a subject another issuer asserted. The repoint takes the row FOR
+// UPDATE first, which conflicts with KEY SHARE: an insert that comes second
+// waits for it and then reads the row as it was left, and inserts nothing
+// when it changed; a repoint that comes second waits for the insert and
+// sees its identity (409). No row inserted is the refusal
+// (linkIdentityRefused).
 const queryLinkIdentity = `
         INSERT INTO users_identities (users_id, idps_id, subject, email)
-        VALUES ($1, $2, $3, $4);
+        SELECT $1, idps.id, $3, $4
+        FROM idps
+        WHERE idps.id = $2
+          AND idps.idp_types = $6
+          AND COALESCE(idps.issuer_url, '') = $5
+        FOR KEY SHARE OF idps;
     `
+
+// linkIdentityRefused is what an identity's insert that stored nothing
+// answers: the provider is not as the sign-in used it, or not there.
+func linkIdentityRefused() error {
+	return &domain.IDPChangedDuringSignInError{}
+}
 
 type UsersIdentitiesRepositoryConfig struct {
 	DB              *pgxpool.Pool
@@ -129,8 +155,13 @@ func (ref *UsersIdentitiesRepository) Link(ctx context.Context, input *domain.Li
 
 	cslog.Trace(ctx, "sql", "query", prettyPrint(queryLinkIdentity))
 
-	if _, err := ref.db.Exec(ctx, queryLinkIdentity, input.UserID, input.IDPID, input.Subject, input.Email); err != nil {
+	result, err := ref.db.Exec(ctx, queryLinkIdentity, input.UserID, input.IDPID, input.Subject, input.Email, input.IssuerURL, input.IDPTypeID)
+	if err != nil {
 		return o11y.RecordError(ctx, span, start, ref.handlePgError(err), ref.metrics, attrs)
+	}
+
+	if result.RowsAffected() == 0 {
+		return o11y.RecordError(ctx, span, start, linkIdentityRefused(), ref.metrics, attrs)
 	}
 
 	o11y.RecordSuccess(ctx, span, start, ref.metrics, attrs, "identity linked")
@@ -245,7 +276,7 @@ func (ref *UsersIdentitiesRepository) Unlink(ctx context.Context, input *domain.
 }
 
 // SelectBySubject implements [repository.UsersIdentities].
-func (ref *UsersIdentitiesRepository) SelectBySubject(ctx context.Context, idpID uuid.UUID, subject string) (*domain.UserIdentity, error) {
+func (ref *UsersIdentitiesRepository) SelectBySubject(ctx context.Context, idpID, idpTypeID uuid.UUID, issuerURL, subject string) (*domain.UserIdentity, error) {
 	start := time.Now()
 	ctx, span, attrs, cancel := o11y.SetupTraceWithTimeout(ctx, ref.ot.Traces.Tracer, ref.maxQueryTimeout, ref.metricsMetadata, "SelectBySubject")
 	defer cancel()
@@ -255,19 +286,28 @@ func (ref *UsersIdentitiesRepository) SelectBySubject(ctx context.Context, idpID
 		return nil, o11y.RecordError(ctx, span, start, &domain.InvalidInputError{Message: "idp and subject are required"}, ref.metrics, attrs)
 	}
 
+	// Under the provider as the sign-in used it, as queryLinkIdentity
+	// stores one: a sign-in that read the provider before it was pointed at
+	// another issuer, held at the old issuer or through a cached copy,
+	// proved its subject with an issuer the provider no longer trusts. Read
+	// by the provider and the subject alone, it signed in as the account
+	// linked to that subject under the new issuer. Not found here, it is an
+	// identity this provider does not know, and the insert that would
+	// provision it refuses the provider as changed.
 	const query = `
         SELECT ui.users_id, ui.idps_id, ui.subject, ui.email, ui.linked_at, idp.name, idpt.name, idp.enabled
         FROM users_identities AS ui
             JOIN idps AS idp ON idp.id = ui.idps_id
             JOIN idp_types AS idpt ON idpt.id = idp.idp_types
-        WHERE ui.idps_id = $1 AND ui.subject = $2;
+        WHERE ui.idps_id = $1 AND ui.subject = $2
+          AND idp.idp_types = $3 AND COALESCE(idp.issuer_url, '') = $4;
     `
 
-	cslog.Trace(ctx, "sql", "query", prettyPrint(query, idpID, subject))
+	cslog.Trace(ctx, "sql", "query", prettyPrint(query, idpID, subject, idpTypeID, issuerURL))
 
 	var item domain.UserIdentity
 
-	err := ref.db.QueryRow(ctx, query, idpID, subject).Scan(&item.UserID, &item.IDPID, &item.Subject, &item.Email, &item.LinkedAt, &item.IDPName, &item.IDPTypeName, &item.IDPEnabled)
+	err := ref.db.QueryRow(ctx, query, idpID, subject, idpTypeID, issuerURL).Scan(&item.UserID, &item.IDPID, &item.Subject, &item.Email, &item.LinkedAt, &item.IDPName, &item.IDPTypeName, &item.IDPEnabled)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			// The ordinary answer for a first sign-in; an error so the caller
@@ -353,8 +393,11 @@ func identityPgError(err error) error {
 		case strings.Contains(pgErr.ConstraintName, constraintUsersIdentitiesUserIDP):
 			return &domain.UserIdentityAlreadyLinkedError{Message: "this account already has an identity at that provider"}
 		}
-	case "23503": // foreign key: the user or the idp is gone
-		return &domain.UserIdentityNotFoundError{Message: "the account or the provider does not exist"}
+	case "23503": // foreign key: the account is gone
+		// The account: the provider's row is read and held by the insert's
+		// own statement (queryLinkIdentity), so a provider that is gone is
+		// no row inserted, not this.
+		return &domain.UserIdentityNotFoundError{Message: "the account does not exist"}
 	}
 
 	return err

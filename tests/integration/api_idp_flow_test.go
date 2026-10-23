@@ -37,6 +37,10 @@ type fakeProvider struct {
 	mu    sync.Mutex
 	users map[string]map[string]any // code -> claims
 	nonce map[string]string         // code -> nonce asked for on /authorize
+	// hold, when set, keeps the token endpoint's answer until it is closed,
+	// and reached is closed when an exchange arrives: a test can act while a
+	// sign-in is half done.
+	hold, reached chan struct{}
 }
 
 func newFakeProvider(t *testing.T) *fakeProvider {
@@ -70,7 +74,18 @@ func newFakeProvider(t *testing.T) *fakeProvider {
 		f.mu.Lock()
 		claims, ok := f.users[code]
 		nonce := f.nonce[code]
+		hold, reached := f.hold, f.reached
+		f.hold, f.reached = nil, nil
 		f.mu.Unlock()
+
+		if hold != nil {
+			close(reached)
+
+			select {
+			case <-hold:
+			case <-r.Context().Done():
+			}
+		}
 
 		if !ok || r.Form.Get("code_verifier") == "" {
 			w.WriteHeader(http.StatusBadRequest)

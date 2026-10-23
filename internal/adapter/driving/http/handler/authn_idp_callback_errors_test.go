@@ -15,9 +15,10 @@ import (
 
 // A first sign-in stores its account and its identity in one transaction,
 // and what refuses that transaction reaches the callback: the identity
-// linked meanwhile (409), the provider deleted meanwhile (the identity's
-// foreign key, 404), the users limit reached (409, as POST /users answers
-// it). The last two answered 500.
+// linked meanwhile (409), the users limit reached (409, as POST /users
+// answers it), the provider changed or deleted meanwhile (401). A link whose
+// account is gone is the foreign key's 404. The limit and the 404 answered
+// 500.
 func TestAFirstSignInsRefusalsAreAnsweredAsDocumented(t *testing.T) {
 	t.Parallel()
 
@@ -39,8 +40,8 @@ func TestAFirstSignInsRefusalsAreAnsweredAsDocumented(t *testing.T) {
 		status int
 	}{
 		"the_identity_was_linked_meanwhile": {err: &domain.UserIdentityAlreadyLinkedError{}, status: http.StatusConflict},
-		"the_provider_was_deleted_meanwhile": {
-			err:    &domain.UserIdentityNotFoundError{Message: "the account or the provider does not exist"},
+		"the_account_a_link_was_started_for_is_gone": {
+			err:    &domain.UserIdentityNotFoundError{Message: "the account does not exist"},
 			status: http.StatusNotFound,
 		},
 		"the_users_limit_is_reached": {
@@ -48,7 +49,10 @@ func TestAFirstSignInsRefusalsAreAnsweredAsDocumented(t *testing.T) {
 			status: http.StatusConflict,
 		},
 		"the_address_was_taken_meanwhile": {err: &domain.IDPIdentityNotLinkedError{}, status: http.StatusUnauthorized},
-		"a_fault":                         {err: errors.New("a fault"), status: http.StatusInternalServerError},
+		// The provider was pointed at another issuer or type while the
+		// sign-in ran: the identity's insert stores nothing.
+		"the_provider_changed_meanwhile": {err: &domain.IDPChangedDuringSignInError{}, status: http.StatusUnauthorized},
+		"a_fault":                        {err: errors.New("a fault"), status: http.StatusInternalServerError},
 	} {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()

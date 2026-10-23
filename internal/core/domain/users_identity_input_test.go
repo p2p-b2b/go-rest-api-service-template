@@ -12,7 +12,7 @@ import (
 func TestAnAccountsIdentityIsTheAccounts(t *testing.T) {
 	t.Parallel()
 
-	id, idp := uuid.NewV7(), uuid.NewV7()
+	id, idp, kind := uuid.NewV7(), uuid.NewV7(), uuid.NewV7()
 
 	account := func(identity *LinkUserIdentityInput) *InsertUserInput {
 		return &InsertUserInput{
@@ -25,19 +25,25 @@ func TestAnAccountsIdentityIsTheAccounts(t *testing.T) {
 		t.Fatalf("an account with no identity: %v", err)
 	}
 
-	if err := account(&LinkUserIdentityInput{UserID: id, IDPID: idp, Subject: "sub-1", Email: "sso@example.com"}).Validate(); err != nil {
+	if err := account(&LinkUserIdentityInput{UserID: id, IDPID: idp, IDPTypeID: kind, Subject: "sub-1", Email: "sso@example.com"}).Validate(); err != nil {
 		t.Errorf("an account with its own identity: %v", err)
 	}
 
-	if err := account(&LinkUserIdentityInput{UserID: uuid.NewV7(), IDPID: idp, Subject: "sub-1", Email: "sso@example.com"}).Validate(); err == nil {
+	if err := account(&LinkUserIdentityInput{UserID: uuid.NewV7(), IDPID: idp, IDPTypeID: kind, Subject: "sub-1", Email: "sso@example.com"}).Validate(); err == nil {
 		t.Error("an identity for another account was accepted")
 	}
 
-	if err := account(&LinkUserIdentityInput{UserID: id, IDPID: idp}).Validate(); err == nil {
+	if err := account(&LinkUserIdentityInput{UserID: id, IDPID: idp, IDPTypeID: kind}).Validate(); err == nil {
 		t.Error("an identity with no subject was accepted")
 	}
 
-	local := account(&LinkUserIdentityInput{UserID: id, IDPID: idp, Subject: "sub-1", Email: "sso@example.com"})
+	// The provider as the sign-in used it: an identity is stored only while
+	// the provider's row still has its kind, so the kind is required.
+	if err := account(&LinkUserIdentityInput{UserID: id, IDPID: idp, Subject: "sub-1", Email: "sso@example.com"}).Validate(); err == nil {
+		t.Error("an identity with no provider kind was accepted")
+	}
+
+	local := account(&LinkUserIdentityInput{UserID: id, IDPID: idp, IDPTypeID: kind, Subject: "sub-1", Email: "sso@example.com"})
 	local.LocalAccount = new(true)
 
 	if err := local.Validate(); err == nil {

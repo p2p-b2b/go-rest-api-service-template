@@ -74,6 +74,16 @@ type identityKey struct {
 type fakeIdentities struct {
 	mu    sync.Mutex
 	links map[identityKey]domain.UserIdentity
+	// linked is what Link was handed, in order.
+	linked []domain.LinkUserIdentityInput
+	// lookedUp is the provider each SelectBySubject named, in order.
+	lookedUp []lookup
+}
+
+// lookup is the provider a SelectBySubject named: its id, kind and issuer.
+type lookup struct {
+	issuer    string
+	idp, kind uuid.UUID
 }
 
 func newFakeIdentities() *fakeIdentities {
@@ -83,6 +93,8 @@ func newFakeIdentities() *fakeIdentities {
 func (f *fakeIdentities) Link(_ context.Context, in *domain.LinkUserIdentityInput) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
+
+	f.linked = append(f.linked, *in)
 
 	k := identityKey{in.IDPID, in.Subject}
 	if _, exists := f.links[k]; exists {
@@ -115,9 +127,11 @@ func (f *fakeIdentities) Unlink(_ context.Context, in *domain.UnlinkUserIdentity
 	return &domain.UserIdentityNotFoundError{}
 }
 
-func (f *fakeIdentities) SelectBySubject(_ context.Context, idp uuid.UUID, subject string) (*domain.UserIdentity, error) {
+func (f *fakeIdentities) SelectBySubject(_ context.Context, idp, kind uuid.UUID, issuer, subject string) (*domain.UserIdentity, error) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
+
+	f.lookedUp = append(f.lookedUp, lookup{idp: idp, kind: kind, issuer: issuer})
 
 	if l, ok := f.links[identityKey{idp, subject}]; ok {
 		return &l, nil
@@ -261,7 +275,7 @@ func newIDPFixture(t *testing.T, info *domain.UserInfo) *idpFixture {
 		idp: &domain.IDP{
 			ID: uuid.NewV7(), Name: "Test", Enabled: true, AutoProvision: true, ClientID: "c", ClientSecret: "s",
 			CallbackURL: "https://app.example/cb", IssuerURL: "https://issuer.example",
-			IDPType: domain.IDPTypes{Name: "Okta", Kind: domain.IDPTypeKindOIDC},
+			IDPType: domain.IDPTypes{ID: uuid.NewV7(), Name: "Okta", Kind: domain.IDPTypeKindOIDC},
 		},
 	}
 
@@ -391,7 +405,12 @@ func TestIDPCallbackProvisionsAndLinks(t *testing.T) {
 	}
 
 	registration := f.authn.registered[0]
-	want := domain.LinkUserIdentityInput{UserID: registration.ID, IDPID: f.idp.ID, Subject: "sub-new", Email: "new@example.com"}
+	// With the provider as the sign-in used it, which the insert holds the
+	// row to: a provider pointed elsewhere meanwhile stores nothing.
+	want := domain.LinkUserIdentityInput{
+		UserID: registration.ID, IDPID: f.idp.ID, Subject: "sub-new", Email: "new@example.com",
+		IssuerURL: f.idp.IssuerURL, IDPTypeID: f.idp.IDPType.ID,
+	}
 
 	if registration.Identity == nil || *registration.Identity != want {
 		t.Fatalf("the registration carried the identity %+v, want %+v", registration.Identity, want)
@@ -401,7 +420,7 @@ func TestIDPCallbackProvisionsAndLinks(t *testing.T) {
 		t.Errorf("signed in as %s, want the account registered, %s", out.Login.UserID, registration.ID)
 	}
 
-	if _, err := f.identities.SelectBySubject(t.Context(), f.idp.ID, "sub-new"); err == nil {
+	if _, err := f.identities.SelectBySubject(t.Context(), f.idp.ID, f.idp.IDPType.ID, f.idp.IssuerURL, "sub-new"); err == nil {
 		t.Error("the identity was linked apart from the registration")
 	}
 }
@@ -466,6 +485,12 @@ func TestIDPCallbackLinkAttachesToTheStartingAccount(t *testing.T) {
 
 	if out.EventType != domain.IDPEventTypeLink || out.Linked != me || out.Login != nil {
 		t.Fatalf("expected a link to %s with no session, got %+v", me, out)
+	}
+
+	// With the provider as the sign-in used it, which the insert holds the
+	// row to: a provider pointed elsewhere meanwhile stores nothing.
+	if len(f.identities.linked) != 1 || f.identities.linked[0].IssuerURL != f.idp.IssuerURL || f.identities.linked[0].IDPTypeID != f.idp.IDPType.ID {
+		t.Fatalf("the link carried %+v, want the issuer %q and the kind %s it signed in with", f.identities.linked, f.idp.IssuerURL, f.idp.IDPType.ID)
 	}
 
 	// Now the identity is known and signs in as me.
@@ -561,5 +586,26 @@ func TestIDPUnlinkNeverStrandsAnAccount(t *testing.T) {
 
 	if err := f.svc.UnlinkIdentity(t.Context(), me, f.idp.ID); err != nil {
 		t.Fatalf("with a password the identity may go: %v", err)
+	}
+}
+
+// A known identity signs in as its account only under the provider as the
+// sign-in used it: a sign-in that read the provider before it was pointed
+// at another issuer proved its subject with an issuer the provider no
+// longer trusts, and found by the provider and the subject alone it signed
+// in as the account linked under the new one. The lookup names the kind
+// and the issuer the sign-in read.
+func TestAKnownIdentityIsLookedUpUnderTheProviderAsItSignedIn(t *testing.T) {
+	t.Parallel()
+
+	f := newIDPFixture(t, verified("sub-known", "known@example.com"))
+
+	if _, err := f.svc.Callback(t.Context(), f.idp.ID, f.stateFor(t, domain.IDPEventTypeLogin, uuid.Nil()), "code"); err != nil {
+		t.Fatalf("Callback: %v", err)
+	}
+
+	want := lookup{idp: f.idp.ID, kind: f.idp.IDPType.ID, issuer: f.idp.IssuerURL}
+	if len(f.identities.lookedUp) == 0 || f.identities.lookedUp[0] != want {
+		t.Fatalf("the identity was looked up under %+v, want %+v", f.identities.lookedUp, want)
 	}
 }

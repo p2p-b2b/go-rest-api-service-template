@@ -15,7 +15,8 @@ import (
 func TestAnAccountIsStoredWithItsIdentity(t *testing.T) {
 	t.Parallel()
 
-	const want = "INSERT INTO users_identities (users_id, idps_id, subject, email) VALUES ($1, $2, $3, $4);"
+	const want = "INSERT INTO users_identities (users_id, idps_id, subject, email) SELECT $1, idps.id, $3, $4 FROM idps " +
+		"WHERE idps.id = $2 AND idps.idp_types = $6 AND COALESCE(idps.issuer_url, '') = $5 FOR KEY SHARE OF idps;"
 	if got := strings.Join(strings.Fields(queryLinkIdentity), " "); got != want {
 		t.Errorf("the identity's statement changed:\n got: %s\nwant: %s", got, want)
 	}
