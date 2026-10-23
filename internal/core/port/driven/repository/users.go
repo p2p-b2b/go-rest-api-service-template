@@ -11,6 +11,11 @@ import (
 
 // Users is the driven persistence port for user entities.
 type Users interface {
+	// Insert stores an account and its auto-assigned roles in one
+	// transaction, and its provider identity in the same one when it is
+	// provisioned from one (input.Identity): both, or neither. An identity
+	// already linked is a UserIdentityAlreadyLinkedError, a provider that is
+	// gone a UserIdentityNotFoundError.
 	Insert(ctx context.Context, input *domain.InsertUserInput) error
 	UpdateByID(ctx context.Context, input *domain.UpdateUserInput) error
 

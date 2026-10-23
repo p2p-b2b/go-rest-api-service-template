@@ -28,6 +28,14 @@ const (
 	constraintUsersIdentitiesUserIDP = "unique_users_identities_user_idp"
 )
 
+// queryLinkIdentity stores an account's identity at a provider: the link of
+// an existing account (Link), and the identity of an account provisioned
+// from it, in the account's own transaction (UsersRepository.Insert).
+const queryLinkIdentity = `
+        INSERT INTO users_identities (users_id, idps_id, subject, email)
+        VALUES ($1, $2, $3, $4);
+    `
+
 type UsersIdentitiesRepositoryConfig struct {
 	DB              *pgxpool.Pool
 	OT              *o11y.OpenTelemetry
@@ -119,14 +127,9 @@ func (ref *UsersIdentitiesRepository) Link(ctx context.Context, input *domain.Li
 
 	span.SetAttributes(attribute.String("user.id", input.UserID.String()), attribute.String("idp.id", input.IDPID.String()))
 
-	const query = `
-        INSERT INTO users_identities (users_id, idps_id, subject, email)
-        VALUES ($1, $2, $3, $4);
-    `
+	cslog.Trace(ctx, "sql", "query", prettyPrint(queryLinkIdentity))
 
-	cslog.Trace(ctx, "sql", "query", prettyPrint(query))
-
-	if _, err := ref.db.Exec(ctx, query, input.UserID, input.IDPID, input.Subject, input.Email); err != nil {
+	if _, err := ref.db.Exec(ctx, queryLinkIdentity, input.UserID, input.IDPID, input.Subject, input.Email); err != nil {
 		return o11y.RecordError(ctx, span, start, ref.handlePgError(err), ref.metrics, attrs)
 	}
 
@@ -329,6 +332,14 @@ func (ref *UsersIdentitiesRepository) SelectByUserID(ctx context.Context, userID
 }
 
 func (ref *UsersIdentitiesRepository) handlePgError(err error) error {
+	return identityPgError(err)
+}
+
+// identityPgError maps the errors an identity's insert or delete raises: the
+// identity's two unique keys, and a foreign key whose account or provider is
+// gone. UsersRepository.Insert, which stores a provisioned account's
+// identity in its own transaction, answers through it too.
+func identityPgError(err error) error {
 	pgErr, ok := errors.AsType[*pgconn.PgError](err)
 	if !ok {
 		return err

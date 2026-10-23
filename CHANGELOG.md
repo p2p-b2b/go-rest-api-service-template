@@ -15,6 +15,17 @@ Since `v0.0.3`.
 
 ### Security
 
+- **A first sign-in through a provider is one transaction.** It created
+  the account, then stored the identity; when the identity could not be
+  stored (linked by a concurrent sign-in, the provider deleted meanwhile, a
+  fault), the account stayed with no password and no identity, holding the
+  address and a users slot, and the person's every later sign-in was
+  refused. The account, its roles and its identity are written in one
+  transaction now, and the slot is given back off the request's context, so
+  a client that walks away does not leave the count one too high. An
+  address taken during the sign-in is answered as an identity that is not
+  linked, instead of "registered" and a mail to the address's owner.
+  ([#151](https://github.com/slashdevops/go-rest-api-service-template/pull/151))
 - **A provider's delete waits for a sign-in through it, and an account's
   ways in are removed one at a time.** A delete of an identity provider
   read its rule (no account whose only way in is an identity there) before
@@ -26,9 +37,9 @@ Since `v0.0.3`.
   The delete is one transaction that takes the provider's row `FOR UPDATE`
   and the linked accounts' rows `FOR NO KEY UPDATE` before its rule; the
   unlink takes the account's row and holds its rule in the statement that
-  deletes. The second write waits and answers `409`. Not closed yet: a
-  first sign-in writes the account and its identity separately, so when the
-  delete comes first the account it registered is left with no identity.
+  deletes. The second write waits and answers `409`. A first sign-in
+  stores the account and its identity together (#151), so when the delete
+  comes first nothing is stored.
   ([#149](https://github.com/slashdevops/go-rest-api-service-template/pull/149))
 - **A list with no project in its path is held to its caller.**
   `GET /products` answered every project's products to whoever held its

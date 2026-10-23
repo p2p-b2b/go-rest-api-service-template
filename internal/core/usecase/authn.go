@@ -435,6 +435,14 @@ func (ref *AuthnService) RegisterUser(ctx context.Context, input *domain.Registe
 	// an identity provider has already proven its subject.
 	user.Verified = new(input.RegisterMethod != domain.RegisterMethodPassword)
 
+	// An OAuth registration is stored with the identity it is for, in the
+	// account's own transaction: the account and its identity are one act.
+	if input.Identity != nil {
+		identity := *input.Identity
+		identity.UserID = input.ID
+		user.Identity = &identity
+	}
+
 	if err := ref.userService.Create(ctx, user); err != nil {
 		// An address that already has an account answers exactly like one that
 		// does not.
@@ -447,7 +455,12 @@ func (ref *AuthnService) RegisterUser(ctx context.Context, input *domain.Registe
 		// mail instead. That mail is the whole reason this is acceptable: the
 		// person who needs to know still finds out, and the person probing
 		// learns nothing.
-		if _, exists := errors.AsType[*domain.UserAlreadyExistsError](err); exists {
+		//
+		// It is the rule for the registration form. A first sign-in through a
+		// provider is not answered "registered" for an account it did not
+		// create: it would go on to sign in to an account that is not there.
+		// It hears the refusal and answers it itself.
+		if _, exists := errors.AsType[*domain.UserAlreadyExistsError](err); exists && input.RegisterMethod == domain.RegisterMethodPassword {
 			return ref.registrationTaken(ctx, span, start, attrs, input)
 		}
 

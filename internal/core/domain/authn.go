@@ -199,7 +199,10 @@ func (ref *TokenRevocation) Rotated() bool {
 }
 
 type RegisterUserInput struct {
-	Disabled       *bool
+	Disabled *bool
+	// Identity is the provider identity an OAuth registration is for: the
+	// account is stored with it, in one transaction (InsertUserInput).
+	Identity       *LinkUserIdentityInput
 	FirstName      string
 	LastName       string
 	Email          string

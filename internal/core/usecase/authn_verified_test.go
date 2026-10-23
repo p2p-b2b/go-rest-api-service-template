@@ -39,8 +39,10 @@ type fakeUserStore struct {
 	// standings is what the repository says of an account when it is not
 	// what byID, the cached copy, would say.
 	standings map[uuid.UUID]domain.AccountStanding
-	// created is every account Create was asked for.
-	created []*domain.CreateUserInput
+	// created is every account Create was asked for, and createErr what it
+	// answers.
+	created   []*domain.CreateUserInput
+	createErr error
 	// verified is every account Verify was asked for, with the address,
 	// and verifyErr what it answers.
 	verified  []string
@@ -153,7 +155,7 @@ func (f *fakeUserStore) Create(_ context.Context, in *domain.CreateUserInput) er
 	defer f.mu.Unlock()
 	f.created = append(f.created, in)
 
-	return nil
+	return f.createErr
 }
 
 func (f *fakeUserStore) add(u *domain.User) {
@@ -564,5 +566,76 @@ func TestARegistrationIsNotStoredAsDisabledByAnAdministrator(t *testing.T) {
 
 	if in.Verified == nil || *in.Verified {
 		t.Errorf("Verified = %v, want false: a registration proves its address by its link", in.Verified)
+	}
+}
+
+// An OAuth registration is stored with the identity it is for, in the
+// account's own transaction: RegisterUser hands the identity to the create,
+// for the account's own id. A registration that dropped it would create an
+// account with no identity, which nobody can sign in to.
+func TestAnOAuthRegistrationCarriesItsIdentityIntoTheCreate(t *testing.T) {
+	t.Parallel()
+
+	f := newVerifiedFixture(t)
+
+	id, idp := uuid.NewV7(), uuid.NewV7()
+
+	err := f.svc.RegisterUser(t.Context(), &domain.RegisterUserInput{
+		ID: id, Email: "sso@example.com", FirstName: "Jane", LastName: "Doe",
+		Password: uuid.NewV7().String(), Disabled: new(false), RegisterMethod: domain.RegisterMethodOAuth,
+		// The id the caller wrote is not trusted: the identity is the account's.
+		Identity: &domain.LinkUserIdentityInput{UserID: uuid.NewV7(), IDPID: idp, Subject: "sub-1", Email: "sso@example.com"},
+	})
+	if err != nil {
+		t.Fatalf("RegisterUser: %v", err)
+	}
+
+	if len(f.users.created) != 1 {
+		t.Fatalf("created %d accounts, want 1", len(f.users.created))
+	}
+
+	got := f.users.created[0].Identity
+	want := domain.LinkUserIdentityInput{UserID: id, IDPID: idp, Subject: "sub-1", Email: "sso@example.com"}
+
+	if got == nil || *got != want {
+		t.Errorf("the create carried the identity %+v, want %+v", got, want)
+	}
+}
+
+// The registration form answers an address that has an account as if it
+// had none, and mails the owner. A first sign-in through a provider is not
+// the form: answered "registered" for an account it did not create, it went
+// on to sign in to an account that is not there. It hears the refusal.
+func TestATakenAddressIsAnsweredAsRegisteredOnlyOnTheForm(t *testing.T) {
+	t.Parallel()
+
+	for name, tc := range map[string]struct {
+		method      domain.RegisterMethod
+		wantRefusal bool
+		wantMail    int
+	}{
+		"the_form":        {method: domain.RegisterMethodPassword, wantMail: 1},
+		"a_first_sign_in": {method: domain.RegisterMethodOAuth, wantRefusal: true},
+	} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			f := newVerifiedFixture(t)
+			f.users.createErr = &domain.UserAlreadyExistsError{Email: "taken@example.com"}
+
+			err := f.svc.RegisterUser(t.Context(), &domain.RegisterUserInput{
+				ID: uuid.NewV7(), Email: "taken@example.com", FirstName: "Jane", LastName: "Doe",
+				Password: "Meadow7Lark!", Disabled: new(false), RegisterMethod: tc.method,
+			})
+
+			_, refused := errors.AsType[*domain.UserAlreadyExistsError](err)
+			if refused != tc.wantRefusal {
+				t.Errorf("RegisterUser answered %v, want the refusal: %v", err, tc.wantRefusal)
+			}
+
+			if got := len(f.notifier.exists); got != tc.wantMail {
+				t.Errorf("mailed the owner %d times, want %d", got, tc.wantMail)
+			}
+		})
 	}
 }

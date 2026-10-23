@@ -106,7 +106,7 @@ sequenceDiagram
     alt known identity
         U->>U: LoginUserByID(linked account)
     else unknown, auto_provision on, email verified, no account with that email
-        U->>U: RegisterUser + Link + LoginUserByID
+        U->>U: RegisterUser (the account, its roles and its identity: one transaction) + LoginUserByID
     else unknown, anything else
         U-->>A: IDPIdentityNotLinkedError → 401 (one wording for every reason)
     end
@@ -145,7 +145,7 @@ flowchart TD
     EV -- no --> REF
     EV -- yes --> EX{account with<br/>that email exists?}
     EX -- yes --> REF
-    EX -- no --> NEW[RegisterUser + Link → session]
+    EX -- no --> NEW[RegisterUser with its identity, one transaction → session]
 ```
 
 **The refusal is one message for every branch.** Which addresses have
@@ -194,6 +194,68 @@ the verifier must not be. Spent **before** the code is exchanged, on the
 `revoked_tokens` denylist, so a state that survives a failed exchange cannot be
 retried. A replay is refused with the same wording as any other bad state.
 
+## A first sign-in is one transaction
+
+A first sign-in through a provider, with `auto_provision` on, creates an
+account and stores the identity that says whose it is. They were two
+writes: `RegisterUser`, then `Link`. When the second failed (the identity
+linked by a concurrent sign-in, the provider deleted meanwhile, a fault),
+the first stayed: an account with no password and no identity, which nobody
+could sign in to, holding the address and a slot of the users limit. The
+person's next sign-in found an account with their email that was not linked
+to them, which is the takeover the flow refuses, and was refused, every
+time, until an administrator deleted the account.
+
+The identity travels with the registration now (`RegisterUserInput.Identity`,
+`InsertUserInput.Identity`), and `UsersRepository.Insert` writes the
+account, its auto-assigned roles and the identity in its one transaction:
+both, or neither. The users slot is reserved before the transaction and
+given back when it fails, and the release runs off the request's context,
+with a deadline of its own: a client that walks away cancels the request,
+and a release on that context failed the same way and left the counter one
+too high. An address taken between the sign-in's check and its create (a
+registration by the form, the same sign-in twice) is answered as the check
+answers it, an identity that is not linked; the registration form's rule
+for a taken address (answer "registered", mail the owner) is the form's
+alone, since a sign-in told "registered" went on to sign in to an account
+it had not created.
+
+```mermaid
+sequenceDiagram
+    participant U as AuthnIDPsService.signIn
+    participant S as UsersService.Create
+    participant L as users limit
+    participant DB as UsersRepository.Insert (one transaction)
+    U->>S: RegisterUser(account + identity)
+    S->>L: reserve a slot
+    alt the limit is reached
+        L-->>U: refused, nothing stored
+    end
+    S->>DB: BEGIN, INSERT users, users_roles, users_identities
+    alt every statement ran
+        DB->>DB: COMMIT
+        DB-->>U: stored
+        U->>U: LoginUserByID → 200
+    else the identity cannot be stored, or anything else fails
+        DB->>DB: ROLLBACK: no account, no roles, no identity
+        S->>L: give the slot back (detached, its own deadline)
+        DB-->>U: the refusal (409 linked meanwhile, 401 the address was taken meanwhile) or the fault (500)
+    end
+```
+
+`TestIDPFlowAFirstSignInThatCannotStoreItsIdentityLeavesNoAccount` makes the
+database refuse the identity of one subject with a trigger, as a fault and
+as a link made meanwhile, and checks that no account is left, the slot is
+back, and the person's next sign-in works; on the two-write code the account
+stayed, the slot did not come back, and the next sign-in was refused. In the
+unit suite: `TestAnAccountIsStoredWithItsIdentity` (the three statements, on
+the transaction), `TestAnAccountsIdentityIsTheAccounts` (an identity for
+another account, or for a local one, is refused),
+`TestAnOAuthRegistrationCarriesItsIdentityIntoTheCreate`,
+`TestIDPCallbackProvisionsAndLinks`, `TestIDPCallbackARefusedRegistrationSignsNobodyIn`,
+`TestATakenAddressIsAnsweredAsRegisteredOnlyOnTheForm` and
+`TestAReleasedSlotIsGivenBackAfterTheRequestIsCancelled`.
+
 ## What can go wrong
 
 | Failure | Answer | Why |
@@ -204,6 +266,7 @@ retried. A replay is refused with the same wording as any other bad state.
 | ID token fails iss/aud/exp/signature, or wrong nonce | 401 | go-oidc's text is logged, never returned |
 | identity unknown and not provisionable | 401, one wording | see above |
 | identity already linked elsewhere (link) | 409 | the other account keeps it |
+| a first sign-in's identity cannot be stored (linked meanwhile, a fault) | 409, or 500 | no account is stored either, and the users slot is given back: see below |
 | provider disabled | 404 at start, at the callback, and absent from `/auth/idp/available` | a half-configured provider is never offered |
 
 ## Configuring a provider
@@ -324,17 +387,16 @@ sequenceDiagram
         D->>DB: SELECT ... FOR UPDATE (the row is there)
         S->>DB: INSERT users_identities: its foreign key waits
         D->>DB: DELETE, COMMIT
-        DB-->>S: no provider: the insert fails, no identity is stored
+        DB-->>S: no provider: the insert fails, and its transaction with it
     else the provider is not there
         D->>DB: SELECT ... FOR UPDATE: no row
         D-->>D: 404
     end
 ```
 
-  A first sign-in here is still two writes, the account and then its
-  identity: when the delete comes first, the account the sign-in registered
-  stays, with no identity. Writing both in one transaction is what closes
-  that, and it is not done yet.
+  A first sign-in stores its account and its identity in one transaction
+  ([below](#a-first-sign-in-is-one-transaction)): when the delete comes
+  first, no account is stored either.
 - **An account's ways in are removed one at a time.** The delete's rule
   reads an account's other identities, and it held only its own provider's
   row: the two providers of an account that has no other way in, deleted in

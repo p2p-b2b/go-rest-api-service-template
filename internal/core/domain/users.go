@@ -82,6 +82,11 @@ type InsertUserInput struct {
 	Disabled     *bool
 	Verified     *bool
 	LocalAccount *bool
+	// Identity is the provider identity an account is provisioned from, on
+	// a first sign-in: stored with the account, in the same transaction, so
+	// that neither is ever there without the other. Nil for every other
+	// account. Its UserID is the account's ID.
+	Identity     *LinkUserIdentityInput
 	FirstName    string
 	LastName     string
 	Email        string
@@ -142,6 +147,21 @@ func (ref *InsertUserInput) Validate() error {
 
 	if ref.LocalAccount == nil {
 		errs.AddError("local_account", "local_account cannot be nil", "REQUIRED")
+	}
+
+	if ref.Identity != nil {
+		if err := ref.Identity.Validate(); err != nil {
+			errs.Add(err)
+		} else if ref.Identity.UserID != ref.ID {
+			errs.AddError(FieldUserID, "the identity is not the account's", "INVALID_VALUE")
+		}
+
+		// An identity is how a federated account signs in: a local account
+		// is never provisioned with one, so that no route that creates a
+		// local account can link a subject on the way.
+		if ref.LocalAccount != nil && *ref.LocalAccount {
+			errs.AddError("local_account", "a local account is not provisioned with a provider identity", "INVALID_COMBINATION")
+		}
 	}
 
 	if errs.HasErrors() {
