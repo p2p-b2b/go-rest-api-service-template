@@ -90,6 +90,7 @@ func recordLayer(ctx context.Context, layer *o11y.LayerMetrics, action, domainNa
 		attribute.String(o11y.AttrLayer, o11y.LayerMail),
 		attribute.String(o11y.AttrDomain, domainName),
 		attribute.String(o11y.AttrAction, action),
+		attribute.String(o11y.AttrOutcome, layerOutcome(result)),
 		attribute.Bool(o11y.AttrSuccessful, result != resultError),
 	}
 
@@ -164,4 +165,16 @@ func (m *sendMetrics) record(ctx context.Context, start time.Time, result string
 	m.duration.Record(ctx, time.Since(start).Seconds())
 
 	recordLayer(ctx, m.layer, "send", "Mail", result, time.Since(start))
+}
+
+// layerOutcome is the outcome the shared instruments carry for one of this
+// adapter's results. There is no refusal here: nothing a caller of the
+// service sent reaches the mail as a request it can turn down, so an error is
+// the dependency not working.
+func layerOutcome(result string) string {
+	if result == resultError {
+		return o11y.OutcomeFailed
+	}
+
+	return o11y.OutcomeOK
 }

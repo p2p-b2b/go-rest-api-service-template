@@ -4,10 +4,13 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/slashdevops/mailer"
 	"go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+
+	"github.com/slashdevops/go-rest-api-service-template/internal/o11y"
 )
 
 // fakeMailer is a mailer.MailerService whose Send returns a fixed error.
@@ -77,5 +80,52 @@ func TestNewInstrumentedMailer_nilMeter_returnsInner(t *testing.T) {
 	inner := fakeMailer{}
 	if got := NewInstrumentedMailer(inner, nil); got != mailer.MailerService(inner) {
 		t.Error("with nil meter, expected the inner mailer returned unchanged")
+	}
+}
+
+// TestTheMailLayerSaysHowACallEnded: mail mirrors its operations onto the
+// shared layer instruments itself, so it says the outcome itself; without
+// it no error ratio could see a mail transport that was failing.
+func TestTheMailLayerSaysHowACallEnded(t *testing.T) {
+	reader := metric.NewManualReader()
+	provider := metric.NewMeterProvider(metric.WithReader(reader))
+	t.Cleanup(func() { _ = provider.Shutdown(context.Background()) })
+
+	layer, err := o11y.NewLayerMetrics(provider.Meter("test"), "")
+	if err != nil {
+		t.Fatalf("NewLayerMetrics: %v", err)
+	}
+
+	recordLayer(context.Background(), layer, "send", "verification", resultOK, time.Millisecond)
+	recordLayer(context.Background(), layer, "send", "verification", resultError, time.Millisecond)
+	recordLayer(context.Background(), layer, "send", "verification", resultError, time.Millisecond)
+
+	var collected metricdata.ResourceMetrics
+	if err := reader.Collect(context.Background(), &collected); err != nil {
+		t.Fatalf("Collect: %v", err)
+	}
+
+	got := map[string]int64{}
+
+	for _, scope := range collected.ScopeMetrics {
+		for _, m := range scope.Metrics {
+			if m.Name != o11y.MetricCalls {
+				continue
+			}
+
+			sum, ok := m.Data.(metricdata.Sum[int64])
+			if !ok {
+				t.Fatalf("%s is not an int64 sum", m.Name)
+			}
+
+			for _, point := range sum.DataPoints {
+				outcome, _ := point.Attributes.Value(o11y.AttrOutcome)
+				got[outcome.AsString()] += point.Value
+			}
+		}
+	}
+
+	if got[o11y.OutcomeOK] != 1 || got[o11y.OutcomeFailed] != 2 || len(got) != 2 {
+		t.Errorf("outcomes %v, want ok=1 failed=2", got)
 	}
 }

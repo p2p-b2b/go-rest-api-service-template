@@ -586,7 +586,7 @@ func (ref *IDPsRepository) SelectByID(ctx context.Context, id uuid.UUID) (*domai
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			errorType := &domain.IDPNotFoundError{ID: id}
-			return nil, o11y.RecordError(ctx, span, start, errorType, ref.metrics, nil)
+			return nil, o11y.RecordError(ctx, span, start, errorType, ref.metrics, attrs)
 		}
 
 		return nil, o11y.RecordError(ctx, span, start, ref.handlePgError(err, nil), ref.metrics, attrs)
@@ -655,7 +655,7 @@ func (ref *IDPsRepository) SelectByName(ctx context.Context, name string) (*doma
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			errorType := &domain.IDPNotFoundError{ID: idp.ID}
-			return nil, o11y.RecordError(ctx, span, start, errorType, ref.metrics, nil)
+			return nil, o11y.RecordError(ctx, span, start, errorType, ref.metrics, attrs)
 		}
 
 		return nil, o11y.RecordError(ctx, span, start, ref.handlePgError(err, nil), ref.metrics, attrs)

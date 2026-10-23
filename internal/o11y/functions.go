@@ -237,7 +237,7 @@ func RecordSuccess(ctx context.Context, span trace.Span, startTime time.Time, me
 //
 // It is deliberately not put on the metrics. The set of error types is bounded
 // by the code rather than by traffic, but it is large, and the metric already
-// carries successful=false with the layer, domain and action -- which is the
+// carries app.outcome with the layer, domain and action -- which is the
 // question a metric should answer. "Which error" is a log question, and the log
 // line is joined to the metric by the trace id.
 func errorType(err error) string {
@@ -323,7 +323,13 @@ func RecordResult(
 		span.SetStatus(codes.Ok, mgs)
 	}
 
-	finalAttrs = append(finalAttrs, attribute.Bool(AttrSuccessful, err == nil))
+	// How the call ended, and for one more release the boolean it replaces:
+	// `successful` cannot tell a refusal from a failure, and the dashboards
+	// read `app.outcome` now (see SetRefusalClassifier).
+	finalAttrs = append(finalAttrs,
+		attribute.String(AttrOutcome, Outcome(err)),
+		attribute.Bool(AttrSuccessful, err == nil),
+	)
 
 	// 3. Record Metrics
 	if metrics != nil {

@@ -8,6 +8,7 @@ import (
 	"net/http/pprof"
 	"time"
 
+	"github.com/slashdevops/go-rest-api-service-template/internal/adapter/driving/http/respond"
 	"github.com/slashdevops/go-rest-api-service-template/internal/o11y"
 )
 
@@ -29,6 +30,13 @@ func (a *App) initTelemetry(ctx context.Context) error {
 	}
 
 	a.composeLogger()
+
+	// The layer metrics tell a call that was refused from one that failed
+	// (o11y.AttrOutcome), and what makes an error a refusal is how the HTTP
+	// adapter answers it: its one table of errors and statuses, and a body
+	// it could not decode. o11y cannot import that adapter, so the question
+	// is handed over here. The table stays the only list.
+	o11y.SetRefusalClassifier(respond.IsRefusal)
 
 	slog.Info("telemetry started successfully")
 	return nil

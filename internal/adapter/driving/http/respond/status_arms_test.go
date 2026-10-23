@@ -14,6 +14,11 @@ import (
 // handlerDir is the package whose arms the table was read from.
 const handlerDir = "../handler"
 
+// payloadDir is the package whose Validate methods build the errors a
+// handler answers 400 in a branch of its own (`if err := req.Validate();
+// err != nil`), which names no type.
+const payloadDir = "../payload"
+
 // arm is one place a handler answers a domain error type: the type, as
 // `*domain.X`, the status it answers it with, and where.
 type arm struct {
@@ -43,9 +48,11 @@ type arm struct {
 // A function that answers whether an error is one of its types
 // (`isBadRequest`) is read as the types it names, wherever a condition calls
 // it. An error the handler package builds itself and answers without an arm
-// (a path id that is not a uuid, a page token that does not parse) must be
-// in the table, so that it is not taken for a failure; its status is the
-// builder's call site's, and is not read.
+// (a path id that is not a uuid, a page token that does not parse), and one
+// a payload's Validate builds and the handler answers 400 in a branch that
+// names no type (an update that sets nothing), must be in the table, so
+// that it is not taken for a failure; its status is the call site's, and is
+// not read.
 //
 // What is not an arm is not held: a handler that answers the error of
 // getUserIDFromContext (an InvalidJWTError the middleware should have made
@@ -66,7 +73,7 @@ func TestEveryArmAgreesWithTheTable(t *testing.T) {
 		}
 
 		if _, known := table[name]; !known {
-			t.Errorf("the handler package builds %s and the table has no row for it: an error the handlers answer is not in the one table of statuses", name)
+			t.Errorf("the handlers or their payloads build %s and the table has no row for it: an error the handlers answer is not in the one table of statuses", name)
 		}
 
 		types[name] = true
@@ -127,6 +134,20 @@ func handlerArms(t *testing.T) ([]arm, map[string]bool) {
 		t.Fatal(err)
 	}
 
+	// The payloads build errors and answer nothing: read for what they
+	// build, never for arms.
+	payloads, err := filepath.Glob(filepath.Join(payloadDir, "*.go"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	fromPayload := map[string]bool{}
+	for _, path := range payloads {
+		fromPayload[path] = true
+	}
+
+	files = append(files, payloads...)
+
 	fset := token.NewFileSet()
 
 	var parsed []*ast.File
@@ -176,6 +197,10 @@ func handlerArms(t *testing.T) ([]arm, map[string]bool) {
 	var arms []arm
 
 	for _, file := range parsed {
+		if fromPayload[fset.Position(file.Pos()).Filename] {
+			continue
+		}
+
 		for _, decl := range file.Decls {
 			fn, ok := decl.(*ast.FuncDecl)
 			if !ok || fn.Body == nil {

@@ -166,8 +166,7 @@ func (ref *ProjectsRepository) Insert(ctx context.Context, input *domain.InsertP
 		input.Disabled,
 	)
 	if err != nil {
-		err = o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
-		return ref.handlePgError(err, input)
+		return o11y.RecordError(ctx, span, start, ref.handlePgError(err, input), ref.metrics, attrs)
 	}
 
 	query2 := `
@@ -185,8 +184,7 @@ func (ref *ProjectsRepository) Insert(ctx context.Context, input *domain.InsertP
 
 	_, err = tx.Exec(ctx, query2, input.ID, input.UserID)
 	if err != nil {
-		err = o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
-		return ref.handlePgError(err, input)
+		return o11y.RecordError(ctx, span, start, ref.handlePgError(err, input), ref.metrics, attrs)
 	}
 
 	slog.DebugContext(ctx, "repository.Projects.Insert", "project.id", input.ID)

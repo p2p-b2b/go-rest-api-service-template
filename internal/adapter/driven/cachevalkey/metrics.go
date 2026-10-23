@@ -177,12 +177,16 @@ func (i *Instruments) record(ctx context.Context, operation, entity, result stri
 
 // recordLayer mirrors the operation onto the shared per-layer instruments, so
 // the cache appears in a layer breakdown alongside handler, usecase,
-// repository, llm and mail.
+// repository and mail.
 //
 // The cache's own result vocabulary (hit / stale / miss / timeout / error) is
-// collapsed to the successful flag the shared instruments carry, because that
-// is the only outcome every layer has in common. Anything finer is on the cache
-// instruments, where it means something.
+// collapsed to the outcome the shared instruments carry (layerOutcome: an
+// error or a timeout is failed, anything else ok), because that is the only
+// outcome every layer has in common. Anything finer is on the cache
+// instruments, where it means something. The `successful` flag kept beside it
+// for one release is false for an error only, as it always was: a timeout is
+// `app_outcome="failed"` and `successful="true"`, and a ratio that moves to
+// the outcome counts timeouts it did not count before.
 func (i *Instruments) recordLayer(ctx context.Context, operation, entity, result string, took time.Duration) {
 	if i.layer == nil {
 		return
@@ -192,6 +196,7 @@ func (i *Instruments) recordLayer(ctx context.Context, operation, entity, result
 		attribute.String(o11y.AttrLayer, o11y.LayerCache),
 		attribute.String(o11y.AttrDomain, entity),
 		attribute.String(o11y.AttrAction, operation),
+		attribute.String(o11y.AttrOutcome, layerOutcome(result)),
 		attribute.Bool(o11y.AttrSuccessful, result != resultError),
 	}
 
@@ -210,4 +215,22 @@ func resultOf(err error) string {
 	}
 
 	return resultOK
+}
+
+// layerOutcome is the outcome the shared instruments carry for one of this
+// adapter's results. There is no refusal here: nothing a caller of the
+// service sent reaches the cache as a request it can turn down, so an error is
+// the dependency not working.
+//
+// So is a timeout. A cache that does not answer within its query timeout is
+// reported by c3e as `timeout`, not `error`, and the read falls back to the
+// database: the request succeeds and the cache did not work. Counted `ok`, it
+// would be the result of every read while the cache is unreachable, and the
+// cache layer's failed rate would stay at zero through the whole outage.
+func layerOutcome(result string) string {
+	if result == resultError || result == string(c3e.ResultTimeout) {
+		return o11y.OutcomeFailed
+	}
+
+	return o11y.OutcomeOK
 }

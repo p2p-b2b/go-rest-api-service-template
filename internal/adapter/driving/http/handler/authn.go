@@ -121,8 +121,7 @@ func (ref *AuthnHandler) loginUser(w http.ResponseWriter, r *http.Request) {
 
 	var req payload.LoginUserRequest
 	if err := decodeJSONBody(r, &req); err != nil {
-		errorType := &domain.InvalidRequestError{Message: "failed to decode request"}
-		e := o11y.RecordError(ctx, span, start, errorType, ref.metrics, attrs)
+		e := o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
 		respond.WriteDecodeError(w, r, e)
 		return
 	}
@@ -240,8 +239,7 @@ func (ref *AuthnHandler) registerUser(w http.ResponseWriter, r *http.Request) {
 
 	var req payload.RegisterUserRequest
 	if err := decodeJSONBody(r, &req); err != nil {
-		errorType := &domain.InvalidRequestError{Message: "failed to decode request"}
-		e := o11y.RecordError(ctx, span, start, errorType, ref.metrics, attrs)
+		e := o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
 		respond.WriteDecodeError(w, r, e)
 		return
 	}
@@ -398,8 +396,7 @@ func (ref *AuthnHandler) reVerifyUser(w http.ResponseWriter, r *http.Request) {
 
 	var req payload.ReVerifyUserRequest
 	if err := decodeJSONBody(r, &req); err != nil {
-		errorType := &domain.InvalidRequestError{Message: "failed to decode request"}
-		e := o11y.RecordError(ctx, span, start, errorType, ref.metrics, attrs)
+		e := o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
 		respond.WriteDecodeError(w, r, e)
 		return
 	}
@@ -599,8 +596,7 @@ func (ref *AuthnHandler) refreshAccessToken(w http.ResponseWriter, r *http.Reque
 	// out of step in the first place.
 	var req payload.RefreshTokenRequest
 	if err := decodeJSONBody(r, &req); err != nil && !errors.Is(err, io.EOF) {
-		errorType := &domain.InvalidRequestError{Message: "failed to decode request"}
-		e := o11y.RecordError(ctx, span, start, errorType, ref.metrics, attrs)
+		e := o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
 		respond.WriteDecodeError(w, r, e)
 		return
 	}
