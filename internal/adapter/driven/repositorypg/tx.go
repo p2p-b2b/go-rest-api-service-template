@@ -21,11 +21,12 @@ import (
 // and a failed COMMIT becomes the method's result, passed through record so
 // the span and the call metrics see it. The decision reads the value the
 // caller receives, never a local that each error path has to remember to
-// set: the deferred closure UsersRepository.Insert and
-// ProjectsRepository.Insert still end theirs with commits whenever such a
-// local is nil, so an error path that returned without setting it would
-// commit a partial write, and a failed COMMIT is logged and answered nil --
-// a 201 for a row that was never stored.
+// set: the deferred closure that ended UsersRepository.Insert's and
+// ProjectsRepository.Insert's committed whenever such a local was nil, so an
+// error path that returned without setting it would have committed a
+// partial write, and a failed COMMIT was logged and answered nil -- a 201
+// for a row that was never stored.
+// TestNoTransactionIsEndedInADeferredClosure holds the package to it.
 //
 // A method that panics between Begin and its return leaves the named result
 // nil, and endTx, deferred, commits what it wrote: a method that can panic

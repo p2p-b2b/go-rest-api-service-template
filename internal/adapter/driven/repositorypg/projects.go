@@ -119,7 +119,7 @@ func (ref *ProjectsRepository) PingContext(ctx context.Context) error {
 }
 
 // Insert a new project into the database.
-func (ref *ProjectsRepository) Insert(ctx context.Context, input *domain.InsertProjectInput) error {
+func (ref *ProjectsRepository) Insert(ctx context.Context, input *domain.InsertProjectInput) (err error) {
 	start := time.Now()
 	ctx, span, attrs, cancel := o11y.SetupTraceWithTimeout(ctx, ref.ot.Traces.Tracer, ref.maxQueryTimeout, ref.metricsMetadata, "Insert")
 	defer cancel()
@@ -136,25 +136,13 @@ func (ref *ProjectsRepository) Insert(ctx context.Context, input *domain.InsertP
 
 	span.SetAttributes(attribute.String("project.id", input.ID.String()))
 
-	tx, txErr := ref.db.Begin(ctx)
-	if txErr != nil {
-		return o11y.RecordError(ctx, span, start, txErr, ref.metrics, attrs)
+	tx, err := ref.db.Begin(ctx)
+	if err != nil {
+		return o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
 	}
-	defer func() {
-		if txErr != nil {
-			if err := tx.Rollback(ctx); err != nil {
-				e := o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
-				slog.ErrorContext(ctx, "operation failed", "error", e)
-			}
-		} else {
-			if err := tx.Commit(ctx); err != nil {
-				e := o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
-				if e != nil {
-					slog.ErrorContext(ctx, "operation failed", "error", e)
-				}
-			}
-		}
-	}()
+	defer endTx(ctx, tx, &err, func(e error) error {
+		return o11y.RecordError(ctx, span, start, ref.handlePgError(e, input), ref.metrics, attrs)
+	})
 
 	query1 := `
         INSERT INTO projects (id, name, description, disabled)
@@ -171,15 +159,15 @@ func (ref *ProjectsRepository) Insert(ctx context.Context, input *domain.InsertP
 		),
 	)
 
-	_, txErr = tx.Exec(ctx, query1,
+	_, err = tx.Exec(ctx, query1,
 		input.ID,
 		input.Name,
 		input.Description,
 		input.Disabled,
 	)
-	if txErr != nil {
-		txErr = o11y.RecordError(ctx, span, start, txErr, ref.metrics, attrs)
-		return ref.handlePgError(txErr, input)
+	if err != nil {
+		err = o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
+		return ref.handlePgError(err, input)
 	}
 
 	query2 := `
@@ -195,10 +183,10 @@ func (ref *ProjectsRepository) Insert(ctx context.Context, input *domain.InsertP
 		),
 	)
 
-	_, txErr = tx.Exec(ctx, query2, input.ID, input.UserID)
-	if txErr != nil {
-		txErr = o11y.RecordError(ctx, span, start, txErr, ref.metrics, attrs)
-		return ref.handlePgError(txErr, input)
+	_, err = tx.Exec(ctx, query2, input.ID, input.UserID)
+	if err != nil {
+		err = o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
+		return ref.handlePgError(err, input)
 	}
 
 	slog.DebugContext(ctx, "repository.Projects.Insert", "project.id", input.ID)
