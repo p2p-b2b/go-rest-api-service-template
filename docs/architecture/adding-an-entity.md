@@ -634,7 +634,11 @@ func (ref *WidgetsHandler) create(w http.ResponseWriter, r *http.Request) {
 - Every handler method has a swagger doc block. Generate the `@Id`
   with `go run cmd/uuidgen/main.go -n 1 -v 7`.
 - Pattern-match on domain errors with `errors.AsType[*domain.XError]`
-  and map to status codes.
+  and map to status codes. A new error type you answer below 500 gets a
+  row in `respond.statusTable` (`internal/adapter/driving/http/respond/status.go`),
+  on the same side of 500 as your arm: `TestEveryArmAgreesWithTheTable`
+  fails until it has one. The table is what tells a refused call from a
+  failed one (see [observability](observability.md#which-errors-are-refusals-one-table)).
 - Use the helpers in [`handler/helpers.go`](../../internal/adapter/driving/http/handler/helpers.go) (`parseUUIDQueryParams`, …).
 
 ---

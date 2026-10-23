@@ -475,6 +475,12 @@ func TestABodyIDThatIsNotAUUIDHasAType(t *testing.T) {
 		t.Fatalf("got %T (%v), want *domain.InvalidRequestError", err, err)
 	}
 
+	// Marked as a body that could not be decoded: the caller's to fix,
+	// which is what respond.IsRefusal reads.
+	if _, marked := errors.AsType[*respond.DecodeError](err); !marked || !respond.IsRefusal(err) {
+		t.Errorf("a body that could not be decoded is not marked as one: %T", err)
+	}
+
 	if invalid.Message != "invalid uuid" {
 		t.Errorf("message %q", invalid.Message)
 	}
