@@ -115,7 +115,7 @@ func (ref *ProjectsHandler) create(w http.ResponseWriter, r *http.Request) {
 	userID, err := getUserIDFromContext(ctx)
 	if err != nil {
 		e := o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
-		respond.WriteJSONMessage(w, r, http.StatusBadRequest, e.Error())
+		respond.WriteInternalError(w, r, e)
 		return
 	}
 
@@ -214,7 +214,7 @@ func (ref *ProjectsHandler) getByIDByUserID(w http.ResponseWriter, r *http.Reque
 	userID, err := getUserIDFromContext(ctx)
 	if err != nil {
 		e := o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
-		respond.WriteJSONMessage(w, r, http.StatusBadRequest, e.Error())
+		respond.WriteInternalError(w, r, e)
 		return
 	}
 
@@ -298,7 +298,7 @@ func (ref *ProjectsHandler) updateByID(w http.ResponseWriter, r *http.Request) {
 	userID, err := getUserIDFromContext(ctx)
 	if err != nil {
 		e := o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
-		respond.WriteJSONMessage(w, r, http.StatusBadRequest, e.Error())
+		respond.WriteInternalError(w, r, e)
 		return
 	}
 
@@ -399,7 +399,7 @@ func (ref *ProjectsHandler) deleteByID(w http.ResponseWriter, r *http.Request) {
 	userID, err := getUserIDFromContext(ctx)
 	if err != nil {
 		e := o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
-		respond.WriteJSONMessage(w, r, http.StatusBadRequest, e.Error())
+		respond.WriteInternalError(w, r, e)
 		return
 	}
 
@@ -586,7 +586,7 @@ func (ref *ProjectsHandler) list(w http.ResponseWriter, r *http.Request) {
 	userID, err := getUserIDFromContext(ctx)
 	if err != nil {
 		e := o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
-		respond.WriteJSONMessage(w, r, http.StatusBadRequest, e.Error())
+		respond.WriteInternalError(w, r, e)
 		return
 	}
 

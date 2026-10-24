@@ -211,39 +211,64 @@ func isErr[T error](err error) bool {
 // A handler that acts on the token — rather than merely on who it identifies —
 // must use this rather than reading the request again, so that the token that
 // was authorised and the token that is acted on cannot differ.
+//
+// A request that passed the authentication middleware always has it, so its
+// absence is a noCallerError like a missing subject: the wiring's fault,
+// answered with respond.WriteInternalError.
 func getTokenFromContext(ctx context.Context) (string, error) {
 	token, ok := ctx.Value(middleware.JwtToken).(string)
 	if !ok || token == "" {
-		return "", &domain.InvalidJWTError{Message: "the verified token is missing from the context"}
+		return "", &noCallerError{reason: "the verified token is missing from the context"}
 	}
 
 	return token, nil
 }
 
-// getUserIDFromContext extracts the user ID from the context.
-// It expects the user ID to be stored in the JWT claims under the "sub" key.
-// If the "sub" claim is missing or not a string, it returns an error.
-// If the user ID is not a valid UUID, it returns an error.
-// If the user ID is a nil UUID, it returns an error.
+// noCallerError is a request that reached a handler without the caller the
+// authentication middleware puts on it: no claims in the context, or claims
+// whose subject is not an account id.
+//
+// A verified token always carries one, so this is never the caller's
+// mistake. It is a route registered without the authentication middleware,
+// or a middleware that stopped filling the context: a fault of the service,
+// answered with the fixed 500 and counted as a failure.
+//
+// That is why it is its own type, here, and not a domain error with a row
+// in the status table. It used to be an InvalidJWTError, the table's 401.
+// Eleven sites answered 500 for it, which the metric then counted as a
+// refusal; eighteen answered 400 or 401, most with the error's text,
+// telling a caller their token was at fault when the wiring was.
+type noCallerError struct {
+	reason string
+}
+
+func (e *noCallerError) Error() string {
+	return "the request carries no verified caller: " + e.reason
+}
+
+// getUserIDFromContext returns the account the request was authenticated
+// as: the `sub` of the claims the authentication middleware verified. Any
+// failure is a noCallerError, and the handler answers it with
+// respond.WriteInternalError.
 func getUserIDFromContext(ctx context.Context) (uuid.UUID, error) {
 	claimsValue := ctx.Value(middleware.JwtClaims)
 	if claimsValue == nil {
-		return uuid.Nil(), &domain.InvalidJWTError{Message: "JWT claims are missing from context"}
+		return uuid.Nil(), &noCallerError{reason: "there are no claims in the context"}
 	}
 
 	claims, ok := claimsValue.(map[string]any)
 	if !ok {
-		return uuid.Nil(), &domain.InvalidJWTError{Message: "JWT claims are not in the expected format"}
+		return uuid.Nil(), &noCallerError{reason: "the claims are not in the expected format"}
 	}
 
 	userIDstring, ok := claims["sub"].(string)
 	if !ok {
-		return uuid.Nil(), &domain.InvalidJWTError{Message: "sub claim is missing or not a string"}
+		return uuid.Nil(), &noCallerError{reason: "the sub claim is missing or not a string"}
 	}
 
 	userID, err := uuid.Parse(userIDstring)
 	if err != nil {
-		return uuid.Nil(), &domain.InvalidJWTError{Message: uuidParseReason(userIDstring)}
+		return uuid.Nil(), &noCallerError{reason: "the sub claim is not an account id"}
 	}
 
 	return userID, nil
