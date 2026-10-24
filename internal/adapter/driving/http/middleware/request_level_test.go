@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
@@ -378,6 +379,24 @@ func TestAPanickingRequestStillHasItsLine(t *testing.T) {
 
 	if lines[0].attrs["route"] != "GET /things" {
 		t.Errorf("route = %q", lines[0].attrs["route"])
+	}
+
+	// Two ERROR lines for a panic, and no third: the access line and
+	// Recovery's own. Recovery used to answer through WriteInternalError,
+	// which has no holder up there and logged the panic once more.
+	var loud []string
+	for _, r := range atOrAbove(*records, slog.LevelError) {
+		loud = append(loud, r.message)
+	}
+
+	slices.Sort(loud)
+
+	if !slices.Equal(loud, []string{"panic recovered", "request"}) {
+		t.Errorf("ERROR lines for one panic: %q, want the access line and `panic recovered`", loud)
+	}
+
+	if !strings.Contains(rec.Body.String(), respond.InternalServerErrorMessage) {
+		t.Errorf("the 500 body is %q", rec.Body.String())
 	}
 }
 

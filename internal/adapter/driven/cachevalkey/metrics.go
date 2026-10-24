@@ -184,9 +184,8 @@ func (i *Instruments) record(ctx context.Context, operation, entity, result stri
 // error or a timeout is failed, anything else ok), because that is the only
 // outcome every layer has in common. Anything finer is on the cache
 // instruments, where it means something. The `successful` flag kept beside it
-// for one release is false for an error only, as it always was: a timeout is
-// `app_outcome="failed"` and `successful="true"`, and a ratio that moves to
-// the outcome counts timeouts it did not count before.
+// for one release follows the outcome: false for an error and for a timeout,
+// so the two series do not disagree about a cache that is not answering.
 func (i *Instruments) recordLayer(ctx context.Context, operation, entity, result string, took time.Duration) {
 	if i.layer == nil {
 		return
@@ -197,7 +196,7 @@ func (i *Instruments) recordLayer(ctx context.Context, operation, entity, result
 		attribute.String(o11y.AttrDomain, entity),
 		attribute.String(o11y.AttrAction, operation),
 		attribute.String(o11y.AttrOutcome, layerOutcome(result)),
-		attribute.Bool(o11y.AttrSuccessful, result != resultError),
+		attribute.Bool(o11y.AttrSuccessful, layerOutcome(result) != o11y.OutcomeFailed),
 	}
 
 	if i.layer.Counter != nil {

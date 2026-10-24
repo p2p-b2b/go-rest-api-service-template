@@ -170,6 +170,23 @@ Valkey at all, reads fall through to the database, and nothing degrades except
 latency. It is the fastest way to take the cache out of the picture while
 diagnosing something else.
 
+**A Valkey that goes away while the service runs: what answers depends on
+the rate limiter.** Its store is the cache's Valkey whenever the cache is on.
+Measured by stopping Valkey under a running replica:
+
+| | What a request gets | What is logged |
+| --- | --- | --- |
+| as shipped (`ratelimit.enabled=true`) | `429` `RATE_LIMIT_UNAVAILABLE`, on every rate-limited route: a budget that cannot be read is not an empty one (six of six requests) | WARN `rate limit store fault`, then `rate-limit store circuit breaker opened; the store will not be called` |
+| limiter off | `200`, from the database: twenty cached reads all succeeded | WARN, from the cache client: 21 `cache: query timeout reached, falling back to database` and 21 `cache: failed to set cache` for the twenty |
+
+No ERROR is written in either case: nothing failed that a caller was not
+told about. The health probe logs WARN `cache health check failed, reads are
+falling through to the database`. On the Cache dashboard, "Warnings about
+the cache" has the lines and "Error rate" counts the reads that timed out;
+the cache layer's failed rate
+(`app_calls_total{app_layer="cache",app_outcome="failed"}`) is the number to
+alert on.
+
 ### Mail
 
 | What is wrong | What you see |
@@ -180,6 +197,38 @@ diagnosing something else.
 Mail is **not optional**: account verification and password recovery both send,
 and the service refuses to start without somewhere to send to. `make
 start-dev-env` runs Mailpit on `localhost:1025` with a web UI on `:8025`.
+
+**A mail server that goes away while the service runs fails no request.** A
+mail is queued by the request and sent after it, so a registration is still
+answered 201 and the address never receives its link. Measured by stopping
+the mail server and registering twice: two ERROR lines, `error sending
+email`, from the mail library's worker, on no request's access line. A server
+that hangs instead of refusing is a WARN, `email sending cancelled by
+context`, when the send runs past the worker's timeout. The Email dashboard's
+"Warnings and errors about mail" reads both, and "Send errors" and "Send
+success rate" count the failed sends; the enqueue and send rates stay equal,
+because a send that fails is still a send.
+
+### What the level of a line asks of you
+
+| Level | Means | Example |
+| --- | --- | --- |
+| ERROR | the service, or something it depends on, failed: someone has to look | the access line of a request answered 5xx, with the cause and the layer it arose in; a mail the server refused |
+| WARN | the service answered, and something is degraded or was refused for a reason an operator should know | the cache fell back to the database; the rate limiter's store is unreachable; a mail that ran past its timeout; a refresh token replayed |
+| INFO | the service worked | every request answered below 500, **a 4xx included** |
+
+A refused request is not an error of the service, so an alert on the count
+of ERROR lines is an alert on failures. A spike of refusals is a metric's to
+catch, not a level's: `app_outcome="refused"` for the ones a layer refused,
+the limiter's own decisions for its 429s, and the status on the access line
+(the Logs dashboard's "Refused requests") for all of them, a middleware's 401
+included -- a middleware's refusal is no layer's call, so it is in no
+`app_outcome`. The detail of one refusal is the DEBUG line `request_refused`,
+which reaches the log store only when `log.level` is `debug` or lower.
+
+WARN is not "nothing was lost". A mail that timed out is lost, and it is a
+WARN because the mail library logs it so; the Email dashboard's "Send
+errors" counts it either way.
 
 ## Read the startup log — three lines decide security posture
 

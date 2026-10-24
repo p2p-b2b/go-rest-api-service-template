@@ -35,6 +35,7 @@ func TestTheCacheLayerSaysHowACallEnded(t *testing.T) {
 	// A read past the query timeout falls back to the database: the request
 	// is answered, and the cache did not work.
 	instruments.recordLayer(t.Context(), "get", "users", string(c3e.ResultTimeout), time.Millisecond)
+	instruments.recordLayer(t.Context(), "get", "users", string(c3e.ResultStale), time.Millisecond)
 
 	var collected metricdata.ResourceMetrics
 	if err := reader.Collect(t.Context(), &collected); err != nil {
@@ -62,13 +63,21 @@ func TestTheCacheLayerSaysHowACallEnded(t *testing.T) {
 
 				outcome, _ := point.Attributes.Value(o11y.AttrOutcome)
 				got[outcome.AsString()] += point.Value
+
+				// successful, kept for one release, says the same.
+				successful, _ := point.Attributes.Value(o11y.AttrSuccessful)
+				if successful.AsBool() != (outcome.AsString() == o11y.OutcomeOK) {
+					t.Errorf("a %s call is successful=%v", outcome.AsString(), successful.AsBool())
+				}
 			}
 		}
 	}
 
-	// A miss is the cache working: an error and a timeout are failures, and
-	// nothing a caller sent reaches the cache as a request it can refuse.
-	if got[o11y.OutcomeOK] != 2 || got[o11y.OutcomeFailed] != 2 || len(got) != 2 {
-		t.Errorf("outcomes %v, want ok=2 failed=2", got)
+	// A miss and a stale hit are the cache working. An error is a failure,
+	// and so is a timeout: the read fell back to the database because the
+	// cache did not answer, which is every read while it is unreachable.
+	// Nothing a caller sent reaches the cache as a request it can refuse.
+	if got[o11y.OutcomeOK] != 3 || got[o11y.OutcomeFailed] != 2 || len(got) != 2 {
+		t.Errorf("outcomes %v, want ok=3 failed=2", got)
 	}
 }

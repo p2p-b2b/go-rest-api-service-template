@@ -807,6 +807,12 @@ func RequireActiveAccount(accounts AccountStandings) Middleware {
 
 // Recovery middleware recovers from panics in downstream handlers,
 // logs the panic, and returns a 500 Internal Server Error response.
+//
+// A panic is two ERROR lines, not one: the request's access line, which
+// Logging writes with the panic as its cause before letting it go on up, and
+// `panic recovered` here, for a panic above Logging or with no access line at
+// all. It was three: the 500 was answered through WriteInternalError, which
+// logged the same panic again as "internal server error".
 func Recovery(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
@@ -817,7 +823,10 @@ func Recovery(next http.Handler) http.Handler {
 					"path", r.URL.Path,
 					"remote_addr", r.RemoteAddr,
 				)
-				respond.WriteInternalError(w, r, fmt.Errorf("panic: %v", rec))
+				// The fixed body, written directly: WriteInternalError would
+				// log the panic a second time from here, where there is no
+				// failure holder to hand it to (Recovery sits above Tracing).
+				respond.WriteJSONMessage(w, r, http.StatusInternalServerError, respond.InternalServerErrorMessage)
 			}
 		}()
 

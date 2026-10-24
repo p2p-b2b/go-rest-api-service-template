@@ -60,6 +60,13 @@ func exportedSeverities() map[string]int {
 	return out
 }
 
+// dependencyLines are the messages a dashboard filters on that a module
+// writes, not this repository: the mailer logs a send that failed itself.
+var dependencyLines = map[string]string{
+	"error sending email":     "slashdevops/mailer, service.go",
+	"email sending cancelled": "slashdevops/mailer, service.go",
+}
+
 // serviceSource is the module's Go source, tests left out: what the service
 // can write.
 func serviceSource(t *testing.T) string {
@@ -142,6 +149,10 @@ func TestDashboardFiltersNameWhatTheServiceWrites(t *testing.T) {
 
 				for _, message := range alternatives {
 					texts++
+
+					if _, library := dependencyLines[message]; library {
+						continue
+					}
 
 					if !strings.Contains(source, `"`+message) {
 						t.Errorf("%s keeps the lines containing %q, and nothing writes one: %s", name, message, text)

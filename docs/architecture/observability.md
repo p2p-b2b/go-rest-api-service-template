@@ -720,6 +720,77 @@ layers and count the lines, the recovered failure, the panic and the work
 that outlives its request among them;
 `o11y/failure_test.go` holds the holder.
 
+### The log panels read the access line of a failure
+
+A request answered 5xx writes its access line at ERROR, and that line carries
+the layer the error **arose in**. A panel that reads the log by layer
+therefore answers "where do failures start", not "which layers did a failure
+pass through" -- that second question is the metric's
+(`app_outcome="failed"` at each layer) and the trace's.
+
+```mermaid
+flowchart TD
+    F["a call ends with an error"] --> Q{"inside a request?"}
+    Q -->|"no: a reload of the revoked-token mirror"| OF["operation_failed, ERROR,<br/>in the layer it failed in"]
+    Q -->|yes| H["held until the request is answered"]
+    H --> S{"status"}
+    S -->|5xx| E["the access line, ERROR<br/>app_layer = the layer it AROSE in"]
+    S -->|4xx| I["the access line, INFO, with error_type<br/>(no app_layer)"]
+    L["a layer's own ERROR line, in its words<br/>(a usage counter that fails its signature)"] --> P1
+    OF --> P1["Layers: Errors that arose at $layer<br/>Logs: Errors by the layer they arose in,<br/>Where failures arose"]
+    E --> P1
+    I --> P2["Logs: Refused requests"]
+    F --> SP["the span of every layer it passed:<br/>app.outcome = failed"]
+    SP --> P3["Layers: Failed calls at $layer (traces)"]
+    C["a cache that does not answer:<br/>the request succeeds"] --> CW["the cache client's WARN, component = cache<br/>the service's WARN: an invalidation given up, the health probe"]
+    CW --> P4["Cache: Warnings about the cache"]
+    M["a mail that cannot be sent,<br/>after its request"] --> MW["the mail worker's ERROR or WARN<br/>the health probe's ERROR<br/>no operation, no app_layer"]
+    MW --> P5["Email: Warnings and errors about mail"]
+```
+
+| Panel | Reads | What it cannot show |
+| --- | --- | --- |
+| Layers, **Errors that arose at $layer** | ERROR lines with `app_layer` = the layer | a request's failure that passed through the layer and arose below it |
+| Layers, **Failed calls at $layer** | traces with a span of that layer whose `app.outcome` is `failed` | `cache` and `mail`, which open no span |
+| Logs, **Errors by the layer they arose in**, **Where failures arose** | ERROR lines grouped by the operation they carry, and by `error_type` | a refused request. They count lines, not failures: a failed reload of the revoked-token mirror is `operation_failed` from the repository and the use-case's own ERROR line, which carries no operation |
+| Logs, **Refused requests** | the access line of every 4xx, by `status` and `error_type` | which layer refused: the origin of a refusal is on the DEBUG line `request_refused`, exported only when `log.level` is debug or lower |
+| Cache, **Warnings about the cache** | WARN and above with `component` = `cache`, and the service's two messages about the cache (`failed to invalidate cache`, `cache health check failed`) | a line about the cache written in other words |
+| Email, **Warnings and errors about mail** | the mail library's two messages and the health probe's | a reworded message, after a bump of the library |
+
+- **A panic is two ERROR lines**, the access line with the panic as its cause
+  and `Recovery`'s `panic recovered`, which has no operation. It was three:
+  `Recovery` answered through `respond.WriteInternalError`, which has no
+  failure holder up there and logged the panic once more. It writes the fixed
+  body directly now (`TestAPanickingRequestStillHasItsLine`).
+- **The cache and mail panels had never matched a record.** Both filtered on
+  `app_layer` `cache` and `mail`. Those two layers record the shared metric
+  pair and open no operation, so no log line has ever carried their name.
+  What is written instead was found by making each fail under a running
+  replica, with the limiter off (as shipped, the limiter's store is the same
+  Valkey and every request is a 429 first; see
+  [running the service](../operations/running-the-service.md#cache)):
+  - **Valkey stopped, twenty cached reads**: all answered 200, from the
+    database. The cache client wrote 42 WARN lines with `component` =
+    `cache` and no `app_layer` (`cache: query timeout reached, falling back
+    to database`, `cache: failed to set cache`), and the health probe one,
+    `cache health check failed, reads are falling through to the database`.
+    The old panel's query found 0 lines in that window; the new one finds
+    all 43.
+  - **The mail server stopped, two registrations**: answered 201, and the
+    mail library's worker wrote two ERROR lines, `error sending email`, with
+    no operation and no layer. The old panel's query found 0; the new one
+    finds both.
+
+`TestLogAndTracePanelsFilterOnWhatTheServiceWrites` reads every query of a
+dashboard -- a panel's, a data link's, an annotation's -- and refuses a log
+filter on a key no line carries or on a layer that writes none, a trace
+filter on a layer or an outcome that is not one, and a panel on the `$layer`
+variable that does not say it is empty for `cache` and `mail`. On the
+dashboards before this change it names four defects: the cache and mail
+panels' layers, the Layers panel's silence about the two, and no trace panel
+at all. A message the mail library writes, and not this repository, is
+listed in `dependencyLines` beside the line-filter guard.
+
 ## What the key rules caught
 
 The two rules above are tests rather than review habits because the failure
