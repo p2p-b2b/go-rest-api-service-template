@@ -452,16 +452,16 @@ func TestProjectDelete(t *testing.T) {
 		assert.NoError(t, err, "Failed to send request to delete non-existent project")
 		defer deleteResponse.Body.Close()
 
-		// 3. Check the response - this should still return StatusOK even though the project doesn't exist
-		// This is because deleting a non-existent resource is considered idempotent in RESTful APIs
-		assert.Equal(t, http.StatusOK, deleteResponse.StatusCode, "Expected status code 200 OK for deleting non-existent project. Got %d. Message: %s", deleteResponse.StatusCode, readResponseBody(t, deleteResponse))
+		// 3. Deleting what does not exist is a 404, and changes nothing. It
+		// answered the administrator account 200 "deleted" for no project.
+		assert.Equal(t, http.StatusNotFound, deleteResponse.StatusCode, "Expected status code 404 for deleting a project that is not there")
 
-		// 4. Parse and verify the success response
+		// 4. Parse and verify the error response
 		deleteAPIResp, err := parserResponseBody[payload.HTTPMessage](t, deleteResponse)
 		assert.NoError(t, err, "Failed to parse response body")
 
-		// 5. Verify success message for deletion
-		assert.Equal(t, domain.ProjectsProjectDeletedSuccessfully, deleteAPIResp.Message, "Expected success message")
+		// 5. The message says the project is not found
+		assert.Contains(t, strings.ToLower(deleteAPIResp.Message), "not found", "Message should say the project is not found")
 		assert.Equal(t, deleteEndpoint.method, deleteAPIResp.Method, "Expected method to be set")
 		assert.Equal(t, deleteEndpoint.Path(), deleteAPIResp.Path, "Expected path to be set")
 
@@ -1242,16 +1242,14 @@ func TestProjectUnlinkUsers(t *testing.T) {
 		assert.NoError(t, err, "Failed to send unlink request")
 		defer unlinkResponse.Body.Close()
 
-		// 5. Check that we get a 200 Not Found response
-		assert.Equal(t, http.StatusOK, unlinkResponse.StatusCode, "Expected status code 200")
+		// 5. A project that is not there is a 404, as on the link: it
+		// answered 200 "unlinked from project successfully" for no project.
+		assert.Equal(t, http.StatusNotFound, unlinkResponse.StatusCode, "Expected status code 404")
 
 		// 6. Parse and verify the error response
 		errorResp, err := parserResponseBody[payload.HTTPMessage](t, unlinkResponse)
 		assert.NoError(t, err, "Failed to parse error response")
-
-		// Verify  message contains information about the project not being found
-		assert.Contains(t, strings.ToLower(errorResp.Message), "unlinked from project successfully",
-			"Message should indicate project not found but still return success for unlinking")
+		assert.Contains(t, strings.ToLower(errorResp.Message), "not found", "Message should say the project is not found")
 		// 7. Cleanup
 		t.Cleanup(func() {
 			deleteUserByIDFromDB(t, userID)

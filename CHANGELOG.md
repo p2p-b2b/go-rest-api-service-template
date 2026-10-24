@@ -206,6 +206,11 @@ Since `v0.0.3`.
 
 ### Upgrade notes
 
+- **`DELETE /projects/{project_id}` and `DELETE /projects/{project_id}/users`
+  answer 404 for a project that is not there**, for every caller; they
+  answered the administrator account 200 "deleted" and "unlinked". A client
+  that treated a project delete as idempotent on its status reads 404 as
+  "already gone". (#161)
 - **A new setting, `authn.idp.timeout`** (`AUTHN_IDP_TIMEOUT`, `10s`):
   how long one request to an identity provider may take. A value outside
   `1s` to `1m` stops the process at startup. `http.client.timeout`,
@@ -342,6 +347,19 @@ Since `v0.0.3`.
 
 ### Fixed
 
+- **A project that is not there is a 404 for everybody.** The `admin` flag
+  admitted its account to any project id, so under a project that did not
+  exist `GET /projects/{project_id}/products`, `/users` and
+  `/resources_limits` answered it 200 (the last with the project scope's
+  limits, for no project), `DELETE /projects/{project_id}` and the unlink
+  of its users answered 200 "deleted" and "unlinked", while a create under
+  the same path answered 404. The membership statement asks whether the
+  project exists in the same round trip, and a missing project is the 404 a
+  non-member gets, on every route under it. The Nil project id
+  (`00000000-0000-0000-0000-000000000000`) is a 400, not a 500. A refused
+  non-member is no longer a WARN line of its own: the access line carries
+  the refusal at INFO with its `error_type`.
+  ([#161](https://github.com/slashdevops/go-rest-api-service-template/pull/161))
 - **The identity providers have an HTTP client of their own, and a failed
   exchange is presented once.** They used the service's shared outbound
   client, which retries a failed request ten times with backoff inside two

@@ -244,7 +244,8 @@ A grant names a route; membership names a project. OPA expands the `*` in
 `middleware.RequireProjectMembership` asks the database once per
 project-scoped request, keyed on the `project_id` path value, **after**
 `CheckAuthz`: no grant is 403, wrong project is 404, the same as a missing
-project. An administrator bypasses and is logged as one.
+project. An administrator bypasses, into a project that is there, and is
+logged as one; a project that is not there is a 404 for everybody.
 
 A new project-scoped route needs nothing. A new path wildcard that is not
 named `project_id` gets **no** check, so name it `project_id` or add one.

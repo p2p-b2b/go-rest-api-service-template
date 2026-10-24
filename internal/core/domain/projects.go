@@ -327,7 +327,8 @@ const (
 	ProjectMembershipNone ProjectMembership = iota
 	// ProjectMembershipMember: linked to the project in projects_users.
 	ProjectMembershipMember
-	// ProjectMembershipAdmin: users.admin, admitted to every project.
+	// ProjectMembershipAdmin: users.admin, admitted to every project that is
+	// there.
 	ProjectMembershipAdmin
 )
 
