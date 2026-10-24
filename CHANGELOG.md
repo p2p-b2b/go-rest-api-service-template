@@ -351,6 +351,13 @@ Since `v0.0.3`.
 
 ### Fixed
 
+- **`GET /rate_limits/effective` records its refusals.** Its three 400s
+  (no `method`, a method that is none, no `endpoint`) were written and
+  returned with nothing recorded: the call was in no count of the handler
+  layer, its span had no outcome and its access line no `error_type`. Each
+  is recorded as an invalid input, which the status table answers with the
+  400 written; the bodies are unchanged.
+  ([#166](https://github.com/slashdevops/go-rest-api-service-template/pull/166))
 - **Deleting a role or a policy that is not there is a 404.** Both deletes
   answered as if they had deleted: `DELETE /roles/{role_id}` and `DELETE
   /policies/{policy_id}` said 200 "deleted" for an id that matched no row,
