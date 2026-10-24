@@ -158,9 +158,11 @@ func (ref *SelectRolesInput) Validate() error {
 		errs.Add(err)
 	}
 
-	parseSortExpression(&errs, RolesSortParser, ref.Sort, "INVALID_SORT_FIELD")
-	parseFilterExpression(&errs, RolesFilterParser, ref.Filter, "INVALID_FILTER_FIELD")
-	parseFieldsExpression(&errs, RolesFieldsParser, ref.Fields, "INVALID_FIELD")
+	validateListExpressions(&errs, listExpressions{
+		sort: ref.Sort, sortParser: RolesSortParser, sortFields: RolesSortFields,
+		filter: ref.Filter, filterParser: RolesFilterParser, filterFields: RolesFilterFields,
+		fields: ref.Fields, fieldsParser: RolesFieldsParser, partialFields: RolesPartialFields,
+	})
 
 	if errs.HasErrors() {
 		return &errs

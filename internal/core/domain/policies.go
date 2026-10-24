@@ -151,9 +151,11 @@ func (ref *SelectPoliciesInput) Validate() error {
 
 	errs.Add(ref.Paginator.Validate())
 
-	parseSortExpression(&errs, PoliciesSortParser, ref.Sort, "INVALID_SORT_FIELD")
-	parseFilterExpression(&errs, PoliciesFilterParser, ref.Filter, "INVALID_FILTER_FIELD")
-	parseFieldsExpression(&errs, PoliciesFieldsParser, ref.Fields, "INVALID_FIELD")
+	validateListExpressions(&errs, listExpressions{
+		sort: ref.Sort, sortParser: PoliciesSortParser, sortFields: PoliciesSortFields,
+		filter: ref.Filter, filterParser: PoliciesFilterParser, filterFields: PoliciesFilterFields,
+		fields: ref.Fields, fieldsParser: PoliciesFieldsParser, partialFields: PoliciesPartialFields,
+	})
 
 	if errs.HasErrors() {
 		return &errs

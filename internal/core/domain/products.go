@@ -193,9 +193,11 @@ func (ref *SelectProductsInput) Validate() error {
 
 	errs.Add(ref.Paginator.Validate())
 
-	parseSortExpression(&errs, ProductsSortParser, ref.Sort, "INVALID_SORT_FIELD")
-	parseFilterExpression(&errs, ProductsFilterParser, ref.Filter, "INVALID_FILTER_FIELD")
-	parseFieldsExpression(&errs, ProductsFieldsParser, ref.Fields, "INVALID_FIELD")
+	validateListExpressions(&errs, listExpressions{
+		sort: ref.Sort, sortParser: ProductsSortParser, sortFields: ProductsSortFields,
+		filter: ref.Filter, filterParser: ProductsFilterParser, filterFields: ProductsFilterFields,
+		fields: ref.Fields, fieldsParser: ProductsFieldsParser, partialFields: ProductsPartialFields,
+	})
 
 	if errs.HasErrors() {
 		return &errs

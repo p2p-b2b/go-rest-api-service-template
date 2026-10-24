@@ -258,9 +258,11 @@ func (ref *SelectProjectsInput) Validate() error {
 		}
 	}
 
-	parseSortExpression(&validationErrors, ProjectSortParser, ref.Sort, "INVALID_SORT")
-	parseFilterExpression(&validationErrors, ProjectFilterParser, ref.Filter, "INVALID_FILTER")
-	parseFieldsExpression(&validationErrors, ProjectFieldsParser, ref.Fields, "INVALID_FIELDS")
+	validateListExpressions(&validationErrors, listExpressions{
+		sort: ref.Sort, sortParser: ProjectSortParser, sortFields: ProjectSortFields,
+		filter: ref.Filter, filterParser: ProjectFilterParser, filterFields: ProjectFilterFields,
+		fields: ref.Fields, fieldsParser: ProjectFieldsParser, partialFields: ProjectPartialFields,
+	})
 
 	if validationErrors.HasErrors() {
 		return &validationErrors

@@ -38,19 +38,11 @@ func listInputs(sort, filter, fields string) map[string]interface{ Validate() er
 	}
 }
 
-// codes is the code of each of the three refusals, per list input. They
-// differ for no reason but history, and a caller may match on them.
-var codes = map[string][3]string{
-	"SelectIDPTypesInput":        {"INVALID_SORT_FIELD", "INVALID_FILTER_FIELD", "INVALID_FIELD"},
-	"SelectIDPsInput":            {"INVALID_SORT_FIELD", "INVALID_FILTER_FIELD", "INVALID_FIELD"},
-	"SelectPoliciesInput":        {"INVALID_SORT_FIELD", "INVALID_FILTER_FIELD", "INVALID_FIELD"},
-	"SelectProductsInput":        {"INVALID_SORT_FIELD", "INVALID_FILTER_FIELD", "INVALID_FIELD"},
-	"SelectProjectsInput":        {"INVALID_SORT", "INVALID_FILTER", "INVALID_FIELDS"},
-	"SelectRateLimitsInput":      {"INVALID_SORT_FIELD", "INVALID_FILTER_FIELD", "INVALID_FIELDS_FIELD"},
-	"SelectResourcesLimitsInput": {"INVALID_SORT_FIELD", "INVALID_FILTER_FIELD", "INVALID_FIELDS_FIELD"},
-	"SelectResourcesInput":       {"INVALID_SORT_FIELD", "INVALID_FILTER_FIELD", "INVALID_FIELD"},
-	"SelectRolesInput":           {"INVALID_SORT_FIELD", "INVALID_FILTER_FIELD", "INVALID_FIELD"},
-	"SelectUsersInput":           {"INVALID_SORT_FIELD", "INVALID_FILTER_FIELD", "INVALID_FIELD"},
+// listInputNames are the list inputs listInputs builds, which every list
+// input must be among (TestEveryListInputIsListed).
+var listInputNames = []string{
+	"SelectIDPTypesInput", "SelectIDPsInput", "SelectPoliciesInput", "SelectProductsInput", "SelectProjectsInput",
+	"SelectRateLimitsInput", "SelectResourcesLimitsInput", "SelectResourcesInput", "SelectRolesInput", "SelectUsersInput",
 }
 
 var expressionFields = []string{FieldSort, FieldFilter, FieldFields}
@@ -119,10 +111,10 @@ func TestTheLimitIsTheLastLengthParsed(t *testing.T) {
 
 			err := input.Validate()
 
-			for i, field := range expressionFields {
+			for _, field := range expressionFields {
 				got := refusals(err, field)
-				if len(got) != 1 || got[0] != codes[name][i] {
-					t.Errorf("%s of exactly its limit was refused with %v, want the parser's %s alone", field, got, codes[name][i])
+				if len(got) != 1 || got[0] != ListExpressionCode {
+					t.Errorf("%s of exactly its limit was refused with %v, want the parser's %s alone", field, got, ListExpressionCode)
 				}
 			}
 		})
@@ -139,10 +131,10 @@ func TestTheLimitIsTheLastLengthParsed(t *testing.T) {
 	}
 }
 
-// TestAMalformedExpressionKeepsItsCode: inside the limit nothing changed. An
-// expression the parser refuses is recorded once, under the code the input
-// has always used for it, and a well-formed one is not refused.
-func TestAMalformedExpressionKeepsItsCode(t *testing.T) {
+// TestAMalformedExpressionIsRefusedOnce: an expression the parser refuses is
+// recorded once, under the one code every list uses for it
+// (ListExpressionCode), and a well-formed one is not refused.
+func TestAMalformedExpressionIsRefusedOnce(t *testing.T) {
 	t.Parallel()
 
 	for name, input := range listInputs("no_such_field asc", "no_such_field = 1", "no_such_field") {
@@ -151,10 +143,10 @@ func TestAMalformedExpressionKeepsItsCode(t *testing.T) {
 
 			err := input.Validate()
 
-			for i, field := range expressionFields {
+			for _, field := range expressionFields {
 				got := refusals(err, field)
-				if len(got) != 1 || got[0] != codes[name][i] {
-					t.Errorf("%s was refused with %v, want %s alone", field, got, codes[name][i])
+				if len(got) != 1 || got[0] != ListExpressionCode {
+					t.Errorf("%s was refused with %v, want %s alone", field, got, ListExpressionCode)
 				}
 			}
 		})
@@ -215,16 +207,17 @@ func goFiles(t *testing.T, root string, visit func(rel string, body []byte)) {
 	}
 }
 
-// TestListExpressionsAreParsedInOnePlace: the three functions of
-// list_expressions.go are the only callers of the parsers. The length bound
-// lives there, so a parse anywhere else is a parse with no bound.
+// TestListExpressionsAreParsedInOnePlace: validateListExpressions, in
+// list_expressions.go, is the only caller of the parsers. The length bound
+// and our wording live there, so a parse anywhere else is a parse with no
+// bound, answered in the library's words.
 //
 // It does not look for the call, which has many spellings (an alias, a
 // method value, a call split over two lines, a parser built inline). It
 // looks for the things a call needs: the qfv package, and the parser
 // variables. Outside the file that declares the variables and the file that
-// calls them, the only thing a line may do with a parser is hand it to one
-// of the three functions.
+// calls them, the only thing a line may do with a parser is hand it to
+// validateListExpressions, as a field of listExpressions.
 func TestListExpressionsAreParsedInOnePlace(t *testing.T) {
 	t.Parallel()
 
@@ -233,7 +226,7 @@ func TestListExpressionsAreParsedInOnePlace(t *testing.T) {
 	calls := filepath.Join(domainDir, "list_expressions.go")
 
 	mentions := regexp.MustCompile(`\bqfv\.|\b\w*(Sort|Filter|Fields)Parser\b`)
-	handsOver := regexp.MustCompile(`^\s*parse(Sort|Filter|Fields)Expression\(&\w+, \w+(Sort|Filter|Fields)Parser, ref\.(Sort|Filter|Fields), "[A-Z_]+"\)$`)
+	handsOver := regexp.MustCompile(`^\s*(sort|filter|fields): ref\.(Sort|Filter|Fields), (sort|filter|fields)Parser: \w+(Sort|Filter|Fields)Parser, (sort|filter|partial)Fields: \w+(Sort|Filter|Partial)Fields,$`)
 
 	var handed int
 
@@ -261,8 +254,8 @@ func TestListExpressionsAreParsedInOnePlace(t *testing.T) {
 		}
 	})
 
-	if want := 3 * len(codes); handed != want {
-		t.Errorf("%d expressions are handed to the three functions, want %d: three for each list input", handed, want)
+	if want := 3 * len(listInputNames); handed != want {
+		t.Errorf("%d expressions are handed to validateListExpressions, want %d: three for each list input", handed, want)
 	}
 }
 
@@ -275,8 +268,8 @@ func TestEveryListInputIsListed(t *testing.T) {
 
 	listed := listInputs("", "", "")
 
-	if len(listed) != len(codes) {
-		t.Fatalf("%d list inputs and %d rows of codes", len(listed), len(codes))
+	if len(listed) != len(listInputNames) {
+		t.Fatalf("%d list inputs and %d names in listInputNames", len(listed), len(listInputNames))
 	}
 
 	entries, err := os.ReadDir(".")

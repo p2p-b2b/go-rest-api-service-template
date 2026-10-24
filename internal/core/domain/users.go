@@ -299,9 +299,11 @@ func (ref *SelectUsersInput) Validate() error {
 
 	errs.Add(ref.Paginator.Validate())
 
-	parseSortExpression(&errs, UsersSortParser, ref.Sort, "INVALID_SORT_FIELD")
-	parseFilterExpression(&errs, UsersFilterParser, ref.Filter, "INVALID_FILTER_FIELD")
-	parseFieldsExpression(&errs, UsersFieldsParser, ref.Fields, "INVALID_FIELD")
+	validateListExpressions(&errs, listExpressions{
+		sort: ref.Sort, sortParser: UsersSortParser, sortFields: UsersSortFields,
+		filter: ref.Filter, filterParser: UsersFilterParser, filterFields: UsersFilterFields,
+		fields: ref.Fields, fieldsParser: UsersFieldsParser, partialFields: UsersPartialFields,
+	})
 
 	if errs.HasErrors() {
 		return &errs

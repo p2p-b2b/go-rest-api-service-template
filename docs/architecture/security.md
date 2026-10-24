@@ -146,16 +146,31 @@ megabyte of input.
 ```mermaid
 flowchart TD
     Q["?sort / ?filter / ?fields"] --> V["the list input's Validate"]
-    V --> B["parseSortExpression, parseFilterExpression,<br/>parseFieldsExpression:<br/>is the expression over its limit?"]
+    V --> B["validateListExpressions:<br/>is the expression over its limit?"]
     B -->|yes| R["400 TOO_LONG, recorded once<br/>no parser is called"]
     B -->|no| P["qfv parser"]
-    P -->|refuses| R2["400, under the code the list has always used"]
+    P -->|refuses| R2["400 INVALID_EXPRESSION, in our words:<br/>'x' is not a sortable field, or<br/>what the expression must look like"]
     P -->|accepts| OK["the repository"]
 ```
 
-The bound is in the three functions of `domain/list_expressions.go`, the one
-place the parsers are used (`TestListExpressionsAreParsedInOnePlace`), and no
-longer in each input's `Validate`, where four of ten had forgotten it.
+The bound is in `validateListExpressions` (`domain/list_expressions.go`), the
+one place the parsers are used (`TestListExpressionsAreParsedInOnePlace`),
+and no longer in each input's `Validate`, where four of ten had forgotten it.
+
+**A refusal is in our words, under one code.** The lists copied the parser's
+error into the response ("error on field 'x': field not allowed for
+sorting"), under seven codes for the same failure (`INVALID_SORT_FIELD`,
+`INVALID_FILTER_FIELD`, `INVALID_FIELD`, `INVALID_FIELDS_FIELD`, and on the
+projects list `INVALID_SORT`, `INVALID_FILTER`, `INVALID_FIELDS`). That made a
+dependency's prose the API's contract: a qfv release could reword every
+list's 400. Every refusal is `INVALID_EXPRESSION` now, its `field` the
+parameter, and its message ours: `'x' is not a sortable field` (filterable,
+selectable) when the expression names a field the list does not accept, and
+otherwise what the expression must look like. The field is named only when
+it is a plain identifier (64 characters at most) missing from the list's own
+allow-list, so the decision never reads the library's message, and nothing
+but an identifier is echoed back (`TestListExpressionsAreRefusedInOurWords`,
+`TestAListExpressionEchoesOnlyAnIdentifier`).
 `TestAnOverLongExpressionIsNotParsed` hands every list input a sort, a filter
 and fields one character over their limit, and malformed, and holds one
 `TOO_LONG` for each and nothing else; `TestEveryListInputIsListed` fails when

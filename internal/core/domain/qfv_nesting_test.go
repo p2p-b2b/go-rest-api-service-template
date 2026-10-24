@@ -32,7 +32,7 @@ func TestADeeplyNestedFilterIsRefused(t *testing.T) {
 	}
 
 	err := nested(101)
-	if got := refusals(err, FieldFilter); len(got) != 1 || got[0] != "INVALID_FILTER_FIELD" {
+	if got := refusals(err, FieldFilter); len(got) != 1 || got[0] != ListExpressionCode {
 		t.Errorf("a hundred and one levels were refused with %v (%v), want the parser's refusal alone", got, err)
 	}
 }

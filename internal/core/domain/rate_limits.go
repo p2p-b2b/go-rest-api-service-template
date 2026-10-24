@@ -563,9 +563,11 @@ func (ref *SelectRateLimitsInput) Validate() error {
 
 	errs.Add(ref.Paginator.Validate())
 
-	parseSortExpression(&errs, RateLimitsSortParser, ref.Sort, "INVALID_SORT_FIELD")
-	parseFilterExpression(&errs, RateLimitsFilterParser, ref.Filter, "INVALID_FILTER_FIELD")
-	parseFieldsExpression(&errs, RateLimitsFieldsParser, ref.Fields, "INVALID_FIELDS_FIELD")
+	validateListExpressions(&errs, listExpressions{
+		sort: ref.Sort, sortParser: RateLimitsSortParser, sortFields: RateLimitsSortFields,
+		filter: ref.Filter, filterParser: RateLimitsFilterParser, filterFields: RateLimitsFilterFields,
+		fields: ref.Fields, fieldsParser: RateLimitsFieldsParser, partialFields: RateLimitsPartialFields,
+	})
 
 	if errs.HasErrors() {
 		return &errs
