@@ -14,7 +14,9 @@ import (
 	"net/url"
 	"os"
 	"regexp"
+	"strconv"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 	"uuid"
@@ -146,10 +148,140 @@ func newMailAPIEndpoint(method, path string) *apiEndpoint {
 // It returns the HTTP response and an error if any
 // It uses the default HTTP client to send the request
 // It marshals the request body to JSON if provided
+//
+// A request the rate limiter refuses because the per-IP budget is spent is
+// sent again after the wait the answer names (refusedByTheBudget): every
+// test sends through here, so no test has to know the suite shares an
+// address. And one it refuses because its own store could not count is sent
+// again too, a few times and out of an allowance for the whole run
+// (refusedByTheStore).
 func sendHTTPRequest(t *testing.T, ctx context.Context, endpoint *apiEndpoint, body map[string]any, headers ...map[string]string) (*http.Response, error) {
 	if t == nil {
 		t = &testing.T{}
 	}
+	t.Helper()
+
+	return sendHTTPRequestWaiting(t, ctx, &storeFaultsLeft, endpoint, body, headers...)
+}
+
+// sendHTTPRequestWaiting is sendHTTPRequest with the run's allowance of
+// store faults handed in, so that a test of the waiting has one of its own.
+func sendHTTPRequestWaiting(t *testing.T, ctx context.Context, storeFaults *atomic.Int32, endpoint *apiEndpoint, body map[string]any, headers ...map[string]string) (*http.Response, error) {
+	t.Helper()
+
+	budget, store := 0, 0
+
+	for {
+		resp, respBody, err := sendHTTPRequestOnce(t, ctx, endpoint, body, headers...)
+		if err != nil {
+			return nil, err
+		}
+
+		var why string
+
+		switch {
+		case refusedByTheBudget(resp, respBody) && budget < budgetWaits:
+			budget++
+			why = fmt.Sprintf("was refused by the per-IP budget; sending it again (%d of %d)", budget, budgetWaits)
+		case refusedByTheStore(resp, respBody) && store < storeWaits && storeFaults.Add(-1) >= 0:
+			store++
+			why = fmt.Sprintf("was not counted by the limiter's store; sending it again (%d of %d for this request, %d left for the run)", store, storeWaits, max(storeFaults.Load(), 0))
+		default:
+			return resp, nil
+		}
+
+		wait := retryAfter(resp)
+		t.Logf("HTTP Request: %s %s %s in %s", endpoint.method, endpoint.requestURL.String(), why, wait)
+
+		select {
+		case <-ctx.Done():
+			return resp, nil
+		case <-time.After(wait):
+		}
+	}
+}
+
+// budgetWaits is how many times one request waits the per-IP budget out
+// before its 429 is handed to the test after all.
+const budgetWaits = 20
+
+// storeWaits is how many times one request waits out a limiter whose store
+// could not count it, and storeFaultsInARun how many such waits the whole
+// run has. A store call that runs past its deadline opens the limiter's
+// breaker for a few seconds, and every request in them is a 429: under the
+// race detector, with index builds running, that happened on a machine that
+// was merely busy, and failed whichever test was polling. It is absorbed.
+// A store that is really down is not: the run's allowance is spent in its
+// first seconds, and from then on the fault reaches every test at once.
+const (
+	storeWaits        = 3
+	storeFaultsInARun = 30
+)
+
+// storeFaultsLeft is what is left of the run's allowance.
+var storeFaultsLeft atomic.Int32
+
+func init() { storeFaultsLeft.Store(storeFaultsInARun) }
+
+// rateLimitExceededCode is the code of the limiter's refusal by a budget
+// (middleware.rateLimitCode, which is not exported).
+const rateLimitExceededCode = "RATE_LIMIT_EXCEEDED"
+
+// refusedByTheBudget reports whether an answer is the rate limiter refusing
+// a request because a budget is spent.
+//
+// The whole suite is one address, and its parallel phase can spend the
+// per-IP budget (100 a second, burst 300): a test that sends a handful of
+// requests was answered 429 at the suite's peak, twice in a dozen gates.
+// That refusal says nothing about the route under test, so the one function
+// every test sends through waits it out and sends again.
+//
+// A 429 without a code is the login or recovery throttle, which tests ask
+// for and must see: it is never waited out.
+func refusedByTheBudget(resp *http.Response, body []byte) bool {
+	return refusedWithCode(resp, body, rateLimitExceededCode)
+}
+
+// rateLimitStoreFaultCode is the code of the limiter's refusal when its own
+// store could not count the request (middleware.rateLimitStoreFaultCode).
+const rateLimitStoreFaultCode = "RATE_LIMIT_UNAVAILABLE"
+
+// refusedByTheStore reports whether an answer is the rate limiter refusing a
+// request because its store could not count it. The service fails closed
+// there, and is right to. It says nothing about the route under test either,
+// while it lasts a few seconds; see storeWaits for why it is waited out and
+// for how long.
+func refusedByTheStore(resp *http.Response, body []byte) bool {
+	return refusedWithCode(resp, body, rateLimitStoreFaultCode)
+}
+
+func refusedWithCode(resp *http.Response, body []byte, code string) bool {
+	if resp.StatusCode != http.StatusTooManyRequests {
+		return false
+	}
+
+	var answer struct {
+		Code string `json:"code"`
+	}
+
+	return json.Unmarshal(body, &answer) == nil && answer.Code == code
+}
+
+// retryAfter is how long an answer asks its caller to wait: its Retry-After
+// header in seconds, one second when it has none, and never more than five,
+// so that a budget with a long window fails a test instead of stalling it.
+func retryAfter(resp *http.Response) time.Duration {
+	seconds, err := strconv.Atoi(resp.Header.Get("Retry-After"))
+	if err != nil || seconds < 1 {
+		seconds = 1
+	}
+
+	return time.Duration(min(seconds, 5)) * time.Second
+}
+
+// sendHTTPRequestOnce sends one request and returns its answer with the
+// body read, logged, and put back for the caller.
+func sendHTTPRequestOnce(t *testing.T, ctx context.Context, endpoint *apiEndpoint, body map[string]any, headers ...map[string]string) (*http.Response, []byte, error) {
 	t.Helper()
 
 	client := http.DefaultClient
@@ -163,7 +295,7 @@ func sendHTTPRequest(t *testing.T, ctx context.Context, endpoint *apiEndpoint, b
 		err = enc.Encode(body)
 		if err != nil {
 			t.Errorf("Failed to encode request body: %v", err)
-			return nil, err
+			return nil, nil, err
 		}
 
 	}
@@ -171,7 +303,7 @@ func sendHTTPRequest(t *testing.T, ctx context.Context, endpoint *apiEndpoint, b
 	// t.Logf("Sending %s request to %s with body: %v", endpoint.method, endpoint.requestURL.String(), body)
 	req, err := http.NewRequestWithContext(ctx, endpoint.method, endpoint.requestURL.String(), jsonBody)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	// obligatory headers
@@ -193,13 +325,13 @@ func sendHTTPRequest(t *testing.T, ctx context.Context, endpoint *apiEndpoint, b
 	resp, err := client.Do(req)
 	if err != nil {
 		t.Errorf("Failed to send request: %v", err)
-		return nil, err
+		return nil, nil, err
 	}
 
 	if resp == nil {
 		err := fmt.Errorf("received a nil response")
 		t.Errorf("Failed to get a response: %v", err)
-		return nil, err
+		return nil, nil, err
 	}
 
 	// Log the endpoint and response details
@@ -217,7 +349,7 @@ func sendHTTPRequest(t *testing.T, ctx context.Context, endpoint *apiEndpoint, b
 		resp.Body = io.NopCloser(bytes.NewBuffer(respBody))
 	}
 
-	return resp, nil
+	return resp, respBody, nil
 }
 
 // waitFor polls the given predicate until it returns true or the
