@@ -405,6 +405,7 @@ func (ref *PoliciesHandler) updateByID(w http.ResponseWriter, r *http.Request) {
 //	@Failure		400			{object}	payload.HTTPMessage	"Invalid policy ID format"
 //	@Failure		401			{object}	payload.HTTPMessage	"Missing or invalid authentication token"
 //	@Failure		403			{object}	payload.HTTPMessage	"System policies cannot be deleted"
+//	@Failure		404			{object}	payload.HTTPMessage	"Policy not found"
 //	@Failure		429			{object}	payload.HTTPMessage	"Too many requests -- RATE_LIMIT_EXCEEDED is the budget, RATE_LIMIT_UNAVAILABLE the limiter's own store"
 //	@Failure		500			{object}	payload.HTTPMessage	"Internal server error"
 //	@Router			/policies/{policy_id} [delete]
@@ -426,9 +427,11 @@ func (ref *PoliciesHandler) deleteByID(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := ref.service.DeleteByID(ctx, input); err != nil {
+		// Deleting what is not there is a 404, and changes nothing. It was
+		// answered 200 "deleted", here and by the repository both.
 		if _, ok := errors.AsType[*domain.PolicyNotFoundError](err); ok {
-			// gracefully handle the case where the policy is not found
-			respond.WriteJSONMessage(w, r, http.StatusOK, domain.PoliciesPolicyDeletedSuccessfully)
+			e := o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
+			respond.WriteJSONMessage(w, r, http.StatusNotFound, e.Error())
 			return
 		}
 

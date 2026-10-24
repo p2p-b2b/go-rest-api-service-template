@@ -1115,16 +1115,17 @@ func TestPolicyDelete(t *testing.T) {
 		assert.NoError(t, err, "Failed to send request to delete non-existent policy")
 		defer deleteResponse.Body.Close()
 
-		// 3. Check the response - this should still return StatusOK even though the policy doesn't exist
-		// This is because deleting a non-existent resource is considered idempotent in RESTful APIs
-		assert.Equal(t, http.StatusOK, deleteResponse.StatusCode, "Expected status code 200 OK for deleting non-existent policy. Got %d. Message: %s", deleteResponse.StatusCode, readResponseBody(t, deleteResponse))
+		// 3. Deleting what is not there is a 404, and changes nothing. It
+		// answered 200 "deleted", as if it had deleted.
+		assert.Equal(t, http.StatusNotFound, deleteResponse.StatusCode, "Expected status code 404 for deleting a policy that is not there. Got %d. Message: %s", deleteResponse.StatusCode, readResponseBody(t, deleteResponse))
 
-		// 4. Parse and verify the success response
+		// 4. Parse and verify the error response
 		deleteAPIResp, err := parserResponseBody[payload.HTTPMessage](t, deleteResponse)
 		assert.NoError(t, err, "Failed to parse response body")
 
-		// 5. Verify success message for deletion
-		assert.Equal(t, domain.PoliciesPolicyDeletedSuccessfully, deleteAPIResp.Message, "Expected success message")
+		// 5. The message says the policy is not found, never that it was deleted
+		assert.NotEqual(t, domain.PoliciesPolicyDeletedSuccessfully, deleteAPIResp.Message, "a delete of nothing said it deleted")
+		assert.Contains(t, strings.ToLower(deleteAPIResp.Message), "not found", "Message should say the policy is not found")
 		assert.Equal(t, deleteEndpoint.method, deleteAPIResp.Method, "Expected method to be set")
 		assert.Equal(t, deleteEndpoint.Path(), deleteAPIResp.Path, "Expected path to be set")
 
