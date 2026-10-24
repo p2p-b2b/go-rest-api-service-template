@@ -74,6 +74,7 @@ func TestHTTPStatusForListError(t *testing.T) {
 		{"invalid_message_format", &domain.InvalidMessageFormatError{}, http.StatusBadRequest},
 		{"undefined_column", &domain.UndefinedColumnError{}, http.StatusBadRequest},
 		{"datatype_mismatch", &domain.DatatypeMismatchError{}, http.StatusBadRequest},
+		{"a_filter_postgres_refused", &domain.InvalidInputError{Field: "filter", Message: "a value does not fit the type of the field it is compared with"}, http.StatusBadRequest},
 		{"wrapped_validation_errors", fmt.Errorf("list failed: %w", &domain.ValidationErrors{Errors: []domain.ValidationError{{Field: "filter"}}}), http.StatusBadRequest},
 		{"unknown_error", errors.New("boom"), http.StatusInternalServerError},
 		{"not_found_is_not_a_list_client_fault", &domain.RoleNotFoundError{}, http.StatusInternalServerError},

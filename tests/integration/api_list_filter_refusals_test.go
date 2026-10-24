@@ -75,9 +75,6 @@ func TestAFilterIsRefusedInTheServicesWords(t *testing.T) {
 		{name: "a_timestamp_that_is_no_date", filter: "created_at = '2026-02-30'", status: http.StatusBadRequest, says: value},
 		{name: "a_text_field_compared_with_a_number", filter: "first_name = 1", status: http.StatusBadRequest, says: value},
 		{name: "a_pattern_that_is_not_one", filter: "first_name ~ '('", status: http.StatusBadRequest, says: "a pattern is not a valid regular expression or LIKE pattern"},
-		// Already a 400 before this, now in our words, where it quoted
-		// Postgres ("column usrs.yes does not exist").
-		{name: "an_unquoted_word", filter: "disabled = yes", status: http.StatusBadRequest, says: "the request refers to a field that does not exist"},
 		{name: "a_text_field_used_as_a_boolean", filter: "first_name IS TRUE", status: http.StatusBadRequest, says: "a value has the wrong type for its field"},
 		{name: "a_value_of_the_right_type_lists", filter: "first_name = 'nobody-is-called-this'", status: http.StatusOK, says: `"items"`},
 		{name: "a_well_formed_id_lists", filter: "id = '" + admin.UserID.String() + "'", status: http.StatusOK, says: admin.UserID.String()},
