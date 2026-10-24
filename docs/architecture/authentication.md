@@ -401,12 +401,18 @@ identity-provider sign-in, and that caller is told that nothing was
 created. And the route takes an optional `id`: one that is taken is refused
 by the same create, and was answered "registered" as well, with this mail
 sent to an address that had no account. It is a `409` now, naming the id
-the caller sent and never an address, as on every other route that takes an
-id; nothing is created and nobody is mailed. The repository says which
-conflict it was (`UserAlreadyExistsError.Email` is set for the address's
-only). Only a registration by password, for a taken address, is answered
-"registered". A registration also names its method: an unknown one is a
-`400`, not an account that fell on one side of these rules by accident.
+the caller sent and never an address; nothing is created and nobody is
+mailed. That makes this public route an oracle for whether an **id**
+belongs to an account (ids are UUIDv7 and not secret), and never for an
+address. The repository says which conflict it was
+(`UserAlreadyExistsError.Email` is set for the address's only), but when
+both are taken the database reports whichever unique index it checks
+first, which depends on how the table was built: so on an address's
+conflict the use-case asks whether the id is taken too, and answers the
+id's. Only a registration by password, for a taken address and a free id,
+is answered "registered". The use-case also refuses a registration whose
+method it does not know, so that no account falls on one side of these
+rules by accident.
 
 ### And it is bounded per address
 

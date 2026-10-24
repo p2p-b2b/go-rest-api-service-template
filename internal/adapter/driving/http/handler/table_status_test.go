@@ -158,6 +158,8 @@ func TestRegistrationAnswersThroughTheTable(t *testing.T) {
 		want int
 	}{
 		{name: "the_user_limit_is_full", err: theLimitIsFull(), want: http.StatusConflict},
+		// The optional id is a user's: its conflict, never the address's.
+		{name: "the_id_is_taken", err: &domain.UserAlreadyExistsError{ID: uuid.NewV7()}, want: http.StatusConflict},
 		{name: "a_fault", err: errors.New("the database is away"), want: http.StatusInternalServerError},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
@@ -179,8 +181,12 @@ func TestRegistrationAnswersThroughTheTable(t *testing.T) {
 
 			agrees(t, tt.err, rec.Code)
 
-			if tt.want == http.StatusConflict {
+			if tt.name == "the_user_limit_is_full" {
 				noLimitIn(t, rec.Body.String())
+			}
+
+			if strings.Contains(rec.Body.String(), "ada@example.com") {
+				t.Errorf("the address is in the body: %s", rec.Body.String())
 			}
 
 			if strings.Contains(rec.Body.String(), "database is away") {

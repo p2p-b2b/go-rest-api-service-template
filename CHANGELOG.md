@@ -347,8 +347,12 @@ Since `v0.0.3`.
   refused by the create and answered like a taken address: 201
   "registered", nothing created, and "you already have an account" mailed
   to the address in the body, which had no account. It is a 409 naming the
-  id, and nobody is mailed. A registration whose method is not one the
-  service knows is a 400.
+  id, and nobody is mailed, whether or not the address is taken too: the
+  answer no longer depends on which unique index the database checks first,
+  so a taken id does not tell a taken address from a free one. (The id is
+  the caller's to choose: the route says whether an id belongs to an
+  account, never whether an address does.) The use-case also refuses a
+  registration whose method it does not know.
   ([#162](https://github.com/slashdevops/go-rest-api-service-template/pull/162))
 - **The identity providers have an HTTP client of their own, and a failed
   exchange is presented once.** They used the service's shared outbound

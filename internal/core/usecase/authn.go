@@ -467,6 +467,16 @@ func (ref *AuthnService) RegisterUser(ctx context.Context, input *domain.Registe
 		// only). Answered "registered" as well, it mailed "you already have
 		// an account" to an address that had none.
 		if taken, exists := errors.AsType[*domain.UserAlreadyExistsError](err); exists && taken.Email != "" && input.RegisterMethod == domain.RegisterMethodPassword {
+			// When the id is taken too, the answer is the id's, whichever
+			// conflict the database reported. It reports the first index it
+			// checks, which is an accident of how the table was built (a
+			// restore can build the address's first): answered by that, a
+			// taken id would say whether the address is taken -- 201 if it
+			// is, 409 if it is not -- and the id is the caller's to choose.
+			if _, lookupErr := ref.userService.StoredAccount(ctx, input.ID); lookupErr == nil {
+				return o11y.RecordError(ctx, span, start, &domain.UserAlreadyExistsError{ID: input.ID}, ref.metrics, attrs)
+			}
+
 			return ref.registrationTaken(ctx, span, start, attrs, input)
 		}
 

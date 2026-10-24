@@ -41,6 +41,34 @@ func TestATakenIDIsNotATakenAddress(t *testing.T) {
 	}
 }
 
+// TestATakenIDAndATakenAddressIsTheIDsConflict: when both are taken, the
+// database reports whichever unique index it checks first, which depends on
+// how the table was built. Answered by that, a taken id (the caller's to
+// choose) would tell a taken address from a free one: "registered" for one,
+// 409 for the other. The id's conflict is the answer either way.
+func TestATakenIDAndATakenAddressIsTheIDsConflict(t *testing.T) {
+	t.Parallel()
+
+	id := uuid.NewV7()
+	f := newVerifiedFixture(t)
+	f.users.add(&domain.User{ID: id, Email: "taken@example.com"})
+	f.users.createErr = &domain.UserAlreadyExistsError{Email: "taken@example.com"}
+
+	err := f.svc.RegisterUser(t.Context(), &domain.RegisterUserInput{
+		ID: id, Email: "taken@example.com", FirstName: "Jane", LastName: "Doe",
+		Password: "Meadow7Lark!", Disabled: new(true), RegisterMethod: domain.RegisterMethodPassword,
+	})
+
+	taken, ok := errors.AsType[*domain.UserAlreadyExistsError](err)
+	if !ok || taken.Email != "" || taken.ID != id {
+		t.Fatalf("got %T (%v), want the id's conflict", err, err)
+	}
+
+	if len(f.notifier.exists) != 0 {
+		t.Errorf("the address was told apart through a taken id: mailed %v", f.notifier.exists)
+	}
+}
+
 // TestARegistrationNamesItsMethod: the method decides whether the account is
 // a local one, whether its address still has to be proven and how a taken
 // address is answered. An unknown or missing one created a verified account
