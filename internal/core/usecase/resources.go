@@ -130,6 +130,12 @@ func (ref *ResourcesService) List(ctx context.Context, input *domain.ListResourc
 	ctx, span, attrs := o11y.SetupTrace(ctx, ref.ot.Traces.Tracer, ref.metricsMetadata, "List")
 	defer span.End()
 
+	// Validated before anything of it reaches the span: an expression over
+	// its length is refused there, and a span is exported.
+	if err := input.Validate(); err != nil {
+		return nil, o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
+	}
+
 	span.SetAttributes(
 		attribute.String("sort", input.Sort),
 		attribute.String("fields", input.Fields),

@@ -608,6 +608,13 @@ func (ref *IDPsService) List(ctx context.Context, input *domain.ListIDPsInput) (
 		return nil, errorValue
 	}
 
+	// Validated before anything of it reaches the span: an expression over
+	// its length is refused there, and a span is exported.
+	if err := input.Validate(); err != nil {
+		_ = o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
+		return nil, err
+	}
+
 	span.SetAttributes(
 		attribute.String("sort", input.Sort),
 		attribute.String("fields", input.Fields),
