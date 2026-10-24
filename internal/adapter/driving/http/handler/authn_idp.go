@@ -174,7 +174,7 @@ func (ref *AuthnIDPsHandler) start(w http.ResponseWriter, r *http.Request, actio
 	userID := uuid.Nil()
 
 	if eventType == domain.IDPEventTypeLink {
-		userID, err = callerFromContext(r)
+		userID, err = getUserIDFromContext(ctx)
 		if err != nil {
 			e := o11y.RecordError(ctx, span, startedAt, err, ref.metrics, attrs)
 			respond.WriteInternalError(w, r, e)
@@ -341,7 +341,7 @@ func (ref *AuthnIDPsHandler) listIdentities(w http.ResponseWriter, r *http.Reque
 	ctx, span, attrs := o11y.SetupTraceHTTP(r, ref.ot.Traces.Tracer, ref.metricsMetadata, "listIdentities")
 	defer span.End()
 
-	userID, err := callerFromContext(r)
+	userID, err := getUserIDFromContext(ctx)
 	if err != nil {
 		e := o11y.RecordError(ctx, span, startedAt, err, ref.metrics, attrs)
 		respond.WriteInternalError(w, r, e)
@@ -405,7 +405,7 @@ func (ref *AuthnIDPsHandler) unlinkIdentity(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	userID, err := callerFromContext(r)
+	userID, err := getUserIDFromContext(ctx)
 	if err != nil {
 		e := o11y.RecordError(ctx, span, startedAt, err, ref.metrics, attrs)
 		respond.WriteInternalError(w, r, e)

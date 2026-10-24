@@ -219,7 +219,7 @@ func (ref *PoliciesHandler) create(w http.ResponseWriter, r *http.Request) {
 	callerID, err := getUserIDFromContext(ctx)
 	if err != nil {
 		e := o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
-		respond.WriteJSONMessage(w, r, http.StatusUnauthorized, e.Error())
+		respond.WriteInternalError(w, r, e)
 		return
 	}
 
@@ -326,7 +326,7 @@ func (ref *PoliciesHandler) updateByID(w http.ResponseWriter, r *http.Request) {
 	callerID, err := getUserIDFromContext(ctx)
 	if err != nil {
 		e := o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
-		respond.WriteJSONMessage(w, r, http.StatusUnauthorized, e.Error())
+		respond.WriteInternalError(w, r, e)
 		return
 	}
 
@@ -610,7 +610,7 @@ func (ref *PoliciesHandler) linkRoles(w http.ResponseWriter, r *http.Request) {
 	callerID, err := getUserIDFromContext(ctx)
 	if err != nil {
 		e := o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
-		respond.WriteJSONMessage(w, r, http.StatusUnauthorized, e.Error())
+		respond.WriteInternalError(w, r, e)
 		return
 	}
 

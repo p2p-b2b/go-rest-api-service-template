@@ -108,7 +108,6 @@ func (ref *ResourcesLimitsHandler) writeScopeStatus(w http.ResponseWriter, statu
 //	@Tags			Resources Limits
 //	@Produce		json
 //	@Success		200	{object}	payload.ResourcesLimitsStatusResponse	"Limits and usage for the calling user"
-//	@Failure		400	{object}	payload.HTTPMessage						"Missing or malformed user context"
 //	@Failure		401	{object}	payload.HTTPMessage						"Missing or invalid authentication"
 //	@Failure		403	{object}	payload.HTTPMessage						"Insufficient permissions"
 //	@Failure		429	{object}	payload.HTTPMessage						"Too many requests -- RATE_LIMIT_EXCEEDED is the budget, RATE_LIMIT_UNAVAILABLE the limiter's own store"
@@ -123,7 +122,7 @@ func (ref *ResourcesLimitsHandler) statusForMe(w http.ResponseWriter, r *http.Re
 	userID, err := getUserIDFromContext(ctx)
 	if err != nil {
 		e := o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
-		respond.WriteJSONMessage(w, r, http.StatusBadRequest, e.Error())
+		respond.WriteInternalError(w, r, e)
 		return
 	}
 

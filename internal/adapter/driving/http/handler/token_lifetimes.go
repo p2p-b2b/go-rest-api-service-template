@@ -2,12 +2,9 @@ package handler
 
 import (
 	"context"
-	"errors"
 	"net/http"
 	"strings"
 	"time"
-
-	"uuid"
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
@@ -152,7 +149,7 @@ func (ref *TokenLifetimesHandler) update(w http.ResponseWriter, r *http.Request)
 
 	// The caller comes from the token the middleware verified, never from the
 	// body: the change is attributed to whoever the request was authorised as.
-	updatedBy, err := callerFromContext(r)
+	updatedBy, err := getUserIDFromContext(ctx)
 	if err != nil {
 		e := o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
 		respond.WriteInternalError(w, r, e)
@@ -213,24 +210,4 @@ func (ref *TokenLifetimesHandler) writeTokenLifetimesUpdateError(
 	default:
 		respond.WriteInternalError(w, r, e)
 	}
-}
-
-// callerFromContext reads the subject of the token the middleware verified.
-func callerFromContext(r *http.Request) (uuid.UUID, error) {
-	jwtClaims, ok := r.Context().Value(middleware.JwtClaims).(map[string]any)
-	if !ok {
-		return uuid.Nil(), errors.New(domain.AuthnFailedToGetUserIDFromContext)
-	}
-
-	subject, ok := jwtClaims["sub"].(string)
-	if !ok {
-		return uuid.Nil(), errors.New(domain.AuthnFailedToGetUserIDFromContext)
-	}
-
-	id, err := parseUUIDQueryParams(subject)
-	if err != nil {
-		return uuid.Nil(), errors.New(domain.AuthnFailedToParseUserIDFromContext)
-	}
-
-	return id, nil
 }

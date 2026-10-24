@@ -350,8 +350,8 @@ func (ref *AuthnHandler) confirmVerification(w http.ResponseWriter, r *http.Requ
 
 	token, err := getTokenFromContext(ctx)
 	if err != nil {
-		_ = o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
-		respond.WriteJSONMessage(w, r, http.StatusUnauthorized, "Invalid or expired token")
+		e := o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
+		respond.WriteInternalError(w, r, e)
 		return
 	}
 
@@ -491,28 +491,10 @@ func (ref *AuthnHandler) logout(w http.ResponseWriter, r *http.Request) {
 	ctx, span, attrs := o11y.SetupTraceHTTP(r, ref.ot.Traces.Tracer, ref.metricsMetadata, "logout")
 	defer span.End()
 
-	// get the user id from the context
-	jwtClaims, ok := r.Context().Value(middleware.JwtClaims).(map[string]any)
-	if !ok {
-		errorMsg := errors.New(domain.AuthnFailedToGetUserIDFromContext)
-		_ = o11y.RecordError(ctx, span, start, errorMsg, ref.metrics, attrs)
-		respond.WriteInternalError(w, r, errorMsg)
-		return
-	}
-
-	userIDSub, ok := jwtClaims["sub"].(string)
-	if !ok {
-		errorMsg := errors.New(domain.AuthnFailedToGetUserIDFromContext)
-		_ = o11y.RecordError(ctx, span, start, errorMsg, ref.metrics, attrs)
-		respond.WriteInternalError(w, r, errorMsg)
-		return
-	}
-
-	userID, err := parseUUIDQueryParams(userIDSub)
+	userID, err := getUserIDFromContext(ctx)
 	if err != nil {
-		errorMsg := errors.New(domain.AuthnFailedToParseUserIDFromContext)
-		_ = o11y.RecordError(ctx, span, start, errorMsg, ref.metrics, attrs)
-		respond.WriteInternalError(w, r, errorMsg)
+		e := o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
+		respond.WriteInternalError(w, r, e)
 		return
 	}
 
@@ -530,6 +512,7 @@ func (ref *AuthnHandler) logout(w http.ResponseWriter, r *http.Request) {
 	// the middleware verified rather than from anything the caller sent. A
 	// personal access token has no denylist entry — deleting its row is what
 	// revokes it — so it is deliberately left alone here.
+	jwtClaims, _ := ctx.Value(middleware.JwtClaims).(map[string]any)
 	accessJTI, accessExpiresAt := revocableAccessToken(jwtClaims)
 
 	input := &domain.LogoutUserInput{
@@ -608,8 +591,8 @@ func (ref *AuthnHandler) refreshAccessToken(w http.ResponseWriter, r *http.Reque
 		// Reaching here means the middleware did not run, which is a wiring
 		// mistake rather than anything the caller did. The caller is told the
 		// same thing every refused token gets; the detail is on the span.
-		_ = o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
-		respond.WriteJSONMessage(w, r, http.StatusUnauthorized, "Invalid or expired token")
+		e := o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
+		respond.WriteInternalError(w, r, e)
 		return
 	}
 
@@ -790,34 +773,17 @@ func (ref *AuthnHandler) resetPassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// get the user id from the context
-	jwtClaims, ok := r.Context().Value(middleware.JwtClaims).(map[string]any)
-	if !ok {
-		errorMsg := domain.AuthnFailedToGetUserIDFromContext
-		_ = o11y.RecordError(ctx, span, start, errors.New(errorMsg), ref.metrics, attrs)
-		respond.WriteJSONMessage(w, r, http.StatusInternalServerError, errorMsg)
-		return
-	}
-
-	userID, ok := jwtClaims["sub"].(string)
-	if !ok {
-		errorMsg := domain.AuthnFailedToGetUserIDFromContext
-		_ = o11y.RecordError(ctx, span, start, errors.New(errorMsg), ref.metrics, attrs)
-		respond.WriteJSONMessage(w, r, http.StatusInternalServerError, errorMsg)
-		return
-	}
-
-	// convert userID to UUID
-	userUUID, err := parseUUIDQueryParams(userID)
+	userUUID, err := getUserIDFromContext(ctx)
 	if err != nil {
-		errorMsg := domain.AuthnFailedToParseUserIDFromContext
-		_ = o11y.RecordError(ctx, span, start, errors.New(errorMsg), ref.metrics, attrs)
-		respond.WriteJSONMessage(w, r, http.StatusInternalServerError, errorMsg)
+		e := o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
+		respond.WriteInternalError(w, r, e)
 		return
 	}
 
 	// The token's jti and expiry make the reset single-use. The middleware
-	// verified the token; the claims are the ones it put on the context.
+	// verified the token; the claims are the ones it put on the context, and
+	// getUserIDFromContext has just read them.
+	jwtClaims, _ := ctx.Value(middleware.JwtClaims).(map[string]any)
 	jti, _ := uuid.Parse(fmt.Sprint(jwtClaims["jti"]))
 	tokenExpiresAt := time.Time{}
 	if exp, ok := jwtClaims["exp"].(float64); ok {

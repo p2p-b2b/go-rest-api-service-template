@@ -221,6 +221,23 @@ flowchart TD
   check of the same rule refuses, so registration, recovery, verification
   and the users routes answered that refusal 500. It is fixed in the
   address's validation (#158): the spelling of an address is an address.
+- **A request that reaches a handler without its caller is a fault, at
+  every site.** Thirty-three handler functions ask the request for the
+  account it was authenticated as, and two for the verified token. The
+  authentication middleware puts both on every request it lets through, so
+  their absence is a route wired without that middleware, never a caller's
+  mistake. The helpers returned an `InvalidJWTError`, the table's 401:
+  fifteen sites answered 500 for it, counted `refused`; seventeen answered
+  400 or 401, most with the error's text, telling a caller their token was
+  at fault; and three read the claims by hand (`logout`, `resetPassword`,
+  and `callerFromContext`'s callers), one writing its reason into the 500's
+  body. The helpers return a type of the handler package that the table has
+  no row for (`noCallerError`), and every site answers
+  `respond.WriteInternalError`: the fixed 500, counted `failed`, the cause
+  on the access line. `TestARequestWithoutACallerIsAFaultAtEverySite` drives
+  all thirty-five and fails when a new site is not among them;
+  `TestEverySiteAnswersAMissingCallerWithTheFixed500` reads the answer from
+  the source.
 
 An error ratio is therefore the failed calls over all calls:
 
