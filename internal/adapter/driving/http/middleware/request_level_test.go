@@ -516,3 +516,55 @@ func TestTheAccountCheckWritesOneLineAndNoneForARefusal(t *testing.T) {
 		})
 	}
 }
+
+// A failure's detail -- the identity provider's own words, which the
+// caller never reads -- is on the one line about it: the ERROR access line
+// of a 503, and the DEBUG line of a refusal. It was a second line of the
+// adapter's, at WARN and then at DEBUG, and the 503's ERROR line said only
+// "the identity provider did not accept this service's request".
+func TestTheLineAboutAFailureCarriesItsDetail(t *testing.T) {
+	for name, tt := range map[string]struct {
+		err     error
+		level   slog.Level
+		message string
+	}{
+		"a_failure": {
+			err:     &domain.InvalidAuthnServiceError{Message: "the identity provider did not accept this service's request", Detail: "oauth2: \"invalid_client\" \"the client secret has expired\""},
+			level:   slog.LevelError,
+			message: "request",
+		},
+		"a_refusal": {
+			err:     &domain.IDPIdentityNotLinkedError{Detail: "auto-provisioning is off"},
+			level:   slog.LevelDebug,
+			message: "request_refused",
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			tracer, _ := recorder(t)
+			records := recordLogs(t)
+
+			rec := serve(t, tracer, through(tracer, tt.err, func(w http.ResponseWriter, r *http.Request, err error) {
+				respond.WriteError(w, r, err)
+			}))
+
+			if strings.Contains(rec.Body.String(), tt.err.(interface{ FailureDetail() string }).FailureDetail()) {
+				t.Errorf("the detail reached the caller: %s", rec.Body.String())
+			}
+
+			var lines []logged
+			for _, r := range *records {
+				if r.level == tt.level && r.message == tt.message {
+					lines = append(lines, r)
+				}
+			}
+
+			if len(lines) != 1 {
+				t.Fatalf("want one %s line at %s, got %d: %+v", tt.message, tt.level, len(lines), *records)
+			}
+
+			if got, want := lines[0].attrs["detail"], tt.err.(interface{ FailureDetail() string }).FailureDetail(); got != want {
+				t.Errorf("the line's detail is %q, want %q", got, want)
+			}
+		})
+	}
+}

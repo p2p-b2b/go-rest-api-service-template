@@ -20,6 +20,11 @@ type Failure struct {
 	// key for "which failure is this" (see errorType).
 	Type string
 
+	// Detail is what the operator reads and the caller never does: the
+	// FailureDetail of an error in Err's chain that has one (see
+	// failureDetail), bounded.
+	Detail string
+
 	// Func, File and Line are where it was recorded.
 	Func string
 	File string
@@ -177,7 +182,7 @@ func holdFailure(ctx context.Context, f Failure) bool {
 // already recorded the same error the held one is kept: it is where the
 // error arose.
 func NoteFailure(ctx context.Context, err error) bool {
-	failure := Failure{Err: err, Type: errorType(err)}
+	failure := Failure{Err: err, Type: errorType(err), Detail: failureDetail(err)}
 
 	// The caller of NoteFailure's caller: the handler or the middleware that
 	// answered (or respond.WriteError, when the answer went through it), not

@@ -12,6 +12,7 @@ import (
 	"sync"
 	"testing"
 	"time"
+	"unicode/utf8"
 
 	"go.opentelemetry.io/otel/trace/noop"
 )
@@ -267,4 +268,71 @@ func TestTheHolderIsSafeFromSeveralGoroutines(t *testing.T) {
 	if _, ok := FailureFrom(ctx); !ok {
 		t.Fatal("no failure was kept")
 	}
+}
+
+// detailedError is an error with a detail its text does not carry, as the
+// domain's identity-provider errors are.
+type detailedError struct{ detail string }
+
+func (e *detailedError) Error() string         { return "the identity provider is not reachable" }
+func (e *detailedError) FailureDetail() string { return e.detail }
+
+// A failure's detail is what the operator reads and the caller never does:
+// it is held with the failure, found through a wrap, bounded, and written on
+// the one line about it -- outside a request, on operation_failed -- while
+// error_type stays the domain type.
+func TestAFailureCarriesItsDetail(t *testing.T) {
+	t.Run("held", func(t *testing.T) {
+		ctx := WithFailure(t.Context())
+		cause := fmt.Errorf("signing in: %w", &detailedError{detail: "dial tcp 10.0.0.1:443: connection refused"})
+
+		_ = fail(ctx, LayerUsecase, cause)
+
+		held, ok := FailureFrom(ctx)
+		if !ok {
+			t.Fatal("the failure was not held")
+		}
+
+		if held.Detail != "dial tcp 10.0.0.1:443: connection refused" || held.Type != "*o11y.detailedError" {
+			t.Errorf("held detail %q, type %s", held.Detail, held.Type)
+		}
+	})
+
+	t.Run("bounded", func(t *testing.T) {
+		// One byte, then three-byte runes: byte maxFailureDetail falls inside
+		// a rune, and a cut there without stepping back is invalid UTF-8.
+		page := "a" + strings.Repeat("€", maxFailureDetail)
+
+		detail := failureDetail(&detailedError{detail: page})
+		if len(detail) > maxFailureDetail+len("…") || !strings.HasSuffix(detail, "…") || !utf8.ValidString(detail) {
+			t.Errorf("a detail of %d bytes was kept as %d bytes, valid UTF-8: %v", len(page), len(detail), utf8.ValidString(detail))
+		}
+	})
+
+	t.Run("written_outside_a_request", func(t *testing.T) {
+		out := captureLogs(t)
+
+		_ = fail(t.Context(), LayerUsecase, &detailedError{detail: "the client secret has expired"})
+
+		if !strings.Contains(out.String(), "detail=") || !strings.Contains(out.String(), "the client secret has expired") {
+			t.Errorf("operation_failed does not carry the detail:\n%s", out.String())
+		}
+	})
+
+	t.Run("noted", func(t *testing.T) {
+		ctx := WithFailure(t.Context())
+
+		NoteFailure(ctx, &detailedError{detail: "the token endpoint answered 401: invalid_client"})
+
+		held, ok := FailureFrom(ctx)
+		if !ok || held.Detail != "the token endpoint answered 401: invalid_client" {
+			t.Errorf("NoteFailure held %+v, want its detail", held)
+		}
+	})
+
+	t.Run("none", func(t *testing.T) {
+		if detail := failureDetail(errors.New("no such row")); detail != "" {
+			t.Errorf("an error with no detail has %q", detail)
+		}
+	})
 }

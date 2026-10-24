@@ -372,6 +372,18 @@ Since `v0.0.3`.
 
 ### Fixed
 
+- **A failure carries its detail, and the one line about it says it.** A
+  sign-in is refused, and a provider that cannot be used is answered, in
+  fixed words on purpose; the reason was a second line at WARN beside the
+  access line, then (since #173) a DEBUG line an operator at INFO never saw:
+  an expired client secret was a 503 whose ERROR line said nothing else. The
+  reason is the error's `Detail`, which its `Error()` never prints, and the
+  one line about the failure carries it as `detail` (the ERROR access line
+  of a 5xx, the DEBUG companion of a refusal, `operation_failed` outside a
+  request), bounded to 1 KiB; the identity providers' adapter writes no line
+  of its own. The callback's `error=` from the provider is no longer an INFO
+  line of its own either, and the IdP use-case's log keys are
+  `idp_id`/`user_id`. ([#174](https://github.com/slashdevops/go-rest-api-service-template/pull/174))
 - **A sign-in logs in its request, and a provider that cannot be used is
   the service's side.** Seventeen log lines on the request path took no
   context (the identity providers' adapter, the token verifier, the

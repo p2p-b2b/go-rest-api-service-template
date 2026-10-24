@@ -281,6 +281,7 @@ func (e *InvalidUUIDError) Error() string {
 // words "not reachable".
 type IDPUnreachableError struct {
 	Message string
+	Detail  string // the operator's: see FailureDetail
 }
 
 func (e *IDPUnreachableError) Error() string {
@@ -300,6 +301,7 @@ func (e *IDPUnreachableError) Error() string {
 // as a provider that was down, which read as "sign-in refused".
 type IDPSignInRefusedError struct {
 	Message string
+	Detail  string // the operator's: see FailureDetail
 }
 
 func (e *IDPSignInRefusedError) Error() string {
@@ -309,12 +311,14 @@ func (e *IDPSignInRefusedError) Error() string {
 // InvalidAuthnServiceError is, at a callback, an identity provider that
 // answered and whose answer cannot be used: no ID token, one that does not
 // verify, account details that cannot be read, or a refusal of this
-// service's client. See IDPSignInRefusedError for the caller's side and
+// service's client; and, at a sign-in's start or its callback, a provider row
+// the service cannot sign in with (IDPNotConfiguredMessage). See IDPSignInRefusedError for the caller's side and
 // IDPUnreachableError for no answer at all. The authentication use-cases
 // also return it for their own wiring (a missing dependency at
 // construction), which no provider is involved in.
 type InvalidAuthnServiceError struct {
 	Message string
+	Detail  string // the operator's: see FailureDetail
 }
 
 func (e *InvalidAuthnServiceError) Error() string {

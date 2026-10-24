@@ -7,6 +7,7 @@ type InvalidJWTError struct {
 	Value   string // optional: the JWT value
 	Reason  string // optional: why it's invalid
 	Message string // optional: additional context
+	Detail  string // the operator's: see FailureDetail
 
 	// Expired distinguishes a token that was ours and has simply run out from
 	// one that is malformed, unsigned, or signed by something else.

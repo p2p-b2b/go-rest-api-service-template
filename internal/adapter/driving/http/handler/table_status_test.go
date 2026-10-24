@@ -419,6 +419,12 @@ func TestACallbackTheProviderDidNotCompleteIsRefusedAndItsStateSpent(t *testing.
 			if body := rec.Body.String(); strings.Contains(body, "SECRET") || strings.Contains(body, "access_denied") || strings.Contains(body, "database") {
 				t.Errorf("the provider's words or the cause are in the body: %s", body)
 			}
+
+			// What the provider said is the refusal's detail, on the
+			// request's one line: it was an INFO line of its own.
+			if strings.Contains(tt.query, "SECRET") && !strings.Contains(recorded.Detail, "access_denied: SECRET DETAIL") {
+				t.Errorf("the provider's words are not the refusal's detail: %q", recorded.Detail)
+			}
 		})
 	}
 }
@@ -477,28 +483,44 @@ func TestASignInRefusedAtTheProviderIsA401(t *testing.T) {
 	agrees(t, refused, rec.Code)
 }
 
-// TestAProviderThatCannotBeUsedIsA503AtTheStart: a provider row the service
-// cannot sign in with is the service's side, answered on the public start
-// routes in the callback's fixed sentence. It was a 400 that named the row.
+// TestAProviderThatCannotBeUsedIsA503AtTheStart: a provider whose
+// discovery cannot be fetched, and a provider row the service cannot sign in
+// with, are the service's side, answered on the public start routes in the
+// callback's one sentence. Which it was, and the provider's own words, is the
+// failure's detail, for the access line and never the body.
 func TestAProviderThatCannotBeUsedIsA503AtTheStart(t *testing.T) {
 	t.Parallel()
 
-	ot, metrics := testTelemetry(t)
-	_, span := ot.Traces.Tracer.Start(t.Context(), "test")
-	defer span.End()
+	for name, err := range map[string]error{
+		"unreachable":    &domain.IDPUnreachableError{Message: "the identity provider is not reachable", Detail: "discovery: dial tcp: refused"},
+		"not_configured": &domain.InvalidAuthnServiceError{Message: domain.IDPNotConfiguredMessage, Detail: "no issuer URL"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
 
-	notConfigured := &domain.InvalidAuthnServiceError{Message: domain.IDPNotConfiguredMessage}
+			ot, metrics := testTelemetry(t)
+			_, span := ot.Traces.Tracer.Start(t.Context(), "test")
+			defer span.End()
 
-	rec := httptest.NewRecorder()
-	(&AuthnIDPsHandler{metrics: metrics}).writeStartError(rec, httptest.NewRequest(http.MethodGet, "/auth/idp/x/login", nil), span, time.Now(), nil, notConfigured)
+			rec := httptest.NewRecorder()
+			(&AuthnIDPsHandler{metrics: metrics}).writeStartError(rec, httptest.NewRequest(http.MethodGet, "/auth/idp/x/login", nil), span, time.Now(), nil, err)
 
-	if rec.Code != http.StatusServiceUnavailable {
-		t.Fatalf("status = %d, want 503. Body: %s", rec.Code, rec.Body.String())
-	}
+			if rec.Code != http.StatusServiceUnavailable {
+				t.Fatalf("status = %d, want 503. Body: %s", rec.Code, rec.Body.String())
+			}
 
-	agrees(t, notConfigured, rec.Code)
+			agrees(t, err, rec.Code)
 
-	if body := rec.Body.String(); !strings.Contains(body, signInUnavailableMessage) || strings.Contains(body, "configured") {
-		t.Errorf("the body is not the callback's fixed sentence: %s", body)
+			body := rec.Body.String()
+			if !strings.Contains(body, signInUnavailableMessage) {
+				t.Errorf("the body is not the callback's one sentence: %s", body)
+			}
+
+			for _, leak := range []string{"refused", "issuer", "configured", "reachable"} {
+				if strings.Contains(body, leak) {
+					t.Errorf("the body carries the failure's detail (%q): %s", leak, body)
+				}
+			}
+		})
 	}
 }

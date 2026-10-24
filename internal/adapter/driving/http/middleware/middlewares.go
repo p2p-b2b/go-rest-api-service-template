@@ -267,6 +267,10 @@ func failureAttrs(f o11y.Failure, status int) []any {
 		"line", f.Line,
 	}
 
+	if f.Detail != "" {
+		attrs = append(attrs, "detail", f.Detail)
+	}
+
 	if status != 0 {
 		attrs = append(attrs, "status", status, "error_type", f.Type)
 	}
