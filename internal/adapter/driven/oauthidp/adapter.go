@@ -174,8 +174,11 @@ func (p *Provider) configFor(ctx context.Context, idp *domain.IDP) (*oauth2.Conf
 			return nil, err
 		}
 
+		endpoint := provider.Endpoint()
+		endpoint.AuthStyle = tokenEndpointAuthStyle(provider)
+
 		return &oauth2.Config{
-			Endpoint:     provider.Endpoint(),
+			Endpoint:     endpoint,
 			ClientID:     idp.ClientID,
 			ClientSecret: idp.ClientSecret,
 			RedirectURL:  idp.CallbackURL,
@@ -188,8 +191,15 @@ func (p *Provider) configFor(ctx context.Context, idp *domain.IDP) (*oauth2.Conf
 			scopes = []string{"read:user", "user:email"}
 		}
 
+		// GitHub takes the client's credentials in the form, which is what
+		// its documentation shows.
+		endpoint := githubEndpoint
+		if endpoint.AuthStyle == oauth2.AuthStyleAutoDetect {
+			endpoint.AuthStyle = oauth2.AuthStyleInParams
+		}
+
 		return &oauth2.Config{
-			Endpoint:     githubEndpoint,
+			Endpoint:     endpoint,
 			ClientID:     idp.ClientID,
 			ClientSecret: idp.ClientSecret,
 			RedirectURL:  idp.CallbackURL,
@@ -202,6 +212,35 @@ func (p *Provider) configFor(ctx context.Context, idp *domain.IDP) (*oauth2.Conf
 		// called anything but "Google" or "Github" failed at the callback.
 		return nil, &domain.InvalidIdentityProvidersError{Message: fmt.Sprintf("idp %s has an unknown kind %q", idp.Name, idp.IDPType.Kind)}
 	}
+}
+
+// tokenEndpointAuthStyle says how this client presents its credentials at
+// the token endpoint, from what the provider's discovery document declares.
+//
+// Left unset, the OAuth library probes: it sends the exchange with the
+// credentials in the Authorization header and, on ANY failure, sends it
+// again with them in the form. So every exchange that failed for a reason of
+// its own -- a spent code, a provider that was down -- was presented twice,
+// the second time with a code the first had already used up.
+//
+// `client_secret_basic` (the header) is the method when the document lists
+// it, and also when it lists nothing: OpenID Connect Discovery makes it the
+// default for an absent `token_endpoint_auth_methods_supported`. The form
+// (`client_secret_post`) is used when it is the only one of the two listed.
+func tokenEndpointAuthStyle(provider *oidc.Provider) oauth2.AuthStyle {
+	var document struct {
+		Methods []string `json:"token_endpoint_auth_methods_supported"`
+	}
+
+	if err := provider.Claims(&document); err != nil {
+		return oauth2.AuthStyleInHeader
+	}
+
+	if !slices.Contains(document.Methods, "client_secret_basic") && slices.Contains(document.Methods, "client_secret_post") {
+		return oauth2.AuthStyleInParams
+	}
+
+	return oauth2.AuthStyleInHeader
 }
 
 // discover returns the cached go-oidc provider for the issuer, fetching the

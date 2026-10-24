@@ -1154,6 +1154,7 @@ they last up to a year and have to be reissued. This is a one-time cost of
 | `authn.revoked.tokens.sweep.interval` | `1h` | how often expired denylist rows are deleted; `0` disables |
 | `authn.access.token.revocation.enabled` | `true` | logout ends the access token too; `false` restores the old window |
 | `authn.access.token.revocation.reload.interval` | `10s` | how stale a revocation made on **another** replica may be here |
+| `authn.idp.timeout` | `10s` | how long one request to an identity provider may take (between `1s` and `1m`); these requests are never retried, see [identity-providers.md](identity-providers.md#the-providers-have-a-client-of-their-own) |
 | `authn.login.throttle.enabled` | `true` | per-account budget, for failed logins **and** password-recovery requests (separate buckets) |
 | `authn.login.throttle.max.attempts` | `5` | consecutive failures before refusing |
 | `authn.login.throttle.window` | `15m` | how long a spent budget takes to refill |

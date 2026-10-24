@@ -44,6 +44,12 @@ type fakeProvider struct {
 	// tokenError, when set, is the OAuth error the token endpoint answers
 	// every exchange with (invalid_client: it rejects this service).
 	tokenError string
+	// tokenStatus, when set, is the bare status the token endpoint answers
+	// every exchange with (a 502: it is down behind its proxy).
+	tokenStatus int
+	// exchanges counts the requests the token endpoint received: a code is
+	// good for one.
+	exchanges int
 }
 
 func newFakeProvider(t *testing.T) *fakeProvider {
@@ -79,7 +85,8 @@ func newFakeProvider(t *testing.T) *fakeProvider {
 		nonce := f.nonce[code]
 		hold, reached := f.hold, f.reached
 		f.hold, f.reached = nil, nil
-		tokenError := f.tokenError
+		tokenError, tokenStatus := f.tokenError, f.tokenStatus
+		f.exchanges++
 		f.mu.Unlock()
 
 		if hold != nil {
@@ -89,6 +96,12 @@ func newFakeProvider(t *testing.T) *fakeProvider {
 			case <-hold:
 			case <-r.Context().Done():
 			}
+		}
+
+		if tokenStatus != 0 {
+			w.WriteHeader(tokenStatus)
+
+			return
 		}
 
 		// An OAuth error is JSON with its content type, as a provider sends

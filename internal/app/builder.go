@@ -187,9 +187,11 @@ func (b *AppBuilder) Build() (*App, error) {
 		return stop(err)
 	}
 
-	// The HTTP client comes before the mail service, which needs it for the API
-	// sender, and before services, which need it for the IdPs.
+	// The HTTP clients come before the mail service, which needs the shared
+	// one for the API sender, and before services, which need the identity
+	// providers' own.
 	app.httpClient = app.initHTTPClient()
+	app.idpHTTPClient = app.initIDPHTTPClient()
 
 	// Initialize mail service
 	if !b.skipMail {

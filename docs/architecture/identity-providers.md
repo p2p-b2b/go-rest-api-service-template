@@ -266,7 +266,7 @@ another account, or for a local one, is refused),
 | a code the provider does not accept (`invalid_grant`: spent, expired, issued to another client; GitHub's `bad_verification_code` and `unverified_user_email`) | 401, "did not accept this sign-in" | the person's side: starting again can work |
 | the provider was asked for the account's address and has none | 401 | nothing to provision or match by |
 | state missing, spent, expired, for another idp, unsealable | 400 | one wording |
-| discovery unreachable, or the token endpoint does not answer | 503, at start and at the callback; at the callback one fixed sentence, "sign-in with this identity provider is not available right now" | discovery is cached per issuer afterwards; the providers share the service's retrying client, so a token endpoint that refuses the connection is answered after the retries |
+| discovery unreachable, or the token endpoint does not answer | 503, at start and at the callback; at the callback one fixed sentence, "sign-in with this identity provider is not available right now" | discovery is cached per issuer afterwards; the providers' client does not retry, so a token endpoint that refuses the connection is answered at once (see [the providers have a client of their own](#the-providers-have-a-client-of-their-own)) |
 | the provider rejects this service (`invalid_client`, `unauthorized_client`), answers 5xx, returns no ID token or one that does not verify (issuer, audience, expiry, signature, no nonce), or the call for the account or its address fails | 503, the same sentence | the sign-in is out for everybody, and trying again does not help the person; go-oidc's and the provider's text is logged, never returned |
 | the ID token verifies and answers another sign-in (wrong nonce) | 401 | the person's side |
 | identity unknown and not provisionable | 401, one wording | see above |
@@ -337,16 +337,76 @@ back for each answer of a real token endpoint (GitHub answers an error
 inside a 200, form-encoded), and `TestIDPCallbackARefusedSignInIsNotAnOutage`
 the statuses against a running service.
 
-**Until the providers have a client of their own**, they share the
-service's retrying one. A token endpoint that answers 5xx, or refuses the
-connection, is retried, and what comes back after the retries is a
-transport error: it is classified unreachable, not misbehaving (the same
-503, the same sentence, another type on the metric), and it comes back
-late -- about two and a half minutes for a refused connection, measured.
-The retried request is the token POST, whose code is good for one
-exchange: a provider that spent the code and then answered 502 answers
-the retry `invalid_grant`, and that outage is a 401. The adapter's unit
-tests use a plain client and hold the classification as it will be.
+### The providers have a client of their own
+
+Every outbound request of the service went through one client: two minutes
+for a request, ten retries with backoff (`http.client.*`). For a sign-in,
+it was wrong twice:
+
+```text
+measured 2026-10-24, one callback, against the suite's provider
+                              shared client                own client
+token endpoint answers 502    503 after 173 s, code         503 in 0.04 s, code
+                              presented 22 times            presented once
+connection refused            503 after 154 s               503 in 0.08 s
+token endpoint invalid_client 503, code presented twice     503, code presented once
+```
+
+Twenty-two is eleven attempts (the first and ten retries), twice: the OAuth
+library then presents the failed exchange again with the credentials in the
+other place, and that one is retried as well.
+
+- **A person was waiting.** The 503 was the right answer and arrived after
+  nearly three minutes, with a public route holding a connection
+  for each visitor meanwhile.
+- **The request it retried was the token POST**, whose authorization code is
+  good for one exchange. A retry of a POST the provider did receive can only
+  be refused: a provider that spent the code and then answered 502 answered
+  the retry `invalid_grant`, and that outage was a 401.
+
+```mermaid
+flowchart LR
+    subgraph shared["shared client · http.client.*"]
+        M[mail API sender] --> RT["retries: 10, backoff<br/>timeout: 120 s"]
+    end
+    subgraph own["identity providers · authn.idp.timeout"]
+        I[discovery · token · keys · account] --> NR["no retries<br/>timeout: 10 s per request"]
+    end
+    RT --> G["outbound address guard<br/>(safedial)"]
+    NR --> G
+    G -- "loopback, private, link-local<br/>unless allowed" --> X[refused]
+    G --> NET[the network]
+```
+
+The identity providers' client is built on the same transport settings and
+the same address guard, with **no retries** and `authn.idp.timeout` (10 s by
+default, between 1 s and a minute) for each request. Discovery is the one
+call a retry could have helped, and it is cached per issuer after its first
+success; a sign-in that fails on it is one the person starts again. A token
+endpoint that answers 5xx is now that answer, classified as the provider
+misbehaving, not a transport error after the retries.
+
+**A failed exchange is presented once.** Left to itself, the OAuth library
+probes how a provider wants the client's credentials: in the
+`Authorization` header first and, on any failure, again in the form. So an
+exchange that failed for its own reason (a spent code, a provider that was
+down) was sent twice. The place is decided before the exchange: what the
+discovery document's `token_endpoint_auth_methods_supported` declares
+(`client_secret_basic` when it is listed, or when nothing is, which is
+OpenID Connect Discovery's default; the form when only `client_secret_post`
+is), and the form for GitHub.
+
+`TestTheIdentityProvidersClientDoesNotRetry` holds the client (one attempt,
+a refused connection reported at once, the address guard), and that the
+shared client still retries, which is the reason there are two.
+`TestAFailedExchangeIsPresentedOnce` and
+`TestGithubAFailedExchangeIsPresentedOnce` hold the single exchange and
+where the credentials go. Against a running service,
+`TestIDPCallbackARefusedSignInIsNotAnOutage` counts the exchanges the
+suite's provider receives (one, for a code it does not accept, for a
+service it rejects and for a 502) and
+requires a provider that does not answer to be answered within five
+seconds.
 
 ## Configuring a provider
 

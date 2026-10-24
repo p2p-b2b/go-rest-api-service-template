@@ -56,6 +56,22 @@ const (
 	// detection, and expect occasional spurious logouts.
 	DefaultAuthnRefreshTokenRotationGrace = 30 * time.Second
 
+	// DefaultAuthnIDPTimeout is how long one request to an identity provider
+	// may take: discovery, the code exchange, the keys, the account calls.
+	//
+	// A sign-in is a person waiting. The service's shared outbound client
+	// allows two minutes and retries ten times, which held a sign-in callback
+	// for about two and a half minutes when the provider was down. Ten seconds
+	// is long for a token endpoint and short enough that "the provider is not
+	// available" is still an answer.
+	DefaultAuthnIDPTimeout = 10 * time.Second
+
+	// ValidAuthnIDPMinTimeout and ValidAuthnIDPMaxTimeout bound it: under a
+	// second refuses healthy providers on a slow link, and past a minute it
+	// is the wait this setting exists to prevent.
+	ValidAuthnIDPMinTimeout = time.Second
+	ValidAuthnIDPMaxTimeout = time.Minute
+
 	// DefaultAuthnRevokedTokensSweepInterval is how often expired rows are
 	// removed from the denylist.
 	//
@@ -162,6 +178,7 @@ type AuthnConfig struct {
 	PasswordBcryptCost                  Field[int]
 	TokenLifetimesReloadInterval        Field[time.Duration]
 	RefreshTokenRotationGrace           Field[time.Duration]
+	IDPTimeout                          Field[time.Duration]
 	RefreshTokenRotationEnabled         Field[bool]
 	RevokedTokensSweepInterval          Field[time.Duration]
 	AccessTokenRevocationEnabled        Field[bool]
@@ -189,6 +206,7 @@ func NewAuthConfig() *AuthnConfig {
 		TokenLifetimesReloadInterval:        NewField("authn.token.lifetimes.reload.interval", "AUTHN_TOKEN_LIFETIMES_RELOAD_INTERVAL", "How often each replica re-reads the access and refresh token lifetimes from the database. The lifetimes themselves are not flags: they are edited through PUT /auth/token_lifetimes and a change reaches other replicas at once through the cache, or within this interval without one", DefaultAuthnTokenLifetimesReloadInterval),
 		RefreshTokenRotationEnabled:         NewField("authn.refresh.token.rotation.enabled", "AUTHN_REFRESH_TOKEN_ROTATION_ENABLED", "Issue a new refresh token on every refresh and revoke the one it replaced; a replayed token ends the whole session", DefaultAuthnRefreshTokenRotationEnabled),
 		RefreshTokenRotationGrace:           NewField("authn.refresh.token.rotation.grace", "AUTHN_REFRESH_TOKEN_ROTATION_GRACE", "How long a just-rotated refresh token still answers with the successor it issued, so a lost response is a retry and not a detected replay", DefaultAuthnRefreshTokenRotationGrace),
+		IDPTimeout:                          NewField("authn.idp.timeout", "AUTHN_IDP_TIMEOUT", "How long one request to an identity provider may take (discovery, the code exchange, the keys, the account calls). These requests are never retried: a sign-in is a person waiting", DefaultAuthnIDPTimeout),
 		RevokedTokensSweepInterval:          NewField("authn.revoked.tokens.sweep.interval", "AUTHN_REVOKED_TOKENS_SWEEP_INTERVAL", "How often expired rows are deleted from the token denylist; zero disables the sweep", DefaultAuthnRevokedTokensSweepInterval),
 		AccessTokenRevocationEnabled:        NewField("authn.access.token.revocation.enabled", "AUTHN_ACCESS_TOKEN_REVOCATION_ENABLED", "Make a logout end the access token it was called with, not only the refresh token. Off restores the previous behaviour: the access token keeps working until it expires", DefaultAuthnAccessTokenRevocationEnabled),
 		AccessTokenRevocationReloadInterval: NewField("authn.access.token.revocation.reload.interval", "AUTHN_ACCESS_TOKEN_REVOCATION_RELOAD_INTERVAL", "How often each replica rebuilds its revoked-access-token set from the store. This is the worst case for how long a revocation made on another replica is still honoured here", DefaultAuthnAccessTokenRevocationReloadInterval),
@@ -216,6 +234,7 @@ func (ref *AuthnConfig) ParseEnvVars() {
 	ref.TokenLifetimesReloadInterval.Value = GetEnv(ref.TokenLifetimesReloadInterval.EnVarName, ref.TokenLifetimesReloadInterval.Value)
 	ref.RefreshTokenRotationEnabled.Value = GetEnv(ref.RefreshTokenRotationEnabled.EnVarName, ref.RefreshTokenRotationEnabled.Value)
 	ref.RefreshTokenRotationGrace.Value = GetEnv(ref.RefreshTokenRotationGrace.EnVarName, ref.RefreshTokenRotationGrace.Value)
+	ref.IDPTimeout.Value = GetEnv(ref.IDPTimeout.EnVarName, ref.IDPTimeout.Value)
 	ref.RevokedTokensSweepInterval.Value = GetEnv(ref.RevokedTokensSweepInterval.EnVarName, ref.RevokedTokensSweepInterval.Value)
 	ref.AccessTokenRevocationEnabled.Value = GetEnv(ref.AccessTokenRevocationEnabled.EnVarName, ref.AccessTokenRevocationEnabled.Value)
 	ref.AccessTokenRevocationReloadInterval.Value = GetEnv(ref.AccessTokenRevocationReloadInterval.EnVarName, ref.AccessTokenRevocationReloadInterval.Value)
@@ -297,6 +316,14 @@ func (ref *AuthnConfig) Validate() error {
 			Field:   "authn.refresh.token.rotation.grace",
 			Value:   ref.RefreshTokenRotationGrace.Value.String(),
 			Message: fmt.Sprintf("invalid authn.refresh.token.rotation.grace, must be shorter than the minimum refresh token lifetime (%s); a grace as long as the token disables reuse detection entirely", domain.ValidAuthnRefreshTokenMinDuration),
+		}
+	}
+
+	if ref.IDPTimeout.Value < ValidAuthnIDPMinTimeout || ref.IDPTimeout.Value > ValidAuthnIDPMaxTimeout {
+		return &InvalidConfigurationError{
+			Field:   "authn.idp.timeout",
+			Value:   ref.IDPTimeout.Value.String(),
+			Message: fmt.Sprintf("invalid authn.idp.timeout, must be between %s and %s", ValidAuthnIDPMinTimeout, ValidAuthnIDPMaxTimeout),
 		}
 	}
 

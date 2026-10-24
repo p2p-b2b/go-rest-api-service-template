@@ -43,6 +43,13 @@ type fakeOIDC struct {
 	tokenAnswer func(w http.ResponseWriter)
 	// userInfoStatus, when set, is what the user-info endpoint answers.
 	userInfoStatus int
+	// authMethods is what the discovery document declares for the token
+	// endpoint; nil leaves the key out.
+	authMethods []string
+	// How the client presented itself, and how often.
+	tokenHits     int
+	gotBasicAuth  bool
+	gotFormSecret string
 }
 
 func newFakeOIDC(t *testing.T) *fakeOIDC {
@@ -57,7 +64,7 @@ func newFakeOIDC(t *testing.T) *fakeOIDC {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("GET /.well-known/openid-configuration", func(w http.ResponseWriter, _ *http.Request) {
-		_ = json.NewEncoder(w).Encode(map[string]any{
+		document := map[string]any{
 			"issuer":                                f.srv.URL,
 			"authorization_endpoint":                f.srv.URL + "/authorize",
 			"token_endpoint":                        f.srv.URL + "/token",
@@ -65,7 +72,12 @@ func newFakeOIDC(t *testing.T) *fakeOIDC {
 			"jwks_uri":                              f.srv.URL + "/jwks",
 			"id_token_signing_alg_values_supported": []string{"RS256"},
 			"code_challenge_methods_supported":      []string{"S256"},
-		})
+		}
+		if f.authMethods != nil {
+			document["token_endpoint_auth_methods_supported"] = f.authMethods
+		}
+
+		_ = json.NewEncoder(w).Encode(document)
 	})
 
 	mux.HandleFunc("GET /jwks", func(w http.ResponseWriter, _ *http.Request) {
@@ -81,6 +93,9 @@ func newFakeOIDC(t *testing.T) *fakeOIDC {
 		_ = r.ParseForm()
 		f.gotVerifier = r.Form.Get("code_verifier")
 		f.gotCode = r.Form.Get("code")
+		f.tokenHits++
+		_, _, f.gotBasicAuth = r.BasicAuth()
+		f.gotFormSecret = r.Form.Get("client_secret")
 
 		if f.tokenAnswer != nil {
 			f.tokenAnswer(w)
@@ -633,5 +648,86 @@ func TestGithubARefusedSignInIsNotAnOutage(t *testing.T) {
 				t.Errorf("the provider's description is in the answer: %v", err)
 			}
 		})
+	}
+}
+
+// TestAFailedExchangeIsPresentedOnce: an authorization code is good for one
+// exchange. Left to probe, the OAuth library sends a failed exchange a second
+// time with the client's credentials in the other place, whatever the
+// failure was: a spent code was presented twice, and a provider that was
+// down was waited for twice. The place is decided before the exchange, from
+// what the provider's discovery document declares.
+func TestAFailedExchangeIsPresentedOnce(t *testing.T) {
+	t.Parallel()
+
+	refuse := func(w http.ResponseWriter) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]any{"error": "invalid_grant"})
+	}
+
+	for name, tt := range map[string]struct {
+		declared  []string
+		wantBasic bool
+	}{
+		// OpenID Connect Discovery: client_secret_basic when nothing is said.
+		"nothing_declared":   {nil, true},
+		"both_declared":      {[]string{"client_secret_post", "client_secret_basic"}, true},
+		"only_the_form":      {[]string{"client_secret_post", "private_key_jwt"}, false},
+		"neither_of_the_two": {[]string{"private_key_jwt"}, true},
+	} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			f := newFakeOIDC(t)
+			f.nonce = "n"
+			f.authMethods = tt.declared
+			f.tokenAnswer = refuse
+
+			_, err := newProvider(t).Exchange(t.Context(), oidcIDP(f.srv.URL, "Okta"), "code-1",
+				oauth.AuthRequest{Nonce: "n", CodeVerifier: "v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v"})
+
+			if _, ok := errors.AsType[*domain.IDPSignInRefusedError](err); !ok {
+				t.Fatalf("got %T (%v), want the refused sign-in", err, err)
+			}
+
+			if f.tokenHits != 1 {
+				t.Errorf("the token endpoint was asked %d times, want once", f.tokenHits)
+			}
+
+			if f.gotBasicAuth != tt.wantBasic || (f.gotFormSecret != "") == tt.wantBasic {
+				t.Errorf("credentials in the header: %v, in the form: %v; want the header: %v", f.gotBasicAuth, f.gotFormSecret != "", tt.wantBasic)
+			}
+		})
+	}
+}
+
+// GitHub takes the credentials in the form, and a refused code is presented
+// to it once as well.
+func TestGithubAFailedExchangeIsPresentedOnce(t *testing.T) {
+	// Not parallel: githubFake swaps the package-level GitHub endpoint.
+	hits, inForm, inHeader := 0, false, false
+
+	idp := githubFake(t,
+		func(w http.ResponseWriter, r *http.Request) {
+			hits++
+
+			_ = r.ParseForm()
+			inForm = r.Form.Get("client_secret") != ""
+			_, _, inHeader = r.BasicAuth()
+
+			w.Header().Set("Content-Type", "application/x-www-form-urlencoded; charset=utf-8")
+			_, _ = w.Write([]byte("error=bad_verification_code"))
+		},
+		func(http.ResponseWriter, *http.Request) {}, func(http.ResponseWriter, *http.Request) {})
+
+	_, err := newProvider(t).Exchange(t.Context(), idp, "code", oauth.AuthRequest{CodeVerifier: "v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v"})
+
+	if _, ok := errors.AsType[*domain.IDPSignInRefusedError](err); !ok {
+		t.Fatalf("got %T (%v), want the refused sign-in", err, err)
+	}
+
+	if hits != 1 || !inForm || inHeader {
+		t.Errorf("asked %d times, credentials in the form: %v, in the header: %v; want once, in the form", hits, inForm, inHeader)
 	}
 }

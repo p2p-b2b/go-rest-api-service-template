@@ -102,10 +102,14 @@ server. Both would break real traffic.
 
 **`WriteTimeout` caps total request duration.** It starts when the request
 headers are read — not when the response starts — so it covers the entire
-handler. An outbound call made while serving a request is bounded
+handler. This template makes no outbound call on the shared client while
+serving a request: the identity providers have a client of their own, which
+does not retry and has `authn.idp.timeout` (10 s), because a sign-in is a
+person waiting; and the mail API sender, the shared client's one user, runs
+on the mail worker queue. A call a fork adds on the shared client is bounded
 by `http.client.timeout` (**120s** by default) and retried up to
-`http.client.max.retries` (**10**) times with a jitter strategy. A legitimate
-request can therefore run for roughly **twenty minutes**. Any write deadline
+`http.client.max.retries` (**10**) times with a jitter strategy, so such a
+request can run for roughly **twenty minutes**. Any write deadline
 short enough to be useful against an attacker is short enough to abort exactly
 the request this service exists to serve, and the client sees a truncated
 response rather than an error.
