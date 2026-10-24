@@ -20,9 +20,9 @@ import (
 // real rule into a ritual.
 //
 // The three after respond were missing from it, and each logged without its
-// context on every request it refused: the identity providers' adapter (a
-// sign-in's exchange, its token's checks, ten lines at WARN), the token
-// verifier, and the middleware's validator.
+// context: the identity providers' adapter on every failed sign-in (its
+// exchange, its token's checks, ten lines at WARN), and the token verifier
+// and the middleware's validator on every token they refused.
 var requestPathPackages = []string{
 	filepath.Join("internal", "core", "usecase"),
 	filepath.Join("internal", "adapter", "driven", "repositorypg"),
