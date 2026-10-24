@@ -359,6 +359,13 @@ Since `v0.0.3`.
 
 ### Fixed
 
+- **A list's expressions reach its span after they are validated.** The
+  six lists that record their `sort`, `filter` and `fields` on the
+  use-case's span did so before the input was validated (by the
+  repository, after them), so an expression refused for its length was
+  still exported to the trace backend, up to the server's header limit per
+  request. Each list validates first; a test reads the package for the
+  order. ([#170](https://github.com/slashdevops/go-rest-api-service-template/pull/170))
 - **A request that reaches a handler without its caller is a fault of the
   service, at every site.** Only a route wired without the authentication
   middleware can produce it. The helpers that read the caller returned the
