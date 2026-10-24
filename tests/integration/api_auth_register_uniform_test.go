@@ -80,3 +80,46 @@ func TestRegistrationDoesNotConfirmTheAddress(t *testing.T) {
 	assert.True(t, emailWithSubjectExists(t, taken, "You already have an account"),
 		"the address owner must be told that someone tried to register with it")
 }
+
+// TestRegistrationWithATakenIDIsNotATakenAddress: "registered, check your
+// email" is the answer for an address that already has an account, and the
+// owner of that address is the one who is mailed. The route also takes an
+// optional id, and an id that is taken is refused by the same create. It was
+// answered the same way: 201, no account, and "you already have an account"
+// mailed to an address that had none. It is the conflict it is.
+//
+// With the address taken as well, the answer is the same 409: the id's
+// conflict, whichever one the database reported, so that a taken id does
+// not tell a taken address from a free one.
+func TestRegistrationWithATakenIDIsNotATakenAddress(t *testing.T) {
+	t.Parallel()
+
+	existingEmail, existing := loginAs(t)
+	_, _, freshEmail := generateUserData(t)
+
+	for name, email := range map[string]string{"a_free_address": freshEmail, "a_taken_address": existingEmail} {
+		t.Run(name, func(t *testing.T) {
+			firstName, lastName, _ := generateUserData(t)
+
+			response, err := sendHTTPRequest(t, t.Context(), authRegisterEndpoint, map[string]any{
+				"id":         existing.UserID.String(),
+				"first_name": firstName,
+				"last_name":  lastName,
+				"email":      email,
+				"password":   generatePassword(t),
+			})
+			require.NoError(t, err)
+
+			body := readResponseBody(t, response)
+			require.NoError(t, response.Body.Close())
+
+			assert.Equal(t, http.StatusConflict, response.StatusCode, "body: %s", body)
+			assert.NotContains(t, body, email, "the refusal must not echo the address")
+			assert.LessOrEqual(t, countUsersByEmailInDB(t, email), 1, "nothing may be created")
+
+			time.Sleep(700 * time.Millisecond)
+			assert.False(t, emailWithSubjectExists(t, email, "You already have an account"),
+				"the address was told it has an account through a taken id")
+		})
+	}
+}

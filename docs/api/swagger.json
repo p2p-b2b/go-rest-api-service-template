@@ -1382,7 +1382,7 @@
                         }
                     },
                     "409": {
-                        "description": "Registration is closed: the user limit has been reached",
+                        "description": "Registration is closed: the user limit has been reached. Or the optional id sent with the request is already a user's: nothing is created and nobody is mailed",
                         "schema": {
                             "$ref": "#/definitions/payload.HTTPMessage"
                         }

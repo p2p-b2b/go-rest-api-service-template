@@ -232,7 +232,7 @@ const registrationClosedMessage = "registration is closed: the user limit has be
 //	@Success		201		{object}	payload.HTTPMessage			"Registration accepted. Answered the same way whether or not the address already has an account — deliberately, so this endpoint cannot be used to discover which addresses are registered. If the address was already taken, its owner is told by email instead and no second account is created"
 //	@Header			201		{string}	Location					"/users/{id}"	"URI of the created user resource"
 //	@Failure		400		{object}	payload.HTTPMessage			"Invalid request body or validation error"
-//	@Failure		409		{object}	payload.HTTPMessage			"Registration is closed: the user limit has been reached"
+//	@Failure		409		{object}	payload.HTTPMessage			"Registration is closed: the user limit has been reached. Or the optional id sent with the request is already a user's: nothing is created and nobody is mailed"
 //	@Failure		413		{object}	payload.HTTPMessage			"Request body larger than http.server.max.body.bytes"
 //	@Failure		415		{object}	payload.HTTPMessage			"Body not declared as application/json"
 //	@Failure		500		{object}	payload.HTTPMessage			"Internal server error during registration"
@@ -276,6 +276,16 @@ func (ref *AuthnHandler) registerUser(w http.ResponseWriter, r *http.Request) {
 		if _, full := errors.AsType[*domain.ResourcesLimitsHardLimitReachedError](err); full {
 			_ = o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
 			respond.WriteJSONMessage(w, r, http.StatusConflict, registrationClosedMessage)
+			return
+		}
+
+		// The optional id is already a user's. A taken ADDRESS never reaches
+		// here (it is answered as a registration); this conflict names the
+		// id the caller sent, never an address, as on every route that takes
+		// an id. It was answered "registered".
+		if _, taken := errors.AsType[*domain.UserAlreadyExistsError](err); taken {
+			e := o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
+			respond.WriteJSONMessage(w, r, http.StatusConflict, e.Error())
 			return
 		}
 

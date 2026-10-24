@@ -242,6 +242,13 @@ func (ref *RegisterUserInput) Validate() error {
 		ref.Email = normalizedEmail
 	}
 
+	// The method decides whether the account is a local one, whether its
+	// address still has to be proven, and how a taken address is answered:
+	// an unknown one is not left to fall on one side of those by accident.
+	if !ref.RegisterMethod.IsValid() {
+		errs.Add(&ValidationError{Field: FieldRegisterMethod, Message: "is not a registration method", Code: "INVALID_VALUE"})
+	}
+
 	if ref.RegisterMethod == RegisterMethodPassword {
 		errs.Add(ValidatePassword(ref.Password, FieldPassword))
 	}
