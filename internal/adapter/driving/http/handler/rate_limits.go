@@ -477,19 +477,19 @@ func (ref *RateLimitsHandler) effective(w http.ResponseWriter, r *http.Request) 
 	// verb beats * at every tier and an endpoint usually has rules for both --
 	// so a default would quietly answer a different question than the one asked.
 	if method == "" {
-		respond.WriteJSONMessage(w, r, http.StatusBadRequest, "method is required, and must be one of "+domain.GetValidActions())
+		ref.refuseQuery(ctx, w, r, span, start, attrs, "method", "method is required, and must be one of "+domain.GetValidActions())
 
 		return
 	}
 
 	if err := domain.IsValidAction(method); err != nil {
-		respond.WriteJSONMessage(w, r, http.StatusBadRequest, err.Error())
+		ref.refuseQuery(ctx, w, r, span, start, attrs, "method", err.Error())
 
 		return
 	}
 
 	if endpoint == "" {
-		respond.WriteJSONMessage(w, r, http.StatusBadRequest, "endpoint is required, and must be a route template such as /projects/{project_id}/generate")
+		ref.refuseQuery(ctx, w, r, span, start, attrs, "endpoint", "endpoint is required, and must be a route template such as /projects/{project_id}/generate")
 
 		return
 	}
@@ -557,6 +557,27 @@ func (ref *RateLimitsHandler) effective(w http.ResponseWriter, r *http.Request) 
 // So each shape maps only what its methods can actually produce. The cost is
 // four small functions; the benefit is that the annotations and the code cannot
 // drift apart without the guard noticing.
+
+// refuseQuery answers a query parameter of GET /rate_limits/effective that is
+// missing or not one it takes: 400, with message as the body, and the call
+// recorded as refused.
+//
+// The three refusals wrote their 400 and returned, recording nothing. So the
+// call was counted neither as refused nor as anything else: it was missing
+// from the handler layer's calls altogether, its span ended with no outcome,
+// and the access line of the 400 carried no error_type to say why. What is
+// recorded is an InvalidInputError, which the status table answers 400, so
+// the status written here and the outcome counted come from the same place.
+// The body is the message as it has always been, not the error's rendering
+// of it: these sentences are the published answer.
+func (ref *RateLimitsHandler) refuseQuery(
+	ctx context.Context, w http.ResponseWriter, r *http.Request,
+	span trace.Span, start time.Time, attrs []attribute.KeyValue, field, message string,
+) {
+	_ = o11y.RecordError(ctx, span, start, &domain.InvalidInputError{Field: field, Message: message}, ref.metrics, attrs)
+
+	respond.WriteJSONMessage(w, r, http.StatusBadRequest, message)
+}
 
 // writeQueryError handles a read that cannot 404: list and effective. A missing
 // page is an empty page, not a not-found.
