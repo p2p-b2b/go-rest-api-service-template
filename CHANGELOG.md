@@ -281,6 +281,14 @@ Since `v0.0.3`.
 
 ### Changed
 
+- **The integration suite waits a rate limiter's refusal out.** The suite
+  is one address. Every request goes through `sendHTTPRequest`, which now
+  sends a request the limiter refused with `RATE_LIMIT_EXCEEDED` again after
+  its `Retry-After` (one to five seconds, twenty times at most), and one it
+  refused with `RATE_LIMIT_UNAVAILABLE` three times at most, out of thirty
+  for the whole run, so that a store that is really down still fails the
+  run at once. The login and recovery throttle's 429 has no code and is
+  never waited out. Test-only. ([#167](https://github.com/slashdevops/go-rest-api-service-template/pull/167))
 - **A refused call is not a red span.** A span under the server span
   carries `app.outcome`, and its status follows it: a failed call is
   `Error` with an `exception` event, as before; a refused one (a 4xx) has
