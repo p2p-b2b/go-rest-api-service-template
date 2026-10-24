@@ -324,7 +324,7 @@ func TestGetUserIDFromContext(t *testing.T) {
 				return context.Background()
 			},
 			expected:    uuid.Nil(),
-			expectedErr: &domain.InvalidJWTError{Message: "JWT claims are missing from context"},
+			expectedErr: &noCallerError{reason: "there are no claims in the context"},
 		},
 		{
 			name: "invalid_claims_format",
@@ -333,7 +333,7 @@ func TestGetUserIDFromContext(t *testing.T) {
 				return context.WithValue(ctx, middleware.JwtClaims, "invalid-format")
 			},
 			expected:    uuid.Nil(),
-			expectedErr: &domain.InvalidJWTError{Message: "JWT claims are not in the expected format"},
+			expectedErr: &noCallerError{reason: "the claims are not in the expected format"},
 		},
 		{
 			name: "missing_sub_claim",
@@ -346,7 +346,7 @@ func TestGetUserIDFromContext(t *testing.T) {
 				return context.WithValue(ctx, middleware.JwtClaims, claims)
 			},
 			expected:    uuid.Nil(),
-			expectedErr: &domain.InvalidJWTError{Message: "sub claim is missing or not a string"},
+			expectedErr: &noCallerError{reason: "the sub claim is missing or not a string"},
 		},
 		{
 			name: "sub_claim_not_string",
@@ -359,7 +359,7 @@ func TestGetUserIDFromContext(t *testing.T) {
 				return context.WithValue(ctx, middleware.JwtClaims, claims)
 			},
 			expected:    uuid.Nil(),
-			expectedErr: &domain.InvalidJWTError{Message: "sub claim is missing or not a string"},
+			expectedErr: &noCallerError{reason: "the sub claim is missing or not a string"},
 		},
 		{
 			name: "invalid_uuid_format",
@@ -372,7 +372,7 @@ func TestGetUserIDFromContext(t *testing.T) {
 				return context.WithValue(ctx, middleware.JwtClaims, claims)
 			},
 			expected:    uuid.Nil(),
-			expectedErr: &domain.InvalidJWTError{Message: "invalid UUID length: 12"},
+			expectedErr: &noCallerError{reason: "the sub claim is not an account id"},
 		},
 		{
 			name: "valid_user_id",
@@ -401,6 +401,12 @@ func TestGetUserIDFromContext(t *testing.T) {
 				assert.Error(t, err)
 				assert.IsType(t, test.expectedErr, err)
 				assert.Contains(t, err.Error(), test.expectedErr.Error())
+
+				// A wiring fault, not the caller's: no row in the status
+				// table, so the fixed 500, counted as a failure. It was an
+				// InvalidJWTError, the table's 401.
+				assert.Equal(t, http.StatusInternalServerError, respond.StatusFor(err))
+				assert.False(t, respond.IsRefusal(err), "a missing caller is counted as a refused request")
 			}
 		})
 	}

@@ -359,6 +359,16 @@ Since `v0.0.3`.
 
 ### Fixed
 
+- **A request that reaches a handler without its caller is a fault of the
+  service, at every site.** Only a route wired without the authentication
+  middleware can produce it. The helpers that read the caller returned the
+  status table's 401 type: some sites answered 500 counted as a refusal,
+  others 400 or 401 with the error's text, telling the caller their token
+  was at fault, and `POST /auth/password/reset` wrote "failed to get user id
+  from context" into a 500's body. Every site answers the fixed 500, counted
+  as a failure, with the cause on the access line. `GET
+  /me/resources_limits` no longer declares a 400 it cannot write.
+  ([#169](https://github.com/slashdevops/go-rest-api-service-template/pull/169))
 - **`GET /rate_limits/effective` records its refusals.** Its three 400s
   (no `method`, a method that is none, no `endpoint`) were written and
   returned with nothing recorded: the call was in no count of the handler

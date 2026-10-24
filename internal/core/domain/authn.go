@@ -34,9 +34,6 @@ const (
 	AuthnPasswordResetSuccessfully        = "Password reset successfully"
 	AuthnAccessTokenRefreshedSuccessfully = "access token refreshed"
 
-	AuthnFailedToGetUserIDFromContext   = "failed to get user id from context"
-	AuthnFailedToParseUserIDFromContext = "failed to parse user ID from context"
-
 	ValidJWTMinLength = 20
 	ValidJWTMaxLength = 2048
 )

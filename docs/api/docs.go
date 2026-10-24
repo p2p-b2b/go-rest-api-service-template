@@ -2163,12 +2163,6 @@ const docTemplate = `{
                             "$ref": "#/definitions/payload.ResourcesLimitsStatusResponse"
                         }
                     },
-                    "400": {
-                        "description": "Missing or malformed user context",
-                        "schema": {
-                            "$ref": "#/definitions/payload.HTTPMessage"
-                        }
-                    },
                     "401": {
                         "description": "Missing or invalid authentication",
                         "schema": {

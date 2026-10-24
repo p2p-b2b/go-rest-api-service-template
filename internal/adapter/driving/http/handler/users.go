@@ -465,7 +465,8 @@ func (ref *UsersHandler) deleteByID(w http.ResponseWriter, r *http.Request) {
 	// without its middleware.
 	callerID, err := getUserIDFromContext(ctx)
 	if err != nil {
-		respond.WriteInternalError(w, r, o11y.RecordError(ctx, span, start, err, ref.metrics, attrs))
+		e := o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
+		respond.WriteInternalError(w, r, e)
 		return
 	}
 
@@ -868,7 +869,7 @@ func (ref *UsersHandler) linkRoles(w http.ResponseWriter, r *http.Request) {
 	callerID, err := getUserIDFromContext(ctx)
 	if err != nil {
 		e := o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
-		respond.WriteJSONMessage(w, r, http.StatusUnauthorized, e.Error())
+		respond.WriteInternalError(w, r, e)
 		return
 	}
 
@@ -976,7 +977,8 @@ func (ref *UsersHandler) unlinkRoles(w http.ResponseWriter, r *http.Request) {
 	// without its middleware.
 	callerID, err := getUserIDFromContext(ctx)
 	if err != nil {
-		respond.WriteInternalError(w, r, o11y.RecordError(ctx, span, start, err, ref.metrics, attrs))
+		e := o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
+		respond.WriteInternalError(w, r, e)
 		return
 	}
 

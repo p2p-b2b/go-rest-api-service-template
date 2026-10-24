@@ -8045,7 +8045,6 @@ Retrieve the limits that apply to the calling user and how much of each has been
 | Code | Status | Description | Has headers | Schema |
 |------|--------|-------------|:-----------:|--------|
 | [200](#01a01117-dba9-74da-bd70-d1acc3842ffa-200) | OK | Limits and usage for the calling user |  | [schema](#01a01117-dba9-74da-bd70-d1acc3842ffa-200-schema) |
-| [400](#01a01117-dba9-74da-bd70-d1acc3842ffa-400) | Bad Request | Missing or malformed user context |  | [schema](#01a01117-dba9-74da-bd70-d1acc3842ffa-400-schema) |
 | [401](#01a01117-dba9-74da-bd70-d1acc3842ffa-401) | Unauthorized | Missing or invalid authentication |  | [schema](#01a01117-dba9-74da-bd70-d1acc3842ffa-401-schema) |
 | [403](#01a01117-dba9-74da-bd70-d1acc3842ffa-403) | Forbidden | Insufficient permissions |  | [schema](#01a01117-dba9-74da-bd70-d1acc3842ffa-403-schema) |
 | [429](#01a01117-dba9-74da-bd70-d1acc3842ffa-429) | Too Many Requests | Too many requests -- RATE_LIMIT_EXCEEDED is the budget, RATE_LIMIT_UNAVAILABLE the limiter's own store |  | [schema](#01a01117-dba9-74da-bd70-d1acc3842ffa-429-schema) |
@@ -8062,15 +8061,6 @@ Status: OK
   
 
 [PayloadResourcesLimitsStatusResponse](#payload-resources-limits-status-response)
-
-##### <span id="01a01117-dba9-74da-bd70-d1acc3842ffa-400"></span> 400 - Missing or malformed user context
-Status: Bad Request
-
-###### <span id="01a01117-dba9-74da-bd70-d1acc3842ffa-400-schema"></span> Schema
-   
-  
-
-[PayloadHTTPMessage](#payload-http-message)
 
 ##### <span id="01a01117-dba9-74da-bd70-d1acc3842ffa-401"></span> 401 - Missing or invalid authentication
 Status: Unauthorized

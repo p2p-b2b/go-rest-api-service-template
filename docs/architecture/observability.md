@@ -221,6 +221,24 @@ flowchart TD
   check of the same rule refuses, so registration, recovery, verification
   and the users routes answered that refusal 500. It is fixed in the
   address's validation (#158): the spelling of an address is an address.
+- **A request that reaches a handler without its caller is a fault, at
+  every site.** Thirty-three handler functions ask the request for the
+  account it was authenticated as, and two for the verified token. The
+  authentication middleware puts both on every request it lets through, so
+  their absence is a route wired without that middleware, never a caller's
+  mistake. The helpers returned an `InvalidJWTError`, the table's 401:
+  eleven sites answered 500 for it, counted `refused`; eighteen answered
+  400 or 401, sixteen with the error's text and two with "Invalid or
+  expired token", telling a caller their token was at fault. The other six
+  read the claims by hand (`callerFromContext`'s four callers, `logout`,
+  `resetPassword`) and answered a 500 counted `failed` already, but
+  `resetPassword` wrote its reason into the 500's body. The helpers return a type of the handler package that the table has
+  no row for (`noCallerError`), and every site answers
+  `respond.WriteInternalError`: the fixed 500, counted `failed`, the cause
+  on the access line. `TestARequestWithoutACallerIsAFaultAtEverySite` drives
+  all thirty-five and fails when a new site is not among them;
+  `TestEverySiteAnswersAMissingCallerWithTheFixed500` reads the answer from
+  the source.
 
 An error ratio is therefore the failed calls over all calls:
 
@@ -1201,10 +1219,12 @@ flowchart LR
     G -. reads .- T
 ```
 
-What is not an arm is not held: the error of `getUserIDFromContext` (an
-`InvalidJWTError` the middleware should have made impossible) is answered
-500 at eleven sites, 400 at nine and 401 at seven, none of them naming the
-type, and the table says 401 for it. The handlers' answers have not
+What is not an arm is not held. The error of `getUserIDFromContext` was the
+one case: an `InvalidJWTError` the middleware should have made impossible,
+answered 500, 400 or 401 depending on the site, and called 401 by the
+table. It is a `noCallerError` now, which the table has no row for, and
+every site answers the fixed 500 (see "A request that reaches a handler
+without its caller is a fault, at every site" above). The handlers' answers have not
 changed: the arms are where they were, and nothing answers through the
 table yet. One thing a trace shows has: a body that could not be decoded
 is recorded through its `DecodeError` mark, so its span's `exception.type`

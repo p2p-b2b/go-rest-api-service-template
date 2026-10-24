@@ -103,7 +103,7 @@ func (ref *MeHandler) authz(w http.ResponseWriter, r *http.Request) {
 	userID, err := getUserIDFromContext(ctx)
 	if err != nil {
 		e := o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
-		respond.WriteJSONMessage(w, r, http.StatusUnauthorized, e.Error())
+		respond.WriteInternalError(w, r, e)
 		return
 	}
 
@@ -248,7 +248,7 @@ func (ref *MeHandler) update(w http.ResponseWriter, r *http.Request) {
 	userID, err := getUserIDFromContext(ctx)
 	if err != nil {
 		e := o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
-		respond.WriteJSONMessage(w, r, http.StatusBadRequest, e.Error())
+		respond.WriteInternalError(w, r, e)
 		return
 	}
 
@@ -333,7 +333,7 @@ func (ref *MeHandler) getByID(w http.ResponseWriter, r *http.Request) {
 	userID, err := getUserIDFromContext(ctx)
 	if err != nil {
 		e := o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
-		respond.WriteJSONMessage(w, r, http.StatusBadRequest, e.Error())
+		respond.WriteInternalError(w, r, e)
 		return
 	}
 

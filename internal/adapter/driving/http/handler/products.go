@@ -157,7 +157,7 @@ func (ref *ProductsHandler) productPathParams(
 	userID, err := getUserIDFromContext(ctx)
 	if err != nil {
 		e := o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
-		respond.WriteJSONMessage(w, r, http.StatusBadRequest, e.Error())
+		respond.WriteInternalError(w, r, e)
 
 		return userID, projectID, productID, false
 	}
