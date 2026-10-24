@@ -1115,16 +1115,17 @@ func TestPolicyDelete(t *testing.T) {
 		assert.NoError(t, err, "Failed to send request to delete non-existent policy")
 		defer deleteResponse.Body.Close()
 
-		// 3. Check the response - this should still return StatusOK even though the policy doesn't exist
-		// This is because deleting a non-existent resource is considered idempotent in RESTful APIs
-		assert.Equal(t, http.StatusOK, deleteResponse.StatusCode, "Expected status code 200 OK for deleting non-existent policy. Got %d. Message: %s", deleteResponse.StatusCode, readResponseBody(t, deleteResponse))
+		// 3. Deleting what is not there is a 404, and changes nothing. It
+		// answered 200 "deleted", as if it had deleted.
+		assert.Equal(t, http.StatusNotFound, deleteResponse.StatusCode, "Expected status code 404 for deleting a policy that is not there. Got %d. Message: %s", deleteResponse.StatusCode, readResponseBody(t, deleteResponse))
 
-		// 4. Parse and verify the success response
+		// 4. Parse and verify the error response
 		deleteAPIResp, err := parserResponseBody[payload.HTTPMessage](t, deleteResponse)
 		assert.NoError(t, err, "Failed to parse response body")
 
-		// 5. Verify success message for deletion
-		assert.Equal(t, domain.PoliciesPolicyDeletedSuccessfully, deleteAPIResp.Message, "Expected success message")
+		// 5. The message says the policy is not found, never that it was deleted
+		assert.NotEqual(t, domain.PoliciesPolicyDeletedSuccessfully, deleteAPIResp.Message, "a delete of nothing said it deleted")
+		assert.Contains(t, strings.ToLower(deleteAPIResp.Message), "not found", "Message should say the policy is not found")
 		assert.Equal(t, deleteEndpoint.method, deleteAPIResp.Method, "Expected method to be set")
 		assert.Equal(t, deleteEndpoint.Path(), deleteAPIResp.Path, "Expected path to be set")
 
@@ -1969,12 +1970,14 @@ func TestPolicyDelete_EdgeCases(t *testing.T) {
 		assert.NoError(t, err)
 		defer response.Body.Close()
 
-		assert.Equal(t, http.StatusOK, response.StatusCode, "Expected status code 200 (graceful delete for security). Got %d. Message: %s", response.StatusCode, readResponseBody(t, response))
+		// Deleting what is not there is a 404, as for every delete by id; the
+		// route is an administrator's, so it hides nothing by saying so.
+		assert.Equal(t, http.StatusNotFound, response.StatusCode, "Expected status code 404. Got %d. Message: %s", response.StatusCode, readResponseBody(t, response))
 
-		// Verify success message
 		apiResp, err := parserResponseBody[payload.HTTPMessage](t, response)
 		assert.NoError(t, err, "Failed to parse response body")
-		assert.Equal(t, domain.PoliciesPolicyDeletedSuccessfully, apiResp.Message, "Expected success message even for non-existent policy (security pattern)")
+		assert.NotEqual(t, domain.PoliciesPolicyDeletedSuccessfully, apiResp.Message, "a delete of nothing said it deleted")
+		assert.Contains(t, apiResp.Message, nonExistentPolicyID.String(), "the answer names the id the caller sent")
 	})
 
 	t.Run("delete_policy_with_invalid_uuid", func(t *testing.T) {

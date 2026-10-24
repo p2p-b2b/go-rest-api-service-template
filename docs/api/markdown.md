@@ -4738,6 +4738,7 @@ Permanently remove an authorization policy by its unique identifier
 | [400](#01982303-f0f9-7f13-a03b-ed306ff7d06b-400) | Bad Request | Invalid policy ID format |  | [schema](#01982303-f0f9-7f13-a03b-ed306ff7d06b-400-schema) |
 | [401](#01982303-f0f9-7f13-a03b-ed306ff7d06b-401) | Unauthorized | Missing or invalid authentication token |  | [schema](#01982303-f0f9-7f13-a03b-ed306ff7d06b-401-schema) |
 | [403](#01982303-f0f9-7f13-a03b-ed306ff7d06b-403) | Forbidden | System policies cannot be deleted |  | [schema](#01982303-f0f9-7f13-a03b-ed306ff7d06b-403-schema) |
+| [404](#01982303-f0f9-7f13-a03b-ed306ff7d06b-404) | Not Found | Policy not found |  | [schema](#01982303-f0f9-7f13-a03b-ed306ff7d06b-404-schema) |
 | [429](#01982303-f0f9-7f13-a03b-ed306ff7d06b-429) | Too Many Requests | Too many requests -- RATE_LIMIT_EXCEEDED is the budget, RATE_LIMIT_UNAVAILABLE the limiter's own store |  | [schema](#01982303-f0f9-7f13-a03b-ed306ff7d06b-429-schema) |
 | [500](#01982303-f0f9-7f13-a03b-ed306ff7d06b-500) | Internal Server Error | Internal server error |  | [schema](#01982303-f0f9-7f13-a03b-ed306ff7d06b-500-schema) |
 
@@ -4775,6 +4776,15 @@ Status: Unauthorized
 Status: Forbidden
 
 ###### <span id="01982303-f0f9-7f13-a03b-ed306ff7d06b-403-schema"></span> Schema
+   
+  
+
+[PayloadHTTPMessage](#payload-http-message)
+
+##### <span id="01982303-f0f9-7f13-a03b-ed306ff7d06b-404"></span> 404 - Policy not found
+Status: Not Found
+
+###### <span id="01982303-f0f9-7f13-a03b-ed306ff7d06b-404-schema"></span> Schema
    
   
 

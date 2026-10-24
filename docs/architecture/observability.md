@@ -738,9 +738,10 @@ unlink of policies that the database refuses), 345 requests answered 4xx at
 INFO, 266 of them with an `error_type`, and fifteen requests answered 2xx
 that had recorded a failure on the way, each with its DEBUG
 `request_failure_not_answered`. Those fifteen are deletes of a row that is
-not there, which this service answers as done: the repositories used to log
-each at ERROR by hand ("operation failed"), twelve such lines in two runs,
-and no longer do.
+not there, which this service then answered as done: the repositories used
+to log each at ERROR by hand ("operation failed"), twelve such lines in two
+runs, and no longer do. (The role and policy deletes among them answer 404
+since #164, and are refusals on the access line.)
 
 `TestARefusedRequestIsNotAnError`, `TestAFailedRequestIsOneErrorLine` and their
 neighbours in `middleware/request_level_test.go` drive a request through three
@@ -1175,9 +1176,9 @@ table. An error the handler package builds must have a row (its status is
 the call site's, and is not read), a row no arm answers and no handler
 builds fails, and so does an arm whose status it cannot read, so that a new
 way of writing one is read rather than skipped. Within a side the table
-holds the status most arms answer (a 404, where a policy's delete is
-idempotent and a verification resend will not say whether an account
-exists, and both answer 200): its side is what is relied on.
+holds the status most arms answer (a 404, where a verification resend will
+not say whether an account exists and answers 200): its side is what is
+relied on.
 
 ```mermaid
 flowchart LR
