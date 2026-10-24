@@ -2,7 +2,9 @@ package handler
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -66,9 +68,21 @@ func TestHealthFailureDoesNotDiscloseTheReason(t *testing.T) {
 			}
 
 			body := rec.Body.String()
-			for _, secret := range secrets {
-				if strings.Contains(body, secret) {
-					t.Errorf("response discloses %q to an unauthenticated caller:\n%s", secret, body)
+
+			// Every field but the timestamp: its nanoseconds are digits, and
+			// "…05.854320765Z" contains "5432" -- that failed CI once, on a
+			// body that disclosed nothing.
+			var fields map[string]any
+			if err := json.Unmarshal(rec.Body.Bytes(), &fields); err != nil {
+				t.Fatalf("body is not JSON: %v\n%s", err, body)
+			}
+			delete(fields, "timestamp")
+
+			for key, value := range fields {
+				for _, secret := range secrets {
+					if strings.Contains(fmt.Sprint(value), secret) {
+						t.Errorf("field %q discloses %q to an unauthenticated caller:\n%s", key, secret, body)
+					}
 				}
 			}
 
