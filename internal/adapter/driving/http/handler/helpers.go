@@ -235,9 +235,9 @@ func getTokenFromContext(ctx context.Context) (string, error) {
 //
 // That is why it is its own type, here, and not a domain error with a row
 // in the status table. It used to be an InvalidJWTError, the table's 401.
-// Six handlers answered 500 for it, which the metric then counted as a
-// refusal; twenty answered 400 or 401 with the error's text, telling a
-// caller their token was at fault when the wiring was.
+// Eleven sites answered 500 for it, which the metric then counted as a
+// refusal; eighteen answered 400 or 401, most with the error's text,
+// telling a caller their token was at fault when the wiring was.
 type noCallerError struct {
 	reason string
 }

@@ -350,6 +350,8 @@ func (ref *AuthnHandler) confirmVerification(w http.ResponseWriter, r *http.Requ
 
 	token, err := getTokenFromContext(ctx)
 	if err != nil {
+		// The middleware did not run: a wiring mistake, not a refused
+		// token. It was answered 401 "Invalid or expired token".
 		e := o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
 		respond.WriteInternalError(w, r, e)
 		return
@@ -589,8 +591,9 @@ func (ref *AuthnHandler) refreshAccessToken(w http.ResponseWriter, r *http.Reque
 	refreshToken, err := getTokenFromContext(ctx)
 	if err != nil {
 		// Reaching here means the middleware did not run, which is a wiring
-		// mistake rather than anything the caller did. The caller is told the
-		// same thing every refused token gets; the detail is on the span.
+		// mistake rather than anything the caller did. It was answered 401
+		// "Invalid or expired token", the sentence a refused token gets,
+		// and counted as a refusal.
 		e := o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
 		respond.WriteInternalError(w, r, e)
 		return

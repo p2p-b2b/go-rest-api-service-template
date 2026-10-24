@@ -25,10 +25,10 @@ import (
 // handler past a missing or broken middleware: a fault of the service.
 //
 // Each site is driven with nothing on the request and must answer the fixed
-// 500, say nothing of the cause, and record a failure. Fifteen answered 500
+// 500, say nothing of the cause, and record a failure. Eleven answered 500
 // for an error the status table called a 401, so the metric counted a
-// refusal; seventeen answered 400 or 401, most of them with the error's
-// text, which told a caller their token was at fault; and three read the
+// refusal; eighteen answered 400 or 401, most of them with the error's
+// text, which told a caller their token was at fault; and six read the
 // claims by hand, one of them writing its reason into a 500's body.
 func TestARequestWithoutACallerIsAFaultAtEverySite(t *testing.T) {
 	t.Parallel()
