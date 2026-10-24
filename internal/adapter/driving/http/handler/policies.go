@@ -290,7 +290,7 @@ func (ref *PoliciesHandler) create(w http.ResponseWriter, r *http.Request) {
 //	@Failure		400			{object}	payload.HTTPMessage			"Invalid request body or validation error"
 //	@Failure		401			{object}	payload.HTTPMessage			"Missing or invalid authentication token"
 //	@Failure		403			{object}	payload.HTTPMessage			"System policies cannot be modified"
-//	@Failure		404			{object}	payload.HTTPMessage			"Policy not found"
+//	@Failure		404			{object}	payload.HTTPMessage			"Policy not found, or the new grant matches no endpoint"
 //	@Failure		409			{object}	payload.HTTPMessage			"Policy name already in use"
 //	@Failure		413			{object}	payload.HTTPMessage			"Request body larger than http.server.max.body.bytes"
 //	@Failure		415			{object}	payload.HTTPMessage			"Body not declared as application/json"
@@ -375,8 +375,11 @@ func (ref *PoliciesHandler) updateByID(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		// Through the table, so that the status and the call's outcome
+		// agree: a grant that matches no endpoint is the 404 Create answers
+		// it with, and was a 500 counted as refused.
 		e := o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
-		respond.WriteInternalError(w, r, e)
+		respond.WriteError(w, r, e)
 		return
 	}
 

@@ -38,11 +38,15 @@ var middlewareSupplied = []int{401, 403, 429}
 var bodySupplied = []int{413, 415}
 
 // respondErrorWriters are the respond helpers that choose the status
-// themselves: a 500 that never carries the cause, and a decode failure that
-// is 400, or 413 when the body was cut by the size bound.
+// themselves: a 500 that never carries the cause, a decode failure that is
+// 400, or 413 when the body was cut by the size bound, and an error answered
+// through the status table.
 var respondErrorWriters = map[string][]int{
 	"WriteInternalError": {500},
 	"WriteDecodeError":   {400, 413},
+	// Its other statuses come from respond.StatusFor, for the errors that
+	// reach the call; table_status_test.go drives each site with them.
+	"WriteError": {500},
 }
 
 var declaredStatus = regexp.MustCompile(`@(?:Success|Failure)\s+(\d{3})`)

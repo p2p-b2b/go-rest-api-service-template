@@ -216,6 +216,10 @@ func (ref *AuthnHandler) loginUser(w http.ResponseWriter, r *http.Request) {
 	)
 }
 
+// registrationClosedMessage is what a self-registration hears when the
+// system-wide user limit is full: a 409, without the numbers.
+const registrationClosedMessage = "registration is closed: the user limit has been reached"
+
 // registerUser Register a new user and send a confirmation email.
 //
 //	@Id				019822af-b448-7572-a268-4c7b20a70229
@@ -228,6 +232,7 @@ func (ref *AuthnHandler) loginUser(w http.ResponseWriter, r *http.Request) {
 //	@Success		201		{object}	payload.HTTPMessage			"Registration accepted. Answered the same way whether or not the address already has an account — deliberately, so this endpoint cannot be used to discover which addresses are registered. If the address was already taken, its owner is told by email instead and no second account is created"
 //	@Header			201		{string}	Location					"/users/{id}"	"URI of the created user resource"
 //	@Failure		400		{object}	payload.HTTPMessage			"Invalid request body or validation error"
+//	@Failure		409		{object}	payload.HTTPMessage			"Registration is closed: the user limit has been reached"
 //	@Failure		413		{object}	payload.HTTPMessage			"Request body larger than http.server.max.body.bytes"
 //	@Failure		415		{object}	payload.HTTPMessage			"Body not declared as application/json"
 //	@Failure		500		{object}	payload.HTTPMessage			"Internal server error during registration"
@@ -265,6 +270,15 @@ func (ref *AuthnHandler) registerUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := ref.service.RegisterUser(ctx, input); err != nil {
+		// The system's user limit is full. The limit error's own message
+		// names the scope, both limits and the current usage, and this route
+		// is public: a fixed sentence. It was a 500 counted as refused.
+		if _, full := errors.AsType[*domain.ResourcesLimitsHardLimitReachedError](err); full {
+			_ = o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
+			respond.WriteJSONMessage(w, r, http.StatusConflict, registrationClosedMessage)
+			return
+		}
+
 		_, isInvalidMail := errors.AsType[*domain.InvalidEmailError](err)
 		_, isInvalidPassword := errors.AsType[*domain.InvalidPasswordError](err)
 		if isInvalidMail || isInvalidPassword {

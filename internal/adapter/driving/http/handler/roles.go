@@ -746,7 +746,7 @@ func (ref *RolesHandler) unlinkUsers(w http.ResponseWriter, r *http.Request) {
 //	@Failure		400		{object}	payload.HTTPMessage					"Invalid request payload or role ID format"
 //	@Failure		401		{object}	payload.HTTPMessage					"Missing or invalid authentication token"
 //	@Failure		403		{object}	payload.HTTPMessage					"Insufficient permissions"
-//	@Failure		404		{object}	payload.HTTPMessage					"Role not found"
+//	@Failure		404		{object}	payload.HTTPMessage					"Role not found, or one of the policies does not exist"
 //	@Failure		413		{object}	payload.HTTPMessage					"Request body larger than http.server.max.body.bytes"
 //	@Failure		415		{object}	payload.HTTPMessage					"Body not declared as application/json"
 //	@Failure		429		{object}	payload.HTTPMessage					"Too many requests -- RATE_LIMIT_EXCEEDED is the budget, RATE_LIMIT_UNAVAILABLE the limiter's own store"
@@ -815,8 +815,11 @@ func (ref *RolesHandler) linkPolicies(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		// Through the table, so that the status and the call's outcome
+		// agree: a policy that does not exist is a 404, and was a 500
+		// counted as refused.
 		e := o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
-		respond.WriteInternalError(w, r, e)
+		respond.WriteError(w, r, e)
 		return
 	}
 

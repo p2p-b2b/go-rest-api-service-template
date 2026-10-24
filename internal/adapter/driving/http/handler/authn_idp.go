@@ -373,7 +373,7 @@ func (ref *AuthnIDPsHandler) listIdentities(w http.ResponseWriter, r *http.Reque
 //	@Failure		400		{object}	payload.HTTPMessage	"Invalid identity provider id"
 //	@Failure		401		{object}	payload.HTTPMessage	"Invalid or expired token"
 //	@Failure		403		{object}	payload.HTTPMessage	"Not authorized"
-//	@Failure		404		{object}	payload.HTTPMessage	"No identity at that provider"
+//	@Failure		404		{object}	payload.HTTPMessage	"No identity at that provider, or the account no longer exists"
 //	@Failure		409		{object}	payload.HTTPMessage	"It is the only way into the account"
 //	@Failure		429		{object}	payload.HTTPMessage	"Too many requests"
 //	@Failure		500		{object}	payload.HTTPMessage	"Internal server error"
@@ -411,7 +411,10 @@ func (ref *AuthnIDPsHandler) unlinkIdentity(w http.ResponseWriter, r *http.Reque
 		case isType[*domain.ValidationErrors](err), isType[*domain.InvalidInputError](err):
 			respond.WriteJSONMessage(w, r, http.StatusBadRequest, e.Error())
 		default:
-			respond.WriteInternalError(w, r, e)
+			// Through the table, so that the status and the call's outcome
+			// agree: an account that is gone is a 404 here, and was a 500
+			// counted as refused.
+			respond.WriteError(w, r, e)
 		}
 
 		return
@@ -493,6 +496,10 @@ func (ref *AuthnIDPsHandler) writeStartError(w http.ResponseWriter, r *http.Requ
 	}
 }
 
+// accountGoneMessage is what the callback answers when the account a flow
+// was started for no longer exists.
+const accountGoneMessage = "the account this sign-in was started for no longer exists"
+
 // writeCallbackError maps a failed callback. Three refusals share the 401:
 // the provider refused, the identity is not linked here, the account cannot
 // sign in -- the frontend renders one message for all of them.
@@ -510,13 +517,19 @@ func (ref *AuthnIDPsHandler) writeCallbackError(w http.ResponseWriter, r *http.R
 		// fault, and it answered 500. (A provider deleted while signing in
 		// is IDPChangedDuringSignInError: the insert reads its row.)
 		respond.WriteJSONMessage(w, r, http.StatusNotFound, e.Error())
+	case isType[*domain.UserNotFoundError](err):
+		// The account a link was started for was deleted before the
+		// callback. The error's own text carries the account's id, and this
+		// route is public: a fixed sentence. It was a 500 counted as refused.
+		respond.WriteJSONMessage(w, r, http.StatusNotFound, accountGoneMessage)
 	case isType[*domain.UserIdentityAlreadyLinkedError](err):
 		respond.WriteJSONMessage(w, r, http.StatusConflict, e.Error())
 	case isType[*domain.ResourcesLimitsHardLimitReachedError](err):
 		// A first sign-in creates an account, and the users limit is
-		// reached: registration is closed, as POST /users answers it. It
-		// answered 500.
-		respond.WriteJSONMessage(w, r, http.StatusConflict, e.Error())
+		// reached. This route is public and the limit error's own message
+		// names the scope, both limits and the current usage: say what the
+		// public registration route says, and nothing more.
+		respond.WriteJSONMessage(w, r, http.StatusConflict, registrationClosedMessage)
 	case isType[*domain.IDPIdentityNotLinkedError](err), isType[*domain.InvalidCredentialsError](err), isType[*domain.IDPChangedDuringSignInError](err):
 		respond.WriteJSONMessage(w, r, http.StatusUnauthorized, e.Error())
 	case isType[*domain.IDPUnreachableError](err):

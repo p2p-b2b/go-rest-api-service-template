@@ -335,6 +335,26 @@ Since `v0.0.3`.
 
 ### Fixed
 
+- **Six refusals are no longer a 500.** Each was answered `500 internal
+  server error`, an ERROR line, while its call was counted `refused`:
+  - `PUT /policies/{policy_id}` to a grant no endpoint serves is a `404`,
+    as the create answers it;
+  - `POST /roles/{role_id}/policies` naming a policy that is not there is a
+    `404`;
+  - `DELETE /me/identities/{idp_id}` for an account deleted meanwhile is a
+    `404`;
+  - the identity-provider callback of a link whose account was deleted is
+    a `404`, in a fixed sentence (the error's own text names the account's
+    id, and the route is public);
+  - `POST /auth/register` when the system's user limit is full is a `409`,
+    "registration is closed: the user limit has been reached".
+
+  The identity-provider callback answered that limit `409` already, but in
+  the limit error's own words, which name the scope, both limits and the
+  usage, to an anonymous caller: it says the registration route's sentence
+  now. Found by reading every `WriteInternalError` call of the handlers
+  against what its use-case returns.
+  ([#157](https://github.com/slashdevops/go-rest-api-service-template/pull/157))
 - **The log panels show what the service writes.** The Cache dashboard's
   "Errors from the cache layer" and the Email dashboard's "Errors from the
   mail layer" filtered on a layer no log line carries and showed nothing
