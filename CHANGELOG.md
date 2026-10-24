@@ -356,7 +356,7 @@ Since `v0.0.3`.
   /policies/{policy_id}` said 200 "deleted" for an id that matched no row,
   twice in a row for the same id, while the user and identity-provider
   deletes answered 404. (The policy's handler also turned its not-found
-  into the 200, on purpose; it answers 404.) Nothing changes either way.
+  into the 200, on purpose; it answers 404.) Nothing is deleted either way.
   `DELETE /policies/{policy_id}` now declares its 404.
   ([#164](https://github.com/slashdevops/go-rest-api-service-template/pull/164))
 - **A delete drops what is cached of its row before it gives the usage

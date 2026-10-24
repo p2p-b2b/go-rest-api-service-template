@@ -2014,12 +2014,14 @@ func TestRoleDelete_EdgeCases(t *testing.T) {
 		assert.NoError(t, err)
 		defer response.Body.Close()
 
-		assert.Equal(t, http.StatusOK, response.StatusCode, "Expected status code 200 (graceful delete for security). Got %d. Message: %s", response.StatusCode, readResponseBody(t, response))
+		// Deleting what is not there is a 404, as for every delete by id; the
+		// route is an administrator's, so it hides nothing by saying so.
+		assert.Equal(t, http.StatusNotFound, response.StatusCode, "Expected status code 404. Got %d. Message: %s", response.StatusCode, readResponseBody(t, response))
 
-		// Verify success message
 		apiResp, err := parserResponseBody[payload.HTTPMessage](t, response)
 		assert.NoError(t, err, "Failed to parse response body")
-		assert.Equal(t, domain.RolesRoleDeletedSuccessfully, apiResp.Message, "Expected success message even for non-existent role (security pattern)")
+		assert.NotEqual(t, domain.RolesRoleDeletedSuccessfully, apiResp.Message, "a delete of nothing said it deleted")
+		assert.Contains(t, apiResp.Message, nonExistentRoleID.String(), "the answer names the id the caller sent")
 	})
 
 	t.Run("delete_role_with_invalid_uuid", func(t *testing.T) {
