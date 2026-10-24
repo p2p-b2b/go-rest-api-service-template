@@ -53,6 +53,11 @@ func TestAFirstSignInsRefusalsAreAnsweredAsDocumented(t *testing.T) {
 		// sign-in ran: the identity's insert stores nothing.
 		"the_provider_changed_meanwhile": {err: &domain.IDPChangedDuringSignInError{}, status: http.StatusUnauthorized},
 		"a_fault":                        {err: errors.New("a fault"), status: http.StatusInternalServerError},
+		// The provider's address is no address the service can spell.
+		"the_providers_address_is_no_address": {
+			err:    &domain.ValidationError{Field: domain.FieldEmail, Message: "invalid email format", Code: "INVALID_FORMAT"},
+			status: http.StatusBadRequest,
+		},
 	} {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()

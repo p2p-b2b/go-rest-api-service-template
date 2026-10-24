@@ -46,11 +46,14 @@ type fakeIDPs struct{ idp *domain.IDP }
 func (f *fakeIDPs) GetByID(context.Context, uuid.UUID) (*domain.IDP, error) { return f.idp, nil }
 
 type fakeUsers struct {
-	byEmail map[string]*domain.User
-	byID    map[uuid.UUID]*domain.User
+	byEmail  map[string]*domain.User
+	byID     map[uuid.UUID]*domain.User
+	lookedUp []string
 }
 
 func (f *fakeUsers) GetByEmail(_ context.Context, email string) (*domain.User, error) {
+	f.lookedUp = append(f.lookedUp, email)
+
 	if u, ok := f.byEmail[email]; ok {
 		return u, nil
 	}
@@ -607,5 +610,57 @@ func TestAKnownIdentityIsLookedUpUnderTheProviderAsItSignedIn(t *testing.T) {
 	want := lookup{idp: f.idp.ID, kind: f.idp.IDPType.ID, issuer: f.idp.IssuerURL}
 	if len(f.identities.lookedUp) == 0 || f.identities.lookedUp[0] != want {
 		t.Fatalf("the identity was looked up under %+v, want %+v", f.identities.lookedUp, want)
+	}
+}
+
+// The provider's address is looked up as the service spells it, the spelling
+// the create stores. Looked up as it came, an existing account's address in
+// another spelling was free at the check, and the create was the one to
+// refuse it.
+func TestIDPCallbackLooksTheProvidersAddressUpAsTheServiceSpellsIt(t *testing.T) {
+	t.Parallel()
+
+	for _, claim := range []string{"Jane <victim@example.com>", " victim@example.com"} {
+		t.Run(claim, func(t *testing.T) {
+			t.Parallel()
+
+			f := newIDPFixture(t, verified("attacker-sub", claim))
+			f.users.byEmail["victim@example.com"] = &domain.User{ID: uuid.NewV7(), LocalAccount: new(true)}
+
+			_, err := f.svc.Callback(t.Context(), f.idp.ID, f.stateFor(t, domain.IDPEventTypeLogin, uuid.Nil()), "code")
+			if _, ok := errors.AsType[*domain.IDPIdentityNotLinkedError](err); !ok {
+				t.Fatalf("expected the check's refusal, got %T (%v)", err, err)
+			}
+
+			if len(f.authn.registered) != 0 || len(f.authn.loggedIn) != 0 {
+				t.Fatal("nothing may be created or signed in")
+			}
+		})
+	}
+}
+
+// A provider's address that is no address is the validator's refusal, which
+// does not repeat it, before anything is looked up. A claim that does not
+// parse at all (the OIDC email claim is only lowercased) was the
+// repository's InvalidEmailError at the lookup, which the callback answered
+// 500; one the service cannot spell reached the create's own refusal.
+func TestIDPCallbackRefusesAProvidersAddressThatIsNoAddress(t *testing.T) {
+	t.Parallel()
+
+	for _, claim := range []string{"not-an-address", `"a b"@example.com`} {
+		t.Run(claim, func(t *testing.T) {
+			t.Parallel()
+
+			f := newIDPFixture(t, verified("sub-new", claim))
+
+			_, err := f.svc.Callback(t.Context(), f.idp.ID, f.stateFor(t, domain.IDPEventTypeLogin, uuid.Nil()), "code")
+			if _, ok := errors.AsType[*domain.ValidationError](err); !ok {
+				t.Fatalf("expected the validator's refusal, got %T (%v)", err, err)
+			}
+
+			if len(f.users.lookedUp) != 0 || len(f.authn.registered) != 0 {
+				t.Fatalf("looked up %v and registered %d: nothing may be", f.users.lookedUp, len(f.authn.registered))
+			}
+		})
 	}
 }

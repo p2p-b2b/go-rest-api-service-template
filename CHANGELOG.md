@@ -335,6 +335,22 @@ Since `v0.0.3`.
 
 ### Fixed
 
+- **An address the service cannot spell is a 400, not a 500.** An address
+  is checked by the handler and again by the use-case, on what the first
+  check returned, and `net/mail` drops the quotes of a quoted local part:
+  `"a b"@example.com` passed as `a b@example.com`, which the second check
+  refused, and `Ada <a@b.c>` passed the length check as an input and failed
+  it as `a@b.c`. `POST /auth/register`, `POST /auth/password/recover`,
+  `POST /auth/verify`, `POST /users` and `PUT /users/{user_id}` answered
+  500. `ValidateEmail` refuses an address whose spelling does not parse
+  back as itself and measures the spelling's length. A first sign-in
+  through a provider spells the provider's address before it looks it up:
+  a claim that is no address at all was the lookup's `InvalidEmailError`, a
+  500, and an existing account's address in another spelling was free at the
+  check (the create refused it). The spelling holds no white space either:
+  `net/mail` keeps a no-break space that the trim of the input had taken
+  off, so `<ab@cd.ef\u00a0>` was spelled with it and spelled again without.
+  ([#158](https://github.com/slashdevops/go-rest-api-service-template/pull/158))
 - **Six refusals are no longer a 500.** Each was answered `500 internal
   server error`, an ERROR line, while its call was counted `refused`:
   - `PUT /policies/{policy_id}` to a grant no endpoint serves is a `404`,

@@ -347,7 +347,19 @@ func (ref *AuthnIDPsService) signIn(ctx context.Context, idp *domain.IDP, info *
 		return nil, &domain.IDPIdentityNotLinkedError{}
 	}
 
-	if existing, err := ref.userService.GetByEmail(ctx, info.Email); err == nil && existing != nil {
+	// The address is looked up and stored in one spelling. The provider's
+	// claim arrives lowercased and nothing more, while the create trims it
+	// and takes the address out of a "Name <address>" form: looked up as it
+	// came, a claim that is no address at all was the lookup's
+	// InvalidEmailError, which the callback answered 500, and an address in
+	// another spelling was free here and taken at the create. A claim that is
+	// no address is refused in the validator's words, which do not repeat it.
+	email, err := domain.ValidateEmail(info.Email, domain.FieldEmail)
+	if err != nil {
+		return nil, err
+	}
+
+	if existing, err := ref.userService.GetByEmail(ctx, email); err == nil && existing != nil {
 		// The one case the takeover lived in: an account with this email
 		// exists and nothing proves this identity belongs to its holder.
 		slog.WarnContext(ctx, "sign-in refused, an account with the provider's email exists and is not linked to this identity",
@@ -368,14 +380,14 @@ func (ref *AuthnIDPsService) signIn(ctx context.Context, idp *domain.IDP, info *
 	// account with their email that was not linked to them.
 	if err := ref.authnService.RegisterUser(ctx, &domain.RegisterUserInput{
 		ID:             userID,
-		Email:          info.Email,
+		Email:          email,
 		FirstName:      info.FirstName,
 		LastName:       info.LastName,
 		Password:       uuid.NewV7().String(), // random and never used; the account has no password
 		Disabled:       new(false),
 		RegisterMethod: domain.RegisterMethodOAuth,
 		Identity: &domain.LinkUserIdentityInput{
-			UserID: userID, IDPID: idp.ID, Subject: info.Subject, Email: info.Email,
+			UserID: userID, IDPID: idp.ID, Subject: info.Subject, Email: email,
 			IssuerURL: idp.IssuerURL, IDPTypeID: idp.IDPType.ID,
 		},
 	}); err != nil {

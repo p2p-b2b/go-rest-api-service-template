@@ -362,6 +362,21 @@ flowchart TD
   spelling `ValidateEmail` gives every address, for a row older than that
   spelling. Nothing looser: a comparison that folds case folds more than
   case, and the statement compares bytes.
+- **The spelling is an address.** An address is checked twice on its way
+  in, by the handler on the body and by the use-case on what the first check
+  returned, so what `ValidateEmail` returns is one it accepts again,
+  unchanged (`FuzzValidateEmail`). `net/mail` drops the quotes of a quoted
+  local part: `"a b"@example.com` was spelled `a b@example.com`, which does
+  not parse, and the second check refused what the first passed, a 500 on
+  registration, recovery, verification and the users routes. An address
+  whose spelling does not parse back as itself, or holds white space, is
+  refused (`net/mail` keeps a no-break space that the input's trim had
+  taken off: `<ab@cd.ef\u00a0>` was spelled with it, and spelled again
+  without), and the minimum length is the spelling's (`Ada <a@b.c>` is
+  `a@b.c`). A first sign-in through a provider spells the provider's
+  address the same way before it looks it up: as it came, a claim that is
+  no address at all was the lookup's `InvalidEmailError`, a 500, and an
+  existing account's address in another spelling was free at the check.
 - **The administrator account respells.** For it only the same bytes are no
   change: it writes a row's address in the service's spelling. A row older
   than that spelling cannot sign in, since a sign-in looks the address up as

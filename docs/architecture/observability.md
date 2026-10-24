@@ -219,8 +219,8 @@ flowchart TD
   with a quoted local part (`"a b"@example.com`) passes the handler's check
   and is normalised to a form (`a b@example.com`) that the use-case's own
   check of the same rule refuses, so registration, recovery, verification
-  and the users routes answer that refusal 500. It is fixed in the
-  address's validation, on its own.
+  and the users routes answered that refusal 500. It is fixed in the
+  address's validation (#158): the spelling of an address is an address.
 
 An error ratio is therefore the failed calls over all calls:
 
