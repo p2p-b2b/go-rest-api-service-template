@@ -957,7 +957,7 @@
     {
       "type": "logs",
       "title": "Errors that arose at $layer",
-      "description": "ERROR lines carrying this layer. For a request answered 5xx that is its access line, which names the layer the error AROSE in: a failure that only passed through this layer is filed under the layer below, so handler and usecase can be empty here while their error rate above is not, and the traces beside this panel are those calls. Work outside a request (a reload of the revoked-token mirror) logs operation_failed in every layer it passes, and a layer may write an ERROR line of its own (a usage counter that fails its signature). cache and mail write no line with their layer: their dashboards read what the cache client and the mail worker log. A refused request (4xx) is never here.",
+      "description": "ERROR lines carrying this layer. For a request answered 5xx that is its access line, which names the layer the error AROSE in: a failure that only passed through this layer is filed under the layer below, so handler and usecase can be empty here while their error rate above is not, and the traces beside this panel are those calls. Work outside a request logs operation_failed in the layer it failed in (a failed reload of the revoked-token mirror is here under repository; the use-case's own line about it carries no layer), and a layer may write an ERROR line of its own (a usage counter that fails its signature). cache and mail write no line with their layer: their dashboards read what the cache client and the mail worker log. A refused request (4xx) is never here.",
       "datasource": {
         "type": "loki",
         "uid": "loki"

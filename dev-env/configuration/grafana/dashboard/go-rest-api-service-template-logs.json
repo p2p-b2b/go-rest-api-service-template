@@ -315,7 +315,7 @@
     {
       "type": "timeseries",
       "title": "Errors by the layer they arose in",
-      "description": "ERROR lines by the layer they carry. A request answered 5xx is its access line, under the layer the error arose in and not under every layer it passed through -- the failed rate per layer is on the Layers dashboard. Work outside a request logs in every layer it passes, and a layer may add a line of its own, so this counts lines, not failures. 'no operation' is an error written outside any operation: a middleware, a recovered panic, a library's background worker. app_layer is structured metadata, so this filters on an attribute and does not scan the message text.",
+      "description": "ERROR lines by the layer they carry. A request answered 5xx is its access line, under the layer the error arose in and not under every layer it passed through -- the failed rate per layer is on the Layers dashboard. Work outside a request logs operation_failed in the layer it failed in, and its caller may add a line of its own with no operation (a failed reload of the revoked-token mirror is one of each), so this counts lines, not failures. 'no operation' is an error written outside any operation: a middleware, a recovered panic, a library's background worker. app_layer is structured metadata, so this filters on an attribute and does not scan the message text.",
       "datasource": {
         "type": "loki",
         "uid": "loki"
@@ -608,7 +608,7 @@
     {
       "type": "table",
       "title": "Where failures arose",
-      "description": "The operations that ERROR lines name over the window, most first, with the type of the error. A request answered 5xx is its access line, carrying the operation its error arose in; work outside a request logs operation_failed in every layer it passes, so a reload of the revoked-token mirror that fails in the repository is two rows. A row with no error_type is a line a layer wrote in its own words. A refused request (4xx) is not an error and is not here: see Refused requests. The attributes are flat -- grouped, they would arrive as context_app_layer and disagree with the name the metrics and the span use.",
+      "description": "The operations that ERROR lines name over the window, most first, with the type of the error. A request answered 5xx is its access line, carrying the operation its error arose in; work outside a request logs operation_failed in the layer it failed in, so a reload of the revoked-token mirror that fails in the repository is one row, and the use-case's own line about it carries no operation and is not here. A row with no error_type is a line a layer wrote in its own words. A refused request (4xx) is not an error and is not here: see Refused requests. The attributes are flat -- grouped, they would arrive as context_app_layer and disagree with the name the metrics and the span use.",
       "datasource": {
         "type": "loki",
         "uid": "loki"

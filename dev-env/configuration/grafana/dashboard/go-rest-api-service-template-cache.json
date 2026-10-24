@@ -1178,7 +1178,7 @@
     {
       "type": "logs",
       "title": "Warnings about the cache",
-      "description": "What is logged when the cache misbehaves. The cache client's own lines (component=cache): a read that timed out and fell back to the database, a write that failed. And the service's: an invalidation given up, the health probe finding the cache unreachable. A cache fault degrades to the database and the request succeeds, so these are WARN and no line carries app_layer=cache: the layer's failed rate is the metric above.",
+      "description": "What is logged when the cache misbehaves. The cache client's own lines (component=cache): a read that timed out and fell back to the database, a write that failed. And the service's: an invalidation given up, the health probe finding the cache unreachable. A cache fault degrades to the database and the request succeeds, so these are WARN and no line carries app_layer=cache: the layer's failed rate is app_calls_total{app_layer=\"cache\",app_outcome=\"failed\"}, on the Layers dashboard with layer cache.",
       "datasource": {
         "type": "loki",
         "uid": "loki"

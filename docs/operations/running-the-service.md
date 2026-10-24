@@ -177,7 +177,7 @@ Measured by stopping Valkey under a running replica:
 | | What a request gets | What is logged |
 | --- | --- | --- |
 | as shipped (`ratelimit.enabled=true`) | `429` `RATE_LIMIT_UNAVAILABLE`, on every rate-limited route: a budget that cannot be read is not an empty one (six of six requests) | WARN `rate limit store fault`, then `rate-limit store circuit breaker opened; the store will not be called` |
-| limiter off | `200`, from the database: twenty cached reads all succeeded | WARN, two per read, from the cache client (`cache: query timeout reached, falling back to database`, `cache: failed to set cache`): 42 lines for the twenty |
+| limiter off | `200`, from the database: twenty cached reads all succeeded | WARN, from the cache client: 21 `cache: query timeout reached, falling back to database` and 21 `cache: failed to set cache` for the twenty |
 
 No ERROR is written in either case: nothing failed that a caller was not
 told about. The health probe logs WARN `cache health check failed, reads are

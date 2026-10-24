@@ -731,7 +731,7 @@ pass through" -- that second question is the metric's
 ```mermaid
 flowchart TD
     F["a call ends with an error"] --> Q{"inside a request?"}
-    Q -->|"no: a reload of the revoked-token mirror"| OF["operation_failed, ERROR,<br/>in every layer it passes"]
+    Q -->|"no: a reload of the revoked-token mirror"| OF["operation_failed, ERROR,<br/>in the layer it failed in"]
     Q -->|yes| H["held until the request is answered"]
     H --> S{"status"}
     S -->|5xx| E["the access line, ERROR<br/>app_layer = the layer it AROSE in"]
@@ -752,7 +752,7 @@ flowchart TD
 | --- | --- | --- |
 | Layers, **Errors that arose at $layer** | ERROR lines with `app_layer` = the layer | a request's failure that passed through the layer and arose below it |
 | Layers, **Failed calls at $layer** | traces with a span of that layer whose `app.outcome` is `failed` | `cache` and `mail`, which open no span |
-| Logs, **Errors by the layer they arose in**, **Where failures arose** | ERROR lines grouped by the operation they carry, and by `error_type` | a refused request. They count lines, not failures: work outside a request is one line in every layer it passes |
+| Logs, **Errors by the layer they arose in**, **Where failures arose** | ERROR lines grouped by the operation they carry, and by `error_type` | a refused request. They count lines, not failures: a failed reload of the revoked-token mirror is `operation_failed` from the repository and the use-case's own ERROR line, which carries no operation |
 | Logs, **Refused requests** | the access line of every 4xx, by `status` and `error_type` | which layer refused: the origin of a refusal is on the DEBUG line `request_refused`, exported only when `log.level` is debug or lower |
 | Cache, **Warnings about the cache** | WARN and above with `component` = `cache`, and the service's two messages about the cache (`failed to invalidate cache`, `cache health check failed`) | a line about the cache written in other words |
 | Email, **Warnings and errors about mail** | the mail library's two messages and the health probe's | a reworded message, after a bump of the library |
