@@ -355,7 +355,7 @@ Since `v0.0.3`.
   answered a deleted account until the entry expired. And a project's read,
   scoped to the user by its statement, was cached under the project alone;
   it is keyed by the user too, and the project's key drops every user's
-  read of it. ([#164](https://github.com/slashdevops/go-rest-api-service-template/pull/164))
+  read of it. ([#163](https://github.com/slashdevops/go-rest-api-service-template/pull/163))
 - **A project that is not there is a 404 for everybody.** The `admin` flag
   admitted its account to any project id, so under a project that did not
   exist `GET /projects/{project_id}/products`, `/users` and
