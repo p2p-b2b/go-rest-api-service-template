@@ -2612,6 +2612,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/payload.HTTPMessage"
                         }
                     },
+                    "404": {
+                        "description": "Policy not found",
+                        "schema": {
+                            "$ref": "#/definitions/payload.HTTPMessage"
+                        }
+                    },
                     "429": {
                         "description": "Too many requests -- RATE_LIMIT_EXCEEDED is the budget, RATE_LIMIT_UNAVAILABLE the limiter's own store",
                         "schema": {

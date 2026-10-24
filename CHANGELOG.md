@@ -206,6 +206,10 @@ Since `v0.0.3`.
 
 ### Upgrade notes
 
+- **`DELETE /roles/{role_id}` and `DELETE /policies/{policy_id}` answer
+  404 for an id that is not there**; they answered 200. A client that
+  treated either delete as idempotent on its status reads 404 as "already
+  gone". (#164)
 - **`DELETE /projects/{project_id}` and `DELETE /projects/{project_id}/users`
   answer 404 for a project that is not there**, for every caller; they
   answered the administrator account 200 "deleted" and "unlinked". A client
@@ -354,6 +358,14 @@ Since `v0.0.3`.
   `net/http.HandlerFunc.ServeHTTP` and `runtime.gopanic`; they go through
   the middleware's helper, which names the middleware, and a test holds the
   package to it. ([#165](https://github.com/slashdevops/go-rest-api-service-template/pull/165))
+- **Deleting a role or a policy that is not there is a 404.** Both deletes
+  answered as if they had deleted: `DELETE /roles/{role_id}` and `DELETE
+  /policies/{policy_id}` said 200 "deleted" for an id that matched no row,
+  twice in a row for the same id, while the user and identity-provider
+  deletes answered 404. (The policy's handler also turned its not-found
+  into the 200, on purpose; it answers 404.) Nothing is deleted either way.
+  `DELETE /policies/{policy_id}` now declares its 404.
+  ([#164](https://github.com/slashdevops/go-rest-api-service-template/pull/164))
 - **A delete drops what is cached of its row before it gives the usage
   slot back.** The user, identity-provider and project deletes gave the slot
   back first, and that decrement can fail after the row is gone (a fault,

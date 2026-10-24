@@ -268,16 +268,11 @@ func (ref *RolesRepository) DeleteByID(ctx context.Context, input *domain.Delete
 		return o11y.RecordError(ctx, span, start, ref.handlePgError(err, input), ref.metrics, attrs)
 	}
 
+	// Deleting what is not there is a 404, and changes nothing: the user and
+	// identity-provider deletes answer it, and so does every delete by id.
+	// This one answered as if it had deleted, so the route said 200 twice.
 	if result.RowsAffected() == 0 {
-		// grateful return user was deleted, security reason, but log and record error
-		errorType := &domain.RoleNotFoundError{RoleID: input.ID.String()}
-		// The delete answers as if it had deleted, on purpose. What is
-		// recorded goes to the request's access line (DEBUG
-		// request_failure_not_answered); it was also logged here at ERROR,
-		// a second line for a request the service answered correctly.
-		_ = o11y.RecordError(ctx, span, start, errorType, ref.metrics, attrs)
-
-		return nil
+		return o11y.RecordError(ctx, span, start, &domain.RoleNotFoundError{RoleID: input.ID.String()}, ref.metrics, attrs)
 	}
 
 	o11y.RecordSuccess(ctx, span, start, ref.metrics, attrs, "role deleted successfully",
