@@ -855,6 +855,12 @@ func (ref *RateLimitsRepository) handlePgError(err error, input any) error {
 
 	case "22021":
 		return &domain.InvalidByteSequenceError{Message: pgInvalidByteSequence}
+	case "08P01": // invalid message format
+		return &domain.InvalidMessageFormatError{Message: pgInvalidMessageFormat}
+	case "42703": // undefined column
+		return &domain.UndefinedColumnError{Message: pgUndefinedColumn}
+	case "42804": // datatype mismatch
+		return &domain.DatatypeMismatchError{Message: pgDatatypeMismatch}
 	}
 
 	return err

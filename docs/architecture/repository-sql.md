@@ -73,8 +73,10 @@ flowchart TD
 - **Our words, never Postgres's.** The refusal does not wrap the driver's
   error. The four errors every repository answers as a 400 (22021, 08P01,
   42703, 42804) carried `pgErr.Message`: the statement's aliases and the
-  caller's value ("column usrs.yes does not exist"), and a Postgres or driver
-  upgrade rewrote them. They carry a fixed sentence (`TestNoDriverTextInABody`).
+  caller's value, and a Postgres or driver upgrade rewrote them. They carry a
+  fixed sentence (`TestNoDriverTextInABody`), and every repository maps all
+  four (the rate limits' mapped only 22021, and answered the other three
+  500).
   `TestAFilterIsRefusedInTheServicesWords` pins each against a running
   service.
 

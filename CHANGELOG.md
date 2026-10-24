@@ -379,10 +379,11 @@ Since `v0.0.3`.
   does not know column types, and Postgres's refusal was answered 500, on
   every list. It is a 400: "a value does not fit the type of the field it is
   compared with", or "a pattern is not a valid regular expression or LIKE
-  pattern". And the four refusals that were already a 400 (an unquoted word
-  read as a column, a text field used as a boolean, bad bytes, a malformed
-  message) quoted Postgres, the statement's aliases included ("column
-  usrs.yes does not exist"); each says a fixed sentence now.
+  pattern". And the four refusals every repository already answered with a
+  400 (a column that does not exist, a text field used as a boolean, bad
+  bytes, a malformed message) quoted Postgres, the statement's aliases
+  included; each says a fixed sentence now, and the rate limits'
+  repository, which mapped only the bad bytes, maps all four.
   ([#172](https://github.com/slashdevops/go-rest-api-service-template/pull/172))
 - **A refused list expression is answered in our words, under one code.**
   A list's 400 for a `sort`, `filter` or `fields` it could not parse copied

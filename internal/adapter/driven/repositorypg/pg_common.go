@@ -13,7 +13,7 @@ import (
 // The messages the four typed errors every repository answers carry. Our
 // words, never pgErr.Message: these reach the client as a 400, and
 // Postgres's text is not ours to publish. It named the statement's table
-// aliases and echoed the input ("column usrs.nosuch does not exist"), and a
+// aliases and quoted the statement ("column usrs.x does not exist"), and a
 // Postgres or driver upgrade could reword every one of these answers. The
 // failing statement is in the Postgres log; the span keeps the type.
 const (
@@ -51,10 +51,11 @@ const pgSyntaxError = "42601"
 // built wrongly raises it too: it is the filter's only when Postgres points
 // inside the filter (see syntaxErrorInFilter).
 //
-// Two refusals a filter can also cause are not here because they were never
-// a 500: an unquoted word, which Postgres reads as a column (42703), and a
-// text field used as a boolean (42804). handlePgError answers both with a
-// 400 and its own fixed sentence.
+// Two refusals are not here because they were never a 500: a column that
+// does not exist (42703) and a text field used as a boolean (42804).
+// handlePgError answers both with a 400 and its own fixed sentence. (An
+// unquoted word, which Postgres would read as a column, does not get that
+// far: the parser refuses it.)
 var filterRefusals = map[string]string{
 	"22P02": filterValueRefused,   // invalid text representation: 'nope' as a uuid, a boolean, an integer, an enum
 	"22007": filterValueRefused,   // invalid datetime format

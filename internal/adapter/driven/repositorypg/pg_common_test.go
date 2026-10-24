@@ -134,10 +134,37 @@ func TestNoDriverTextInABody(t *testing.T) {
 
 	driverText := regexp.MustCompile(`&domain\.(InvalidByteSequenceError|InvalidMessageFormatError|UndefinedColumnError|DatatypeMismatchError)\{[^}]*pgErr\.Message`)
 
+	mappers := 0
+
 	for path, body := range repositorySources(t) {
 		for _, found := range driverText.FindAllString(body, -1) {
 			t.Errorf("%s: %s: a 400 that carries Postgres's text", path, found)
 		}
+
+		// And every repository whose lists take a filter maps all four: the
+		// rate limits' mapped only 22021, so the other three were 500s there
+		// alone.
+		if !strings.Contains(body, "filterQuery = fmt.Sprintf(") {
+			continue
+		}
+
+		for _, fn := range strings.Split(body, "\nfunc ")[1:] {
+			if !strings.Contains(fn[:strings.Index(fn, "{")], ") handlePgError(") {
+				continue
+			}
+
+			mappers++
+
+			for _, code := range []string{`"22021"`, `"08P01"`, `"42703"`, `"42804"`} {
+				if !strings.Contains(fn, code) {
+					t.Errorf("%s: handlePgError does not map %s", path, code)
+				}
+			}
+		}
+	}
+
+	if mappers < 10 {
+		t.Errorf("%d filtered repositories' handlePgError read, want at least 10: the guard is reading nothing", mappers)
 	}
 }
 
@@ -172,5 +199,16 @@ func TestEveryFilteredListMapsPostgresRefusals(t *testing.T) {
 
 	if lists < 17 {
 		t.Errorf("%d lists write a filter, want at least 17: the guard is reading nothing", lists)
+	}
+
+	// A function that is handed a list's filter to read its rows maps them.
+	handedOn := regexp.MustCompile(`filterQuery, query string`)
+
+	for path, body := range repositorySources(t) {
+		for _, fn := range strings.Split(body, "\nfunc ")[1:] {
+			if handedOn.MatchString(fn) && strings.Contains(fn, "rows.Err()") && !strings.Contains(fn, "filterRefusal(filterQuery, query, err)") {
+				t.Errorf("%s %s: reads a filtered list's rows and does not hand their error to filterRefusal", path, fn[:strings.Index(fn, "(")])
+			}
+		}
 	}
 }
