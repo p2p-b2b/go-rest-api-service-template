@@ -307,7 +307,12 @@ func ValidateEmail(email string, fieldName string) (string, error) {
 	// "a b"@example.com is a b@example.com, which does not parse, and a
 	// second check of this same rule (the use-case's, after the handler's)
 	// refused what the first one passed.
-	if reparsed, err := mail.ParseAddress(normalizedEmail); err != nil || reparsed.Address != normalizedEmail {
+	//
+	// Nor does it hold white space. net/mail keeps a rune above 0x7f, a
+	// no-break space included, where the input above was trimmed of every
+	// Unicode space: "<ab@cd.ef\u00a0>" was spelled with the space, and
+	// spelled again without it.
+	if reparsed, err := mail.ParseAddress(normalizedEmail); err != nil || reparsed.Address != normalizedEmail || strings.ContainsFunc(normalizedEmail, unicode.IsSpace) {
 		return "", &ValidationError{
 			Field:   fieldName,
 			Message: "invalid email format",

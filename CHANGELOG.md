@@ -345,8 +345,11 @@ Since `v0.0.3`.
   500. `ValidateEmail` refuses an address whose spelling does not parse
   back as itself and measures the spelling's length. A first sign-in
   through a provider spells the provider's address before it looks it up:
-  a quoted local part was a 500 there, and an existing account's address in
-  another spelling was free at the check (the create refused it).
+  a claim that is no address at all was the lookup's `InvalidEmailError`, a
+  500, and an existing account's address in another spelling was free at the
+  check (the create refused it). The spelling holds no white space either:
+  `net/mail` keeps a no-break space that the trim of the input had taken
+  off, so `<ab@cd.ef\u00a0>` was spelled with it and spelled again without.
   ([#158](https://github.com/slashdevops/go-rest-api-service-template/pull/158))
 - **Six refusals are no longer a 500.** Each was answered `500 internal
   server error`, an ERROR line, while its call was counted `refused`:

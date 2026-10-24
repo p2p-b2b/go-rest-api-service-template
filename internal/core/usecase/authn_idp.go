@@ -350,10 +350,10 @@ func (ref *AuthnIDPsService) signIn(ctx context.Context, idp *domain.IDP, info *
 	// The address is looked up and stored in one spelling. The provider's
 	// claim arrives lowercased and nothing more, while the create trims it
 	// and takes the address out of a "Name <address>" form: looked up as it
-	// came, an address the repository's lookup refuses (a quoted local part)
-	// was a 500, and one in another spelling was free here and taken at the
-	// create. A claim that is no address is refused in the validator's words,
-	// which do not repeat it.
+	// came, a claim that is no address at all was the lookup's
+	// InvalidEmailError, which the callback answered 500, and an address in
+	// another spelling was free here and taken at the create. A claim that is
+	// no address is refused in the validator's words, which do not repeat it.
 	email, err := domain.ValidateEmail(info.Email, domain.FieldEmail)
 	if err != nil {
 		return nil, err

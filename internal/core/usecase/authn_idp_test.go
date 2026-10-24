@@ -46,11 +46,14 @@ type fakeIDPs struct{ idp *domain.IDP }
 func (f *fakeIDPs) GetByID(context.Context, uuid.UUID) (*domain.IDP, error) { return f.idp, nil }
 
 type fakeUsers struct {
-	byEmail map[string]*domain.User
-	byID    map[uuid.UUID]*domain.User
+	byEmail  map[string]*domain.User
+	byID     map[uuid.UUID]*domain.User
+	lookedUp []string
 }
 
 func (f *fakeUsers) GetByEmail(_ context.Context, email string) (*domain.User, error) {
+	f.lookedUp = append(f.lookedUp, email)
+
 	if u, ok := f.byEmail[email]; ok {
 		return u, nil
 	}
@@ -636,21 +639,28 @@ func TestIDPCallbackLooksTheProvidersAddressUpAsTheServiceSpellsIt(t *testing.T)
 	}
 }
 
-// A provider's address that is no address -- a quoted local part the
-// service cannot spell -- is the validator's refusal, which does not repeat
-// it. The repository's lookup refused it as an InvalidEmailError, which the
-// callback answered 500.
+// A provider's address that is no address is the validator's refusal, which
+// does not repeat it, before anything is looked up. A claim that does not
+// parse at all (the OIDC email claim is only lowercased) was the
+// repository's InvalidEmailError at the lookup, which the callback answered
+// 500; one the service cannot spell reached the create's own refusal.
 func TestIDPCallbackRefusesAProvidersAddressThatIsNoAddress(t *testing.T) {
 	t.Parallel()
 
-	f := newIDPFixture(t, verified("sub-new", `"a b"@example.com`))
+	for _, claim := range []string{"not-an-address", `"a b"@example.com`} {
+		t.Run(claim, func(t *testing.T) {
+			t.Parallel()
 
-	_, err := f.svc.Callback(t.Context(), f.idp.ID, f.stateFor(t, domain.IDPEventTypeLogin, uuid.Nil()), "code")
-	if _, ok := errors.AsType[*domain.ValidationError](err); !ok {
-		t.Fatalf("expected the validator's refusal, got %T (%v)", err, err)
-	}
+			f := newIDPFixture(t, verified("sub-new", claim))
 
-	if len(f.authn.registered) != 0 {
-		t.Fatal("nothing may be created")
+			_, err := f.svc.Callback(t.Context(), f.idp.ID, f.stateFor(t, domain.IDPEventTypeLogin, uuid.Nil()), "code")
+			if _, ok := errors.AsType[*domain.ValidationError](err); !ok {
+				t.Fatalf("expected the validator's refusal, got %T (%v)", err, err)
+			}
+
+			if len(f.users.lookedUp) != 0 || len(f.authn.registered) != 0 {
+				t.Fatalf("looked up %v and registered %d: nothing may be", f.users.lookedUp, len(f.authn.registered))
+			}
+		})
 	}
 }

@@ -21,6 +21,7 @@ func TestAnAddressTheServiceCannotSpellIsA400(t *testing.T) {
 	ctx := t.Context()
 	admin := getAdminUserTokens(t)
 	header := map[string]string{"Authorization": "Bearer " + admin.AccessToken}
+	userID, _ := createTestUserForRoleTest(t, admin.AccessToken)
 
 	for _, a := range []struct{ label, address string }{
 		{"a_quoted_local_part", `"a b"@example.com`},
@@ -42,6 +43,8 @@ func TestAnAddressTheServiceCannotSpellIsA400(t *testing.T) {
 			{name: "create_user", endpoint: newAPIEndpoint(http.MethodPost, "/users"), body: map[string]any{
 				"id": uuid.NewV7().String(), "email": address, "first_name": "Ada", "last_name": "Lovelace", "password": generatePassword(t),
 			}, headers: []map[string]string{header}},
+			{name: "update_user", endpoint: newAPIEndpoint(http.MethodPut, "/users/{user_id}").RewriteSlugs(userID.String()),
+				body: map[string]any{"email": address}, headers: []map[string]string{header}},
 		} {
 			t.Run(tc.name+"_"+a.label, func(t *testing.T) {
 				resp, err := sendHTTPRequest(t, ctx, tc.endpoint, tc.body, tc.headers...)

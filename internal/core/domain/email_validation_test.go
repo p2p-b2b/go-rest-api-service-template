@@ -72,12 +72,32 @@ func TestTheLengthIsTheAddressNotTheInput(t *testing.T) {
 	}
 }
 
+// TestAnAddressHoldsNoWhiteSpace: net/mail keeps a rune above 0x7f, a
+// no-break space included, inside an address, and ValidateEmail trims every
+// Unicode space from its input: "<ab@cd.ef\u00a0>" was spelled
+// "ab@cd.ef\u00a0", and spelled again "ab@cd.ef". Stored in one spelling and
+// looked up in the other, the address was not found.
+func TestAnAddressHoldsNoWhiteSpace(t *testing.T) {
+	t.Parallel()
+
+	for _, in := range []string{"<ab@cd.ef\u00a0>", "\"\u00a0ab\"@cd.ef", "<\u3000ab@cd.ef>", "a\u00a0b@cd.ef"} {
+		t.Run(in, func(t *testing.T) {
+			t.Parallel()
+
+			out, err := ValidateEmail(in, FieldEmail)
+			if v, ok := errors.AsType[*ValidationError](err); !ok || v.Code != "INVALID_FORMAT" {
+				t.Errorf("ValidateEmail(%q) = %q, %v; want an INVALID_FORMAT ValidationError", in, out, err)
+			}
+		})
+	}
+}
+
 // FuzzValidateEmail holds the property for any input: an address the
 // validator returns is one it accepts again, unchanged.
 func FuzzValidateEmail(f *testing.F) {
 	for _, seed := range []string{
 		"ada@example.com", `"a b"@example.com`, `"a@b"@example.com`, `"ab"@example.com`,
-		"Ada <ada@example.com>", "a..b@example.com", "@", "", `"\"@example.com`,
+		"Ada <ada@example.com>", "a..b@example.com", "@", "", `"\"@example.com`, "<ab@cd.ef\u00a0>",
 	} {
 		f.Add(seed)
 	}
