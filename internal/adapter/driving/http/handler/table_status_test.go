@@ -7,6 +7,7 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -329,4 +330,143 @@ func TestLinkingPoliciesToARoleAnswersThroughTheTable(t *testing.T) {
 			agrees(t, tt.err, rec.Code)
 		})
 	}
+}
+
+// abandoning records what the callback asks of the port when the provider
+// reports an error.
+type abandoning struct {
+	driving.AuthnIDPs
+
+	states []string
+	err    error
+}
+
+func (a *abandoning) AbandonCallback(_ context.Context, _ uuid.UUID, state string) error {
+	a.states = append(a.states, state)
+
+	return a.err
+}
+
+// TestACallbackTheProviderDidNotCompleteIsRefusedAndItsStateSpent: the
+// provider sends the person back with `error=` and no code. That is a
+// refusal on the caller's side: 401, and RECORDED as a refusal, which is what
+// the call's outcome and the access line are decided from. And it was the
+// state's one callback, so the state is spent: it used to stay good for a
+// callback with a code for the rest of its fifteen minutes.
+func TestACallbackTheProviderDidNotCompleteIsRefusedAndItsStateSpent(t *testing.T) {
+	t.Parallel()
+
+	for _, tt := range []struct {
+		name      string
+		query     string
+		spendErr  error
+		wantSpent []string
+		want      int
+		outcome   string
+	}{
+		{name: "cancelled", query: "error=access_denied&state=the-state", wantSpent: []string{"the-state"}, want: http.StatusUnauthorized, outcome: "refused"},
+		{name: "with_a_description", query: "error=access_denied&error_description=SECRET+DETAIL&state=the-state", wantSpent: []string{"the-state"}, want: http.StatusUnauthorized, outcome: "refused"},
+		{name: "a_state_that_is_refused", query: "error=access_denied&state=forged", spendErr: &domain.InvalidJWTError{Message: "the state is not valid"}, wantSpent: []string{"forged"}, want: http.StatusUnauthorized, outcome: "refused"},
+		{name: "no_state_at_all", query: "error=access_denied", want: http.StatusUnauthorized, outcome: "refused"},
+		// The store that spends states is away: not a refused sign-in.
+		{name: "a_state_that_cannot_be_spent_because_the_store_is_away", query: "error=access_denied&state=the-state", spendErr: errors.New("the database is away"), wantSpent: []string{"the-state"}, want: http.StatusInternalServerError, outcome: "failed"},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			ot, metrics := testTelemetry(t)
+			port := &abandoning{err: tt.spendErr}
+			h := &AuthnIDPsHandler{service: port, ot: ot, metrics: metrics}
+
+			req := httptest.NewRequest(http.MethodGet, "/auth/idp/x/callback?"+tt.query, nil)
+			req.SetPathValue("idp_id", uuid.NewV7().String())
+			req = req.WithContext(o11y.WithFailure(req.Context()))
+
+			rec := httptest.NewRecorder()
+			h.callback(rec, req)
+
+			if rec.Code != tt.want {
+				t.Fatalf("status = %d, want %d. Body: %s", rec.Code, tt.want, rec.Body.String())
+			}
+
+			// What the handler recorded, not what this test thinks it is.
+			recorded, ok := o11y.TakeFailure(req.Context())
+			if !ok {
+				t.Fatal("nothing was recorded for a request that was not answered 2xx")
+			}
+
+			got := "failed"
+			if respond.IsRefusal(recorded.Err) {
+				got = "refused"
+			}
+
+			if got != tt.outcome {
+				t.Errorf("recorded %T, counted %s; want %s", recorded.Err, got, tt.outcome)
+			}
+
+			agrees(t, recorded.Err, rec.Code)
+
+			if !slices.Equal(port.states, tt.wantSpent) {
+				t.Errorf("spent %v, want %v", port.states, tt.wantSpent)
+			}
+
+			if body := rec.Body.String(); strings.Contains(body, "SECRET") || strings.Contains(body, "access_denied") || strings.Contains(body, "database") {
+				t.Errorf("the provider's words or the cause are in the body: %s", body)
+			}
+		})
+	}
+}
+
+// TestTheCallbacks503SaysOneThing: a provider that does not answer and one
+// whose answer cannot be used are told apart in the log and on the metric.
+// The public body says one sentence for both, and not that it is this
+// service's own registration the provider rejects.
+func TestTheCallbacks503SaysOneThing(t *testing.T) {
+	t.Parallel()
+
+	ot, metrics := testTelemetry(t)
+	_, span := ot.Traces.Tracer.Start(t.Context(), "test")
+	defer span.End()
+
+	for _, err := range []error{
+		&domain.IDPUnreachableError{Message: "the identity provider is not reachable"},
+		&domain.InvalidAuthnServiceError{Message: "the identity provider did not accept this service's request"},
+	} {
+		rec := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet, "/auth/idp/x/callback", nil)
+
+		(&AuthnIDPsHandler{metrics: metrics}).writeCallbackError(rec, req, span, time.Now(), nil, err)
+
+		if rec.Code != http.StatusServiceUnavailable {
+			t.Fatalf("%T: status = %d, want 503", err, rec.Code)
+		}
+
+		agrees(t, err, rec.Code)
+
+		body := rec.Body.String()
+		if !strings.Contains(body, signInUnavailableMessage) || strings.Contains(body, "this service's request") || strings.Contains(body, "not reachable") {
+			t.Errorf("%T: the body is not the one sentence: %s", err, body)
+		}
+	}
+}
+
+// The two that were one error answered 401: a sign-in refused at the
+// provider is the caller's side.
+func TestASignInRefusedAtTheProviderIsA401(t *testing.T) {
+	t.Parallel()
+
+	ot, metrics := testTelemetry(t)
+	_, span := ot.Traces.Tracer.Start(t.Context(), "test")
+	defer span.End()
+
+	refused := &domain.IDPSignInRefusedError{Message: "the identity provider did not accept this sign-in"}
+
+	rec := httptest.NewRecorder()
+	(&AuthnIDPsHandler{metrics: metrics}).writeCallbackError(rec, httptest.NewRequest(http.MethodGet, "/auth/idp/x/callback", nil), span, time.Now(), nil, refused)
+
+	if rec.Code != http.StatusUnauthorized {
+		t.Fatalf("status = %d, want 401. Body: %s", rec.Code, rec.Body.String())
+	}
+
+	agrees(t, refused, rec.Code)
 }

@@ -113,10 +113,15 @@ func TestIDPStateIsSingleUse(t *testing.T) {
 	t.Run("a_state_is_accepted_once_and_refused_after", func(t *testing.T) {
 		t.Parallel()
 
+		// The suite's own provider. This used to register a Github provider
+		// with made-up credentials and exchange the code against github.com:
+		// a test of this service's state that needed the internet, and whose
+		// first answer depended on what GitHub says to an unknown client.
 		admin := getAdminUserTokens(t)
-		idpID := createIDP(t, admin.AccessToken)
+		f := newFakeProvider(t)
+		idpID := createOIDCIDP(t, admin.AccessToken, f, true)
 
-		state := stateFromLoginRedirect(t, idpID)
+		state, _ := f.authorize(t, startFlow(t, idpLoginEndpoint, idpID, nil), person("sub-single-use", "single-use@example.com", true))
 		jti := jtiOf(t, state)
 		require.NotEmpty(t, jti, "the state must carry a jti; without one it cannot be spent")
 
@@ -140,6 +145,8 @@ func TestIDPStateIsSingleUse(t *testing.T) {
 		// exchange, because the code is not one the provider issued. That is
 		// the point: the state was spent on the way through.
 		firstStatus, firstBody := callback()
+		assert.Equal(t, http.StatusUnauthorized, firstStatus,
+			"the first use of a state is accepted and the code refused. Message: %s", firstBody)
 		assert.NotContains(t, firstBody, "state is not valid",
 			"the first use of a state must be accepted. Got %d. Message: %s", firstStatus, firstBody)
 
@@ -159,8 +166,8 @@ func TestIDPStateIsSingleUse(t *testing.T) {
 		for _, body := range []string{firstBody, secondBody} {
 			assert.NotContains(t, body, "oauth2:",
 				"the provider library's error text must not reach the caller: %s", body)
-			assert.NotContains(t, body, "invalid_client",
-				"the provider's view of our client registration must not reach the caller: %s", body)
+			assert.NotContains(t, body, "invalid_grant",
+				"the provider's own error code must not reach the caller: %s", body)
 		}
 	})
 

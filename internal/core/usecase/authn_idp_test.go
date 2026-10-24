@@ -664,3 +664,36 @@ func TestIDPCallbackRefusesAProvidersAddressThatIsNoAddress(t *testing.T) {
 		})
 	}
 }
+
+// A sign-in the provider did not complete had its one callback: the state is
+// spent, and a callback that arrives later with that state and a code is
+// refused like any other spent state.
+func TestIDPAnAbandonedCallbackSpendsTheState(t *testing.T) {
+	t.Parallel()
+
+	f := newIDPFixture(t, verified("sub-late", "late@example.com"))
+	state := f.stateFor(t, domain.IDPEventTypeLogin, uuid.Nil())
+
+	if err := f.svc.AbandonCallback(t.Context(), f.idp.ID, state); err != nil {
+		t.Fatalf("AbandonCallback: %v", err)
+	}
+
+	_, err := f.svc.Callback(t.Context(), f.idp.ID, state, "code")
+	if _, ok := errors.AsType[*domain.InvalidJWTError](err); !ok {
+		t.Fatalf("a callback with the abandoned state: got %T (%v), want the state refused", err, err)
+	}
+
+	if len(f.authn.registered) != 0 || len(f.authn.loggedIn) != 0 {
+		t.Error("the abandoned state signed somebody in")
+	}
+
+	// And it cannot be spent for another provider, or twice.
+	other := f.stateFor(t, domain.IDPEventTypeLogin, uuid.Nil())
+	if err := f.svc.AbandonCallback(t.Context(), uuid.NewV7(), other); err == nil {
+		t.Error("a state was spent at a provider it was not signed for")
+	}
+
+	if err := f.svc.AbandonCallback(t.Context(), f.idp.ID, state); err == nil {
+		t.Error("a spent state was spent again without a word")
+	}
+}

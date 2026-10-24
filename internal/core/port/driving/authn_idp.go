@@ -26,6 +26,12 @@ type AuthnIDPs interface {
 	// the handler maps; there is no half-success.
 	Callback(ctx context.Context, idpID uuid.UUID, state, code string) (*domain.IDPCallbackOutput, error)
 
+	// AbandonCallback spends the state of a sign-in the provider did not
+	// complete (it came back with `error=` and no code). A state is good
+	// for one callback, and that was it: left unspent, the same state would
+	// still be accepted with a code for the rest of its fifteen minutes.
+	AbandonCallback(ctx context.Context, idpID uuid.UUID, state string) error
+
 	// ListIdentities answers the profile page: which providers are linked to
 	// this account.
 	ListIdentities(ctx context.Context, userID uuid.UUID) ([]domain.UserIdentity, error)

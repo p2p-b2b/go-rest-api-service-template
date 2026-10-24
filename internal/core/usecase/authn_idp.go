@@ -313,6 +313,25 @@ func (ref *AuthnIDPsService) Callback(ctx context.Context, idpID uuid.UUID, stat
 	return out, nil
 }
 
+// AbandonCallback implements driving.AuthnIDPs.
+func (ref *AuthnIDPsService) AbandonCallback(ctx context.Context, idpID uuid.UUID, state string) error {
+	start := time.Now()
+	ctx, span, attrs := o11y.SetupTrace(ctx, ref.ot.Traces.Tracer, ref.metricsMetadata, "AbandonCallback")
+	defer span.End()
+
+	if idpID == uuid.Nil() || state == "" {
+		return o11y.RecordError(ctx, span, start, &domain.InvalidIdentityProvidersError{Message: "idp and state are required"}, ref.metrics, attrs)
+	}
+
+	if _, _, _, err := ref.spendState(ctx, state, idpID); err != nil {
+		return o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
+	}
+
+	o11y.RecordSuccess(ctx, span, start, ref.metrics, attrs, "state spent", attribute.String("idp.id", idpID.String()))
+
+	return nil
+}
+
 // signIn resolves the identity and ends with a session, or creates the
 // account first when every condition for that holds.
 func (ref *AuthnIDPsService) signIn(ctx context.Context, idp *domain.IDP, info *domain.UserInfo, eventType domain.IDPEventType) (*domain.IDPCallbackOutput, error) {

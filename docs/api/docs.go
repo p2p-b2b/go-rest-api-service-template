@@ -106,7 +106,7 @@ const docTemplate = `{
                         }
                     },
                     "401": {
-                        "description": "The provider refused the sign-in, the identity is not linked to an account here, or the provider was changed while signing in",
+                        "description": "The sign-in was not completed at the provider (cancelled, denied, a code the provider does not accept, an account with no address), the identity is not linked to an account here, or the provider was changed while signing in",
                         "schema": {
                             "$ref": "#/definitions/payload.HTTPMessage"
                         }
@@ -136,7 +136,7 @@ const docTemplate = `{
                         }
                     },
                     "503": {
-                        "description": "The identity provider is not reachable",
+                        "description": "The identity provider is not reachable, or its answer cannot be used (it rejects this service, or returns no valid identity)",
                         "schema": {
                             "$ref": "#/definitions/payload.HTTPMessage"
                         }
