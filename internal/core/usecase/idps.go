@@ -561,15 +561,9 @@ func (ref *IDPsService) DeleteByID(ctx context.Context, input *domain.DeleteIDPI
 		return o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
 	}
 
-	// decrement resource usage
-	systemScope := domain.ResourcesLimitsScope{
-		Type: domain.ResourcesLimitsScopeTypeSystem,
-	}
-
-	if err := ref.resourcesLimits.DecrementUsage(ctx, systemScope, domain.ResourcesLimitsResourceTypeIDPs); err != nil {
-		return o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
-	}
-
+	// What is cached of it goes before anything that can still fail: the
+	// row is gone, and a usage decrement that failed returned from here with
+	// it still in the cache.
 	if ref.cacheService != nil {
 		slog.DebugContext(ctx, "invalidate cache", "idp_id", input.ID.String())
 
@@ -587,6 +581,15 @@ func (ref *IDPsService) DeleteByID(ctx context.Context, input *domain.DeleteIDPI
 					"key", cacheKey.String(), "idp_id", input.ID.String(), "error", err)
 			}
 		}
+	}
+
+	// decrement resource usage
+	systemScope := domain.ResourcesLimitsScope{
+		Type: domain.ResourcesLimitsScopeTypeSystem,
+	}
+
+	if err := ref.resourcesLimits.DecrementUsage(ctx, systemScope, domain.ResourcesLimitsResourceTypeIDPs); err != nil {
+		return o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
 	}
 
 	o11y.RecordSuccess(ctx, span, start, ref.metrics, attrs, "IDP deleted successfully", attribute.String("idp.id", input.ID.String()))
