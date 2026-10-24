@@ -137,6 +137,16 @@ func TestValidate_authn(t *testing.T) {
 	}
 	config.RefreshTokenRotationGrace.Value = DefaultAuthnRefreshTokenRotationGrace
 
+	// One request to an identity provider is bounded on both sides.
+	for _, out := range []time.Duration{0, 500 * time.Millisecond, 2 * time.Minute} {
+		config.IDPTimeout.Value = out
+		err = config.Validate()
+		if invalidErr, ok := errors.AsType[*InvalidConfigurationError](err); err == nil || !ok || invalidErr.Field != "authn.idp.timeout" {
+			t.Errorf("authn.idp.timeout=%s: expected InvalidConfigurationError on it, got %v", out, err)
+		}
+	}
+	config.IDPTimeout.Value = DefaultAuthnIDPTimeout
+
 	config.AccessTokenRevocationReloadInterval.Value = 2 * time.Minute
 	err = config.Validate()
 	if invalidErr, ok := errors.AsType[*InvalidConfigurationError](err); err == nil || !ok || invalidErr.Field != "authn.access.token.revocation.reload.interval" {

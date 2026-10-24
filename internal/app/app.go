@@ -83,11 +83,16 @@ type App struct {
 	telemetry *o11y.OpenTelemetry // Observability (tracing, metrics)
 	dbPool    *pgxpool.Pool       // Database connection pool
 
-	// httpClient is the ONE outbound client, shared by every integration that
-	// leaves this process -- the IdPs, and the mail API
-	// sender. Built once so a timeout or retry policy changed in config reaches
-	// all of them, rather than each growing its own and drifting.
+	// httpClient is the outbound client of the mail API sender. Built once,
+	// from http.client.*, so a timeout or retry policy changed in config
+	// reaches whatever else comes to use it, rather than each growing its own
+	// and drifting.
 	httpClient *http.Client
+
+	// idpHTTPClient is the identity providers' client, and the one exception
+	// to "one outbound client": same transport settings and the same address
+	// guard, no retries, a timeout of seconds (initIDPHTTPClient says why).
+	idpHTTPClient *http.Client
 
 	// HTTP servers
 	httpServer  *server.HTTPServer  // Main API server

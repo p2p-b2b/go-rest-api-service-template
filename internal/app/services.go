@@ -160,14 +160,9 @@ func (a *App) initServices(ctx context.Context) error {
 	}
 	a.authKeys = keys
 
-	// Initialize http client for API calls
-	slog.Info("initializing HTTP client")
-	// Already built, before the mail service, which also needs it.
-	httpClient := a.httpClient
-
 	// Initialize auth services
 	mailService := a.mailServer // Initialize mail service first
-	if err := a.initAuthServices(httpClient, keys, mailService, cacheService); err != nil {
+	if err := a.initAuthServices(keys, mailService, cacheService); err != nil {
 		return err
 	}
 
@@ -285,6 +280,58 @@ func (a *App) loadAuthKeys() (*authKeys, error) {
 	}, nil
 }
 
+// outboundTransport builds a transport for requests that leave this process.
+//
+// It is built here rather than through httpx's builder so the dialer can
+// carry the outbound address guard: every URL an outbound client dials was
+// supplied by an operator (an identity provider, the mail API), and the
+// guard runs after resolution on the address actually connected to. The
+// settings mirror the builder's.
+func (a *App) outboundTransport() (*http.Transport, safedial.Policy) {
+	cfg := a.configs.HTTPClient
+
+	policy := safedial.Policy{AllowPrivate: cfg.AllowPrivateAddresses.Value}
+	dialer := &net.Dialer{Timeout: 30 * time.Second, KeepAlive: 30 * time.Second, Control: policy.Control}
+
+	return &http.Transport{
+		DialContext:           dialer.DialContext,
+		MaxIdleConns:          cfg.MaxIdleConns.Value,
+		MaxIdleConnsPerHost:   cfg.MaxIdleConnsPerHost.Value,
+		IdleConnTimeout:       cfg.IdleConnTimeout.Value,
+		TLSHandshakeTimeout:   cfg.TLSHandshakeTimeout.Value,
+		ExpectContinueTimeout: cfg.ExpectContinueTimeout.Value,
+		DisableKeepAlives:     cfg.DisableKeepAlives.Value,
+		// A proxy from the environment is dialled through the same guard, so
+		// a private proxy needs the flag too.
+		Proxy: http.ProxyFromEnvironment,
+	}, policy
+}
+
+// initIDPHTTPClient builds the identity providers' client: the outbound
+// transport and its address guard, no retries, and authn.idp.timeout for
+// each request.
+//
+// The shared client retries a failed request ten times with backoff inside
+// a two-minute timeout. For a sign-in, it was wrong twice. A provider that
+// did not answer held the callback for about two and a half minutes before
+// the 503 (the retries of a refused connection, and the OAuth library
+// presenting the exchange again): a person looking at a spinner, and a
+// public route holding a connection for each of them. And the request it
+// retried was the token POST, whose authorization code is good for one
+// exchange: a retry of a POST the provider did receive can only be refused.
+//
+// So nothing is retried here. Discovery, the only call a retry could help,
+// is cached per issuer after its first success, and a sign-in that fails on
+// it is one the person starts again.
+func (a *App) initIDPHTTPClient() *http.Client {
+	transport, _ := a.outboundTransport()
+	timeout := a.configs.Authn.IDPTimeout.Value
+
+	slog.Info("identity-provider HTTP client built", "timeout", timeout, "retries", 0)
+
+	return &http.Client{Transport: transport, Timeout: timeout}
+}
+
 // initHTTPClient initializes the HTTP client for API calls
 func (a *App) initHTTPClient() *http.Client {
 	cfg := a.configs.HTTPClient
@@ -296,25 +343,7 @@ func (a *App) initHTTPClient() *http.Client {
 		"allow_private_addresses", cfg.AllowPrivateAddresses.Value,
 	)
 
-	// The transport is built here rather than through httpx's builder so the
-	// dialer can carry the outbound address guard: every URL this client
-	// dials was supplied by an operator (an identity provider), and the guard runs after resolution on the address actually
-	// connected to. The settings mirror the builder's.
-	policy := safedial.Policy{AllowPrivate: cfg.AllowPrivateAddresses.Value}
-	dialer := &net.Dialer{Timeout: 30 * time.Second, KeepAlive: 30 * time.Second, Control: policy.Control}
-
-	transport := &http.Transport{
-		DialContext:           dialer.DialContext,
-		MaxIdleConns:          cfg.MaxIdleConns.Value,
-		MaxIdleConnsPerHost:   cfg.MaxIdleConnsPerHost.Value,
-		IdleConnTimeout:       cfg.IdleConnTimeout.Value,
-		TLSHandshakeTimeout:   cfg.TLSHandshakeTimeout.Value,
-		ExpectContinueTimeout: cfg.ExpectContinueTimeout.Value,
-		DisableKeepAlives:     cfg.DisableKeepAlives.Value,
-		// A proxy from the environment is dialled through the same guard, so
-		// a private proxy needs the flag too.
-		Proxy: http.ProxyFromEnvironment,
-	}
+	transport, policy := a.outboundTransport()
 
 	var strategy httpx.RetryStrategy
 	switch cfg.RetryStrategy.Value {
@@ -347,7 +376,6 @@ func (a *App) initHTTPClient() *http.Client {
 
 // initAuthServices initializes the authentication and authorization services
 func (a *App) initAuthServices(
-	httpClient *http.Client,
 	keys *authKeys,
 	mailService *mailer.MailService,
 	cacheService cache.Cache,
@@ -562,7 +590,7 @@ func (a *App) initAuthServices(
 		return fmt.Errorf("error creating idps service: %w", err)
 	}
 
-	oauthProvider, err := oauthidp.New(oauthidp.Config{HTTPClient: httpClient})
+	oauthProvider, err := oauthidp.New(oauthidp.Config{HTTPClient: a.idpHTTPClient})
 	if err != nil {
 		return fmt.Errorf("error creating the OAuth provider adapter: %w", err)
 	}

@@ -206,6 +206,13 @@ Since `v0.0.3`.
 
 ### Upgrade notes
 
+- **A new setting, `authn.idp.timeout`** (`AUTHN_IDP_TIMEOUT`, `10s`):
+  how long one request to an identity provider may take. A value outside
+  `1s` to `1m` stops the process at startup. `http.client.timeout`,
+  `http.client.max.retries` and `http.client.retry.strategy` no longer
+  apply to the identity providers (they still apply to the mail API
+  sender); the address guard (`http.client.allow.private.addresses`) and
+  the connection settings still do. (#160)
 - **`users.disabled`, `users.admin` and `users.local_account` are `NOT NULL`**
   (`00002_users_tables.sql`, edited in place). A database created from an
   earlier version keeps the nullable columns, and the migration tool does
@@ -335,6 +342,25 @@ Since `v0.0.3`.
 
 ### Fixed
 
+- **The identity providers have an HTTP client of their own, and a failed
+  exchange is presented once.** They used the service's shared outbound
+  client, which retries a failed request ten times with backoff inside two
+  minutes: a token endpoint that refused the connection was answered 503
+  after about two and a half minutes, a 5xx came back after the retries as a
+  transport error, and the request retried was the token POST, whose code
+  is good for one exchange: a token endpoint that answered 502 was sent the
+  code 22 times and answered after almost three minutes (eleven attempts,
+  twice: the OAuth library, probing where the client's credentials go,
+  presented a failed exchange a second time). A provider that spends the
+  code and then answers 502 answers the retry `invalid_grant`, so its
+  outage was a 401 "sign-in refused". The providers' client has the same transport and
+  address guard, no retries, and a new setting, `authn.idp.timeout` (env
+  `AUTHN_IDP_TIMEOUT`, 10 s, between 1 s and 1 m), per request; the
+  credentials go where the discovery document says
+  (`client_secret_basic` when listed or when nothing is, the form when only
+  `client_secret_post` is; the form for GitHub). The shared client is
+  unchanged and serves the mail API sender.
+  ([#160](https://github.com/slashdevops/go-rest-api-service-template/pull/160))
 - **A sign-in refused at the provider is not an outage, and an outage is not
   a refused sign-in.** The identity-provider callback answered one error,
   401, for both sides of a failed sign-in, and the status table counted it a
@@ -348,9 +374,10 @@ Since `v0.0.3`.
   answers 5xx, returns no valid ID token, does not answer, or the call for
   the account's address fails. A client that read every callback 401 as
   "sign-in refused" now sees the outage. The adapter decides from the OAuth
-  error code, never from text. The providers still share the service's
-  retrying client: a 5xx or a refused connection is answered after the
-  retries, as unreachable.
+  error code, never from text. The providers then still shared the
+  service's retrying client: a 5xx or a refused connection was answered
+  after the retries, as unreachable, until
+  [#160](https://github.com/slashdevops/go-rest-api-service-template/pull/160).
   A sign-in cancelled at the provider spends its state: it stayed good for a
   callback with a code for the rest of its fifteen minutes, and such a
   replay signed in. `TestIDPStateIsSingleUse` runs on the suite's own
