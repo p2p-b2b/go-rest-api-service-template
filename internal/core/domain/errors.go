@@ -312,8 +312,9 @@ func (e *IDPSignInRefusedError) Error() string {
 // answered and whose answer cannot be used: no ID token, one that does not
 // verify, account details that cannot be read, or a refusal of this
 // service's client; and, at a sign-in's start or its callback, a provider row
-// the service cannot sign in with (IDPNotConfiguredMessage). See IDPSignInRefusedError for the caller's side and
-// IDPUnreachableError for no answer at all. The authentication use-cases
+// the service cannot sign in with (IDPNotConfiguredMessage). See
+// IDPSignInRefusedError for the caller's side and IDPUnreachableError for no
+// answer at all. The authentication use-cases
 // also return it for their own wiring (a missing dependency at
 // construction), which no provider is involved in.
 type InvalidAuthnServiceError struct {

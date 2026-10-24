@@ -565,6 +565,19 @@ func TestTheLineAboutAFailureCarriesItsDetail(t *testing.T) {
 			if got, want := lines[0].attrs["detail"], tt.err.(interface{ FailureDetail() string }).FailureDetail(); got != want {
 				t.Errorf("the line's detail is %q, want %q", got, want)
 			}
+
+			// A refusal's detail can be the caller's own text (the callback's
+			// error_description): it stays on the DEBUG line, never the INFO
+			// access line an operator reads by default.
+			if tt.level == slog.LevelDebug {
+				for _, r := range *records {
+					if r.level == slog.LevelInfo && r.message == "request" {
+						if d, ok := r.attrs["detail"]; ok {
+							t.Errorf("the refusal's INFO access line carries detail %q", d)
+						}
+					}
+				}
+			}
 		})
 	}
 }
