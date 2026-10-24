@@ -347,6 +347,13 @@ Since `v0.0.3`.
 
 ### Fixed
 
+- **A failure a middleware answers is said to arise in it.** The access
+  line of a request names where its failure arose. `CheckAuthz` (an
+  authorization store fault) and `Logging`'s recover (a panic) handed their
+  failure to it directly, so the line named
+  `net/http.HandlerFunc.ServeHTTP` and `runtime.gopanic`; they go through
+  the middleware's helper, which names the middleware, and a test holds the
+  package to it. ([#165](https://github.com/slashdevops/go-rest-api-service-template/pull/165))
 - **A delete drops what is cached of its row before it gives the usage
   slot back.** The user, identity-provider and project deletes gave the slot
   back first, and that decrement can fail after the row is gone (a fault,
