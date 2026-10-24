@@ -5,10 +5,12 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"uuid"
 
 	"github.com/slashdevops/go-rest-api-service-template/internal/core/domain"
+	"github.com/slashdevops/go-rest-api-service-template/internal/o11y"
 )
 
 type fakeMembership struct {
@@ -74,12 +76,62 @@ func TestRequireProjectMembership(t *testing.T) {
 		}
 	})
 
+	t.Run("the_refusal_is_the_access_lines_not_a_line_of_its_own", func(t *testing.T) {
+		t.Parallel()
+		// A refusal is no error of the service: it is handed to the holder,
+		// for the access line to carry at INFO, and it was a WARN line
+		// besides. The body is the one a missing project gets.
+		mux := http.NewServeMux()
+		mux.Handle("GET /projects/{project_id}/products", RequireProjectMembership(&fakeMembership{answer: domain.ProjectMembershipNone})(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			w.WriteHeader(http.StatusOK)
+		})))
+
+		ctx := context.WithValue(o11y.WithFailure(t.Context()), JwtClaims, map[string]any{"sub": user.String()})
+		req := httptest.NewRequestWithContext(ctx, http.MethodGet, "/projects/"+project.String()+"/products", nil)
+		rec := httptest.NewRecorder()
+		mux.ServeHTTP(rec, req)
+
+		if rec.Code != http.StatusNotFound {
+			t.Fatalf("status %d, want 404", rec.Code)
+		}
+
+		held, ok := o11y.FailureFrom(ctx)
+		if !ok {
+			t.Fatal("the refusal was not handed to the access line")
+		}
+
+		if !strings.Contains(held.Func, "middleware.RequireProjectMembership") {
+			t.Errorf("the refusal is said to arise in %s, want the middleware", held.Func)
+		}
+
+		notFound, isNotFound := errors.AsType[*domain.ProjectNotFoundError](held.Err)
+		if !isNotFound || notFound.ID != project {
+			t.Fatalf("held %v, want the project's ProjectNotFoundError", held.Err)
+		}
+
+		want := (&domain.ProjectNotFoundError{ID: project}).Error()
+		if !strings.Contains(rec.Body.String(), want) {
+			t.Fatalf("body %s, want %q", rec.Body.String(), want)
+		}
+	})
+
 	t.Run("a_store_fault_fails_closed", func(t *testing.T) {
 		t.Parallel()
 		f := &fakeMembership{err: errors.New("db away")}
 		rec := serve(f, "GET /projects/{project_id}/embedding_configs", "/projects/"+project.String()+"/embedding_configs", true)
 		if rec.Code != http.StatusInternalServerError {
 			t.Fatalf("status %d, want 500", rec.Code)
+		}
+	})
+
+	t.Run("the_nil_project_is_a_400", func(t *testing.T) {
+		t.Parallel()
+		// It parses, and the use-case refuses it as an invalid input: the
+		// status table's 400, not the store fault's 500.
+		f := &fakeMembership{err: &domain.InvalidInputError{Field: "project_id", Value: uuid.Nil().String(), Message: "project ID is nil"}}
+		rec := serve(f, "GET /projects/{project_id}/products", "/projects/"+uuid.Nil().String()+"/products", true)
+		if rec.Code != http.StatusBadRequest {
+			t.Fatalf("status %d, want 400: %s", rec.Code, rec.Body.String())
 		}
 	})
 
