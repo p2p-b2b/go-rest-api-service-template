@@ -206,13 +206,14 @@ Since `v0.0.3`.
 
 ### Upgrade notes
 
-- **A refused list expression changes its code and its message.** The
-  codes `INVALID_SORT_FIELD`, `INVALID_FILTER_FIELD`, `INVALID_FIELD`,
-  `INVALID_FIELDS_FIELD`, `INVALID_SORT`, `INVALID_FILTER` and
-  `INVALID_FIELDS` are all `INVALID_EXPRESSION` now, and the message is no
-  longer the parser's. A client that matched either reads the `field` of
-  the error (`sort`, `filter`, `fields`) instead. `TOO_LONG` is unchanged.
-  (#171)
+- **A refused list expression's message changes.** A list's 400 for a
+  `sort`, `filter` or `fields` the parser refuses says, after its
+  `validation error in field '<sort|filter|fields>':` prefix, `'x' is not a
+  sortable field` (filterable, selectable) or what the expression must look
+  like, where it said the parser's own words ("error on field 'x': field not
+  allowed for sorting"). A client that matched the parser's words matches
+  the prefix, which is unchanged, or the new sentences. The status (400) is
+  unchanged. (#171)
 - **`DELETE /roles/{role_id}` and `DELETE /policies/{policy_id}` answer
   404 for an id that is not there**; they answered 200. A client that
   treated either delete as idempotent on its status reads 404 as "already
@@ -369,10 +370,11 @@ Since `v0.0.3`.
 - **A refused list expression is answered in our words, under one code.**
   A list's 400 for a `sort`, `filter` or `fields` it could not parse copied
   the qfv parser's error ("error on field 'x': field not allowed for
-  sorting"), under seven codes for the same failure, so a qfv release could
-  reword every list's 400. It is `INVALID_EXPRESSION`, and the message is
-  `'x' is not a sortable field` (filterable, selectable) for a field the list
-  does not accept, or what the expression must look like.
+  sorting"), so a qfv release could reword every list's 400. The message is
+  ours: `'x' is not a sortable field` (filterable, selectable) for a field
+  the list does not accept, or what the expression must look like; and
+  inside the service the refusal has one code, `INVALID_EXPRESSION`, where
+  it had seven for the same failure.
   ([#171](https://github.com/slashdevops/go-rest-api-service-template/pull/171))
 - **A list's expressions reach its span after they are validated.** The
   six lists that record their `sort`, `filter` and `fields` on the

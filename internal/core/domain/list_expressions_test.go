@@ -114,7 +114,7 @@ func TestTheLimitIsTheLastLengthParsed(t *testing.T) {
 			for _, field := range expressionFields {
 				got := refusals(err, field)
 				if len(got) != 1 || got[0] != ListExpressionCode {
-					t.Errorf("%s of exactly its limit was refused with %v, want the parser's %s alone", field, got, ListExpressionCode)
+					t.Errorf("%s of exactly its limit was refused with %v, want %s alone", field, got, ListExpressionCode)
 				}
 			}
 		})

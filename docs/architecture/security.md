@@ -163,8 +163,10 @@ sorting"), under seven codes for the same failure (`INVALID_SORT_FIELD`,
 `INVALID_FILTER_FIELD`, `INVALID_FIELD`, `INVALID_FIELDS_FIELD`, and on the
 projects list `INVALID_SORT`, `INVALID_FILTER`, `INVALID_FIELDS`). That made a
 dependency's prose the API's contract: a qfv release could reword every
-list's 400. Every refusal is `INVALID_EXPRESSION` now, its `field` the
-parameter, and its message ours: `'x' is not a sortable field` (filterable,
+list's 400. Every refusal is one `ValidationError` with the code
+`INVALID_EXPRESSION` and the parameter as its field (the body carries its
+message after the `validation error in field '…':` prefix), and the message
+is ours: `'x' is not a sortable field` (filterable,
 selectable) when the expression names a field the list does not accept, and
 otherwise what the expression must look like. The field is named only when
 it is a plain identifier (64 characters at most) missing from the list's own

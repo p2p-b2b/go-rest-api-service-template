@@ -35,9 +35,10 @@ type listExpressions struct {
 // # Our wording, not the library's
 //
 // Every list validator copied the qfv error into the response ("error on
-// field 'x': field not allowed for sorting"), under four codes for the same
-// failure (INVALID_SORT_FIELD, INVALID_FILTER_FIELD, INVALID_FIELD,
-// INVALID_FIELDS_FIELD). That published a dependency's prose as the API
+// field 'x': field not allowed for sorting"), under seven codes for the
+// same failure (INVALID_SORT_FIELD, INVALID_FILTER_FIELD, INVALID_FIELD,
+// INVALID_FIELDS_FIELD, and the projects list's INVALID_SORT,
+// INVALID_FILTER, INVALID_FIELDS). That published a dependency's prose as the API
 // contract: a qfv release could reword every 400 of every list endpoint.
 // The message is now ours: it names the field when the expression refers to
 // a field this list does not accept, and otherwise says what the expression
