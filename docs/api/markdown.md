@@ -689,6 +689,7 @@ Create a new user account and send verification email.
 |------|--------|-------------|:-----------:|--------|
 | [201](#019822af-b448-7572-a268-4c7b20a70229-201) | Created | Registration accepted. Answered the same way whether or not the address already has an account — deliberately, so this endpoint cannot be used to discover which addresses are registered. If the address was already taken, its owner is told by email instead and no second account is created | ✓ | [schema](#019822af-b448-7572-a268-4c7b20a70229-201-schema) |
 | [400](#019822af-b448-7572-a268-4c7b20a70229-400) | Bad Request | Invalid request body or validation error |  | [schema](#019822af-b448-7572-a268-4c7b20a70229-400-schema) |
+| [409](#019822af-b448-7572-a268-4c7b20a70229-409) | Conflict | Registration is closed: the user limit has been reached |  | [schema](#019822af-b448-7572-a268-4c7b20a70229-409-schema) |
 | [413](#019822af-b448-7572-a268-4c7b20a70229-413) | Request Entity Too Large | Request body larger than http.server.max.body.bytes |  | [schema](#019822af-b448-7572-a268-4c7b20a70229-413-schema) |
 | [415](#019822af-b448-7572-a268-4c7b20a70229-415) | Unsupported Media Type | Body not declared as application/json |  | [schema](#019822af-b448-7572-a268-4c7b20a70229-415-schema) |
 | [500](#019822af-b448-7572-a268-4c7b20a70229-500) | Internal Server Error | Internal server error during registration |  | [schema](#019822af-b448-7572-a268-4c7b20a70229-500-schema) |
@@ -715,6 +716,15 @@ Status: Created
 Status: Bad Request
 
 ###### <span id="019822af-b448-7572-a268-4c7b20a70229-400-schema"></span> Schema
+   
+  
+
+[PayloadHTTPMessage](#payload-http-message)
+
+##### <span id="019822af-b448-7572-a268-4c7b20a70229-409"></span> 409 - Registration is closed: the user limit has been reached
+Status: Conflict
+
+###### <span id="019822af-b448-7572-a268-4c7b20a70229-409-schema"></span> Schema
    
   
 
@@ -3785,7 +3795,7 @@ Update an existing authorization policy by its unique identifier
 | [400](#01982303-f0f9-7ec1-8f39-98e77141c05c-400) | Bad Request | Invalid request body or validation error |  | [schema](#01982303-f0f9-7ec1-8f39-98e77141c05c-400-schema) |
 | [401](#01982303-f0f9-7ec1-8f39-98e77141c05c-401) | Unauthorized | Missing or invalid authentication token |  | [schema](#01982303-f0f9-7ec1-8f39-98e77141c05c-401-schema) |
 | [403](#01982303-f0f9-7ec1-8f39-98e77141c05c-403) | Forbidden | System policies cannot be modified |  | [schema](#01982303-f0f9-7ec1-8f39-98e77141c05c-403-schema) |
-| [404](#01982303-f0f9-7ec1-8f39-98e77141c05c-404) | Not Found | Policy not found |  | [schema](#01982303-f0f9-7ec1-8f39-98e77141c05c-404-schema) |
+| [404](#01982303-f0f9-7ec1-8f39-98e77141c05c-404) | Not Found | Policy not found, or the new grant matches no endpoint |  | [schema](#01982303-f0f9-7ec1-8f39-98e77141c05c-404-schema) |
 | [409](#01982303-f0f9-7ec1-8f39-98e77141c05c-409) | Conflict | Policy name already in use |  | [schema](#01982303-f0f9-7ec1-8f39-98e77141c05c-409-schema) |
 | [413](#01982303-f0f9-7ec1-8f39-98e77141c05c-413) | Request Entity Too Large | Request body larger than http.server.max.body.bytes |  | [schema](#01982303-f0f9-7ec1-8f39-98e77141c05c-413-schema) |
 | [415](#01982303-f0f9-7ec1-8f39-98e77141c05c-415) | Unsupported Media Type | Body not declared as application/json |  | [schema](#01982303-f0f9-7ec1-8f39-98e77141c05c-415-schema) |
@@ -3831,7 +3841,7 @@ Status: Forbidden
 
 [PayloadHTTPMessage](#payload-http-message)
 
-##### <span id="01982303-f0f9-7ec1-8f39-98e77141c05c-404"></span> 404 - Policy not found
+##### <span id="01982303-f0f9-7ec1-8f39-98e77141c05c-404"></span> 404 - Policy not found, or the new grant matches no endpoint
 Status: Not Found
 
 ###### <span id="01982303-f0f9-7ec1-8f39-98e77141c05c-404-schema"></span> Schema
@@ -4037,7 +4047,7 @@ Associate multiple policies with role for authorization
 | [400](#01982303-f0f9-7edc-bbff-c8fc5dcba075-400) | Bad Request | Invalid request payload or role ID format |  | [schema](#01982303-f0f9-7edc-bbff-c8fc5dcba075-400-schema) |
 | [401](#01982303-f0f9-7edc-bbff-c8fc5dcba075-401) | Unauthorized | Missing or invalid authentication token |  | [schema](#01982303-f0f9-7edc-bbff-c8fc5dcba075-401-schema) |
 | [403](#01982303-f0f9-7edc-bbff-c8fc5dcba075-403) | Forbidden | Insufficient permissions |  | [schema](#01982303-f0f9-7edc-bbff-c8fc5dcba075-403-schema) |
-| [404](#01982303-f0f9-7edc-bbff-c8fc5dcba075-404) | Not Found | Role not found |  | [schema](#01982303-f0f9-7edc-bbff-c8fc5dcba075-404-schema) |
+| [404](#01982303-f0f9-7edc-bbff-c8fc5dcba075-404) | Not Found | Role not found, or one of the policies does not exist |  | [schema](#01982303-f0f9-7edc-bbff-c8fc5dcba075-404-schema) |
 | [413](#01982303-f0f9-7edc-bbff-c8fc5dcba075-413) | Request Entity Too Large | Request body larger than http.server.max.body.bytes |  | [schema](#01982303-f0f9-7edc-bbff-c8fc5dcba075-413-schema) |
 | [415](#01982303-f0f9-7edc-bbff-c8fc5dcba075-415) | Unsupported Media Type | Body not declared as application/json |  | [schema](#01982303-f0f9-7edc-bbff-c8fc5dcba075-415-schema) |
 | [429](#01982303-f0f9-7edc-bbff-c8fc5dcba075-429) | Too Many Requests | Too many requests -- RATE_LIMIT_EXCEEDED is the budget, RATE_LIMIT_UNAVAILABLE the limiter's own store |  | [schema](#01982303-f0f9-7edc-bbff-c8fc5dcba075-429-schema) |
@@ -4082,7 +4092,7 @@ Status: Forbidden
 
 [PayloadHTTPMessage](#payload-http-message)
 
-##### <span id="01982303-f0f9-7edc-bbff-c8fc5dcba075-404"></span> 404 - Role not found
+##### <span id="01982303-f0f9-7edc-bbff-c8fc5dcba075-404"></span> 404 - Role not found, or one of the policies does not exist
 Status: Not Found
 
 ###### <span id="01982303-f0f9-7edc-bbff-c8fc5dcba075-404-schema"></span> Schema
@@ -9348,7 +9358,7 @@ Remove the identity at one provider from the signed-in account. Refused when it 
 | [400](#01a07319-1d32-7cac-885b-6c544f5dbe08-400) | Bad Request | Invalid identity provider id |  | [schema](#01a07319-1d32-7cac-885b-6c544f5dbe08-400-schema) |
 | [401](#01a07319-1d32-7cac-885b-6c544f5dbe08-401) | Unauthorized | Invalid or expired token |  | [schema](#01a07319-1d32-7cac-885b-6c544f5dbe08-401-schema) |
 | [403](#01a07319-1d32-7cac-885b-6c544f5dbe08-403) | Forbidden | Not authorized |  | [schema](#01a07319-1d32-7cac-885b-6c544f5dbe08-403-schema) |
-| [404](#01a07319-1d32-7cac-885b-6c544f5dbe08-404) | Not Found | No identity at that provider |  | [schema](#01a07319-1d32-7cac-885b-6c544f5dbe08-404-schema) |
+| [404](#01a07319-1d32-7cac-885b-6c544f5dbe08-404) | Not Found | No identity at that provider, or the account no longer exists |  | [schema](#01a07319-1d32-7cac-885b-6c544f5dbe08-404-schema) |
 | [409](#01a07319-1d32-7cac-885b-6c544f5dbe08-409) | Conflict | It is the only way into the account |  | [schema](#01a07319-1d32-7cac-885b-6c544f5dbe08-409-schema) |
 | [429](#01a07319-1d32-7cac-885b-6c544f5dbe08-429) | Too Many Requests | Too many requests |  | [schema](#01a07319-1d32-7cac-885b-6c544f5dbe08-429-schema) |
 | [500](#01a07319-1d32-7cac-885b-6c544f5dbe08-500) | Internal Server Error | Internal server error |  | [schema](#01a07319-1d32-7cac-885b-6c544f5dbe08-500-schema) |
@@ -9392,7 +9402,7 @@ Status: Forbidden
 
 [PayloadHTTPMessage](#payload-http-message)
 
-##### <span id="01a07319-1d32-7cac-885b-6c544f5dbe08-404"></span> 404 - No identity at that provider
+##### <span id="01a07319-1d32-7cac-885b-6c544f5dbe08-404"></span> 404 - No identity at that provider, or the account no longer exists
 Status: Not Found
 
 ###### <span id="01a07319-1d32-7cac-885b-6c544f5dbe08-404-schema"></span> Schema

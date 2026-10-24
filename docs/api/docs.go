@@ -1389,6 +1389,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/payload.HTTPMessage"
                         }
                     },
+                    "409": {
+                        "description": "Registration is closed: the user limit has been reached",
+                        "schema": {
+                            "$ref": "#/definitions/payload.HTTPMessage"
+                        }
+                    },
                     "413": {
                         "description": "Request body larger than http.server.max.body.bytes",
                         "schema": {
@@ -2108,7 +2114,7 @@ const docTemplate = `{
                         }
                     },
                     "404": {
-                        "description": "No identity at that provider",
+                        "description": "No identity at that provider, or the account no longer exists",
                         "schema": {
                             "$ref": "#/definitions/payload.HTTPMessage"
                         }
@@ -2516,7 +2522,7 @@ const docTemplate = `{
                         }
                     },
                     "404": {
-                        "description": "Policy not found",
+                        "description": "Policy not found, or the new grant matches no endpoint",
                         "schema": {
                             "$ref": "#/definitions/payload.HTTPMessage"
                         }
@@ -5804,7 +5810,7 @@ const docTemplate = `{
                         }
                     },
                     "404": {
-                        "description": "Role not found",
+                        "description": "Role not found, or one of the policies does not exist",
                         "schema": {
                             "$ref": "#/definitions/payload.HTTPMessage"
                         }

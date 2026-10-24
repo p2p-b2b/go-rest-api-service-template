@@ -268,7 +268,8 @@ another account, or for a local one, is refused),
 | identity already linked elsewhere (link) | 409 | the other account keeps it |
 | a first sign-in's identity cannot be stored (linked meanwhile, a fault) | 409, or 500 | no account is stored either, and the users slot is given back: see above |
 | the provider was deleted, or pointed at another issuer or type, while signing in | 401, "the identity provider changed while signing in; sign in again" | nothing is stored under a provider that did not vouch for the subject: see "Pointing a provider elsewhere" |
-| a first sign-in when the users limit is reached | 409 | registration is closed; it answered 500 |
+| a first sign-in when the users limit is reached | 409, "registration is closed: the user limit has been reached" | the route is public: the limit error's own text names the scope, both limits and the usage |
+| the account a link was started for was deleted before the callback | 404, a fixed sentence | it was a 500; the error's own text names the account's id |
 | provider disabled | 404 at start, at the callback, and absent from `/auth/idp/available` | a half-configured provider is never offered |
 
 ## Configuring a provider

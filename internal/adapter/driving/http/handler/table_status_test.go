@@ -1,0 +1,332 @@
+//go:build unit
+
+package handler
+
+import (
+	"context"
+	"errors"
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"testing"
+	"time"
+
+	"uuid"
+
+	"github.com/slashdevops/go-rest-api-service-template/internal/adapter/driving/http/respond"
+	"github.com/slashdevops/go-rest-api-service-template/internal/core/domain"
+	"github.com/slashdevops/go-rest-api-service-template/internal/core/port/driving"
+	"github.com/slashdevops/go-rest-api-service-template/internal/o11y"
+)
+
+// A call's outcome on the metric is decided from its error by the status
+// table (respond.IsRefusal). A handler that answered 500 whatever the error
+// counted that 500 as `refused` whenever the error was one the table calls a
+// 4xx. The tests below hold the sites that an error of the table can reach,
+// found by reading every WriteInternalError call of the handlers against what
+// its use-case returns, to the table: the status written is the table's, so
+// the status and the outcome say the same thing.
+
+// agrees fails when the status a handler wrote and the outcome its call was
+// counted with disagree: a refusal is answered below 500, a failure at 500
+// or above.
+func agrees(t *testing.T, err error, status int) {
+	t.Helper()
+
+	if refused := respond.IsRefusal(err); refused != (status < http.StatusInternalServerError) {
+		t.Errorf("%T is counted refused=%v and was answered %d", err, refused, status)
+	}
+}
+
+// testTelemetry is what a handler needs to open its span and record its call.
+func testTelemetry(t *testing.T) (*o11y.OpenTelemetry, *o11y.LayerMetrics) {
+	t.Helper()
+
+	ot := &o11y.OpenTelemetry{
+		Traces:  o11y.NewOpenTelemetryTracer(t.Context(), &o11y.OpenTelemetryTracerConfig{Name: "test"}),
+		Metrics: o11y.NewOpenTelemetryMeter(t.Context(), &o11y.OpenTelemetryMeterConfig{Name: "test"}),
+	}
+
+	metrics, err := o11y.NewLayerMetrics(ot.Metrics.Meter, "")
+	if err != nil {
+		t.Fatalf("NewLayerMetrics: %v", err)
+	}
+
+	return ot, metrics
+}
+
+// TestTheIDPCallbackDoesNotPrintTheAccountID: the account a link was started
+// for was deleted before the callback. The user service's error names the
+// account by its id, and the callback is public: it answers 404 in a fixed
+// sentence. It was a 500 counted as refused.
+func TestTheIDPCallbackDoesNotPrintTheAccountID(t *testing.T) {
+	t.Parallel()
+
+	ot, metrics := testTelemetry(t)
+	_, span := ot.Traces.Tracer.Start(t.Context(), "test")
+	defer span.End()
+
+	id := uuid.NewV7()
+	gone := &domain.UserNotFoundError{ID: id, Message: "User not found"}
+
+	rec := httptest.NewRecorder()
+	(&AuthnIDPsHandler{metrics: metrics}).writeCallbackError(rec, httptest.NewRequest(http.MethodGet, "/auth/idp/x/callback", nil), span, time.Now(), nil, gone)
+
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("status = %d, want 404. Body: %s", rec.Code, rec.Body.String())
+	}
+
+	agrees(t, gone, rec.Code)
+
+	body := rec.Body.String()
+	if !strings.Contains(body, accountGoneMessage) {
+		t.Errorf("the body is not the fixed sentence: %s", body)
+	}
+
+	if strings.Contains(body, id.String()) {
+		t.Errorf("the body prints the account's id to an anonymous caller: %s", body)
+	}
+}
+
+// theLimitIsFull is the error the resources-limits repository returns when
+// the system's user limit is full, with the numbers it puts in its message.
+func theLimitIsFull() *domain.ResourcesLimitsHardLimitReachedError {
+	return &domain.ResourcesLimitsHardLimitReachedError{
+		Message:  "hard limit reached: scope type system, scope ID 0199, resource type users. soft limit 90, hard limit 100, current usage 100",
+		Resource: "users", Limit: 100, Current: 100,
+	}
+}
+
+// noLimitIn fails when a body tells an anonymous caller about the limit.
+func noLimitIn(t *testing.T, body string) {
+	t.Helper()
+
+	if !strings.Contains(body, registrationClosedMessage) {
+		t.Errorf("the body does not say registration is closed: %s", body)
+	}
+
+	for _, leak := range []string{"hard limit", "current usage", "scope", "0199"} {
+		if strings.Contains(body, leak) {
+			t.Errorf("the body tells an anonymous caller about the limit (%q): %s", leak, body)
+		}
+	}
+}
+
+// TestTheIDPCallbackDoesNotDiscloseTheUserLimit: a first sign-in creates the
+// account, and the system's user limit can be reached. The route is public,
+// and the limit error's own message names the scope, both limits and the
+// current usage. It hears what the public registration route says.
+func TestTheIDPCallbackDoesNotDiscloseTheUserLimit(t *testing.T) {
+	t.Parallel()
+
+	ot, metrics := testTelemetry(t)
+	_, span := ot.Traces.Tracer.Start(t.Context(), "test")
+	defer span.End()
+
+	full := theLimitIsFull()
+
+	rec := httptest.NewRecorder()
+	(&AuthnIDPsHandler{metrics: metrics}).writeCallbackError(rec, httptest.NewRequest(http.MethodGet, "/auth/idp/x/callback", nil), span, time.Now(), nil, full)
+
+	if rec.Code != http.StatusConflict {
+		t.Fatalf("status = %d, want 409. Body: %s", rec.Code, rec.Body.String())
+	}
+
+	agrees(t, full, rec.Code)
+	noLimitIn(t, rec.Body.String())
+}
+
+// registering is the one method of the port the registration route calls.
+type registering struct {
+	driving.Authn
+
+	err error
+}
+
+func (r registering) RegisterUser(context.Context, *domain.RegisterUserInput) error { return r.err }
+
+// TestRegistrationAnswersThroughTheTable: the system's user limit is full. It
+// was a 500 counted as refused; it is the 409 the callback answers, in the
+// same fixed sentence.
+func TestRegistrationAnswersThroughTheTable(t *testing.T) {
+	t.Parallel()
+
+	for _, tt := range []struct {
+		name string
+		err  error
+		want int
+	}{
+		{name: "the_user_limit_is_full", err: theLimitIsFull(), want: http.StatusConflict},
+		{name: "a_fault", err: errors.New("the database is away"), want: http.StatusInternalServerError},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			ot, metrics := testTelemetry(t)
+			h := &AuthnHandler{service: registering{err: tt.err}, ot: ot, metrics: metrics}
+
+			body := `{"first_name":"Ada","last_name":"Lovelace","email":"ada@example.com","password":"Analytical-Engine-1843"}`
+			req := httptest.NewRequest(http.MethodPost, "/auth/register", strings.NewReader(body))
+			req.Header.Set("Content-Type", "application/json")
+
+			rec := httptest.NewRecorder()
+			h.registerUser(rec, req)
+
+			if rec.Code != tt.want {
+				t.Fatalf("status = %d, want %d. Body: %s", rec.Code, tt.want, rec.Body.String())
+			}
+
+			agrees(t, tt.err, rec.Code)
+
+			if tt.want == http.StatusConflict {
+				noLimitIn(t, rec.Body.String())
+			}
+
+			if strings.Contains(rec.Body.String(), "database is away") {
+				t.Errorf("the cause is in the body: %s", rec.Body.String())
+			}
+		})
+	}
+}
+
+// unlinking is the one method of the port the unlink route calls.
+type unlinking struct {
+	driving.AuthnIDPs
+
+	err error
+}
+
+func (u unlinking) UnlinkIdentity(context.Context, uuid.UUID, uuid.UUID) error { return u.err }
+
+func TestUnlinkingAnIdentityAnswersThroughTheTable(t *testing.T) {
+	t.Parallel()
+
+	for _, tt := range []struct {
+		name string
+		err  error
+		want int
+	}{
+		// The account was deleted between the middleware's check of its
+		// standing and the unlink.
+		{name: "a_user_that_is_gone", err: &domain.UserNotFoundError{Message: "User not found"}, want: http.StatusNotFound},
+		{name: "a_fault", err: errors.New("the database is away"), want: http.StatusInternalServerError},
+		// The arm that was there stays as it was.
+		{name: "no_identity_at_that_provider", err: &domain.UserIdentityNotFoundError{Message: "none"}, want: http.StatusNotFound},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			ot, metrics := testTelemetry(t)
+			h := &AuthnIDPsHandler{service: unlinking{err: tt.err}, ot: ot, metrics: metrics}
+
+			req := httptest.NewRequest(http.MethodDelete, "/me/identities/x", nil)
+			req.SetPathValue("idp_id", uuid.NewV7().String())
+
+			rec := httptest.NewRecorder()
+			h.unlinkIdentity(rec, withCaller(req, uuid.NewV7()))
+
+			if rec.Code != tt.want {
+				t.Fatalf("status = %d, want %d. Body: %s", rec.Code, tt.want, rec.Body.String())
+			}
+
+			agrees(t, tt.err, rec.Code)
+		})
+	}
+}
+
+// updatingAPolicy is the one method of the port the policy update calls.
+type updatingAPolicy struct {
+	driving.Policies
+
+	err error
+}
+
+func (u updatingAPolicy) UpdateByID(context.Context, *domain.UpdatePolicyInput) error { return u.err }
+
+// TestAPolicyUpdateAnswersThroughTheTable: an update that changes the grant
+// to one no endpoint matches is the ResourceNotFoundError the create answers
+// 404. The update answered it 500, counted as refused.
+func TestAPolicyUpdateAnswersThroughTheTable(t *testing.T) {
+	t.Parallel()
+
+	for _, tt := range []struct {
+		name string
+		err  error
+		want int
+	}{
+		{name: "a_grant_no_endpoint_matches", err: &domain.ResourceNotFoundError{Message: "no endpoint matches GET /nowhere"}, want: http.StatusNotFound},
+		{name: "a_fault", err: errors.New("the database is away"), want: http.StatusInternalServerError},
+		// The arm that was there stays as it was.
+		{name: "a_policy_that_is_not_there", err: &domain.PolicyNotFoundError{Message: "Policy not found"}, want: http.StatusNotFound},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			ot, metrics := testTelemetry(t)
+			h := &PoliciesHandler{service: updatingAPolicy{err: tt.err}, ot: ot, metrics: metrics}
+
+			req := httptest.NewRequest(http.MethodPut, "/policies/x", strings.NewReader(`{"allowed_resource":"/nowhere"}`))
+			req.Header.Set("Content-Type", "application/json")
+			req.SetPathValue("policy_id", uuid.NewV7().String())
+
+			rec := httptest.NewRecorder()
+			h.updateByID(rec, withCaller(req, uuid.NewV7()))
+
+			if rec.Code != tt.want {
+				t.Fatalf("status = %d, want %d. Body: %s", rec.Code, tt.want, rec.Body.String())
+			}
+
+			agrees(t, tt.err, rec.Code)
+		})
+	}
+}
+
+// linkingPolicies is the one method of the port the role's policy link calls.
+type linkingPolicies struct {
+	driving.Roles
+
+	err error
+}
+
+func (l linkingPolicies) LinkPolicies(context.Context, *domain.LinkPoliciesToRoleInput) error {
+	return l.err
+}
+
+// TestLinkingPoliciesToARoleAnswersThroughTheTable: the grant guard reads each
+// policy to learn what it grants, so a policy that is not there is its
+// PolicyNotFoundError. The route answered it 500, counted as refused.
+func TestLinkingPoliciesToARoleAnswersThroughTheTable(t *testing.T) {
+	t.Parallel()
+
+	for _, tt := range []struct {
+		name string
+		err  error
+		want int
+	}{
+		{name: "a_policy_that_is_not_there", err: &domain.PolicyNotFoundError{Message: "Policy not found"}, want: http.StatusNotFound},
+		{name: "a_fault", err: errors.New("the database is away"), want: http.StatusInternalServerError},
+		// The arm that was there stays as it was.
+		{name: "a_role_that_is_not_there", err: &domain.RoleNotFoundError{Message: "Role not found"}, want: http.StatusNotFound},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			ot, metrics := testTelemetry(t)
+			h := &RolesHandler{service: linkingPolicies{err: tt.err}, ot: ot, metrics: metrics}
+
+			body := `{"policy_ids":["` + uuid.NewV7().String() + `"]}`
+			req := httptest.NewRequest(http.MethodPost, "/roles/x/policies", strings.NewReader(body))
+			req.Header.Set("Content-Type", "application/json")
+			req.SetPathValue("role_id", uuid.NewV7().String())
+
+			rec := httptest.NewRecorder()
+			h.linkPolicies(rec, withCaller(req, uuid.NewV7()))
+
+			if rec.Code != tt.want {
+				t.Fatalf("status = %d, want %d. Body: %s", rec.Code, tt.want, rec.Body.String())
+			}
+
+			agrees(t, tt.err, rec.Code)
+		})
+	}
+}
