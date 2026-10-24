@@ -328,6 +328,18 @@ func (ref *ProjectsRepository) DeleteByID(ctx context.Context, input *domain.Del
 	return nil
 }
 
+// querySelectMembership is [ProjectsRepository.SelectMembership]'s
+// statement: the project $1, the caller $2.
+const querySelectMembership = `
+    SELECT
+        COALESCE((SELECT admin FROM users WHERE id = $2), FALSE)
+            AND EXISTS (SELECT 1 FROM projects WHERE id = $1) AS is_admin,
+        EXISTS (
+            SELECT 1 FROM projects_users
+            WHERE projects_id = $1 AND users_id = $2
+        ) AS is_member;
+`
+
 // SelectMembership answers the one question every project-scoped request
 // has to ask before touching anything: may this caller act on this project?
 //
@@ -335,7 +347,16 @@ func (ref *ProjectsRepository) DeleteByID(ctx context.Context, input *domain.Del
 // permission to "any uuid", so a grant on /projects/*/embedding_configs opened
 // every project. Membership is data the database owns, so it is asked here,
 // once per request, from the middleware. Two facts in one round trip: the
-// admin flag, which admits the caller to every project, and the link row.
+// admin flag, which admits the caller to every project that exists, and the
+// link row.
+//
+// The flag admits to a project that is there, and to nothing else. It
+// admitted to any id, so every list under a project that does not exist
+// answered the administrator account 200 and an empty list (and the
+// project's resource limits, for a project with no row), while a create
+// under the same path answered 404. A project that is not there is no
+// membership, and the middleware answers its 404, the one a non-member gets,
+// for everybody. A member's link row says the project is there.
 func (ref *ProjectsRepository) SelectMembership(ctx context.Context, id, userID uuid.UUID) (domain.ProjectMembership, error) {
 	start := time.Now()
 	ctx, span, attrs, cancel := o11y.SetupTraceWithTimeout(ctx, ref.ot.Traces.Tracer, ref.maxQueryTimeout, ref.metricsMetadata, "SelectMembership")
@@ -351,17 +372,8 @@ func (ref *ProjectsRepository) SelectMembership(ctx context.Context, id, userID 
 		return domain.ProjectMembershipNone, o11y.RecordError(ctx, span, start, &domain.InvalidInputError{Message: "project ID and user ID are required"}, ref.metrics, attrs)
 	}
 
-	query := `
-        SELECT
-            COALESCE((SELECT admin FROM users WHERE id = $2), FALSE) AS is_admin,
-            EXISTS (
-                SELECT 1 FROM projects_users
-                WHERE projects_id = $1 AND users_id = $2
-            ) AS is_member;
-    `
-
 	var isAdmin, isMember bool
-	if err := ref.db.QueryRow(ctx, query, id, userID).Scan(&isAdmin, &isMember); err != nil {
+	if err := ref.db.QueryRow(ctx, querySelectMembership, id, userID).Scan(&isAdmin, &isMember); err != nil {
 		return domain.ProjectMembershipNone, o11y.RecordError(ctx, span, start, ref.handlePgError(err, nil), ref.metrics, attrs)
 	}
 

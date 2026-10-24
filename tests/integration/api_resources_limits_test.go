@@ -493,6 +493,7 @@ func TestResourcesLimitsEnforcement(t *testing.T) {
 			deleteResponse, err := sendHTTPRequest(t, ctx, phantom, nil, accessTokenHeader)
 			require.NoError(t, err, "Failed to send the phantom delete")
 			deleteResponse.Body.Close()
+			require.Equal(t, http.StatusNotFound, deleteResponse.StatusCode, "a project that is not there is a 404")
 		}
 
 		assert.Equal(t, 1, getUsageFromDB(t, userScope, adminToken.UserID, projectsType),

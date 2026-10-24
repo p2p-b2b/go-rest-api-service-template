@@ -2,7 +2,6 @@ package usecase
 
 import (
 	"context"
-	"errors"
 	"log/slog"
 	"strings"
 	"time"
@@ -185,19 +184,12 @@ func (ref *ProjectsService) DeleteByID(ctx context.Context, input *domain.Delete
 	}
 
 	if err := ref.repository.DeleteByID(ctx, input); err != nil {
-		// Deleting a project that is not there stays a success — this endpoint
-		// is idempotent and TestProjectDelete/delete_project_not_found pins that
-		// behaviour. What must not happen is the decrement below: nothing was
-		// removed, so nothing may be given back, or a caller could lower their
-		// own usage at will by deleting ids that never existed and then create
-		// past their limit indefinitely.
-		if _, ok := errors.AsType[*domain.ProjectNotFoundError](err); ok {
-			o11y.RecordSuccess(ctx, span, start, ref.metrics, attrs, "project delete was a no-op",
-				attribute.String("project.id", input.ID.String()))
-
-			return nil
-		}
-
+		// A missing row is a 404, returned before the decrement below:
+		// nothing was removed, so nothing may be given back, or a caller could
+		// lower their own usage at will by deleting ids that never existed and
+		// then create past their limit indefinitely. The membership middleware
+		// answers a missing project's 404 before this runs; a project deleted
+		// between that check and this statement is the one that reaches here.
 		return o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
 	}
 
@@ -237,12 +229,15 @@ func (ref *ProjectsService) Membership(ctx context.Context, id, userID uuid.UUID
 	ctx, span, attrs := o11y.SetupTrace(ctx, ref.ot.Traces.Tracer, ref.metricsMetadata, "Membership")
 	defer span.End()
 
+	// An invalid input, which the status table answers 400: the Nil uuid
+	// parses, so it reaches here from the membership middleware, and the
+	// project-ID type it was before has no row there, so it was a 500.
 	if id == uuid.Nil() {
-		return domain.ProjectMembershipNone, o11y.RecordError(ctx, span, start, &domain.InvalidProjectIDError{}, ref.metrics, attrs)
+		return domain.ProjectMembershipNone, o11y.RecordError(ctx, span, start, &domain.InvalidInputError{Field: "project_id", Value: uuid.Nil().String(), Message: "project ID is nil"}, ref.metrics, attrs)
 	}
 
 	if userID == uuid.Nil() {
-		return domain.ProjectMembershipNone, o11y.RecordError(ctx, span, start, &domain.InvalidUserIDError{Message: "userID is nil"}, ref.metrics, attrs)
+		return domain.ProjectMembershipNone, o11y.RecordError(ctx, span, start, &domain.InvalidInputError{Field: "user_id", Value: uuid.Nil().String(), Message: "userID is nil"}, ref.metrics, attrs)
 	}
 
 	membership, err := ref.repository.SelectMembership(ctx, id, userID)

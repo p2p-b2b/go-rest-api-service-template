@@ -296,10 +296,10 @@ flowchart TD
     A -- yes --> P{project_id in the path?}
     P -- no --> H[handler]
     P -- yes --> M[ProjectsService.Membership]
-    M -- store fault --> F500[500, fail closed]
-    M -- admin --> LOG[logged as a bypass] --> H
+    M -- "an error" --> ERR["the status table: 500 for a store fault,<br/>fail closed; 400 for the Nil uuid"]
+    M -- "admin, and the project is there" --> LOG[logged as a bypass] --> H
     M -- member --> H
-    M -- none --> F404[404, same as a missing project]
+    M -- "none: not a member,<br/>or no such project" --> F404["404, one answer for both;<br/>the access line carries it at INFO"]
 ```
 
 - **After `CheckAuthz`, never before.** A caller with no grant is refused
@@ -308,9 +308,20 @@ flowchart TD
   `TestProjectMembershipIsCheckedAfterAuthorization` reads `server.go` for
   the order.
 - **404, not 403**, the answer a missing project already gets, so the
-  refusal does not confirm the project exists.
-- **An administrator is admitted to every project.** That is a bypass of
-  membership and it is logged as one, with the project and the user.
+  refusal does not confirm the project exists. It is a refusal, not an
+  error of the service: handed to the access line (`o11y.NoteFailure`),
+  which writes it at INFO with its `error_type`, and no line of its own
+  (it was a WARN line besides).
+- **An administrator is admitted to every project that is there.** That is
+  a bypass of membership and it is logged as one, with the project and the
+  user. The flag admitted to any id, so every list under a project that did
+  not exist answered the administrator account 200 and an empty list (and
+  `resources_limits` the project scope's limits, for no project), while a
+  create under the same path answered 404 and a delete or an unlink of
+  users 200. The membership statement asks whether the project exists in
+  the same round trip (`is_admin` is the flag and the project's `EXISTS`),
+  so a missing project is a 404 on every route under it, for everybody; a
+  member's link row already said the project is there.
 - **One indexed read per project-scoped request**, not cached: the answer
   changes the moment a link is removed.
 - **A personal access token needs no special case.** Its `sub` is the user
@@ -318,7 +329,12 @@ flowchart TD
 
 `TestProjectMembershipGatesProjectScopedRoutes` keeps the Phase-0 proof as an
 integration test: member 200, administrator 200, non-member 404, missing
-project 404, no grant 403.
+project 404, no grant 403. `TestAMissingProjectIsA404ForTheAdministratorAccount`
+asks the three lists under a missing project with the flag, and each under a
+project that is there; `TestTheFlagAdmitsOnlyToAProjectThatIsThere` holds
+the statement in the pull request gate. The Nil uuid parses and is refused
+by the use-case as an invalid input; the middleware answered every error
+with a 500 and answers through the status table now, a 400.
 
 ### A password is never set through `PUT /users/{id}`
 

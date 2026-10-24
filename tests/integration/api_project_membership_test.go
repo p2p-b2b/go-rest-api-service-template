@@ -109,7 +109,7 @@ func TestProjectMembershipGatesProjectScopedRoutes(t *testing.T) {
 		require.Equal(t, http.StatusOK, status, body)
 	})
 
-	t.Run("an_administrator_is_admitted_to_every_project", func(t *testing.T) {
+	t.Run("an_administrator_is_admitted_to_a_project_that_is_there", func(t *testing.T) {
 		status, body := call(admin.AccessToken, list)
 		require.Equal(t, http.StatusOK, status, body)
 	})

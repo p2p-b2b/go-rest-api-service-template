@@ -360,10 +360,10 @@ DELETE /projects/<random uuid>   → 200, counter -= 1
 POST   /projects                 → allowed again, indefinitely
 ```
 
-Both endpoints are still idempotent and still answer success for a missing
-resource — the HTTP contract did not change. What changed is that the repository
-now reports the fact as a typed error and the use-case decides what to do with
-it. **Repository states facts; use-case sets policy.**
+The repository now reports the fact as a typed error and the use-case decides
+what to do with it. **Repository states facts; use-case sets policy.** The
+policy is the same for both: the not-found error is returned before the
+decrement, and the handler answers it 404.
 
 Two further properties:
 
@@ -380,15 +380,16 @@ All five delete paths were audited for this:
 | `products` | yes — `ProductNotFoundError` | already safe |
 | `projects` | no — result discarded | **fixed** |
 
-> **A related inconsistency, left alone deliberately.** `projects` answers
-> `200` for a missing resource — its tests pin that — while
-> `projects` also declares `@Failure 404` and carries a handler branch that can
-> never fire. `products` propagates its not-found error instead, and its
-> integration test pins *that*. Two delete semantics for the same kind of
-> operation. Unifying them changes an established, tested response code, which is
-> an API decision rather than a bug fix. The counter behaviour is correct either
-> way, because the decrement is keyed off the delete actually having removed a
-> row.
+> **One delete semantics, since a missing project is a 404 for everybody.**
+> `projects` used to answer `200` for a missing resource -- its tests pinned
+> that -- while declaring `@Failure 404` with a handler branch that could not
+> fire, and `products` answered 404. A missing project is now refused by the
+> membership middleware before the handler runs, for the administrator
+> account too (see [security.md](security.md)), and the use-case returns the
+> not-found error it used to turn into a success, for a project deleted
+> between that check and the statement. `TestDeletingAMissingProjectIsANotFoundAndGivesNothingBack`
+> holds the use-case; `deleting_a_nonexistent_resource_does_not_decrement`
+> holds the counter and the 404 against a running service.
 
 ## 8. The integrity signature
 
