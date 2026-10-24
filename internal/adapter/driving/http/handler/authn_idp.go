@@ -509,6 +509,10 @@ func (ref *AuthnIDPsHandler) writeCallbackError(w http.ResponseWriter, r *http.R
 	switch {
 	case isType[*domain.InvalidJWTError](err), isType[*domain.InvalidInputError](err), isType[*domain.ValidationErrors](err), isType[*domain.InvalidIdentityProvidersError](err):
 		respond.WriteJSONMessage(w, r, http.StatusBadRequest, e.Error())
+	case isType[*domain.ValidationError](err):
+		// The provider's address is no address. The validator's words name
+		// the field and the rule, not the value.
+		respond.WriteJSONMessage(w, r, http.StatusBadRequest, e.Error())
 	case isType[*domain.IDPNotFoundError](err):
 		respond.WriteJSONMessage(w, r, http.StatusNotFound, e.Error())
 	case isType[*domain.UserIdentityNotFoundError](err):

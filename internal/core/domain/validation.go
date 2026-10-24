@@ -302,6 +302,29 @@ func ValidateEmail(email string, fieldName string) (string, error) {
 	// Use the parsed and normalized email
 	normalizedEmail := addr.Address
 
+	// It is the form every later check reads, and the one stored, so it must
+	// be an address itself. net/mail drops the quotes of a quoted local part:
+	// "a b"@example.com is a b@example.com, which does not parse, and a
+	// second check of this same rule (the use-case's, after the handler's)
+	// refused what the first one passed.
+	if reparsed, err := mail.ParseAddress(normalizedEmail); err != nil || reparsed.Address != normalizedEmail {
+		return "", &ValidationError{
+			Field:   fieldName,
+			Message: "invalid email format",
+			Code:    "INVALID_FORMAT",
+		}
+	}
+
+	// The length is the address's, not the input's: a display name or the
+	// quotes made "Ada <a@b.c>" long enough, and a@b.c is not.
+	if len(normalizedEmail) < ValidUserEmailMinLength {
+		return "", &ValidationError{
+			Field:   fieldName,
+			Message: fmt.Sprintf("email address must be at least %d characters long", ValidUserEmailMinLength),
+			Code:    "TOO_SHORT",
+		}
+	}
+
 	// Additional validations
 	parts := strings.Split(normalizedEmail, "@")
 	if len(parts) != 2 {

@@ -609,3 +609,48 @@ func TestAKnownIdentityIsLookedUpUnderTheProviderAsItSignedIn(t *testing.T) {
 		t.Fatalf("the identity was looked up under %+v, want %+v", f.identities.lookedUp, want)
 	}
 }
+
+// The provider's address is looked up as the service spells it, the spelling
+// the create stores. Looked up as it came, an existing account's address in
+// another spelling was free at the check, and the create was the one to
+// refuse it.
+func TestIDPCallbackLooksTheProvidersAddressUpAsTheServiceSpellsIt(t *testing.T) {
+	t.Parallel()
+
+	for _, claim := range []string{"Jane <victim@example.com>", " victim@example.com"} {
+		t.Run(claim, func(t *testing.T) {
+			t.Parallel()
+
+			f := newIDPFixture(t, verified("attacker-sub", claim))
+			f.users.byEmail["victim@example.com"] = &domain.User{ID: uuid.NewV7(), LocalAccount: new(true)}
+
+			_, err := f.svc.Callback(t.Context(), f.idp.ID, f.stateFor(t, domain.IDPEventTypeLogin, uuid.Nil()), "code")
+			if _, ok := errors.AsType[*domain.IDPIdentityNotLinkedError](err); !ok {
+				t.Fatalf("expected the check's refusal, got %T (%v)", err, err)
+			}
+
+			if len(f.authn.registered) != 0 || len(f.authn.loggedIn) != 0 {
+				t.Fatal("nothing may be created or signed in")
+			}
+		})
+	}
+}
+
+// A provider's address that is no address -- a quoted local part the
+// service cannot spell -- is the validator's refusal, which does not repeat
+// it. The repository's lookup refused it as an InvalidEmailError, which the
+// callback answered 500.
+func TestIDPCallbackRefusesAProvidersAddressThatIsNoAddress(t *testing.T) {
+	t.Parallel()
+
+	f := newIDPFixture(t, verified("sub-new", `"a b"@example.com`))
+
+	_, err := f.svc.Callback(t.Context(), f.idp.ID, f.stateFor(t, domain.IDPEventTypeLogin, uuid.Nil()), "code")
+	if _, ok := errors.AsType[*domain.ValidationError](err); !ok {
+		t.Fatalf("expected the validator's refusal, got %T (%v)", err, err)
+	}
+
+	if len(f.authn.registered) != 0 {
+		t.Fatal("nothing may be created")
+	}
+}
