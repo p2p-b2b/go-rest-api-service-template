@@ -191,7 +191,7 @@ func TestEveryFilteredListMapsPostgresRefusals(t *testing.T) {
 
 			// Each query's error, and its rows' error, or the rows handed on
 			// with the filter to the function that reads them.
-			if mapped < 2*queries && !(forwarded && mapped >= queries) {
+			if mapped < 2*queries && (!forwarded || mapped < queries) {
 				t.Errorf("%s %s: %d queries, %d errors handed to filterRefusal", path, name, queries, mapped)
 			}
 		}
