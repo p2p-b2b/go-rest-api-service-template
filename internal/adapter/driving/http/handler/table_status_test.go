@@ -476,3 +476,29 @@ func TestASignInRefusedAtTheProviderIsA401(t *testing.T) {
 
 	agrees(t, refused, rec.Code)
 }
+
+// TestAProviderThatCannotBeUsedIsA503AtTheStart: a provider row the service
+// cannot sign in with is the service's side, answered on the public start
+// routes in the callback's fixed sentence. It was a 400 that named the row.
+func TestAProviderThatCannotBeUsedIsA503AtTheStart(t *testing.T) {
+	t.Parallel()
+
+	ot, metrics := testTelemetry(t)
+	_, span := ot.Traces.Tracer.Start(t.Context(), "test")
+	defer span.End()
+
+	notConfigured := &domain.InvalidAuthnServiceError{Message: domain.IDPNotConfiguredMessage}
+
+	rec := httptest.NewRecorder()
+	(&AuthnIDPsHandler{metrics: metrics}).writeStartError(rec, httptest.NewRequest(http.MethodGet, "/auth/idp/x/login", nil), span, time.Now(), nil, notConfigured)
+
+	if rec.Code != http.StatusServiceUnavailable {
+		t.Fatalf("status = %d, want 503. Body: %s", rec.Code, rec.Body.String())
+	}
+
+	agrees(t, notConfigured, rec.Code)
+
+	if body := rec.Body.String(); !strings.Contains(body, signInUnavailableMessage) || strings.Contains(body, "configured") {
+		t.Errorf("the body is not the callback's fixed sentence: %s", body)
+	}
+}
