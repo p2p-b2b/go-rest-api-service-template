@@ -289,7 +289,7 @@ flowchart TD
     SP -- "spent, or refused as a state" --> R401["401 · sign-in refused<br/>counted refused"]
     SP -- "the store is away" --> F500["500 · counted failed"]
     ERR -- no --> EX[exchange the code]
-    EX -- "the caller of this service went away" --> GONE["the cancellation itself:<br/>nobody is blamed"]
+    EX -- "the caller of this service went away" --> GONE["the cancellation itself:<br/>the provider is not blamed"]
     EX -- "no answer from the token endpoint" --> U503["503 · sign-in not available<br/>counted failed"]
     EX -- "OAuth error about the code or the person:<br/>invalid_grant, bad_verification_code,<br/>unverified_user_email, access_denied" --> R401
     EX -- "any other answer that is not a token:<br/>invalid_client, a 5xx" --> U503
@@ -328,13 +328,25 @@ GitHub provider row without the scope for it), nobody knows, and it is a
 503. *No nonce at all* in the ID token is a provider not following the
 protocol, a 503; a different nonce is a 401. And *a request cancelled
 because the caller of this service went away* is not the provider's
-failure: the cancellation goes back as it is.
+failure: the cancellation goes back as it is (the callback answers it as it
+answers an error no arm names, a 500 nobody receives).
 `TestExchangeFailureSaysWhoseItIs` holds the classification,
 `TestOIDCExchangeAgainstATokenEndpointThatRefuses` and
 `TestGithubARefusedSignInIsNotAnOutage` what the OAuth client library hands
 back for each answer of a real token endpoint (GitHub answers an error
 inside a 200, form-encoded), and `TestIDPCallbackARefusedSignInIsNotAnOutage`
 the statuses against a running service.
+
+**Until the providers have a client of their own**, they share the
+service's retrying one. A token endpoint that answers 5xx, or refuses the
+connection, is retried, and what comes back after the retries is a
+transport error: it is classified unreachable, not misbehaving (the same
+503, the same sentence, another type on the metric), and it comes back
+late -- about two and a half minutes for a refused connection, measured.
+The retried request is the token POST, whose code is good for one
+exchange: a provider that spent the code and then answered 502 answers
+the retry `invalid_grant`, and that outage is a 401. The adapter's unit
+tests use a plain client and hold the classification as it will be.
 
 ## Configuring a provider
 

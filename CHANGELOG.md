@@ -348,7 +348,9 @@ Since `v0.0.3`.
   answers 5xx, returns no valid ID token, does not answer, or the call for
   the account's address fails. A client that read every callback 401 as
   "sign-in refused" now sees the outage. The adapter decides from the OAuth
-  error code, never from text.
+  error code, never from text. The providers still share the service's
+  retrying client: a 5xx or a refused connection is answered after the
+  retries, as unreachable.
   A sign-in cancelled at the provider spends its state: it stayed good for a
   callback with a code for the rest of its fifteen minutes, and such a
   replay signed in. `TestIDPStateIsSingleUse` runs on the suite's own

@@ -83,7 +83,8 @@ func TestIDPCallbackARefusedSignInIsNotAnOutage(t *testing.T) {
 	// A provider that does not answer is a 503 too; the adapter's own test
 	// holds it (a connection closed without an answer). It is not run here:
 	// the identity providers share the service's retrying client, and a
-	// refused connection is answered only after its retries, minutes later.
+	// refused connection is answered only after its retries, about two and
+	// a half minutes later on this suite's machine.
 	// It comes back with a client of their own that does not retry.
 
 	// The provider sends the person back with `error=` and no code. That is
