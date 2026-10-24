@@ -57,11 +57,14 @@ func TestADeleteDropsItsCacheBeforeItGivesItsSlotBack(t *testing.T) {
 					return true
 				}
 
+				// The first decrement and the LAST invalidation: an unrelated
+				// key dropped before the decrement does not excuse the row's
+				// own dropped after it.
 				if f, ok := call.Fun.(*ast.SelectorExpr); ok {
 					switch {
 					case f.Sel.Name == "DecrementUsage" && decrement == token.NoPos:
 						decrement = call.Pos()
-					case f.Sel.Name == "Invalidate" && drop == token.NoPos:
+					case f.Sel.Name == "Invalidate":
 						drop = call.Pos()
 					}
 				}

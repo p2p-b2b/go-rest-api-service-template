@@ -104,6 +104,18 @@ func (r *memberProjects) DeleteByID(context.Context, *domain.DeleteProjectInput)
 	return nil
 }
 
+func (r *memberProjects) UpdateByID(context.Context, *domain.UpdateProjectInput) error {
+	return nil
+}
+
+func (r *memberProjects) LinkUsers(context.Context, *domain.LinkUsersToProjectInput) error {
+	return nil
+}
+
+func (r *memberProjects) UnlinkUsers(context.Context, *domain.UnlinkUsersFromProjectInput) error {
+	return nil
+}
+
 // A project's read is scoped to the user who asks, by the statement: a
 // member reads it, anyone else is answered that there is none. Its cached
 // copy was stored under the project's key alone, so whoever asked after a
@@ -204,6 +216,55 @@ func TestTheProjectsKeyDropsEveryReadOfIt(t *testing.T) {
 			}
 		}
 	})
+}
+
+// Each change of a project drops every user's read of it, through the service:
+// the update and both membership changes invalidate the project's key, and
+// the reads depend on it.
+func TestEveryChangeOfAProjectDropsItsReads(t *testing.T) {
+	t.Parallel()
+
+	project, alice, bob := uuid.NewV7(), uuid.NewV7(), uuid.NewV7()
+
+	for name, change := range map[string]func(*ProjectsService) error{
+		"update": func(svc *ProjectsService) error {
+			return svc.UpdateByID(t.Context(), &domain.UpdateProjectInput{ID: project, UserID: alice, Description: new("changed")})
+		},
+		"link": func(svc *ProjectsService) error {
+			return svc.LinkUsers(t.Context(), &domain.LinkUsersToProjectInput{ProjectID: project, UserIDs: []uuid.UUID{uuid.NewV7()}})
+		},
+		"unlink": func(svc *ProjectsService) error {
+			return svc.UnlinkUsers(t.Context(), &domain.UnlinkUsersFromProjectInput{ProjectID: project, UserIDs: []uuid.UUID{bob}})
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			repo := &memberProjects{project: &domain.Project{ID: project, Name: "theirs"}, members: map[uuid.UUID]bool{alice: true, bob: true}}
+			c := newDependentCache()
+
+			svc, err := NewProjectsService(ProjectsServiceConf{Repository: repo, CacheService: c, ResourcesLimits: slotsGivenBack{}, OT: testOT(t)})
+			if err != nil {
+				t.Fatalf("NewProjectsService: %v", err)
+			}
+
+			for _, who := range []uuid.UUID{alice, bob} {
+				if _, err := svc.GetByIDByUserID(t.Context(), project, who); err != nil {
+					t.Fatalf("the read that warms the cache: %v", err)
+				}
+			}
+
+			if err := change(svc); err != nil {
+				t.Fatalf("%s: %v", name, err)
+			}
+
+			for _, who := range []uuid.UUID{alice, bob} {
+				if c.has(projectReadCacheKey(who, project).String()) {
+					t.Errorf("a member's read outlived the project's %s", name)
+				}
+			}
+		})
+	}
 }
 
 // decrementFails is the usage limits of a delete whose decrement fails after

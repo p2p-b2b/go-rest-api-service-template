@@ -211,7 +211,7 @@ When adding a cached value, check its key against its fetcher's arguments: if
 the query filters on an id the key omits, the cache can serve one tenant's row
 to another.
 
-A project's read is the third case. `GetByIDByUserID` asks
+In this repository a project's read was one. `GetByIDByUserID` asks
 `SelectByIDByUserID(ctx, id, userID)`, which answers a member and tells anyone
 else there is no such project, and it was cached under `project:<id>`: whoever
 asked after a member was answered the member's copy. No route reaches it today,
