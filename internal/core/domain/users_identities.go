@@ -129,7 +129,9 @@ func (e *UserIdentityAlreadyLinkedError) Error() string {
 // existing account with that email, a provider that does not vouch for the
 // email, auto-provisioning switched off -- because the differences would tell
 // whoever controls the provider account which addresses have accounts here.
-type IDPIdentityNotLinkedError struct{}
+type IDPIdentityNotLinkedError struct {
+	Detail string // the operator's: which of the reasons it was, see FailureDetail
+}
 
 func (e *IDPIdentityNotLinkedError) Error() string {
 	return "this identity is not linked to an account here; sign in with your password and link the provider from your profile, or ask an administrator"

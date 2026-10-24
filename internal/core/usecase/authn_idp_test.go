@@ -348,8 +348,16 @@ func TestIDPCallbackRefusesAnUnknownIdentityWhoseEmailHasAnAccount(t *testing.T)
 
 	_, err := f.svc.Callback(t.Context(), f.idp.ID, f.stateFor(t, domain.IDPEventTypeLogin, uuid.Nil()), "code")
 
-	if _, ok := errors.AsType[*domain.IDPIdentityNotLinkedError](err); !ok {
+	refused, ok := errors.AsType[*domain.IDPIdentityNotLinkedError](err)
+	if !ok {
 		t.Fatalf("expected IDPIdentityNotLinkedError, got %v", err)
+	}
+
+	// The reason, and whose account it is, are the operator's: the
+	// refusal's detail, never its text, which is the same for every
+	// reason so that it does not say which addresses have accounts here.
+	if !strings.Contains(refused.FailureDetail(), victim.String()) || strings.Contains(err.Error(), victim.String()) {
+		t.Errorf("detail %q, text %q: the account is named in the detail only", refused.FailureDetail(), err)
 	}
 
 	if len(f.authn.loggedIn) != 0 || len(f.authn.registered) != 0 {
@@ -370,8 +378,8 @@ func TestIDPCallbackProvisioningGates(t *testing.T) {
 		f := newIDPFixture(t, info)
 
 		_, err := f.svc.Callback(t.Context(), f.idp.ID, f.stateFor(t, domain.IDPEventTypeRegister, uuid.Nil()), "code")
-		if _, ok := errors.AsType[*domain.IDPIdentityNotLinkedError](err); !ok {
-			t.Fatalf("expected a refusal, got %v", err)
+		if refused, ok := errors.AsType[*domain.IDPIdentityNotLinkedError](err); !ok || refused.FailureDetail() != "the provider does not vouch for the email" {
+			t.Fatalf("expected the refusal with its reason as detail, got %v", err)
 		}
 	})
 
@@ -382,8 +390,8 @@ func TestIDPCallbackProvisioningGates(t *testing.T) {
 		f.idp.AutoProvision = false
 
 		_, err := f.svc.Callback(t.Context(), f.idp.ID, f.stateFor(t, domain.IDPEventTypeLogin, uuid.Nil()), "code")
-		if _, ok := errors.AsType[*domain.IDPIdentityNotLinkedError](err); !ok {
-			t.Fatalf("expected a refusal, got %v", err)
+		if refused, ok := errors.AsType[*domain.IDPIdentityNotLinkedError](err); !ok || refused.FailureDetail() != "auto-provisioning is off" {
+			t.Fatalf("expected the refusal with its reason as detail, got %v", err)
 		}
 	})
 }

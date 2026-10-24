@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"log/slog"
 	"net/http"
 	"strings"
 	"time"
@@ -249,11 +248,11 @@ func (ref *AuthnIDPsHandler) callback(w http.ResponseWriter, r *http.Request) {
 
 	// The provider says why the person did not arrive with a code: they
 	// cancelled, or were denied. Answered as a refusal in this service's
-	// words; the provider's description goes to the log.
+	// words; what the provider said is the refusal's detail, on the request's
+	// DEBUG line and bounded there. It was a line of its own at INFO, a
+	// second line for one refusal, carrying text anyone can put in the query
+	// string of this public route.
 	if providerErr := q.Get("error"); providerErr != "" {
-		slog.InfoContext(r.Context(), "the provider reported an error",
-			"idp.id", idpID.String(), "error", providerErr, "description", q.Get("error_description"))
-
 		// This was the state's one callback. A state that is forged, spent
 		// or signed for another provider changes nothing: the person hears
 		// the same refusal. A state that could NOT be spent because the
@@ -267,7 +266,12 @@ func (ref *AuthnIDPsHandler) callback(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		e := o11y.RecordError(ctx, span, startedAt, &domain.IDPSignInRefusedError{Message: "the identity provider did not complete the sign-in"}, ref.metrics, attrs)
+		refused := &domain.IDPSignInRefusedError{
+			Message: "the identity provider did not complete the sign-in",
+			Detail:  "the provider reported " + providerErr + ": " + q.Get("error_description"),
+		}
+
+		e := o11y.RecordError(ctx, span, startedAt, refused, ref.metrics, attrs)
 		respond.WriteJSONMessage(w, r, http.StatusUnauthorized, e.Error())
 
 		return
@@ -495,17 +499,12 @@ func (ref *AuthnIDPsHandler) writeStartError(w http.ResponseWriter, r *http.Requ
 	switch {
 	case isType[*domain.IDPNotFoundError](err):
 		respond.WriteJSONMessage(w, r, http.StatusNotFound, e.Error())
-	case isType[*domain.IDPUnreachableError](err):
-		// The provider's discovery document cannot be fetched. This arm
-		// used to match InvalidAuthnServiceError, the error of the token
-		// exchange, which building the authorization URL never returns: an
-		// unreachable provider fell to the default arm and was answered 500,
-		// where the routes document a 503.
-		respond.WriteJSONMessage(w, r, http.StatusServiceUnavailable, e.Error())
-	case isType[*domain.InvalidAuthnServiceError](err):
-		// A provider row the service cannot sign in with. The callback's
-		// sentence: this route is public, and what is wrong with the row is
-		// the operator's to read in the log. It was a 400 that named the row.
+	case isType[*domain.IDPUnreachableError](err), isType[*domain.InvalidAuthnServiceError](err):
+		// The provider's discovery document cannot be fetched, or the
+		// provider row is not one the service can sign in with. The
+		// callback's sentence, for both: this route is public, and which it
+		// was, with the provider's own words, is the failure's detail on the
+		// access line (domain.FailureDetail).
 		respond.WriteJSONMessage(w, r, http.StatusServiceUnavailable, signInUnavailableMessage)
 	case isType[*domain.ValidationErrors](err), isType[*domain.InvalidInputError](err), isType[*domain.InvalidIdentityProvidersError](err):
 		respond.WriteJSONMessage(w, r, http.StatusBadRequest, e.Error())

@@ -289,8 +289,8 @@ func (ref *AuthnIDPsService) Callback(ctx context.Context, idpID uuid.UUID, stat
 
 	info, err := ref.oauth.Exchange(ctx, idp, code, oauth.AuthRequest{State: state, Nonce: data.Nonce, CodeVerifier: data.Verifier})
 	if err != nil {
-		// The adapter already says this in words this service owns and has
-		// logged the provider's own text.
+		// The adapter already says this in words this service owns, with the
+		// provider's own text as the failure's detail.
 		return nil, o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
 	}
 
@@ -356,15 +356,11 @@ func (ref *AuthnIDPsService) signIn(ctx context.Context, idp *domain.IDP, info *
 	// Unknown identity. Provisioning has three conditions, and each failure
 	// is answered with the same wording -- see IDPIdentityNotLinkedError.
 	if !idp.AutoProvision {
-		slog.InfoContext(ctx, "sign-in refused, auto-provisioning is off", "idp", idp.Name)
-
-		return nil, &domain.IDPIdentityNotLinkedError{}
+		return nil, &domain.IDPIdentityNotLinkedError{Detail: "auto-provisioning is off"}
 	}
 
 	if !info.EmailVerified {
-		slog.InfoContext(ctx, "sign-in refused, the provider does not vouch for the email", "idp", idp.Name)
-
-		return nil, &domain.IDPIdentityNotLinkedError{}
+		return nil, &domain.IDPIdentityNotLinkedError{Detail: "the provider does not vouch for the email"}
 	}
 
 	// The address is looked up and stored in one spelling. The provider's
@@ -382,10 +378,10 @@ func (ref *AuthnIDPsService) signIn(ctx context.Context, idp *domain.IDP, info *
 	if existing, err := ref.userService.GetByEmail(ctx, email); err == nil && existing != nil {
 		// The one case the takeover lived in: an account with this email
 		// exists and nothing proves this identity belongs to its holder.
-		slog.WarnContext(ctx, "sign-in refused, an account with the provider's email exists and is not linked to this identity",
-			"idp", idp.Name, "user.id", existing.ID.String())
-
-		return nil, &domain.IDPIdentityNotLinkedError{}
+		//
+		// The reason is the refusal's detail, on the request's DEBUG line:
+		// it was a WARN, and a refusal is not something to act on.
+		return nil, &domain.IDPIdentityNotLinkedError{Detail: "an account with the provider's email exists and is not linked to this identity: user_id " + existing.ID.String()}
 	} else if err != nil && !isNotFound(err) {
 		return nil, err
 	}
@@ -418,9 +414,7 @@ func (ref *AuthnIDPsService) signIn(ctx context.Context, idp *domain.IDP, info *
 		// an identity already linked) and any fault is the caller's to hear
 		// as it is, and stored nothing.
 		if taken, ok := errors.AsType[*domain.UserAlreadyExistsError](err); ok && taken.Email != "" {
-			slog.InfoContext(ctx, "sign-in refused, an account with the provider's email was created while this one was being provisioned", "idp", idp.Name)
-
-			return nil, &domain.IDPIdentityNotLinkedError{}
+			return nil, &domain.IDPIdentityNotLinkedError{Detail: "an account with the provider's email was created while this one was being provisioned"}
 		}
 
 		return nil, err
@@ -431,7 +425,7 @@ func (ref *AuthnIDPsService) signIn(ctx context.Context, idp *domain.IDP, info *
 		return nil, err
 	}
 
-	slog.InfoContext(ctx, "account provisioned from a provider identity", "idp", idp.Name, "user.id", userID.String())
+	slog.InfoContext(ctx, "account provisioned from a provider identity", "idp_id", idp.ID.String(), "user_id", userID.String())
 
 	return &domain.IDPCallbackOutput{EventType: eventType, Login: login}, nil
 }
@@ -450,7 +444,7 @@ func (ref *AuthnIDPsService) link(ctx context.Context, idp *domain.IDP, info *do
 	}
 
 	if user.Disabled != nil && *user.Disabled {
-		return nil, &domain.IDPIdentityNotLinkedError{}
+		return nil, &domain.IDPIdentityNotLinkedError{Detail: "the account the link was started for is disabled"}
 	}
 
 	if err := ref.usersIdentities.Link(ctx, &domain.LinkUserIdentityInput{
@@ -460,7 +454,7 @@ func (ref *AuthnIDPsService) link(ctx context.Context, idp *domain.IDP, info *do
 		return nil, err
 	}
 
-	slog.InfoContext(ctx, "provider identity linked", "idp", idp.Name, "user.id", userID.String())
+	slog.InfoContext(ctx, "provider identity linked", "idp_id", idp.ID.String(), "user_id", userID.String())
 
 	return &domain.IDPCallbackOutput{EventType: domain.IDPEventTypeLink, Linked: userID}, nil
 }
@@ -555,18 +549,18 @@ func (ref *AuthnIDPsService) spendState(ctx context.Context, state string, idpID
 	case domain.TokenTypeIDPLink:
 		eventType = domain.IDPEventTypeLink
 	default:
-		return nil, data, "", &domain.InvalidJWTError{Message: "the state is not valid"}
+		return nil, data, "", &domain.InvalidJWTError{Message: "the state is not valid", Detail: "the state is not a sign-in's"}
 	}
 
 	// The event the token was signed for and the one its subject names must
 	// agree, and the IdP must be the one the callback arrived at.
 	if claimString(claims, "sub") != eventType.String() || claimString(claims, "idp") != idpID.String() {
-		return nil, data, "", &domain.InvalidJWTError{Message: "the state is not valid"}
+		return nil, data, "", &domain.InvalidJWTError{Message: "the state is not valid", Detail: "the state was signed for another flow or another provider"}
 	}
 
 	jti, err := uuid.Parse(claimString(claims, "jti"))
 	if err != nil {
-		return nil, data, "", &domain.InvalidJWTError{Message: "the state is not valid"}
+		return nil, data, "", &domain.InvalidJWTError{Message: "the state is not valid", Detail: "the state has no usable jti"}
 	}
 
 	expiresAt := time.Now().Add(idpRegistrationDuration)
@@ -584,17 +578,15 @@ func (ref *AuthnIDPsService) spendState(ctx context.Context, state string, idpID
 	if !firstUse {
 		// The same wording every other bad state gets. A caller learns their
 		// state was not accepted, never that it was accepted once already.
-		slog.WarnContext(ctx, "an OAuth state was presented twice; the callback was refused", "jti", jti)
-
-		return nil, data, "", &domain.InvalidJWTError{Message: "the state is not valid"}
+		return nil, data, "", &domain.InvalidJWTError{Message: "the state is not valid", Detail: "the state was presented twice: jti " + jti.String()}
 	}
 
 	if err := ref.unseal(claimString(claims, "data"), &data); err != nil {
-		return nil, data, "", &domain.InvalidJWTError{Message: "the state is not valid"}
+		return nil, data, "", &domain.InvalidJWTError{Message: "the state is not valid", Detail: "the state's sealed data could not be opened"}
 	}
 
 	if data.Verifier == "" || data.Nonce == "" {
-		return nil, data, "", &domain.InvalidJWTError{Message: "the state is not valid"}
+		return nil, data, "", &domain.InvalidJWTError{Message: "the state is not valid", Detail: "the state carries no verifier or nonce"}
 	}
 
 	return claims, data, eventType, nil

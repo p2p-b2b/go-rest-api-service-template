@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"runtime"
 	"time"
+	"unicode/utf8"
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -220,6 +221,39 @@ func RecordSuccess(ctx context.Context, span trace.Span, startTime time.Time, me
 	_ = RecordResult(ctx, span, startTime, metrics, baseAttrs, nil, msg)
 }
 
+// detailed is an error that carries what an operator reads about it and a
+// caller never does (domain.FailureDetail). It is matched by its method so
+// that this package does not import the domain.
+type detailed interface {
+	error
+	FailureDetail() string
+}
+
+// maxFailureDetail bounds a detail: a provider's answer can carry a whole
+// error page, and the detail is exported.
+const maxFailureDetail = 1024
+
+// failureDetail is the detail of the first error in err's chain that has
+// one, bounded to maxFailureDetail bytes on a rune boundary.
+func failureDetail(err error) string {
+	d, ok := errors.AsType[detailed](err)
+	if !ok {
+		return ""
+	}
+
+	detail := d.FailureDetail()
+	if len(detail) <= maxFailureDetail {
+		return detail
+	}
+
+	cut := maxFailureDetail
+	for cut > 0 && !utf8.RuneStart(detail[cut]) {
+		cut--
+	}
+
+	return detail[:cut] + "…"
+}
+
 // errorType is a stable key for "which failure is this".
 //
 // # Why the message is not one
@@ -337,7 +371,7 @@ func RecordResult(
 
 		funcName := runtime.FuncForPC(pc).Name()
 
-		failure := Failure{Err: err, Type: errorType(err), Func: funcName, File: file, Line: line}
+		failure := Failure{Err: err, Type: errorType(err), Detail: failureDetail(err), Func: funcName, File: file, Line: line}
 		failure.Operation, _ = OperationFrom(ctx)
 
 		// Inside a request the failure is held, not logged: the access log
@@ -352,13 +386,19 @@ func RecordResult(
 			// The layer, domain and action are NOT repeated here: they are on
 			// the context from [SetupTrace], and the handler adds them to
 			// every record written inside the operation.
-			slog.ErrorContext(ctx, "operation_failed",
+			args := []any{
 				"error", err,
 				"error_type", failure.Type,
 				"func", funcName,
 				"file", file,
 				"line", line,
-			)
+			}
+
+			if failure.Detail != "" {
+				args = append(args, "detail", failure.Detail)
+			}
+
+			slog.ErrorContext(ctx, "operation_failed", args...)
 		}
 	} else {
 		mgs := "operation_successful"

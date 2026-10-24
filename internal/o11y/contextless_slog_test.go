@@ -6,32 +6,97 @@ import (
 	"go/token"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 )
 
-// requestPathPackages are the packages a request actually passes through.
+// requestPathRoots are where the packages a request passes through live:
+// every package under them is walked, at any depth.
 //
-// internal/app is deliberately absent. Its logging is startup and shutdown --
-// configuration, migrations, the seeded-administrator check, the shutdown
-// sequence -- and none of it happens inside a request, so there is no span for
-// those lines to belong to. Requiring a context there would mean inventing
-// context.Background() at the call site, which carries no span and would turn a
-// real rule into a ritual.
+// It was a list of packages written by hand, and three that a request passes
+// through were missing from it, each logging without its context on every
+// request it refused: the identity providers' adapter, the token verifier,
+// and the middleware's validator. A list is right only on the day it is
+// written; a walk takes in a package the day it is added.
 //
-// The three after respond were missing from it, and each logged without its
-// context: the identity providers' adapter on every failed sign-in (its
-// exchange, its token's checks, ten lines at WARN), and the token verifier
-// and the middleware's validator on every token they refused.
-var requestPathPackages = []string{
-	filepath.Join("internal", "core", "usecase"),
-	filepath.Join("internal", "adapter", "driven", "repositorypg"),
-	filepath.Join("internal", "adapter", "driving", "http", "handler"),
-	filepath.Join("internal", "adapter", "driving", "http", "middleware"),
-	filepath.Join("internal", "adapter", "driving", "http", "respond"),
-	filepath.Join("internal", "adapter", "driven", "oauthidp"),
-	filepath.Join("internal", "adapter", "driven", "tokenjwt"),
-	filepath.Join("internal", "adapter", "driving", "http", "jwtvalidator"),
+// internal/app is deliberately outside them. Its logging is startup and
+// shutdown -- configuration, migrations, the seeded-administrator check, the
+// shutdown sequence -- and none of it happens inside a request, so there is
+// no span for those lines to belong to. Requiring a context there would mean
+// inventing context.Background() at the call site, which carries no span and
+// would turn a real rule into a ritual.
+var requestPathRoots = []string{
+	filepath.Join("internal", "core"),
+	filepath.Join("internal", "adapter"),
+}
+
+// notInTheRequestPath are packages under requestPathRoots that a request
+// never runs in. The HTTP server's package starts, stops and watches the
+// server: it is the process's lifecycle, as internal/app is.
+var notInTheRequestPath = map[string]bool{
+	filepath.Join("internal", "adapter", "driving", "http", "server"): true,
+}
+
+// requestPathPackages are the packages under requestPathRoots, relative to
+// root, that hold Go source.
+func requestPathPackages(t *testing.T, root string) []string {
+	t.Helper()
+
+	var packages []string
+
+	for _, top := range requestPathRoots {
+		err := filepath.WalkDir(filepath.Join(root, top), func(path string, d os.DirEntry, err error) error {
+			if err != nil || !d.IsDir() {
+				return err
+			}
+
+			pkg, err := filepath.Rel(root, path)
+			if err != nil {
+				return err
+			}
+
+			if notInTheRequestPath[pkg] {
+				return filepath.SkipDir
+			}
+
+			entries, err := os.ReadDir(path)
+			if err != nil {
+				return err
+			}
+
+			for _, entry := range entries {
+				if !entry.IsDir() && strings.HasSuffix(entry.Name(), ".go") && !strings.HasSuffix(entry.Name(), "_test.go") {
+					packages = append(packages, pkg)
+
+					break
+				}
+			}
+
+			return nil
+		})
+		if err != nil {
+			t.Fatalf("walk %s: %v", top, err)
+		}
+	}
+
+	// The walk must reach the packages the hand-written list named, and the
+	// three it missed: fewer would be a walk that reads nothing.
+	for _, want := range []string{
+		filepath.Join("internal", "core", "usecase"),
+		filepath.Join("internal", "adapter", "driven", "repositorypg"),
+		filepath.Join("internal", "adapter", "driving", "http", "handler"),
+		filepath.Join("internal", "adapter", "driven", "oauthidp"),
+		filepath.Join("internal", "adapter", "driven", "tokenjwt"),
+		filepath.Join("internal", "adapter", "driving", "http", "jwtvalidator"),
+		filepath.Join("internal", "adapter", "driven", "notifieremail", "templates"),
+	} {
+		if !slices.Contains(packages, want) {
+			t.Fatalf("the walk did not reach %s: %v", want, packages)
+		}
+	}
+
+	return packages
 }
 
 // contextlessSlogExemptions names the FUNCTIONS that legitimately log without a
@@ -42,27 +107,30 @@ var requestPathPackages = []string{
 // exemption silently covers every call added to that file afterwards, including
 // the ones this test exists to catch -- `users.go` holds both a scan helper and
 // the repository methods, and exempting the file would stop guarding the
-// methods.
+// methods. The key is the package's name and the function's
+// ("usecase.dummyPasswordHash"): the walk covers every package under
+// requestPathRoots, and a bare name would exempt a function of that name in
+// any of them.
 //
 // Adding a name here is a claim that the function cannot be reached from a
 // request. Check it before adding one.
 var contextlessSlogExemptions = map[string]bool{
 	// Maps a requested field name to the struct field to scan into. Pure column
 	// plumbing, called from the row loop, needing no context.
-	"buildScanFields": true,
+	"repositorypg.buildScanFields": true,
 
 	// A sync.OnceValue initialiser: it runs at first use, once per process,
 	// not inside any request.
-	"dummyPasswordHash": true,
+	"usecase.dummyPasswordHash": true,
 
 	// Emitted while the CORS middleware is being CONSTRUCTED, at startup, to
 	// say that a wildcard origin and credentials cannot be combined. There is
 	// no request yet.
-	"Cors": true,
+	"middleware.Cors": true,
 
 	// Filters the rate-limit rule set when it is loaded from the database, not
 	// per request. A rule that cannot be enforced is reported once, on reload.
-	"EnforceableRateLimits": true,
+	"usecase.EnforceableRateLimits": true,
 }
 
 // TestNoContextlessSlogInTheRequestPath fails the build when a log line in the
@@ -96,7 +164,7 @@ func TestNoContextlessSlogInTheRequestPath(t *testing.T) {
 
 	var offenders []string
 
-	for _, pkg := range requestPathPackages {
+	for _, pkg := range requestPathPackages(t, root) {
 		dir := filepath.Join(root, pkg)
 
 		entries, err := os.ReadDir(dir)
@@ -122,7 +190,7 @@ func TestNoContextlessSlogInTheRequestPath(t *testing.T) {
 
 			for _, decl := range file.Decls {
 				owner := declName(decl)
-				if contextlessSlogExemptions[owner] {
+				if contextlessSlogExemptions[filepath.Base(pkg)+"."+owner] {
 					continue
 				}
 
@@ -179,7 +247,7 @@ func TestContextlessSlogExemptionsAreAllUsed(t *testing.T) {
 	root := repoRoot(t)
 	seen := map[string]bool{}
 
-	for _, pkg := range requestPathPackages {
+	for _, pkg := range requestPathPackages(t, root) {
 		dir := filepath.Join(root, pkg)
 
 		entries, err := os.ReadDir(dir)
@@ -199,7 +267,7 @@ func TestContextlessSlogExemptionsAreAllUsed(t *testing.T) {
 			}
 
 			for _, decl := range file.Decls {
-				seen[declName(decl)] = true
+				seen[filepath.Base(pkg)+"."+declName(decl)] = true
 			}
 		}
 	}

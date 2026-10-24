@@ -14,9 +14,12 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
+	"unicode/utf8"
 
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/oauth2"
@@ -410,6 +413,92 @@ func TestAProviderThatCannotBeUsedIsTheServicesSide(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+// The adapter writes no line. A failure's reason travels in the domain
+// error's Detail and is written once, on the request's access line; the ten
+// lines it wrote at WARN, and then at DEBUG, were a second line for the same
+// failure, and at DEBUG an operator at INFO never saw the provider's reason.
+func TestTheAdapterWritesNoLineOfItsOwn(t *testing.T) {
+	t.Parallel()
+
+	files, err := filepath.Glob("*.go")
+	if err != nil || len(files) == 0 {
+		t.Fatalf("no source read: %v", err)
+	}
+
+	for _, file := range files {
+		if strings.HasSuffix(file, "_test.go") {
+			continue
+		}
+
+		b, err := os.ReadFile(file)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if strings.Contains(string(b), "slog.") {
+			t.Errorf("%s logs: put the reason in the error's Detail instead (domain.FailureDetail)", file)
+		}
+	}
+}
+
+// go-oidc puts the provider's answer into its errors, "<status>: <body>":
+// a page lands in the detail no further than its first line and 200 bytes.
+func TestAProvidersPageIsCutInTheDetail(t *testing.T) {
+	t.Parallel()
+
+	for name, tt := range map[string]struct {
+		text string
+		want func(string) bool
+	}{
+		"a_page_on_several_lines": {
+			text: "404 Not Found: <html>\n<p>second line</p></html>",
+			want: func(d string) bool { return d == "404 Not Found: <html>" },
+		},
+		"one_long_line": {
+			text: "500 Internal Server Error: " + strings.Repeat("€", 400),
+			want: func(d string) bool {
+				return len(d) <= maxProviderText+len("…") && strings.HasPrefix(d, "500 Internal Server Error") && utf8.ValidString(d)
+			},
+		},
+	} {
+		detail := lookupFailure(errors.New(tt.text)).(*domain.InvalidAuthnServiceError).FailureDetail()
+		if !tt.want(detail) {
+			t.Errorf("%s: the detail is %d bytes: %q", name, len(detail), detail[:min(len(detail), 60)])
+		}
+	}
+}
+
+// A provider's failure carries the provider's own words as its detail, and
+// never in its text: the access line reads the first, a caller may read the
+// second.
+func TestAProvidersFailureCarriesItsWordsAsDetail(t *testing.T) {
+	t.Parallel()
+
+	f := newFakeOIDC(t)
+	f.nonce = "n"
+	f.tokenAnswer = func(w http.ResponseWriter) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusUnauthorized)
+		_ = json.NewEncoder(w).Encode(map[string]any{"error": "invalid_client", "error_description": "AADSTS7000215: the client secret has expired"})
+	}
+
+	_, err := newProvider(t).Exchange(t.Context(), oidcIDP(f.srv.URL, "Okta"), "code-1",
+		oauth.AuthRequest{Nonce: "n", CodeVerifier: "v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v"})
+
+	refused, ok := errors.AsType[*domain.InvalidAuthnServiceError](err)
+	if !ok {
+		t.Fatalf("got %T (%v), want the provider's side", err, err)
+	}
+
+	if !strings.Contains(refused.FailureDetail(), "the client secret has expired") {
+		t.Errorf("the detail lost the provider's words: %q", refused.FailureDetail())
+	}
+
+	if strings.Contains(err.Error(), "AADSTS") || strings.Contains(err.Error(), "invalid_client") {
+		t.Errorf("the provider's words reached the error's text: %q", err)
 	}
 }
 

@@ -22,20 +22,20 @@ func validateToken(ctx context.Context, verifier Verifier, tokenString string, r
 	// everything. Wiring this wrong should cost every request, loudly, rather
 	// than quietly admit tokens nobody verified.
 	if verifier == nil {
-		slog.ErrorContext(ctx, "jwtvalidator: no verifier is configured, so every token is refused")
+		slog.ErrorContext(ctx, "no verifier is configured, so every token is refused")
 
 		return nil, &InvalidTokenError{}
 	}
 
 	claims, err := verifier.Verify(ctx, tokenString)
 	if err != nil {
-		slog.DebugContext(ctx, "jwtvalidator: token refused", "error", err)
+		slog.DebugContext(ctx, "token refused", "error", err)
 
 		return nil, &InvalidTokenError{}
 	}
 
 	if len(claims) == 0 {
-		slog.DebugContext(ctx, "jwtvalidator: token carried no claims")
+		slog.DebugContext(ctx, "token carried no claims")
 
 		return nil, &InvalidClaimsError{}
 	}
@@ -57,20 +57,20 @@ func validateToken(ctx context.Context, verifier Verifier, tokenString string, r
 func validateJTI(ctx context.Context, claims map[string]any) error {
 	jtiStr, ok := claims["jti"].(string)
 	if !ok {
-		slog.DebugContext(ctx, "jwtvalidator: the token has no usable jti claim")
+		slog.DebugContext(ctx, "the token has no usable jti claim")
 
 		return &InvalidClaimsError{}
 	}
 
 	jti, err := uuid.Parse(jtiStr)
 	if err != nil {
-		slog.DebugContext(ctx, "jwtvalidator: the jti claim is not a uuid", "error", err)
+		slog.DebugContext(ctx, "the jti claim is not a uuid", "error", err)
 
 		return &InvalidClaimsError{}
 	}
 
 	if jti == uuid.Nil() {
-		slog.DebugContext(ctx, "jwtvalidator: the jti claim is the nil uuid")
+		slog.DebugContext(ctx, "the jti claim is the nil uuid")
 
 		return &InvalidClaimsError{}
 	}

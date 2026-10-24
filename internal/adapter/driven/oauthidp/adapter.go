@@ -27,10 +27,17 @@
 // # Errors
 //
 // The provider's own wording -- `oauth2: "invalid_client" ...`, go-oidc's
-// "oidc: id token issued by a different provider" -- is logged at WARN with
-// the IdP name and never returned: it would publish a dependency's text as
-// this API's contract and tell whoever is probing how our client is
-// registered with the provider.
+// "oidc: id token issued by a different provider" -- is never returned to the
+// caller: it would publish a dependency's text as this API's contract and
+// tell whoever is probing how our client is registered with the provider. It
+// travels in the domain error's Detail, which Error() never prints (an
+// OAuth refusal's code, description and status; any other failure's first
+// line, cut at 200 bytes, because go-oidc puts the provider's page into its
+// errors), and the
+// one line written about the failure carries it (domain.FailureDetail): the
+// request's access line, at ERROR for a 503. This adapter writes no line of
+// its own; it wrote one at WARN for each failure, beside the access line, and
+// then at DEBUG, where an operator at INFO never saw the reason.
 package oauthidp
 
 import (
@@ -38,7 +45,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log/slog"
 	"net/http"
 	"net/mail"
 	"net/url"
@@ -47,6 +53,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"unicode/utf8"
 
 	"github.com/coreos/go-oidc/v3/oidc"
 	"golang.org/x/oauth2"
@@ -140,9 +147,6 @@ func (p *Provider) Exchange(ctx context.Context, idp *domain.IDP, code string, r
 
 	token, err := cfg.Exchange(ctx, code, oauth2.VerifierOption(req.CodeVerifier))
 	if err != nil {
-		slog.DebugContext(ctx, "the code exchange with the identity provider failed",
-			"idp_id", idp.ID, "idp_kind", idp.IDPType.Kind, "error", err)
-
 		return nil, exchangeFailure(err)
 	}
 
@@ -160,13 +164,13 @@ func (p *Provider) configFor(ctx context.Context, idp *domain.IDP) (*oauth2.Conf
 	}
 
 	if idp.ClientID == "" || idp.ClientSecret == "" || idp.CallbackURL == "" {
-		return nil, notConfigured(ctx, idp, "the client id, the client secret or the callback URL is empty")
+		return nil, notConfigured("the client id, the client secret or the callback URL is empty")
 	}
 
 	switch idp.IDPType.Kind {
 	case domain.IDPTypeKindOIDC:
 		if idp.IssuerURL == "" {
-			return nil, notConfigured(ctx, idp, "an OpenID Connect provider has no issuer URL")
+			return nil, notConfigured("an OpenID Connect provider has no issuer URL")
 		}
 
 		provider, err := p.discover(ctx, idp)
@@ -210,7 +214,7 @@ func (p *Provider) configFor(ctx context.Context, idp *domain.IDP) (*oauth2.Conf
 		// The kind, not the name. A provider the adapter does not know how to
 		// talk to used to be one whose NAME the switch did not list, so a row
 		// called anything but "Google" or "Github" failed at the callback.
-		return nil, notConfigured(ctx, idp, "the provider's kind is not one this service can sign in with")
+		return nil, notConfigured("the provider's kind is not one this service can sign in with")
 	}
 }
 
@@ -218,12 +222,9 @@ func (p *Provider) configFor(ctx context.Context, idp *domain.IDP) (*oauth2.Conf
 // refuses every one of these shapes, so the row was written some other way.
 // It is the service's side, a 503 in our words. It was a 400 that named the
 // provider, on routes anyone may call: the caller had sent nothing wrong.
-// What is wrong goes to the log, with the provider's id.
-func notConfigured(ctx context.Context, idp *domain.IDP, reason string) error {
-	slog.DebugContext(ctx, "the identity provider is not configured for sign-in",
-		"idp_id", idp.ID, "idp_kind", idp.IDPType.Kind, "reason", reason)
-
-	return &domain.InvalidAuthnServiceError{Message: domain.IDPNotConfiguredMessage}
+// What is wrong is the failure's detail.
+func notConfigured(reason string) error {
+	return &domain.InvalidAuthnServiceError{Message: domain.IDPNotConfiguredMessage, Detail: reason}
 }
 
 // tokenEndpointAuthStyle says how this client presents its credentials at
@@ -266,10 +267,7 @@ func (p *Provider) discover(ctx context.Context, idp *domain.IDP) (*oidc.Provide
 
 	provider, err := oidc.NewProvider(ctx, idp.IssuerURL)
 	if err != nil {
-		slog.DebugContext(ctx, "discovery failed for the identity provider",
-			"idp_id", idp.ID, "issuer_url", idp.IssuerURL, "error", err)
-
-		return nil, &domain.IDPUnreachableError{Message: "the identity provider is not reachable"}
+		return nil, &domain.IDPUnreachableError{Message: "the identity provider is not reachable", Detail: "discovery: " + providerText(err)}
 	}
 
 	actual, _ := p.providers.LoadOrStore(idp.IssuerURL, provider)
@@ -306,17 +304,63 @@ func exchangeFailure(err error) error {
 	if refusal, ok := errors.AsType[*oauth2.RetrieveError](err); ok {
 		switch refusal.ErrorCode {
 		case "invalid_grant", "bad_verification_code", "unverified_user_email", "access_denied":
-			return &domain.IDPSignInRefusedError{Message: "the identity provider did not accept this sign-in"}
+			return &domain.IDPSignInRefusedError{Message: "the identity provider did not accept this sign-in", Detail: providerDetail(err)}
 		}
 
-		return &domain.InvalidAuthnServiceError{Message: "the identity provider did not accept this service's request"}
+		return &domain.InvalidAuthnServiceError{Message: "the identity provider did not accept this service's request", Detail: providerDetail(err)}
 	}
 
 	if _, ok := errors.AsType[*url.Error](err); ok {
-		return &domain.IDPUnreachableError{Message: "the identity provider is not reachable"}
+		return &domain.IDPUnreachableError{Message: "the identity provider is not reachable", Detail: providerDetail(err)}
 	}
 
-	return &domain.InvalidAuthnServiceError{Message: "the identity provider did not return a token"}
+	return &domain.InvalidAuthnServiceError{Message: "the identity provider did not return a token", Detail: providerDetail(err)}
+}
+
+// providerDetail is what a failed call to the provider says, for the
+// failure's detail: an OAuth refusal's code, description and status, never
+// its body, which for an answer with no OAuth error is whatever page the
+// provider served (oauth2 prints it whole); any other failure's text, cut
+// by providerText.
+func providerDetail(err error) string {
+	refusal, ok := errors.AsType[*oauth2.RetrieveError](err)
+	if !ok {
+		return providerText(err)
+	}
+
+	status := 0
+	if refusal.Response != nil {
+		status = refusal.Response.StatusCode
+	}
+
+	if refusal.ErrorCode == "" {
+		return fmt.Sprintf("the token endpoint answered %d with no OAuth error", status)
+	}
+
+	return fmt.Sprintf("the token endpoint answered %d: %s: %s", status, refusal.ErrorCode, refusal.ErrorDescription)
+}
+
+// maxProviderText bounds providerText.
+const maxProviderText = 200
+
+// providerText is a failure's own text, cut at its first line and at
+// maxProviderText bytes. go-oidc puts the provider's answer into its errors
+// -- discovery, the account details and the keys are "<status>: <body>" --
+// so the text may begin a page the provider served: what is kept is the
+// status and the start of the page, which tells a 404 from a login form, and
+// no more.
+func providerText(err error) string {
+	text, _, _ := strings.Cut(err.Error(), "\n")
+	if len(text) <= maxProviderText {
+		return text
+	}
+
+	cut := maxProviderText
+	for cut > 0 && !utf8.RuneStart(text[cut]) {
+		cut--
+	}
+
+	return text[:cut] + "…"
 }
 
 // lookupFailure is exchangeFailure's twin for the calls made with the token:
@@ -328,19 +372,17 @@ func lookupFailure(err error) error {
 	}
 
 	if _, ok := errors.AsType[*url.Error](err); ok {
-		return &domain.IDPUnreachableError{Message: "the identity provider is not reachable"}
+		return &domain.IDPUnreachableError{Message: "the identity provider is not reachable", Detail: providerDetail(err)}
 	}
 
-	return &domain.InvalidAuthnServiceError{Message: "the identity provider did not return the account details"}
+	return &domain.InvalidAuthnServiceError{Message: "the identity provider did not return the account details", Detail: providerDetail(err)}
 }
 
 // identityFromIDToken verifies the ID token and maps its claims.
 func (p *Provider) identityFromIDToken(ctx context.Context, idp *domain.IDP, cfg *oauth2.Config, token *oauth2.Token, nonce string) (*domain.UserInfo, error) {
 	rawIDToken, ok := token.Extra("id_token").(string)
 	if !ok || rawIDToken == "" {
-		slog.DebugContext(ctx, "the token response carried no id_token", "idp_id", idp.ID)
-
-		return nil, &domain.InvalidAuthnServiceError{Message: "the identity provider did not return an identity"}
+		return nil, &domain.InvalidAuthnServiceError{Message: "the identity provider did not return an identity", Detail: "the token response carried no id_token"}
 	}
 
 	provider, err := p.discover(ctx, idp)
@@ -354,32 +396,24 @@ func (p *Provider) identityFromIDToken(ctx context.Context, idp *domain.IDP, cfg
 	// refused here.
 	idToken, err := provider.Verifier(&oidc.Config{ClientID: cfg.ClientID}).Verify(oidc.ClientContext(ctx, p.httpClient), rawIDToken)
 	if err != nil {
-		slog.DebugContext(ctx, "the ID token did not verify", "idp_id", idp.ID, "error", err)
-
-		return nil, &domain.InvalidAuthnServiceError{Message: "the identity provider did not return a valid identity"}
+		return nil, &domain.InvalidAuthnServiceError{Message: "the identity provider did not return a valid identity", Detail: "the ID token did not verify: " + providerText(err)}
 	}
 
 	if idToken.Nonce == "" {
 		// A provider that does not echo the nonce at all is not following
 		// the protocol: every sign-in fails, and that is its side.
-		slog.DebugContext(ctx, "the ID token carries no nonce", "idp_id", idp.ID)
-
-		return nil, &domain.InvalidAuthnServiceError{Message: "the identity provider did not return a valid identity"}
+		return nil, &domain.InvalidAuthnServiceError{Message: "the identity provider did not return a valid identity", Detail: "the ID token carries no nonce"}
 	}
 
 	if idToken.Nonce != nonce {
-		slog.DebugContext(ctx, "the ID token's nonce does not match this sign-in", "idp_id", idp.ID)
-
 		// The token is the provider's and it verifies; it answers another
 		// sign-in than this one. That is the caller's side.
-		return nil, &domain.IDPSignInRefusedError{Message: "the identity provider's answer is not for this sign-in"}
+		return nil, &domain.IDPSignInRefusedError{Message: "the identity provider's answer is not for this sign-in", Detail: "the ID token's nonce does not match this sign-in"}
 	}
 
 	var claims oidcClaims
 	if err := idToken.Claims(&claims); err != nil {
-		slog.DebugContext(ctx, "the ID token's claims could not be read", "idp_id", idp.ID, "error", err)
-
-		return nil, &domain.InvalidAuthnServiceError{Message: "the identity provider did not return a valid identity"}
+		return nil, &domain.InvalidAuthnServiceError{Message: "the identity provider did not return a valid identity", Detail: "the ID token's claims could not be read: " + providerText(err)}
 	}
 
 	// Entra ID sends `email` only when the optional claim is configured on
@@ -390,8 +424,6 @@ func (p *Provider) identityFromIDToken(ctx context.Context, idp *domain.IDP, cfg
 	if claims.Email == "" {
 		info, err := provider.UserInfo(oidc.ClientContext(ctx, p.httpClient), oauth2.StaticTokenSource(token))
 		if err != nil {
-			slog.DebugContext(ctx, "could not read the account details from the identity provider", "idp_id", idp.ID, "error", err)
-
 			lookupErr = err
 		} else {
 			var extra oidcClaims
@@ -450,7 +482,7 @@ func (c *oidcClaims) merge(o oidcClaims) {
 // quirks in one place.
 func mapOIDCClaims(idp *domain.IDP, subject string, c oidcClaims) (*domain.UserInfo, error) {
 	if subject == "" {
-		return nil, &domain.InvalidAuthnServiceError{Message: "the identity provider did not return a valid identity"}
+		return nil, &domain.InvalidAuthnServiceError{Message: "the identity provider did not return a valid identity", Detail: "the ID token has no subject"}
 	}
 
 	email, verified := c.Email, c.EmailVerified
@@ -507,13 +539,11 @@ func (p *Provider) identityFromGithub(ctx context.Context, idp *domain.IDP, cfg 
 	}
 
 	if err := getJSON(ctx, client, userURL, &user); err != nil {
-		slog.DebugContext(ctx, "could not read the account details from the identity provider", "idp_id", idp.ID, "error", err)
-
 		return nil, lookupFailure(err)
 	}
 
 	if user.ID == 0 {
-		return nil, &domain.InvalidAuthnServiceError{Message: "the identity provider did not return a valid identity"}
+		return nil, &domain.InvalidAuthnServiceError{Message: "the identity provider did not return a valid identity", Detail: "the account details carry no id"}
 	}
 
 	// /user.email is null for anyone whose email is private, which is most
@@ -530,8 +560,6 @@ func (p *Provider) identityFromGithub(ctx context.Context, idp *domain.IDP, cfg 
 	var lookupErr error
 
 	if err := getJSON(ctx, client, strings.TrimSuffix(userURL, "/")+"/emails", &emails); err != nil {
-		slog.DebugContext(ctx, "could not read the email addresses from the identity provider", "idp_id", idp.ID, "error", err)
-
 		lookupErr = err
 	} else {
 		for _, e := range emails {

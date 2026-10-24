@@ -545,7 +545,9 @@ func TestAnUnreachableProviderAtTheStartIsA503(t *testing.T) {
 		"the_provider_is_not_reachable": {
 			err:    &domain.IDPUnreachableError{Message: "the identity provider is not reachable"},
 			status: http.StatusServiceUnavailable,
-			says:   "identity provider unreachable: the identity provider is not reachable",
+			// The callback's one sentence: the route is public, and that it
+			// was discovery, with the provider's words, is the detail.
+			says: signInUnavailableMessage,
 		},
 		"anything_else_is_the_fixed_500": {
 			err:    errors.New("Get \"https://login.example.com/.well-known/openid-configuration\": dial tcp 10.0.0.9:443: i/o timeout"),

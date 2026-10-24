@@ -561,13 +561,50 @@ file-level exemption would silently cover every call added to that file
 afterwards. `internal/app` is out of scope entirely: its logging is startup and
 shutdown, where no span exists and a context would have to be invented.
 
-Its packages are listed by hand, and three that a request passes through were
-missing: the identity providers' adapter (`oauthidp`, ten lines at WARN on a
-failed sign-in, a second line for a failure the access line already reports,
-and none of them reachable from its trace), the token verifier (`tokenjwt`)
-and the middleware's validator (`jwtvalidator`). On `main`'s code the extended
-list found seventeen lines. The adapter's are DEBUG now, with the provider's
-id: the detail of a failure, never its report.
+It walks every package under `internal/core` and `internal/adapter` but the
+HTTP server's (the process's lifecycle, as `internal/app` is). Its packages
+were listed by hand, and three that a request passes through were missing:
+the identity providers' adapter (`oauthidp`, ten lines at WARN on a failed
+sign-in, none reachable from its trace), the token verifier (`tokenjwt`) and
+the middleware's validator (`jwtvalidator`), seventeen lines in all (#173).
+The adapter writes no line of its own now: what it knows is the failure's
+detail (2b).
+
+### 2b. A failure's detail travels in the error
+
+Some errors are answered in fixed words on purpose: a refused sign-in in one
+sentence whatever the reason, so that the reason does not tell anyone which
+addresses have accounts here; a provider that cannot be used in one sentence
+on a public route, so that the provider's own text never becomes the API's.
+The reason used to be a second line, at WARN, beside the access line about the
+same failure. Moved to DEBUG (#173), it was out of an operator's sight at
+INFO: an expired client secret was a 503 whose ERROR line said "the identity
+provider did not accept this service's request", and nothing else.
+
+```mermaid
+flowchart LR
+    A["adapter or use-case:<br/>InvalidAuthnServiceError{Message, Detail}<br/>(Error() prints Message only)"] --> R["RecordError / NoteFailure:<br/>Failure{Err, Type, Detail}<br/>(FailureDetail, bounded to 1 KiB)"]
+    R --> H{"inside a request?"}
+    H -- yes --> L["middleware.Logging: one line<br/>5xx: ERROR request ... detail=<br/>4xx: INFO request, DEBUG request_refused ... detail="]
+    H -- no --> O["operation_failed at ERROR ... detail="]
+    A -. "the response body" .-> B["Message only, or the route's fixed sentence"]
+```
+
+The error carries a `Detail` its `Error()` never prints, read through
+`FailureDetail()` (`domain/failure_detail.go`), and `o11y` holds it with the
+failure, so the one line about it carries `detail`: the ERROR access line of a
+5xx, the DEBUG `request_refused` line of a refusal, `operation_failed` outside
+a request. It is text, not a wrapped error, so `error_type` is still the
+domain type. It is bounded to 1 KiB; the identity providers' adapter puts an
+OAuth refusal's code, description and status there and never its body, and
+cuts any other failure's text at its first line and 200 bytes, because go-oidc
+puts the provider's page into its errors ("<status>: <body>"). A refusal's
+reason is often the caller's own text (the provider's `error_description`
+comes back in the callback's query string), so it is written at DEBUG, on the
+refusal's companion line, and bounded there too.
+`TestTheLineAboutAFailureCarriesItsDetail` holds both lines;
+`TestTheAdapterWritesNoLineOfItsOwn` holds the identity providers' adapter to
+none.
 
 ### 3. Both sinks have to carry the ids
 

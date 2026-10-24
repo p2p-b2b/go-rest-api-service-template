@@ -338,7 +338,7 @@ func mapJWTError(ctx context.Context, err error) error {
 		return invalid
 	}
 
-	slog.DebugContext(ctx, "tokenjwt.Verify: token rejected", "error", err)
+	slog.DebugContext(ctx, "a token did not verify", "error", err)
 
 	switch {
 	case errors.Is(err, jwt.ErrTokenExpired):

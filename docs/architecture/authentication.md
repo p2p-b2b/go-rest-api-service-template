@@ -942,13 +942,15 @@ authenticationService: failed to get access token: oauth2: "invalid_client"
 That is a dependency's wording published as this API's contract — the same rule
 [the one verification path](#one-verification-path) states — and it also hands
 back the provider's view of how our client is registered with it. The `oauthidp`
-adapter now logs the provider's text at `WARN` with the IdP name, and returns
-wording this service owns:
+adapter returns wording this service owns, and the provider's text is the
+error's `Detail`, which `Error()` never prints: the request's one line carries
+it as `detail` ([observability.md](./observability.md#2b-a-failures-detail-travels-in-the-error)).
+It was a WARN line of the adapter's own, beside the access line:
 
 | Caller sees | Operator sees |
 | --- | --- |
-| `the identity provider did not accept this sign-in` | `oauthidp: the identity provider refused the authorization code` + the oauth2 error |
-| `the identity provider did not return the account details` | `oauthidp: could not read the account details from the identity provider` + the transport error |
+| `the identity provider did not accept this sign-in` (401: a code the provider refuses), or `sign-in with this identity provider is not available right now` (503: the provider rejects this service, or cannot be reached) | the access line, at ERROR for the 503 and in its DEBUG companion for the 401, with `detail` (an OAuth refusal's code, description and status, never its body) |
+| the same 503 sentence | the same line, with the transport error's first line, cut at 200 bytes, as `detail` |
 
 The second matters for a reason beyond wording: those errors carry the
 provider's user-info URL and, for a transport failure, `net/http`'s description
