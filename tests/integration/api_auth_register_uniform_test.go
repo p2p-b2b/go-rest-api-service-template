@@ -80,3 +80,33 @@ func TestRegistrationDoesNotConfirmTheAddress(t *testing.T) {
 	assert.True(t, emailWithSubjectExists(t, taken, "You already have an account"),
 		"the address owner must be told that someone tried to register with it")
 }
+
+// TestRegistrationWithATakenIDIsNotATakenAddress: "registered, check your
+// email" is the answer for an address that already has an account, and the
+// owner of that address is the one who is mailed. The route also takes an
+// optional id, and an id that is taken is refused by the same create. It was
+// answered the same way: 201, no account, and "you already have an account"
+// mailed to an address that had none. It is the conflict it is.
+func TestRegistrationWithATakenIDIsNotATakenAddress(t *testing.T) {
+	_, existing := loginAs(t)
+
+	firstName, lastName, email := generateUserData(t)
+
+	response, err := sendHTTPRequest(t, t.Context(), authRegisterEndpoint, map[string]any{
+		"id":         existing.UserID.String(),
+		"first_name": firstName,
+		"last_name":  lastName,
+		"email":      email,
+		"password":   generatePassword(t),
+	})
+	require.NoError(t, err)
+
+	body := readResponseBody(t, response)
+	require.NoError(t, response.Body.Close())
+
+	assert.Equal(t, http.StatusConflict, response.StatusCode, "body: %s", body)
+	assert.NotContains(t, body, email, "the refusal must not echo the address")
+	assert.Zero(t, countUsersByEmailInDB(t, email), "nothing may be created")
+	assert.Never(t, func() bool { return emailWithSubjectExists(t, email, "You already have an account") },
+		2*time.Second, 200*time.Millisecond, "an address with no account was told it has one")
+}

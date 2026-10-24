@@ -395,6 +395,19 @@ the two emails arrives.
 A failure to send that mail is logged, not returned. The answer to the caller
 must not depend on it, or the difference becomes the oracle again.
 
+**This is the registration route's rule, and it is a rule about the
+address.** `RegisterUser` also creates the account of a first
+identity-provider sign-in, and that caller is told that nothing was
+created. And the route takes an optional `id`: one that is taken is refused
+by the same create, and was answered "registered" as well, with this mail
+sent to an address that had no account. It is a `409` now, naming the id
+the caller sent and never an address, as on every other route that takes an
+id; nothing is created and nobody is mailed. The repository says which
+conflict it was (`UserAlreadyExistsError.Email` is set for the address's
+only). Only a registration by password, for a taken address, is answered
+"registered". A registration also names its method: an unknown one is a
+`400`, not an account that fell on one side of these rules by accident.
+
 ### And it is bounded per address
 
 Recovery used to be reachable at the per-IP limiter's rate and no slower, which

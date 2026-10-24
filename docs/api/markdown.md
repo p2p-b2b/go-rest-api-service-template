@@ -689,7 +689,7 @@ Create a new user account and send verification email.
 |------|--------|-------------|:-----------:|--------|
 | [201](#019822af-b448-7572-a268-4c7b20a70229-201) | Created | Registration accepted. Answered the same way whether or not the address already has an account — deliberately, so this endpoint cannot be used to discover which addresses are registered. If the address was already taken, its owner is told by email instead and no second account is created | ✓ | [schema](#019822af-b448-7572-a268-4c7b20a70229-201-schema) |
 | [400](#019822af-b448-7572-a268-4c7b20a70229-400) | Bad Request | Invalid request body or validation error |  | [schema](#019822af-b448-7572-a268-4c7b20a70229-400-schema) |
-| [409](#019822af-b448-7572-a268-4c7b20a70229-409) | Conflict | Registration is closed: the user limit has been reached |  | [schema](#019822af-b448-7572-a268-4c7b20a70229-409-schema) |
+| [409](#019822af-b448-7572-a268-4c7b20a70229-409) | Conflict | Registration is closed: the user limit has been reached. Or the optional id sent with the request is already a user's: nothing is created and nobody is mailed |  | [schema](#019822af-b448-7572-a268-4c7b20a70229-409-schema) |
 | [413](#019822af-b448-7572-a268-4c7b20a70229-413) | Request Entity Too Large | Request body larger than http.server.max.body.bytes |  | [schema](#019822af-b448-7572-a268-4c7b20a70229-413-schema) |
 | [415](#019822af-b448-7572-a268-4c7b20a70229-415) | Unsupported Media Type | Body not declared as application/json |  | [schema](#019822af-b448-7572-a268-4c7b20a70229-415-schema) |
 | [500](#019822af-b448-7572-a268-4c7b20a70229-500) | Internal Server Error | Internal server error during registration |  | [schema](#019822af-b448-7572-a268-4c7b20a70229-500-schema) |
@@ -721,7 +721,7 @@ Status: Bad Request
 
 [PayloadHTTPMessage](#payload-http-message)
 
-##### <span id="019822af-b448-7572-a268-4c7b20a70229-409"></span> 409 - Registration is closed: the user limit has been reached
+##### <span id="019822af-b448-7572-a268-4c7b20a70229-409"></span> 409 - Registration is closed: the user limit has been reached. Or the optional id sent with the request is already a user's: nothing is created and nobody is mailed
 Status: Conflict
 
 ###### <span id="019822af-b448-7572-a268-4c7b20a70229-409-schema"></span> Schema

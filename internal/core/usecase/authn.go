@@ -460,7 +460,13 @@ func (ref *AuthnService) RegisterUser(ctx context.Context, input *domain.Registe
 		// provider is not answered "registered" for an account it did not
 		// create: it would go on to sign in to an account that is not there.
 		// It hears the refusal and answers it itself.
-		if _, exists := errors.AsType[*domain.UserAlreadyExistsError](err); exists && input.RegisterMethod == domain.RegisterMethodPassword {
+		//
+		// And it is the rule for a taken ADDRESS. The route takes an optional
+		// id, and an id that is taken is refused by the same create (the
+		// repository says which: Email is set for the address's conflict
+		// only). Answered "registered" as well, it mailed "you already have
+		// an account" to an address that had none.
+		if taken, exists := errors.AsType[*domain.UserAlreadyExistsError](err); exists && taken.Email != "" && input.RegisterMethod == domain.RegisterMethodPassword {
 			return ref.registrationTaken(ctx, span, start, attrs, input)
 		}
 

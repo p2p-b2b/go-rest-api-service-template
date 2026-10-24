@@ -117,6 +117,7 @@ const (
 	FieldReferences                          = "references"
 	FieldReferencesURL                       = "references_url"
 	FieldRefreshToken                        = "refresh_token"
+	FieldRegisterMethod                      = "register_method"
 	FieldRegisterRedirectURL                 = "register_redirect_url"
 	FieldRequest                             = "request"
 	FieldResource                            = "resource"

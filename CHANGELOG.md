@@ -342,6 +342,14 @@ Since `v0.0.3`.
 
 ### Fixed
 
+- **A taken id at registration is not a taken address.** `POST
+  /auth/register` takes an optional `id`. One that was already a user's was
+  refused by the create and answered like a taken address: 201
+  "registered", nothing created, and "you already have an account" mailed
+  to the address in the body, which had no account. It is a 409 naming the
+  id, and nobody is mailed. A registration whose method is not one the
+  service knows is a 400.
+  ([#162](https://github.com/slashdevops/go-rest-api-service-template/pull/162))
 - **The identity providers have an HTTP client of their own, and a failed
   exchange is presented once.** They used the service's shared outbound
   client, which retries a failed request ten times with backoff inside two
