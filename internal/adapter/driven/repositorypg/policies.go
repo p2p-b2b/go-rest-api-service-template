@@ -442,7 +442,7 @@ func (ref *PoliciesRepository) Select(ctx context.Context, input *domain.SelectP
 	// execute the query
 	rows, err := ref.db.Query(ctx, query)
 	if err != nil {
-		return nil, o11y.RecordError(ctx, span, start, ref.handlePgError(err, input), ref.metrics, attrs)
+		return nil, o11y.RecordError(ctx, span, start, ref.handlePgError(filterRefusal(filterQuery, query, err), input), ref.metrics, attrs)
 	}
 	defer rows.Close()
 
@@ -473,7 +473,7 @@ func (ref *PoliciesRepository) Select(ctx context.Context, input *domain.SelectP
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, o11y.RecordError(ctx, span, start, ref.handlePgError(err, input), ref.metrics, attrs)
+		return nil, o11y.RecordError(ctx, span, start, ref.handlePgError(filterRefusal(filterQuery, query, err), input), ref.metrics, attrs)
 	}
 
 	hasMore := len(fetchedItems) > input.Paginator.Limit
@@ -651,7 +651,7 @@ func (ref *PoliciesRepository) SelectByRoleID(ctx context.Context, roleID uuid.U
 	// execute the query
 	rows, err := ref.db.Query(ctx, query, roleID)
 	if err != nil {
-		return nil, o11y.RecordError(ctx, span, start, ref.handlePgError(err, input), ref.metrics, attrs)
+		return nil, o11y.RecordError(ctx, span, start, ref.handlePgError(filterRefusal(filterQuery, query, err), input), ref.metrics, attrs)
 	}
 	defer rows.Close()
 
@@ -683,7 +683,7 @@ func (ref *PoliciesRepository) SelectByRoleID(ctx context.Context, roleID uuid.U
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, o11y.RecordError(ctx, span, start, ref.handlePgError(err, input), ref.metrics, attrs)
+		return nil, o11y.RecordError(ctx, span, start, ref.handlePgError(filterRefusal(filterQuery, query, err), input), ref.metrics, attrs)
 	}
 
 	hasMore := len(fetchedItems) > input.Paginator.Limit
@@ -927,13 +927,13 @@ func (ref *PoliciesRepository) handlePgError(err error, input any) error {
 				}
 			}
 		case "22021": // Invalid byte sequence for encoding
-			return &domain.InvalidByteSequenceError{Message: pgErr.Message}
+			return &domain.InvalidByteSequenceError{Message: pgInvalidByteSequence}
 		case "08P01": // Invalid message format
-			return &domain.InvalidMessageFormatError{Message: pgErr.Message}
+			return &domain.InvalidMessageFormatError{Message: pgInvalidMessageFormat}
 		case "42703": // Undefined column
-			return &domain.UndefinedColumnError{Message: pgErr.Message}
+			return &domain.UndefinedColumnError{Message: pgUndefinedColumn}
 		case "42804": // Datatype mismatch
-			return &domain.DatatypeMismatchError{Message: pgErr.Message}
+			return &domain.DatatypeMismatchError{Message: pgDatatypeMismatch}
 		}
 	}
 

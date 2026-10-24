@@ -168,6 +168,9 @@ func httpStatusForListError(err error) int {
 	switch {
 	case isErr[*domain.ValidationErrors](err),
 		isErr[*domain.ValidationError](err),
+		// A filter Postgres refused (repositorypg.filterRefusal), in our
+		// words. It was a 500 on every list.
+		isErr[*domain.InvalidInputError](err),
 		isErr[*domain.InvalidByteSequenceError](err),
 		isErr[*domain.InvalidMessageFormatError](err),
 		isErr[*domain.UndefinedColumnError](err),

@@ -39,6 +39,47 @@ the reachable injection each one was written against.
   source for every such statement, and `TestALinkThatNamesAnIdTwiceLinksItOnce`
   sends each route a repeated id against a running service.
 
+## A filter Postgres refuses is a 400, in our words
+
+The filter parser checks an expression's shape and its field names; it does
+not know a column's type. So `GET /users?filter=id = 'nope'`, `disabled =
+'maybe'` and `id = 1` passed it, Postgres refused the cast or found no
+operator, and the driver's error went up unmapped: a 500 that said nothing,
+and an ERROR line for a caller's mistake.
+
+```mermaid
+flowchart TD
+    Q["a list's Query, or its rows' Err"] --> F{"the list wrote a filter?<br/>(filterQuery)"}
+    F -- no --> H["handlePgError: ours"]
+    F -- yes --> C{"SQLSTATE in filterRefusals?<br/>22P02, 22007, 22008, 22009, 22023,<br/>22003, 2202E, 54000, 42883,<br/>2201B, 22025, 2200C"}
+    C -- yes --> R["InvalidInputError on filter:<br/>400, in our words"]
+    C -- "no: 42601" --> P{"Postgres stopped inside<br/>the filter's text?"}
+    P -- yes --> R
+    P -- no --> H
+    C -- no --> H
+    H --> T["22021, 08P01, 42703, 42804:<br/>400, a fixed sentence<br/>anything else: 500"]
+```
+
+- **Every list that writes the caller's filter hands its query's error and
+  its rows' error to `filterRefusal`** (`pg_common.go`) before
+  `handlePgError`, with the clause it wrote and the statement it ran
+  (`TestEveryFilteredListMapsPostgresRefusals`). The SQLSTATEs a filter can
+  raise are spelled out, never "class 22": the class also holds what a
+  caller cannot cause, which stays ours. A syntax error is the filter's only
+  when Postgres's `Position` is inside the filter's text.
+- **Only with a filter.** Nothing else in a list's statement is the caller's
+  text: the sort is re-parsed, the fields are the repository's own columns,
+  the cursor is built from the row it names.
+- **Our words, never Postgres's.** The refusal does not wrap the driver's
+  error. The four errors every repository answers as a 400 (22021, 08P01,
+  42703, 42804) carried `pgErr.Message`: the statement's aliases and the
+  caller's value, and a Postgres or driver upgrade rewrote them. They carry a
+  fixed sentence (`TestNoDriverTextInABody`), and every repository maps all
+  four (the rate limits' mapped only 22021, and answered the other three
+  500).
+  `TestAFilterIsRefusedInTheServicesWords` pins each against a running
+  service.
+
 ## A transaction is ended by the error the caller receives
 
 `endTx` (`repositorypg/tx.go`) ends a transaction: it rolls back when the

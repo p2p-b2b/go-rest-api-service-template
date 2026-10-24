@@ -211,6 +211,7 @@ mechanism, the diagram and the measurement.
 ## SQL rules (repository layer)
 
 - **Values go through `$n` placeholders**, never `fmt.Sprintf`. `repositorypg/roles.go` `UpdateByID` records the injection this stops.
+- **A filter Postgres refuses is a 400, in our words.** A list that writes the caller's filter hands its query's and its rows' errors to `filterRefusal` (`pg_common.go`) before `handlePgError`: the SQLSTATEs a filter can raise (spelled out, never "class 22"; a syntax error only inside the filter's text) become an `InvalidInputError` on `filter`, without the driver's error. The four errors every repository answers 400 (22021, 08P01, 42703, 42804) carry a fixed sentence, never `pgErr.Message` (`TestNoDriverTextInABody`). → [repository-sql.md](../docs/architecture/repository-sql.md#a-filter-postgres-refuses-is-a-400-in-our-words)
 - **Identifiers that must be interpolated** (a schema or table name computed at runtime) go through `pgx.Identifier{schema, table}.Sanitize()`.
 - **A value that cannot be a placeholder** (distance operator, sort direction) is checked against an allow-list first.
 - **A transaction is ended by `endTx`, which reads the error the caller receives**, never by a deferred closure that commits when a local is nil (`TestNoTransactionIsEndedInADeferredClosure`): a failed COMMIT inside such a closure was logged and the method answered nil, a 201 for a row that was never stored.

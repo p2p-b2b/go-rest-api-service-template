@@ -319,7 +319,7 @@ func (ref *IDPTypesRepository) Select(ctx context.Context, input *domain.SelectI
 	// execute the query
 	rows, err := ref.db.Query(ctx, query)
 	if err != nil {
-		return nil, o11y.RecordError(ctx, span, start, ref.handlePgError(err, input), ref.metrics, attrs)
+		return nil, o11y.RecordError(ctx, span, start, ref.handlePgError(filterRefusal(filterQuery, query, err), input), ref.metrics, attrs)
 	}
 	defer rows.Close()
 
@@ -337,7 +337,7 @@ func (ref *IDPTypesRepository) Select(ctx context.Context, input *domain.SelectI
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, o11y.RecordError(ctx, span, start, ref.handlePgError(err, input), ref.metrics, attrs)
+		return nil, o11y.RecordError(ctx, span, start, ref.handlePgError(filterRefusal(filterQuery, query, err), input), ref.metrics, attrs)
 	}
 
 	hasMore := len(fetchedItems) > input.Paginator.Limit
@@ -482,13 +482,13 @@ func (ref *IDPTypesRepository) handlePgError(err error, _ any) error {
 	if pgErr, ok := errors.AsType[*pgconn.PgError](err); ok {
 		switch pgErr.Code {
 		case "22021": // Invalid byte sequence for encoding
-			return &domain.InvalidByteSequenceError{Message: pgErr.Message}
+			return &domain.InvalidByteSequenceError{Message: pgInvalidByteSequence}
 		case "08P01": // Invalid message format
-			return &domain.InvalidMessageFormatError{Message: pgErr.Message}
+			return &domain.InvalidMessageFormatError{Message: pgInvalidMessageFormat}
 		case "42703": // Undefined column
-			return &domain.UndefinedColumnError{Message: pgErr.Message}
+			return &domain.UndefinedColumnError{Message: pgUndefinedColumn}
 		case "42804": // Datatype mismatch - operator class mismatch
-			return &domain.DatatypeMismatchError{Message: pgErr.Message}
+			return &domain.DatatypeMismatchError{Message: pgDatatypeMismatch}
 		}
 	}
 
