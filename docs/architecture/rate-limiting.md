@@ -652,6 +652,56 @@ a step you have to remember is a step that gets skipped, and this one is
 silent.
 
 
+## The integration suite is one client
+
+**With the limiter on, the suite is one client, and it waits like one.** Dev
+trusts no proxy, so every test is the same address, and the suite's parallel
+phase can spend the per-IP budget (100 a second, burst 300). In the service
+this template mirrors, whose suite runs twice as long, a test that sends a
+handful of requests was answered `429` at that peak, twice in a dozen gates,
+on a logout: a refusal that says nothing about the route under test. This
+suite has not hit it yet; it is the same limiter and the same budget.
+
+So the one function every test sends through, `sendHTTPRequest`, does what
+a client is told to do: a `429` with the code `RATE_LIMIT_EXCEEDED` is waited
+out for its `Retry-After` (one second without it, five at most) and the
+request is sent again, twenty times before the refusal is handed to the test
+after all. The login
+and recovery throttle's `429` carries no code and is what its tests ask for:
+it is never waited out.
+
+**A store that could not count is waited out too, within bounds.**
+`RATE_LIMIT_UNAVAILABLE` is the limiter's own store failing, and it was
+handed to the test at once, as a fault a test has to see. That was right
+about a store that is down and wrong about one that is slow for a moment:
+one call past `ratelimit.store.timeout` (70 ms) opens the breaker for its
+cooldown, and every request in those seconds is a `429`. On a machine that
+is merely busy (the race detector, something else compiling) that fails
+whichever test is polling, for nothing the change under test did; it did,
+in the mirrored service, three gate runs in one afternoon. The service is
+right to fail closed there, and nothing of it changes.
+
+```mermaid
+flowchart TD
+    A["a 429 reaches sendHTTPRequest"] --> C{"its code"}
+    C -- "none: the login or<br/>recovery throttle" --> T["handed to the test at once"]
+    C -- "RATE_LIMIT_EXCEEDED" --> B{"waited out fewer<br/>than 20 times?"}
+    B -- yes --> W["wait Retry-After (1 to 5 s),<br/>send the request again"]
+    B -- no --> T
+    C -- "RATE_LIMIT_UNAVAILABLE" --> S{"fewer than 3 times for this request,<br/>and is the run's allowance (30) not spent?"}
+    S -- yes --> W
+    S -- "no: the store stays down,<br/>or the run has waited enough" --> T
+```
+
+One request waits it out three times at most, and the whole run has an
+allowance of thirty such waits. A hiccup is absorbed, and logged each time
+with what is left. A store that is really down spends the allowance in its
+first seconds, and from then on the fault reaches every test at once: the
+run fails, quickly, and says why.
+`TestTheSuitesRequestsWaitTheBudgetOut` holds all of it against a server of
+its own. The limiter's own behaviour is tested in `middleware`, where the pull
+request gate runs, and not by spending the suite's budget.
+
 ## Naming: `rate_limits` is the entity, `ratelimit` is the mechanism
 
 Two spellings exist on purpose, and each names a different thing. A
