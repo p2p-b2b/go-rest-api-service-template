@@ -41,6 +41,9 @@ type fakeProvider struct {
 	// and reached is closed when an exchange arrives: a test can act while a
 	// sign-in is half done.
 	hold, reached chan struct{}
+	// tokenError, when set, is the OAuth error the token endpoint answers
+	// every exchange with (invalid_client: it rejects this service).
+	tokenError string
 }
 
 func newFakeProvider(t *testing.T) *fakeProvider {
@@ -76,6 +79,7 @@ func newFakeProvider(t *testing.T) *fakeProvider {
 		nonce := f.nonce[code]
 		hold, reached := f.hold, f.reached
 		f.hold, f.reached = nil, nil
+		tokenError := f.tokenError
 		f.mu.Unlock()
 
 		if hold != nil {
@@ -87,9 +91,21 @@ func newFakeProvider(t *testing.T) *fakeProvider {
 			}
 		}
 
+		// An OAuth error is JSON with its content type, as a provider sends
+		// it: without the header the client library reads the body as a
+		// form and finds no error code in it.
+		if tokenError != "" {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusUnauthorized)
+			_ = json.NewEncoder(w).Encode(map[string]any{"error": tokenError, "error_description": "the provider's own words"})
+
+			return
+		}
+
 		if !ok || r.Form.Get("code_verifier") == "" {
+			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusBadRequest)
-			_ = json.NewEncoder(w).Encode(map[string]any{"error": "invalid_grant"})
+			_ = json.NewEncoder(w).Encode(map[string]any{"error": "invalid_grant", "error_description": "the provider's own words"})
 
 			return
 		}

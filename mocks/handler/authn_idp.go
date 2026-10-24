@@ -42,6 +42,20 @@ func (m *MockAuthnIDPs) EXPECT() *MockAuthnIDPsMockRecorder {
 	return m.recorder
 }
 
+// AbandonCallback mocks base method.
+func (m *MockAuthnIDPs) AbandonCallback(ctx context.Context, idpID uuid.UUID, state string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AbandonCallback", ctx, idpID, state)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AbandonCallback indicates an expected call of AbandonCallback.
+func (mr *MockAuthnIDPsMockRecorder) AbandonCallback(ctx, idpID, state any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AbandonCallback", reflect.TypeOf((*MockAuthnIDPs)(nil).AbandonCallback), ctx, idpID, state)
+}
+
 // Callback mocks base method.
 func (m *MockAuthnIDPs) Callback(ctx context.Context, idpID uuid.UUID, state, code string) (*domain.IDPCallbackOutput, error) {
 	m.ctrl.T.Helper()

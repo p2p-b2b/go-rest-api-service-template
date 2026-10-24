@@ -409,11 +409,10 @@ func TestNoHandlerWritesAnErrorsTextAtA500(t *testing.T) {
 // provider's, or of a library's, is in it.
 var typedFault = map[string]string{
 	// A sign-in through an identity provider that could not be reached, at
-	// its start (the discovery document) and at its callback: "identity
-	// provider unreachable: the identity provider is not reachable". The
-	// caller is told whose fault it is, and no more.
-	"writeStartError http.StatusServiceUnavailable":    "IDPUnreachableError",
-	"writeCallbackError http.StatusServiceUnavailable": "IDPUnreachableError",
+	// its start (the discovery document): "identity provider unreachable:
+	// the identity provider is not reachable". The caller is told whose
+	// fault it is, and no more. The callback's 503 is one fixed sentence.
+	"writeStartError http.StatusServiceUnavailable": "IDPUnreachableError",
 }
 
 // serverFault are the statuses a handler answers when the fault is the

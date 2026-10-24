@@ -225,12 +225,12 @@ func (ref *AuthnIDPsHandler) start(w http.ResponseWriter, r *http.Request, actio
 //	@Param			error	query		string						false	"The provider's error code, for example access_denied"
 //	@Success		200		{object}	payload.IDPCallbackResponse	"The outcome"
 //	@Failure		400		{object}	payload.HTTPMessage			"A state that is missing, spent, expired or minted for another provider, or a missing code"
-//	@Failure		401		{object}	payload.HTTPMessage			"The provider refused the sign-in, the identity is not linked to an account here, or the provider was changed while signing in"
+//	@Failure		401		{object}	payload.HTTPMessage			"The sign-in was not completed at the provider (cancelled, denied, a code the provider does not accept, an account with no address), the identity is not linked to an account here, or the provider was changed while signing in"
 //	@Failure		404		{object}	payload.HTTPMessage			"Unknown or disabled identity provider, or the account the flow was started for no longer exists"
 //	@Failure		409		{object}	payload.HTTPMessage			"The identity is already linked to an account, or registration is closed: the user limit has been reached"
 //	@Failure		429		{object}	payload.HTTPMessage			"Too many requests"
 //	@Failure		500		{object}	payload.HTTPMessage			"Internal server error"
-//	@Failure		503		{object}	payload.HTTPMessage			"The identity provider is not reachable"
+//	@Failure		503		{object}	payload.HTTPMessage			"The identity provider is not reachable, or its answer cannot be used (it rejects this service, or returns no valid identity)"
 //	@Router			/auth/idp/{idp_id}/callback [get]
 func (ref *AuthnIDPsHandler) callback(w http.ResponseWriter, r *http.Request) {
 	startedAt := time.Now()
@@ -248,13 +248,26 @@ func (ref *AuthnIDPsHandler) callback(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 
 	// The provider says why the person did not arrive with a code: they
-	// cancelled, the app is misconfigured. Answered as a refusal in this
-	// service's words; the provider's description goes to the log.
+	// cancelled, or were denied. Answered as a refusal in this service's
+	// words; the provider's description goes to the log.
 	if providerErr := q.Get("error"); providerErr != "" {
 		slog.InfoContext(r.Context(), "the provider reported an error",
 			"idp.id", idpID.String(), "error", providerErr, "description", q.Get("error_description"))
 
-		e := o11y.RecordError(ctx, span, startedAt, &domain.InvalidAuthnServiceError{Message: "the identity provider did not complete the sign-in"}, ref.metrics, attrs)
+		// This was the state's one callback. A state that is forged, spent
+		// or signed for another provider changes nothing: the person hears
+		// the same refusal. A state that could NOT be spent because the
+		// store is away is not that: it is a fault, and it is answered as
+		// one, not folded into a 401 that says the service is fine.
+		if state := q.Get("state"); state != "" {
+			if err := ref.service.AbandonCallback(ctx, idpID, state); err != nil && !respond.IsRefusal(err) {
+				ref.writeCallbackError(w, r, span, startedAt, attrs, err)
+
+				return
+			}
+		}
+
+		e := o11y.RecordError(ctx, span, startedAt, &domain.IDPSignInRefusedError{Message: "the identity provider did not complete the sign-in"}, ref.metrics, attrs)
 		respond.WriteJSONMessage(w, r, http.StatusUnauthorized, e.Error())
 
 		return
@@ -500,9 +513,16 @@ func (ref *AuthnIDPsHandler) writeStartError(w http.ResponseWriter, r *http.Requ
 // was started for no longer exists.
 const accountGoneMessage = "the account this sign-in was started for no longer exists"
 
+// signInUnavailableMessage is what the callback answers when the provider
+// cannot be used: it does not answer, or its answer is not one this service
+// can act on.
+const signInUnavailableMessage = "sign-in with this identity provider is not available right now"
+
 // writeCallbackError maps a failed callback. Three refusals share the 401:
-// the provider refused, the identity is not linked here, the account cannot
-// sign in -- the frontend renders one message for all of them.
+// the sign-in was refused at the provider, the identity is not linked here,
+// the account cannot sign in -- the frontend renders one message for all of
+// them. A provider that is unreachable or misbehaving is not one of them: it
+// is a 503.
 func (ref *AuthnIDPsHandler) writeCallbackError(w http.ResponseWriter, r *http.Request, span trace.Span, startedAt time.Time, attrs []attribute.KeyValue, err error) {
 	e := o11y.RecordError(r.Context(), span, startedAt, err, ref.metrics, attrs)
 
@@ -534,13 +554,18 @@ func (ref *AuthnIDPsHandler) writeCallbackError(w http.ResponseWriter, r *http.R
 		// names the scope, both limits and the current usage: say what the
 		// public registration route says, and nothing more.
 		respond.WriteJSONMessage(w, r, http.StatusConflict, registrationClosedMessage)
-	case isType[*domain.IDPIdentityNotLinkedError](err), isType[*domain.InvalidCredentialsError](err), isType[*domain.IDPChangedDuringSignInError](err):
+	case isType[*domain.IDPIdentityNotLinkedError](err), isType[*domain.InvalidCredentialsError](err), isType[*domain.IDPChangedDuringSignInError](err), isType[*domain.IDPSignInRefusedError](err):
 		respond.WriteJSONMessage(w, r, http.StatusUnauthorized, e.Error())
-	case isType[*domain.IDPUnreachableError](err):
-		respond.WriteJSONMessage(w, r, http.StatusServiceUnavailable, e.Error())
-	case isType[*domain.InvalidAuthnServiceError](err):
-
-		respond.WriteJSONMessage(w, r, http.StatusUnauthorized, e.Error())
+	case isType[*domain.IDPUnreachableError](err), isType[*domain.InvalidAuthnServiceError](err):
+		// The provider did not answer, or answered with something that
+		// cannot be used: the sign-in is out, and trying again will not
+		// help the person. It was a 401 with the refusals, so a provider
+		// that was down read as "sign-in refused".
+		//
+		// One sentence for all of it. This route is public, and which of
+		// the two it was -- and that this service's client is what the
+		// provider rejects -- is the operator's to read in the log.
+		respond.WriteJSONMessage(w, r, http.StatusServiceUnavailable, signInUnavailableMessage)
 	default:
 		respond.WriteInternalError(w, r, e)
 	}

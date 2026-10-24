@@ -98,8 +98,10 @@ sequenceDiagram
     O->>P: POST token (code + code_verifier)
     P-->>O: id_token (+ access_token)
     O->>O: verify iss, aud, exp, signature (JWKS), nonce
-    alt bad token, wrong nonce, other tenant
-        O-->>U: "did not return a valid identity" → 401
+    alt the token does not verify (other tenant, bad signature, no nonce)
+        O-->>U: InvalidAuthnServiceError → 503 (the provider's side)
+    else it verifies and answers another sign-in (wrong nonce)
+        O-->>U: IDPSignInRefusedError → 401 (the caller's side)
     end
     O-->>U: UserInfo{Subject, Email, EmailVerified, ...}
     U->>U: resolve (idp, subject) in users_identities
@@ -260,10 +262,13 @@ another account, or for a local one, is refused),
 
 | Failure | Answer | Why |
 | --- | --- | --- |
-| provider cancelled (`error=access_denied`) | 401, "did not complete the sign-in" | the provider's description goes to the log, not the caller |
+| the provider sends the person back with `error=` (cancelled, denied) | 401, "did not complete the sign-in" | the provider's description goes to the log, not the caller; the state is spent, it had its one callback |
+| a code the provider does not accept (`invalid_grant`: spent, expired, issued to another client; GitHub's `bad_verification_code` and `unverified_user_email`) | 401, "did not accept this sign-in" | the person's side: starting again can work |
+| the provider was asked for the account's address and has none | 401 | nothing to provision or match by |
 | state missing, spent, expired, for another idp, unsealable | 400 | one wording |
-| discovery unreachable | 503 at start or callback | cached per issuer afterwards |
-| ID token fails iss/aud/exp/signature, or wrong nonce | 401 | go-oidc's text is logged, never returned |
+| discovery unreachable, or the token endpoint does not answer | 503, at start and at the callback; at the callback one fixed sentence, "sign-in with this identity provider is not available right now" | discovery is cached per issuer afterwards; the providers share the service's retrying client, so a token endpoint that refuses the connection is answered after the retries |
+| the provider rejects this service (`invalid_client`, `unauthorized_client`), answers 5xx, returns no ID token or one that does not verify (issuer, audience, expiry, signature, no nonce), or the call for the account or its address fails | 503, the same sentence | the sign-in is out for everybody, and trying again does not help the person; go-oidc's and the provider's text is logged, never returned |
+| the ID token verifies and answers another sign-in (wrong nonce) | 401 | the person's side |
 | identity unknown and not provisionable | 401, one wording | see above |
 | identity already linked elsewhere (link) | 409 | the other account keeps it |
 | a first sign-in's identity cannot be stored (linked meanwhile, a fault) | 409, or 500 | no account is stored either, and the users slot is given back: see above |
@@ -271,6 +276,77 @@ another account, or for a local one, is refused),
 | a first sign-in when the users limit is reached | 409, "registration is closed: the user limit has been reached" | the route is public: the limit error's own text names the scope, both limits and the usage |
 | the account a link was started for was deleted before the callback | 404, a fixed sentence | it was a 500; the error's own text names the account's id |
 | provider disabled | 404 at start, at the callback, and absent from `/auth/idp/available` | a half-configured provider is never offered |
+
+### Whose failure a failed callback is
+
+A callback that fails at the provider is one of three things, and the status
+says which:
+
+```mermaid
+flowchart TD
+    CB[callback] --> ERR{"the provider sent<br/>error= and no code?"}
+    ERR -- yes --> SP{"spend the state"}
+    SP -- "spent, or refused as a state" --> R401["401 · sign-in refused<br/>counted refused"]
+    SP -- "the store is away" --> F500["500 · counted failed"]
+    ERR -- no --> EX[exchange the code]
+    EX -- "the caller of this service went away" --> GONE["the cancellation itself:<br/>the provider is not blamed"]
+    EX -- "no answer from the token endpoint" --> U503["503 · sign-in not available<br/>counted failed"]
+    EX -- "OAuth error about the code or the person:<br/>invalid_grant, bad_verification_code,<br/>unverified_user_email, access_denied" --> R401
+    EX -- "any other answer that is not a token:<br/>invalid_client, a 5xx" --> U503
+    EX -- token --> ID{"ID token<br/>(or GitHub's account call)"}
+    ID -- "missing, does not verify, no nonce,<br/>account cannot be read" --> U503
+    ID -- "verifies, for another sign-in (nonce)" --> R401
+    ID -- ok --> AD{"an address?"}
+    AD -- "the lookup for it failed" --> U503
+    AD -- "asked, and there is none" --> R401
+    AD -- yes --> RES[resolve the identity]
+```
+
+They were one error, `InvalidAuthnServiceError`, which the status table
+called a 401, and the callback answered it 401. Two things followed. A
+provider that was down, or that rejected this service's client secret after
+a rotation, told every visitor "sign-in refused", and nothing on the
+dashboards said the sign-in was out: the call was counted `refused`. And a
+person who pressed Cancel at the provider was the same error as an outage.
+The caller's side is `IDPSignInRefusedError` (401) now; what stays
+`InvalidAuthnServiceError` is a 503, in the table and at the callback, and a
+token endpoint that does not answer is `IDPUnreachableError`, as discovery
+already was. The two are told apart in the log and on the metric; the
+public body says one sentence for both, because that it is this service's
+own registration the provider rejects is not an anonymous caller's to read.
+
+A sign-in cancelled at the provider spends its state. It had its one
+callback; left unspent, the same state was accepted with a code for the rest
+of its fifteen minutes, and measured that way: a cancelled sign-in's state,
+presented again with the code the provider had issued, signed in and created
+the account.
+
+Three cases sit on neither side by their first appearance. *An account
+without an address* is the person's side only when the provider was asked
+and said so: when the call for the address failed (a user-info outage, a
+GitHub provider row without the scope for it), nobody knows, and it is a
+503. *No nonce at all* in the ID token is a provider not following the
+protocol, a 503; a different nonce is a 401. And *a request cancelled
+because the caller of this service went away* is not the provider's
+failure: the cancellation goes back as it is (the callback answers it as it
+answers an error no arm names, a 500 nobody receives).
+`TestExchangeFailureSaysWhoseItIs` holds the classification,
+`TestOIDCExchangeAgainstATokenEndpointThatRefuses` and
+`TestGithubARefusedSignInIsNotAnOutage` what the OAuth client library hands
+back for each answer of a real token endpoint (GitHub answers an error
+inside a 200, form-encoded), and `TestIDPCallbackARefusedSignInIsNotAnOutage`
+the statuses against a running service.
+
+**Until the providers have a client of their own**, they share the
+service's retrying one. A token endpoint that answers 5xx, or refuses the
+connection, is retried, and what comes back after the retries is a
+transport error: it is classified unreachable, not misbehaving (the same
+503, the same sentence, another type on the metric), and it comes back
+late -- about two and a half minutes for a refused connection, measured.
+The retried request is the token POST, whose code is good for one
+exchange: a provider that spent the code and then answered 502 answers
+the retry `invalid_grant`, and that outage is a 401. The adapter's unit
+tests use a plain client and hold the classification as it will be.
 
 ## Configuring a provider
 

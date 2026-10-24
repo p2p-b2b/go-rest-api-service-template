@@ -36,10 +36,12 @@ package oauthidp
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
 	"net/mail"
+	"net/url"
 	"slices"
 	"strconv"
 	"strings"
@@ -138,10 +140,10 @@ func (p *Provider) Exchange(ctx context.Context, idp *domain.IDP, code string, r
 
 	token, err := cfg.Exchange(ctx, code, oauth2.VerifierOption(req.CodeVerifier))
 	if err != nil {
-		slog.Warn("oauthidp: the identity provider refused the authorization code",
+		slog.Warn("oauthidp: the code exchange with the identity provider failed",
 			"idp", idp.Name, "kind", idp.IDPType.Kind, "error", err)
 
-		return nil, &domain.InvalidAuthnServiceError{Message: "the identity provider did not accept this sign-in"}
+		return nil, exchangeFailure(err)
 	}
 
 	if idp.IsOIDC() {
@@ -224,6 +226,63 @@ func (p *Provider) discover(ctx context.Context, idp *domain.IDP) (*oidc.Provide
 	return actual.(*oidc.Provider), nil
 }
 
+// exchangeFailure says whose failure a failed code exchange is, because the
+// three are answered differently.
+//
+// The token endpoint answered with an OAuth error about the CODE or the
+// PERSON: their sign-in is refused (401). `invalid_grant` is RFC 6749's word
+// for a code that is spent, expired or was issued to another client or
+// redirect; GitHub says `bad_verification_code`, and `unverified_user_email`
+// for an account whose address it will not vouch for; `access_denied` is a
+// provider's sign-on policy turning this person away.
+//
+// It answered with anything else -- `invalid_client`, `unauthorized_client`,
+// GitHub's `incorrect_client_credentials` and `redirect_uri_mismatch`, a 5xx,
+// a body that is not a token -- and it is this service's registration at the
+// provider, or the provider itself, that is wrong: an outage of the sign-in
+// (503), not something the person can fix by trying again.
+//
+// It did not answer: unreachable (503).
+//
+// And when the request was cancelled because whoever called THIS service
+// went away, it is none of the three: the context's own error goes back as
+// it is, and the provider is not blamed for a closed tab.
+func exchangeFailure(err error) error {
+	if errors.Is(err, context.Canceled) {
+		return err
+	}
+
+	if refusal, ok := errors.AsType[*oauth2.RetrieveError](err); ok {
+		switch refusal.ErrorCode {
+		case "invalid_grant", "bad_verification_code", "unverified_user_email", "access_denied":
+			return &domain.IDPSignInRefusedError{Message: "the identity provider did not accept this sign-in"}
+		}
+
+		return &domain.InvalidAuthnServiceError{Message: "the identity provider did not accept this service's request"}
+	}
+
+	if _, ok := errors.AsType[*url.Error](err); ok {
+		return &domain.IDPUnreachableError{Message: "the identity provider is not reachable"}
+	}
+
+	return &domain.InvalidAuthnServiceError{Message: "the identity provider did not return a token"}
+}
+
+// lookupFailure is exchangeFailure's twin for the calls made with the token:
+// the account details and the addresses. There is no OAuth error about the
+// person here, so a call that fails is the provider's side or nobody's.
+func lookupFailure(err error) error {
+	if errors.Is(err, context.Canceled) {
+		return err
+	}
+
+	if _, ok := errors.AsType[*url.Error](err); ok {
+		return &domain.IDPUnreachableError{Message: "the identity provider is not reachable"}
+	}
+
+	return &domain.InvalidAuthnServiceError{Message: "the identity provider did not return the account details"}
+}
+
 // identityFromIDToken verifies the ID token and maps its claims.
 func (p *Provider) identityFromIDToken(ctx context.Context, idp *domain.IDP, cfg *oauth2.Config, token *oauth2.Token, nonce string) (*domain.UserInfo, error) {
 	rawIDToken, ok := token.Extra("id_token").(string)
@@ -249,10 +308,20 @@ func (p *Provider) identityFromIDToken(ctx context.Context, idp *domain.IDP, cfg
 		return nil, &domain.InvalidAuthnServiceError{Message: "the identity provider did not return a valid identity"}
 	}
 
+	if idToken.Nonce == "" {
+		// A provider that does not echo the nonce at all is not following
+		// the protocol: every sign-in fails, and that is its side.
+		slog.Warn("oauthidp: the ID token carries no nonce", "idp", idp.Name)
+
+		return nil, &domain.InvalidAuthnServiceError{Message: "the identity provider did not return a valid identity"}
+	}
+
 	if idToken.Nonce != nonce {
 		slog.Warn("oauthidp: the ID token's nonce does not match this sign-in", "idp", idp.Name)
 
-		return nil, &domain.InvalidAuthnServiceError{Message: "the identity provider did not return a valid identity"}
+		// The token is the provider's and it verifies; it answers another
+		// sign-in than this one. That is the caller's side.
+		return nil, &domain.IDPSignInRefusedError{Message: "the identity provider's answer is not for this sign-in"}
 	}
 
 	var claims oidcClaims
@@ -265,10 +334,14 @@ func (p *Provider) identityFromIDToken(ctx context.Context, idp *domain.IDP, cfg
 	// Entra ID sends `email` only when the optional claim is configured on
 	// the app registration; the user-info endpoint has it in the same shape.
 	// One extra round trip, only when the token was short.
+	var lookupErr error
+
 	if claims.Email == "" {
 		info, err := provider.UserInfo(oidc.ClientContext(ctx, p.httpClient), oauth2.StaticTokenSource(token))
 		if err != nil {
 			slog.Warn("oauthidp: could not read the account details from the identity provider", "idp", idp.Name, "error", err)
+
+			lookupErr = err
 		} else {
 			var extra oidcClaims
 			if err := info.Claims(&extra); err == nil {
@@ -277,7 +350,16 @@ func (p *Provider) identityFromIDToken(ctx context.Context, idp *domain.IDP, cfg
 		}
 	}
 
-	return mapOIDCClaims(idp, idToken.Subject, claims)
+	info, err := mapOIDCClaims(idp, idToken.Subject, claims)
+
+	// "This account has no address" is the person's side only when the
+	// provider was asked and said so. When the question could not be put,
+	// nobody knows, and that is the provider's side.
+	if _, noAddress := errors.AsType[*domain.IDPSignInRefusedError](err); noAddress && lookupErr != nil {
+		return nil, lookupFailure(lookupErr)
+	}
+
+	return info, err
 }
 
 // oidcClaims are the claims this service reads from an ID token or user-info
@@ -339,7 +421,7 @@ func mapOIDCClaims(idp *domain.IDP, subject string, c oidcClaims) (*domain.UserI
 	}
 
 	if email == "" {
-		return nil, &domain.InvalidAuthnServiceError{Message: "the identity provider did not return an email address"}
+		return nil, &domain.IDPSignInRefusedError{Message: "the identity provider did not return an email address for this account"}
 	}
 
 	first, last := c.GivenName, c.FamilyName
@@ -376,7 +458,7 @@ func (p *Provider) identityFromGithub(ctx context.Context, idp *domain.IDP, cfg 
 	if err := getJSON(ctx, client, userURL, &user); err != nil {
 		slog.Warn("oauthidp: could not read the account details from the identity provider", "idp", idp.Name, "error", err)
 
-		return nil, &domain.InvalidAuthnServiceError{Message: "the identity provider did not return the account details"}
+		return nil, lookupFailure(err)
 	}
 
 	if user.ID == 0 {
@@ -394,8 +476,12 @@ func (p *Provider) identityFromGithub(ctx context.Context, idp *domain.IDP, cfg 
 
 	email, verified := "", false
 
+	var lookupErr error
+
 	if err := getJSON(ctx, client, strings.TrimSuffix(userURL, "/")+"/emails", &emails); err != nil {
 		slog.Warn("oauthidp: could not read the email addresses from the identity provider", "idp", idp.Name, "error", err)
+
+		lookupErr = err
 	} else {
 		for _, e := range emails {
 			if e.Primary {
@@ -412,7 +498,14 @@ func (p *Provider) identityFromGithub(ctx context.Context, idp *domain.IDP, cfg 
 	}
 
 	if email == "" {
-		return nil, &domain.InvalidAuthnServiceError{Message: "the identity provider did not return an email address"}
+		// Asked and answered "none" is the person's side. Not answered (the
+		// call failed, or this provider row lacks the scope to make it) is
+		// not.
+		if lookupErr != nil {
+			return nil, lookupFailure(lookupErr)
+		}
+
+		return nil, &domain.IDPSignInRefusedError{Message: "the identity provider did not return an email address for this account"}
 	}
 
 	first, last := splitName(user.Name, user.Login)

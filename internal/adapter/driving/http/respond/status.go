@@ -109,7 +109,7 @@ var statusTable = []statusRow{
 	row[*domain.InvalidJWTError](http.StatusUnauthorized),
 	row[*domain.InvalidRefreshTokenError](http.StatusUnauthorized),
 	row[*domain.InvalidCredentialsError](http.StatusUnauthorized),
-	row[*domain.InvalidAuthnServiceError](http.StatusUnauthorized),
+	row[*domain.IDPSignInRefusedError](http.StatusUnauthorized),
 	row[*domain.IDPIdentityNotLinkedError](http.StatusUnauthorized),
 	row[*domain.IDPChangedDuringSignInError](http.StatusUnauthorized),
 
@@ -154,4 +154,7 @@ var statusTable = []statusRow{
 	// 503: a dependency of the service's is not there. A failure, not a
 	// refusal: it is in the table so that its answer is not the 500.
 	row[*domain.IDPUnreachableError](http.StatusServiceUnavailable),
+	// A provider that answered with something this service cannot use, or
+	// that refuses this service's client: the sign-in is out, not refused.
+	row[*domain.InvalidAuthnServiceError](http.StatusServiceUnavailable),
 }

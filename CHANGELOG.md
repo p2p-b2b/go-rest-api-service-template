@@ -335,6 +335,27 @@ Since `v0.0.3`.
 
 ### Fixed
 
+- **A sign-in refused at the provider is not an outage, and an outage is not
+  a refused sign-in.** The identity-provider callback answered one error,
+  401, for both sides of a failed sign-in, and the status table counted it a
+  refusal. The caller's side is a new `IDPSignInRefusedError`, still 401: the
+  person cancelled or was denied, the code is not one the provider accepts
+  (`invalid_grant`, GitHub's `bad_verification_code` and
+  `unverified_user_email`), the ID token answers another sign-in, the
+  account has no address. The provider's side is now **503**, "sign-in with
+  this identity provider is not available right now", counted as a failure:
+  it rejects this service's client (`invalid_client`, an expired secret),
+  answers 5xx, returns no valid ID token, does not answer, or the call for
+  the account's address fails. A client that read every callback 401 as
+  "sign-in refused" now sees the outage. The adapter decides from the OAuth
+  error code, never from text. The providers still share the service's
+  retrying client: a 5xx or a refused connection is answered after the
+  retries, as unreachable.
+  A sign-in cancelled at the provider spends its state: it stayed good for a
+  callback with a code for the rest of its fifteen minutes, and such a
+  replay signed in. `TestIDPStateIsSingleUse` runs on the suite's own
+  provider instead of exchanging against github.com.
+  ([#159](https://github.com/slashdevops/go-rest-api-service-template/pull/159))
 - **An address the service cannot spell is a 400, not a 500.** An address
   is checked by the handler and again by the use-case, on what the first
   check returned, and `net/mail` drops the quotes of a quoted local part:

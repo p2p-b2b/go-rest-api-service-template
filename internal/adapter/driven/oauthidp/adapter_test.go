@@ -3,10 +3,13 @@
 package oauthidp
 
 import (
+	"context"
 	"crypto/rand"
 	"crypto/rsa"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"math/big"
 	"net/http"
 	"net/http/httptest"
@@ -35,6 +38,11 @@ type fakeOIDC struct {
 	gotVerifier string
 	gotCode     string
 	nonce       string
+	// tokenAnswer, when set, is what the token endpoint does instead of
+	// issuing a token.
+	tokenAnswer func(w http.ResponseWriter)
+	// userInfoStatus, when set, is what the user-info endpoint answers.
+	userInfoStatus int
 }
 
 func newFakeOIDC(t *testing.T) *fakeOIDC {
@@ -74,6 +82,12 @@ func newFakeOIDC(t *testing.T) *fakeOIDC {
 		f.gotVerifier = r.Form.Get("code_verifier")
 		f.gotCode = r.Form.Get("code")
 
+		if f.tokenAnswer != nil {
+			f.tokenAnswer(w)
+
+			return
+		}
+
 		claims := jwt.MapClaims{
 			"iss": f.srv.URL, "aud": "client-id", "sub": "subject-1",
 			"iat": time.Now().Unix(), "exp": time.Now().Add(time.Hour).Unix(), "nonce": f.nonce,
@@ -97,6 +111,12 @@ func newFakeOIDC(t *testing.T) *fakeOIDC {
 	})
 
 	mux.HandleFunc("GET /userinfo", func(w http.ResponseWriter, _ *http.Request) {
+		if f.userInfoStatus != 0 {
+			w.WriteHeader(f.userInfoStatus)
+
+			return
+		}
+
 		out := map[string]any{"sub": "subject-1"}
 		for k, v := range f.claims {
 			out[k] = v
@@ -209,8 +229,8 @@ func TestOIDCExchangeRefusesAWrongNonce(t *testing.T) {
 	p := newProvider(t)
 
 	_, err := p.Exchange(t.Context(), oidcIDP(f.srv.URL, "Okta"), "code-1", oauth.AuthRequest{Nonce: "mine", CodeVerifier: "v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v"})
-	if err == nil {
-		t.Fatal("a nonce mismatch must be refused")
+	if _, ok := errors.AsType[*domain.IDPSignInRefusedError](err); !ok {
+		t.Fatalf("a nonce mismatch is the caller's side, a refused sign-in: got %T (%v)", err, err)
 	}
 
 	if strings.Contains(err.Error(), "oidc:") {
@@ -230,8 +250,8 @@ func TestOIDCExchangeRefusesAnotherIssuer(t *testing.T) {
 	p := newProvider(t)
 
 	_, err := p.Exchange(t.Context(), oidcIDP(f.srv.URL, "EntraID"), "c", oauth.AuthRequest{Nonce: "n", CodeVerifier: "v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v"})
-	if err == nil {
-		t.Fatal("a token issued by another tenant must be refused")
+	if _, ok := errors.AsType[*domain.InvalidAuthnServiceError](err); !ok {
+		t.Fatalf("a token that does not verify is the provider's side: got %T (%v)", err, err)
 	}
 }
 
@@ -353,5 +373,265 @@ func TestNewRequiresATimeout(t *testing.T) {
 
 	if _, err := New(Config{}); err == nil {
 		t.Fatal("a nil client must be refused")
+	}
+}
+
+// A failed code exchange is one of three things, and they are answered
+// differently: the person's sign-in is refused (401), the provider or this
+// service's registration at it is wrong (503), the provider did not answer
+// (503). They were one error answered 401, so a provider that was down read
+// as "sign-in refused" and a cancelled sign-in was counted as a failed call.
+func TestExchangeFailureSaysWhoseItIs(t *testing.T) {
+	t.Parallel()
+
+	const (
+		refused     = "*domain.IDPSignInRefusedError"
+		misbehaving = "*domain.InvalidAuthnServiceError"
+		unreachable = "*domain.IDPUnreachableError"
+	)
+
+	for name, tt := range map[string]struct {
+		err  error
+		want string
+	}{
+		"a_code_that_is_spent_or_expired":       {&oauth2.RetrieveError{ErrorCode: "invalid_grant"}, refused},
+		"githubs_word_for_the_same":             {&oauth2.RetrieveError{ErrorCode: "bad_verification_code"}, refused},
+		"github_will_not_vouch_for_the_address": {&oauth2.RetrieveError{ErrorCode: "unverified_user_email"}, refused},
+		"this_services_client_is_rejected":      {&oauth2.RetrieveError{ErrorCode: "invalid_client"}, misbehaving},
+		"a_client_not_allowed_this_grant":       {&oauth2.RetrieveError{ErrorCode: "unauthorized_client"}, misbehaving},
+		"a_5xx_with_no_oauth_error":             {&oauth2.RetrieveError{}, misbehaving},
+		"an_answer_that_is_not_a_token":         {errors.New("oauth2: cannot parse json: invalid character"), misbehaving},
+		"a_policy_that_turns_the_person_away":   {&oauth2.RetrieveError{ErrorCode: "access_denied"}, refused},
+		"githubs_word_for_a_rejected_client":    {&oauth2.RetrieveError{ErrorCode: "incorrect_client_credentials"}, misbehaving},
+		"no_answer":                             {&url.Error{Op: "Post", URL: "https://idp.example/token", Err: errors.New("connection refused")}, unreachable},
+	} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			got := exchangeFailure(tt.err)
+			if typ := fmt.Sprintf("%T", got); typ != tt.want {
+				t.Fatalf("got %s (%v), want %s", typ, got, tt.want)
+			}
+
+			// The provider's own words, and the URL it was reached at, stay
+			// in the log.
+			for _, leak := range []string{"oauth2", "invalid_", "idp.example", "connection refused"} {
+				if strings.Contains(got.Error(), leak) {
+					t.Errorf("the answer carries %q: %v", leak, got)
+				}
+			}
+		})
+	}
+}
+
+// The same through a real exchange against a token endpoint: what the
+// library hands back for each answer is what exchangeFailure reads.
+func TestOIDCExchangeAgainstATokenEndpointThatRefuses(t *testing.T) {
+	t.Parallel()
+
+	oauthError := func(status int, code string) func(http.ResponseWriter) {
+		return func(w http.ResponseWriter) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(status)
+			_ = json.NewEncoder(w).Encode(map[string]any{"error": code, "error_description": "secret detail from the provider"})
+		}
+	}
+
+	for name, tt := range map[string]struct {
+		answer func(http.ResponseWriter)
+		want   string
+	}{
+		"invalid_grant":                     {oauthError(http.StatusBadRequest, "invalid_grant"), "*domain.IDPSignInRefusedError"},
+		"an_error_in_a_200_as_github_sends": {oauthError(http.StatusOK, "bad_verification_code"), "*domain.IDPSignInRefusedError"},
+		"invalid_client":                    {oauthError(http.StatusUnauthorized, "invalid_client"), "*domain.InvalidAuthnServiceError"},
+		"a_500":                             {func(w http.ResponseWriter) { w.WriteHeader(http.StatusInternalServerError) }, "*domain.InvalidAuthnServiceError"},
+		"a_connection_closed_without_answer": {func(w http.ResponseWriter) {
+			conn, _, err := w.(http.Hijacker).Hijack()
+			if err == nil {
+				_ = conn.Close()
+			}
+		}, "*domain.IDPUnreachableError"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			f := newFakeOIDC(t)
+			f.nonce = "n"
+			f.tokenAnswer = tt.answer
+
+			_, err := newProvider(t).Exchange(t.Context(), oidcIDP(f.srv.URL, "Okta"), "code-1",
+				oauth.AuthRequest{Nonce: "n", CodeVerifier: "v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v"})
+
+			if typ := fmt.Sprintf("%T", err); typ != tt.want {
+				t.Fatalf("got %s (%v), want %s", typ, err, tt.want)
+			}
+
+			if strings.Contains(err.Error(), "secret detail") {
+				t.Errorf("the provider's description is in the answer: %v", err)
+			}
+		})
+	}
+}
+
+// An account the provider gives no address for cannot be provisioned or
+// matched: the sign-in is refused, and the provider is not at fault.
+func TestOIDCExchangeWithoutAnAddressIsARefusedSignIn(t *testing.T) {
+	t.Parallel()
+
+	f := newFakeOIDC(t)
+	f.nonce = "n"
+	f.claims = map[string]any{"name": "No Address"}
+
+	_, err := newProvider(t).Exchange(t.Context(), oidcIDP(f.srv.URL, "Okta"), "code-1",
+		oauth.AuthRequest{Nonce: "n", CodeVerifier: "v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v"})
+
+	if _, ok := errors.AsType[*domain.IDPSignInRefusedError](err); !ok {
+		t.Fatalf("got %T (%v), want a refused sign-in", err, err)
+	}
+}
+
+// A request cancelled because whoever called this service went away is not
+// the provider's failure: it was counted as "provider unreachable", a 503
+// and a red span for every closed tab.
+func TestACallerWhoWentAwayIsNotAProviderOutage(t *testing.T) {
+	t.Parallel()
+
+	gone := &url.Error{Op: "Post", URL: "https://idp.example/token", Err: context.Canceled}
+
+	for name, classify := range map[string]func(error) error{"the_exchange": exchangeFailure, "a_lookup": lookupFailure} {
+		if got := classify(gone); !errors.Is(got, context.Canceled) {
+			t.Errorf("%s: got %T (%v), want the context's own error", name, got, got)
+		}
+	}
+
+	// And through a real exchange.
+	f := newFakeOIDC(t)
+	f.nonce = "n"
+
+	ctx, cancel := context.WithCancel(t.Context())
+	f.tokenAnswer = func(http.ResponseWriter) { cancel(); time.Sleep(50 * time.Millisecond) }
+
+	_, err := newProvider(t).Exchange(ctx, oidcIDP(f.srv.URL, "Okta"), "code-1",
+		oauth.AuthRequest{Nonce: "n", CodeVerifier: "v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v"})
+
+	if _, blamed := errors.AsType[*domain.IDPUnreachableError](err); blamed || !errors.Is(err, context.Canceled) {
+		t.Fatalf("got %T (%v), want the cancellation itself", err, err)
+	}
+}
+
+// A provider that never echoes the nonce fails every sign-in: that is its
+// side, not a refusal of this person.
+func TestOIDCExchangeWithNoNonceAtAllIsTheProvidersSide(t *testing.T) {
+	t.Parallel()
+
+	f := newFakeOIDC(t)
+	f.nonce = ""
+	f.claims = map[string]any{"email": "jane@example.com", "email_verified": true}
+
+	_, err := newProvider(t).Exchange(t.Context(), oidcIDP(f.srv.URL, "Okta"), "code-1",
+		oauth.AuthRequest{Nonce: "mine", CodeVerifier: "v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v"})
+
+	if _, ok := errors.AsType[*domain.InvalidAuthnServiceError](err); !ok {
+		t.Fatalf("got %T (%v), want the provider's side", err, err)
+	}
+}
+
+// "This account has no address" is the person's side when the provider was
+// asked and said so. When the question could not be put -- the user-info
+// call failed -- nobody knows, and it is the provider's side: a user-info
+// outage used to tell every visitor their account had no address.
+func TestOIDCAFailedAddressLookupIsNotAnAccountWithoutAnAddress(t *testing.T) {
+	t.Parallel()
+
+	f := newFakeOIDC(t)
+	f.nonce = "n"
+	f.claims = map[string]any{"name": "No Address In The Token"}
+	f.userInfoStatus = http.StatusServiceUnavailable
+
+	_, err := newProvider(t).Exchange(t.Context(), oidcIDP(f.srv.URL, "Okta"), "code-1",
+		oauth.AuthRequest{Nonce: "n", CodeVerifier: "v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v"})
+
+	if _, refused := errors.AsType[*domain.IDPSignInRefusedError](err); refused || err == nil {
+		t.Fatalf("got %T (%v), want the provider's side", err, err)
+	}
+}
+
+// githubFake is GitHub's three endpoints, each answering what a test says.
+func githubFake(t *testing.T, token, user, emails http.HandlerFunc) *domain.IDP {
+	t.Helper()
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("POST /login/oauth/access_token", token)
+	mux.HandleFunc("GET /user", user)
+	mux.HandleFunc("GET /user/emails", emails)
+
+	srv := httptest.NewServer(mux)
+	t.Cleanup(srv.Close)
+
+	// The github kind uses fixed endpoints; point them at the fake.
+	saved := githubEndpoint
+	githubEndpoint = oauth2.Endpoint{AuthURL: srv.URL + "/login/oauth/authorize", TokenURL: srv.URL + "/login/oauth/access_token"}
+	t.Cleanup(func() { githubEndpoint = saved })
+
+	return &domain.IDP{
+		Name: "GH", ClientID: "cid", ClientSecret: "sec", CallbackURL: "https://app.example/cb", Enabled: true,
+		IDPType: domain.IDPTypes{Name: "Github", Kind: domain.IDPTypeKindGithub, UserInfoAPIURL: srv.URL + "/user", Scopes: []string{"read:user", "user:email"}},
+	}
+}
+
+// GitHub's side of the same split. Its token endpoint answers an error
+// inside a 200, form-encoded unless asked otherwise; and its addresses come
+// from a second call, which can fail by itself.
+func TestGithubARefusedSignInIsNotAnOutage(t *testing.T) {
+	// Not parallel: githubFake swaps the package-level GitHub endpoint.
+	issue := func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{"access_token": "gh-at", "token_type": "bearer"})
+	}
+	formError := func(code string) http.HandlerFunc {
+		return func(w http.ResponseWriter, _ *http.Request) {
+			w.Header().Set("Content-Type", "application/x-www-form-urlencoded; charset=utf-8")
+			_, _ = w.Write([]byte("error=" + code + "&error_description=the+provider%27s+own+words"))
+		}
+	}
+	account := func(w http.ResponseWriter, _ *http.Request) {
+		_ = json.NewEncoder(w).Encode(map[string]any{"id": 4242, "login": "octocat", "name": "The Octocat", "email": nil})
+	}
+	noEmails := func(w http.ResponseWriter, _ *http.Request) { _ = json.NewEncoder(w).Encode([]map[string]any{}) }
+	status := func(code int) http.HandlerFunc {
+		return func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(code) }
+	}
+
+	const (
+		refused     = "*domain.IDPSignInRefusedError"
+		misbehaving = "*domain.InvalidAuthnServiceError"
+	)
+
+	for _, tt := range []struct {
+		name                string
+		token, user, emails http.HandlerFunc
+		want                string
+	}{
+		{name: "a_code_github_does_not_accept", token: formError("bad_verification_code"), user: account, emails: noEmails, want: refused},
+		{name: "an_address_github_will_not_vouch_for", token: formError("unverified_user_email"), user: account, emails: noEmails, want: refused},
+		{name: "this_services_client_is_rejected", token: formError("incorrect_client_credentials"), user: account, emails: noEmails, want: misbehaving},
+		{name: "an_account_with_no_address", token: issue, user: account, emails: noEmails, want: refused},
+		{name: "the_addresses_cannot_be_read", token: issue, user: account, emails: status(http.StatusInternalServerError), want: misbehaving},
+		{name: "a_provider_row_without_the_scope_for_addresses", token: issue, user: account, emails: status(http.StatusNotFound), want: misbehaving},
+		{name: "the_account_cannot_be_read", token: issue, user: status(http.StatusBadGateway), emails: noEmails, want: misbehaving},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			idp := githubFake(t, tt.token, tt.user, tt.emails)
+
+			_, err := newProvider(t).Exchange(t.Context(), idp, "code", oauth.AuthRequest{CodeVerifier: "v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v-v"})
+
+			if typ := fmt.Sprintf("%T", err); typ != tt.want {
+				t.Fatalf("got %s (%v), want %s", typ, err, tt.want)
+			}
+
+			if strings.Contains(err.Error(), "own words") {
+				t.Errorf("the provider's description is in the answer: %v", err)
+			}
+		})
 	}
 }

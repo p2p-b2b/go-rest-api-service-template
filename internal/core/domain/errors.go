@@ -287,6 +287,32 @@ func (e *IDPUnreachableError) Error() string {
 	return "identity provider unreachable: " + e.Message
 }
 
+// IDPSignInRefusedError is a sign-in the provider did not complete for a
+// reason on the caller's side: the person cancelled or was denied at the
+// provider, the authorization code is not one the provider accepts (spent,
+// expired, made for another client), the ID token answers another sign-in,
+// or the account has no address this service can act on.
+//
+// It is a 401, and it is not InvalidAuthnServiceError. That one is the
+// provider misbehaving, or refusing this service's own credentials, which is
+// an outage of the sign-in and a 503. They were one type answered 401 by the
+// callback: every cancelled sign-in was counted as a refusal of the same kind
+// as a provider that was down, which read as "sign-in refused".
+type IDPSignInRefusedError struct {
+	Message string
+}
+
+func (e *IDPSignInRefusedError) Error() string {
+	return "sign-in refused: " + e.Message
+}
+
+// InvalidAuthnServiceError is, at a callback, an identity provider that
+// answered and whose answer cannot be used: no ID token, one that does not
+// verify, account details that cannot be read, or a refusal of this
+// service's client. See IDPSignInRefusedError for the caller's side and
+// IDPUnreachableError for no answer at all. The authentication use-cases
+// also return it for their own wiring (a missing dependency at
+// construction), which no provider is involved in.
 type InvalidAuthnServiceError struct {
 	Message string
 }
