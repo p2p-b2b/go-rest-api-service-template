@@ -589,7 +589,7 @@
     {
       "type": "timeseries",
       "title": "Call rate by outcome",
-      "description": "ok, refused (the caller got it wrong and was told so) and failed (the service did not work), stacked. Click a series to open the matching log lines in Explore.",
+      "description": "ok, refused (the caller got it wrong and was told so) and failed (the service did not work), stacked. Click a series to open the log lines written at this layer in Explore: none for cache and mail, which write no line with their layer, and a failed request's ERROR access line is under the layer its error arose in.",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
@@ -943,7 +943,7 @@
     },
     {
       "type": "row",
-      "title": "🪵 Logs from this layer",
+      "title": "Failures at this layer",
       "collapsed": false,
       "id": 14,
       "gridPos": {
@@ -956,8 +956,8 @@
     },
     {
       "type": "logs",
-      "title": "Recent errors at $layer",
-      "description": "The failures behind the panels above. app_layer is structured metadata on the record, so this is a filter and not a regex over the message.",
+      "title": "Errors that arose at $layer",
+      "description": "ERROR lines carrying this layer. For a request answered 5xx that is its access line, which names the layer the error AROSE in: a failure that only passed through this layer is filed under the layer below, so handler and usecase can be empty here while their error rate above is not, and the traces beside this panel are those calls. Work outside a request (a reload of the revoked-token mirror) logs operation_failed in every layer it passes, and a layer may write an ERROR line of its own (a usage counter that fails its signature). cache and mail write no line with their layer: their dashboards read what the cache client and the mail worker log. A refused request (4xx) is never here.",
       "datasource": {
         "type": "loki",
         "uid": "loki"
@@ -993,8 +993,52 @@
       "id": 15,
       "gridPos": {
         "h": 9,
-        "w": 24,
+        "w": 12,
         "x": 0,
+        "y": 34
+      }
+    },
+    {
+      "type": "table",
+      "title": "Failed calls at $layer",
+      "description": "Traces with a call at this layer that the service counted as failed, whether the error arose here or in a layer below. A span carries app.outcome and is an error span only when its call failed; a call counted as refused is not here. The outcome is the call's, decided from its error, so a handler that answers with a status of its own can differ from it. cache and mail open no span: this panel is empty for them.",
+      "datasource": {
+        "type": "tempo",
+        "uid": "tempo"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "tempo",
+            "uid": "tempo"
+          },
+          "queryType": "traceql",
+          "query": "{ resource.service.name =~ \"$service_name\" && span.app.layer = \"$layer\" && span.app.outcome = \"failed\" }",
+          "limit": 20,
+          "tableType": "traces",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "showHeader": true,
+        "footer": {
+          "show": false
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "filterable": true
+          }
+        },
+        "overrides": []
+      },
+      "id": 16,
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
         "y": 34
       }
     }

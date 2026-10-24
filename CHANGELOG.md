@@ -281,8 +281,7 @@ Since `v0.0.3`.
   beside it for one release: move a saved query or an alert to
   `app_outcome` before it goes. The cache and mail layers, which record on
   the pair themselves, set it too; a cache read past its timeout is a
-  failure (its `successful` stays `true`, as before, so a ratio moved to
-  the outcome counts timeouts it did not count). A login, registration, re-verification or refresh body cut by
+  failure, and its `successful` is `false` with it. A login, registration, re-verification or refresh body cut by
   the size bound is answered `413`, as on every other route, instead of a
   `400` that said "failed to decode request".
   ([#154](https://github.com/slashdevops/go-rest-api-service-template/pull/154))
@@ -336,6 +335,19 @@ Since `v0.0.3`.
 
 ### Fixed
 
+- **The log panels show what the service writes.** The Cache dashboard's
+  "Errors from the cache layer" and the Email dashboard's "Errors from the
+  mail layer" filtered on a layer no log line carries and showed nothing
+  through a real outage. They read the cache client's `component=cache`
+  lines and the service's invalidation and health messages, and the mail
+  worker's `error sending email` and `email sending cancelled`. The cache's
+  "Error rate" counts timeouts. The Layers dashboard gains "Failed calls at
+  $layer", from the traces; the Logs dashboard gains "Refused requests" and
+  says what its error panels count. A panic writes two ERROR lines, not
+  three: `Recovery` answers the 500 without logging the panic again. The
+  cache layer's `successful` follows its outcome, so a timeout is
+  `successful="false"` too.
+  ([#156](https://github.com/slashdevops/go-rest-api-service-template/pull/156))
 - **A failed COMMIT is the answer, not a log line.** Creating an account
   or a project ended its transaction in a deferred closure that logged a
   failed COMMIT and returned nil: the route answered `201` for a row that

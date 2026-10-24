@@ -1113,8 +1113,8 @@
     },
     {
       "type": "logs",
-      "title": "Errors from the mail layer",
-      "description": "The mail adapter records the shared app_layer attribute as well as its own instruments, so its failures filter the same way every other layer's do.",
+      "title": "Warnings and errors about mail",
+      "description": "What is logged when a mail cannot be sent. A mail is sent after the request that asked for it, by the mail library's worker, so its failure is on no access line and carries no app_layer. The worker's two messages: a send the server refused (ERROR), and a send that ran past the worker's timeout or was cancelled at shutdown (WARN). And the service's own: the health probe finding the transport unreachable. The worker's messages are the library's and a new version of it can reword them; the send error panels above do not depend on them.",
       "datasource": {
         "type": "loki",
         "uid": "loki"
@@ -1126,7 +1126,7 @@
             "uid": "loki"
           },
           "editorMode": "code",
-          "expr": "{service_name=~\"$service_name\"} | app_layer=`mail` | severity_number >= 17",
+          "expr": "{service_name=~\"$service_name\"} |~ `error sending email|email sending cancelled|mail transport unreachable` | severity_number >= 13",
           "legendFormat": "__auto",
           "range": true,
           "instant": false,

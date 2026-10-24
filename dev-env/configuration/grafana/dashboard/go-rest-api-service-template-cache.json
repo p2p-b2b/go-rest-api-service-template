@@ -347,7 +347,7 @@
     {
       "type": "stat",
       "title": "Error rate",
-      "description": "Cache operation errors/sec.",
+      "description": "Reads the cache did not answer: an error, or a timeout, after which the read falls back to the database and the request succeeds. A timeout is what every read reports while the cache is unreachable.",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
@@ -390,7 +390,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "sum(rate(cache_requests_total{service_name=~\"$service_name\",service_instance_id=~\"$instance\",result=\"error\"}[$__rate_interval]))",
+          "expr": "sum(rate(cache_requests_total{service_name=~\"$service_name\",service_instance_id=~\"$instance\",result=~\"error|timeout\"}[$__rate_interval]))",
           "legendFormat": "__auto",
           "range": true,
           "instant": false,
@@ -1177,8 +1177,8 @@
     },
     {
       "type": "logs",
-      "title": "Errors from the cache layer",
-      "description": "The cache adapter records the shared app_layer attribute as well as its own instruments, so its failures filter the same way every other layer's do.",
+      "title": "Warnings about the cache",
+      "description": "What is logged when the cache misbehaves. The cache client's own lines (component=cache): a read that timed out and fell back to the database, a write that failed. And the service's: an invalidation given up, the health probe finding the cache unreachable. A cache fault degrades to the database and the request succeeds, so these are WARN and no line carries app_layer=cache: the layer's failed rate is the metric above.",
       "datasource": {
         "type": "loki",
         "uid": "loki"
@@ -1190,11 +1190,23 @@
             "uid": "loki"
           },
           "editorMode": "code",
-          "expr": "{service_name=~\"$service_name\"} | app_layer=`cache` | severity_number >= 17",
+          "expr": "{service_name=~\"$service_name\"} | component=`cache` | severity_number >= 13",
           "legendFormat": "__auto",
           "range": true,
           "instant": false,
           "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "editorMode": "code",
+          "expr": "{service_name=~\"$service_name\"} |~ `failed to invalidate cache|cache health check failed` | severity_number >= 13",
+          "legendFormat": "__auto",
+          "range": true,
+          "instant": false,
+          "refId": "B"
         }
       ],
       "options": {

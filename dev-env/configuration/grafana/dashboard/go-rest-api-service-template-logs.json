@@ -314,8 +314,8 @@
     },
     {
       "type": "timeseries",
-      "title": "Errors by layer",
-      "description": "Which layer is failing. app_layer is structured metadata, so this is an indexed filter rather than a scan of the message text.",
+      "title": "Errors by the layer they arose in",
+      "description": "ERROR lines by the layer they carry. A request answered 5xx is its access line, under the layer the error arose in and not under every layer it passed through -- the failed rate per layer is on the Layers dashboard. Work outside a request logs in every layer it passes, and a layer may add a line of its own, so this counts lines, not failures. 'no operation' is an error written outside any operation: a middleware, a recovered panic, a library's background worker. app_layer is structured metadata, so this filters on an attribute and does not scan the message text.",
       "datasource": {
         "type": "loki",
         "uid": "loki"
@@ -327,11 +327,23 @@
             "uid": "loki"
           },
           "editorMode": "code",
-          "expr": "sum by (app_layer) (count_over_time({service_name=~\"$service_name\"} | severity_number >= 17 [$__auto]))",
+          "expr": "sum by (app_layer) (count_over_time({service_name=~\"$service_name\"} | severity_number >= 17 | app_layer != `` [$__auto]))",
           "legendFormat": "{{app_layer}}",
           "range": true,
           "instant": false,
           "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "editorMode": "code",
+          "expr": "sum(count_over_time({service_name=~\"$service_name\"} | severity_number >= 17 | app_layer = `` [$__auto]))",
+          "legendFormat": "no operation",
+          "range": true,
+          "instant": false,
+          "refId": "B"
         }
       ],
       "fieldConfig": {
@@ -595,8 +607,8 @@
     },
     {
       "type": "table",
-      "title": "Failing operations",
-      "description": "Which operations produced errors over the window, most first. operation_failed carries layer, domain and action as flat attributes -- grouped, they would arrive as context_app_layer and disagree with the name the metrics and the span use.",
+      "title": "Where failures arose",
+      "description": "The operations that ERROR lines name over the window, most first, with the type of the error. A request answered 5xx is its access line, carrying the operation its error arose in; work outside a request logs operation_failed in every layer it passes, so a reload of the revoked-token mirror that fails in the repository is two rows. A row with no error_type is a line a layer wrote in its own words. A refused request (4xx) is not an error and is not here: see Refused requests. The attributes are flat -- grouped, they would arrive as context_app_layer and disagree with the name the metrics and the span use.",
       "datasource": {
         "type": "loki",
         "uid": "loki"
@@ -608,7 +620,7 @@
             "uid": "loki"
           },
           "editorMode": "code",
-          "expr": "topk(20, sum by (app_layer, app_domain, app_action) (count_over_time({service_name=~\"$service_name\"} | severity_number >= 17 [$__range])))",
+          "expr": "topk(20, sum by (app_layer, app_domain, app_action, error_type) (count_over_time({service_name=~\"$service_name\"} | severity_number >= 17 | app_layer != `` [$__range])))",
           "legendFormat": "__auto",
           "range": false,
           "instant": true,
@@ -690,6 +702,61 @@
         "w": 12,
         "x": 12,
         "y": 39
+      }
+    },
+    {
+      "type": "table",
+      "title": "Refused requests",
+      "description": "What the service refused over the window, by status and by the type of the error it answered with, the hundred most frequent. A refusal is not an error of the service, so it is on no error panel: it is the access line, at INFO. A row with no error_type was refused without a recorded error: by a middleware (authentication, authorization, project membership, the rate limiter), by the router (no such route), or by a handler that turns down a query parameter itself.",
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "editorMode": "code",
+          "expr": "topk(100, sum by (status, error_type) (count_over_time({service_name=~\"$service_name\"} | route != `` | status >= 400 | status < 500 [$__range])))",
+          "legendFormat": "__auto",
+          "range": false,
+          "instant": true,
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "showHeader": true,
+        "footer": {
+          "show": false
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "filterable": true
+          }
+        },
+        "overrides": []
+      },
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true
+            }
+          }
+        }
+      ],
+      "id": 14,
+      "gridPos": {
+        "h": 9,
+        "w": 24,
+        "x": 0,
+        "y": 48
       }
     }
   ]
