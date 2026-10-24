@@ -17,10 +17,12 @@ type ProjectMembershipChecker interface {
 }
 
 // noteFailure is [o11y.NoteFailure] for a middleware that answers a request
-// itself. NoteFailure records its caller's caller as where the failure arose,
-// because it is called through a helper of respond; called straight from a
-// middleware's closure, that is net/http's HandlerFunc.ServeHTTP. Through
-// this one it is the middleware.
+// itself, and the only way this package calls it. NoteFailure records its
+// caller's caller as where the failure arose, because it is called through a
+// helper of respond; called straight from a middleware's closure, that is
+// net/http's HandlerFunc.ServeHTTP, and from a deferred recover, the
+// runtime's panic. Through this one it is the middleware.
+// TestTheMiddlewaresNoteAFailureThroughTheirHelper holds the package to it.
 func noteFailure(ctx context.Context, err error) bool {
 	return o11y.NoteFailure(ctx, err)
 }

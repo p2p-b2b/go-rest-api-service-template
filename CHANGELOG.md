@@ -359,6 +359,20 @@ Since `v0.0.3`.
 
 ### Fixed
 
+- **`GET /rate_limits/effective` records its refusals.** Its three 400s
+  (no `method`, a method that is none, no `endpoint`) were written and
+  returned with nothing recorded: the call was in no count of the handler
+  layer, its span had no outcome and its access line no `error_type`. Each
+  is recorded as an invalid input, which the status table answers with the
+  400 written; the bodies are unchanged.
+  ([#166](https://github.com/slashdevops/go-rest-api-service-template/pull/166))
+- **A failure a middleware answers is said to arise in it.** The access
+  line of a request names where its failure arose. `CheckAuthz` (an
+  authorization store fault) and `Logging`'s recover (a panic) handed their
+  failure to it directly, so the line named
+  `net/http.HandlerFunc.ServeHTTP` and `runtime.gopanic`; they go through
+  the middleware's helper, which names the middleware, and a test holds the
+  package to it. ([#165](https://github.com/slashdevops/go-rest-api-service-template/pull/165))
 - **Deleting a role or a policy that is not there is a 404.** Both deletes
   answered as if they had deleted: `DELETE /roles/{role_id}` and `DELETE
   /policies/{policy_id}` said 200 "deleted" for an id that matched no row,

@@ -687,6 +687,15 @@ sequenceDiagram
 - **A 500 written for an error no layer recorded** -- a handler calling
   `respond.WriteInternalError` directly -- hands its cause to the same holder
   (`o11y.NoteFailure`), so that line too is the access line, with the cause.
+  `NoteFailure` records its caller's caller as where the failure arose,
+  because it is called through a helper (`WriteInternalError`); a middleware
+  that answers a request itself calls it through `middleware.noteFailure`,
+  for the same reason. Called straight from a middleware's closure the line
+  named `net/http.HandlerFunc.ServeHTTP` (an authorization store fault in
+  `CheckAuthz`), and from `Logging`'s deferred recover `runtime.gopanic`
+  (`TestAMiddlewaresFailureIsSaidToAriseInIt`;
+  `TestTheMiddlewaresNoteAFailureThroughTheirHelper` holds the package to
+  the helper).
 - **The holder is sealed when the line is written.** A context outlives its
   request: the cache refreshes a stale entry on `context.WithoutCancel`,
   which keeps the context's values and so the holder. `Logging` *takes* the

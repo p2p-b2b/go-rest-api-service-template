@@ -137,7 +137,7 @@ func Logging(clientIP *ClientIPResolver) Middleware {
 			// sits above everything and logs it with what it knows.
 			defer func() {
 				if rec := recover(); rec != nil {
-					o11y.NoteFailure(r.Context(), fmt.Errorf("panic: %v", rec))
+					noteFailure(r.Context(), fmt.Errorf("panic: %v", rec))
 					logRequest(r.Context(), http.StatusInternalServerError,
 						accessLine(r, clientIP, start, http.StatusInternalServerError, wrapped.written))
 
@@ -687,7 +687,7 @@ func CheckAuthz(authz *usecase.AuthzService) Middleware {
 				// ERROR for the 500 below, carries it with where it arose.
 				// A second ERROR line here said the same thing again. It is
 				// written only when there is no access line to carry it.
-				if !o11y.NoteFailure(r.Context(), err) {
+				if !noteFailure(r.Context(), err) {
 					slog.ErrorContext(r.Context(), "authorization service error",
 						"error", err,
 						"sub", subStr,
