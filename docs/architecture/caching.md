@@ -211,6 +211,34 @@ When adding a cached value, check its key against its fetcher's arguments: if
 the query filters on an id the key omits, the cache can serve one tenant's row
 to another.
 
+A project's read is the third case. `GetByIDByUserID` asks
+`SelectByIDByUserID(ctx, id, userID)`, which answers a member and tells anyone
+else there is no such project, and it was cached under `project:<id>`: whoever
+asked after a member was answered the member's copy. No route reaches it today,
+because the membership check in front of the read is not cached, and the key
+no longer relies on that. The read is stored under `projectReadCacheKey`
+(`project:<user>:<id>`) and names `projectCacheKey` (`project:<id>`) as its
+dependency, which the project's update, delete and membership changes
+invalidate and under which nothing is stored: one key drops every user's read,
+and a user going drops that user's alone. Both are built in
+`usecase/cache_keys.go`, by the read and by the invalidations
+(`TestAProjectsCachedReadIsItsReadersAlone`,
+`TestTheProjectsKeyDropsEveryReadOfIt`).
+
+### A delete drops its cache before it gives its slot back
+
+A delete removes the row, gives the usage slot back
+(`ResourcesLimits.DecrementUsage`), and drops what is cached of the row. The
+decrement can fail after the row is gone (a fault of the database, or of the
+counter's signature), and the function returns that error. The user, identity
+provider and project deletes dropped the cache **after** the decrement, so a
+decrement that failed returned with the deleted row still cached for the
+cache's lifetime: `GET /users/{user_id}` answered a deleted account (the
+standing check reads the repository, so it could not sign in). The cache is
+dropped first; the decrement's failure is still the call's.
+`TestADeleteDropsItsCacheBeforeItGivesItsSlotBack` reads the package for the
+order, and `TestADeletedProjectIsNotCachedWhenItsDecrementFails` drives one.
+
 ### A shared dependency set may only have its TTL raised
 
 This one is worth knowing because it was wrong for a long time and the symptom

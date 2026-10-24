@@ -347,6 +347,15 @@ Since `v0.0.3`.
 
 ### Fixed
 
+- **A delete drops what is cached of its row before it gives the usage
+  slot back.** The user, identity-provider and project deletes gave the slot
+  back first, and that decrement can fail after the row is gone (a fault,
+  or a counter whose signature does not verify): the call returned the
+  error with the deleted row still cached, so `GET /users/{user_id}`
+  answered a deleted account until the entry expired. And a project's read,
+  scoped to the user by its statement, was cached under the project alone;
+  it is keyed by the user too, and the project's key drops every user's
+  read of it. ([#164](https://github.com/slashdevops/go-rest-api-service-template/pull/164))
 - **A project that is not there is a 404 for everybody.** The `admin` flag
   admitted its account to any project id, so under a project that did not
   exist `GET /projects/{project_id}/products`, `/users` and

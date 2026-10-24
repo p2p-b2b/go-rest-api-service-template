@@ -152,10 +152,7 @@ func (ref *ProjectsService) UpdateByID(ctx context.Context, input *domain.Update
 
 	if ref.cacheService != nil {
 
-		cacheKey := cache.Identifier{
-			Type: "project",
-			ID:   input.ID.String(),
-		}
+		cacheKey := projectCacheKey(input.ID)
 
 		slog.DebugContext(ctx, "invalidate cache", "cache_key", cacheKey.String())
 
@@ -193,6 +190,19 @@ func (ref *ProjectsService) DeleteByID(ctx context.Context, input *domain.Delete
 		return o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
 	}
 
+	// The project's key, and with it everything cached that depends on the
+	// project: its reads by each user. Before anything that can still fail:
+	// the row is gone, and a usage decrement that failed returned from here
+	// with all of it still in the cache.
+	if ref.cacheService != nil {
+		slog.DebugContext(ctx, "invalidate cache", "project.id", input.ID.String())
+
+		cacheKey := projectCacheKey(input.ID)
+		if err := ref.cacheService.Invalidate(ctx, cacheKey); err != nil {
+			slog.WarnContext(ctx, "failed to invalidate cache", slog.Any("error", err), "project.id", input.ID.String())
+		}
+	}
+
 	// decrement resource usage
 	userScope := domain.ResourcesLimitsScope{
 		Type: domain.ResourcesLimitsScopeTypeUser,
@@ -201,18 +211,6 @@ func (ref *ProjectsService) DeleteByID(ctx context.Context, input *domain.Delete
 
 	if err := ref.resourcesLimits.DecrementUsage(ctx, userScope, domain.ResourcesLimitsResourceTypeProjects); err != nil {
 		return o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
-	}
-
-	if ref.cacheService != nil {
-		slog.DebugContext(ctx, "invalidate cache", "project.id", input.ID.String())
-
-		cacheKey := cache.Identifier{
-			Type: "project",
-			ID:   input.ID.String(),
-		}
-		if err := ref.cacheService.Invalidate(ctx, cacheKey); err != nil {
-			slog.WarnContext(ctx, "failed to invalidate cache", slog.Any("error", err), "project.id", input.ID.String())
-		}
 	}
 
 	o11y.RecordSuccess(ctx, span, start, ref.metrics, attrs, "project deleted successfully",
@@ -274,7 +272,10 @@ func (ref *ProjectsService) GetByIDByUserID(ctx context.Context, id, userID uuid
 			return nil, nil, err
 		}
 
+		// The project, so that its update, delete and membership changes
+		// drop this entry whoever read it; and the user it was read for.
 		dependencies := []cache.Identifier{
+			projectCacheKey(id),
 			{
 				Type: "user",
 				ID:   userID.String(),
@@ -292,12 +293,8 @@ func (ref *ProjectsService) GetByIDByUserID(ctx context.Context, id, userID uuid
 			return nil, o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
 		}
 	} else {
-		cacheKey := cache.Identifier{
-			Type: "project",
-			ID:   id.String(),
-		}
 		slog.DebugContext(ctx, "cache lookup", "cache", "enabled")
-		out, err = cache.GetTyped[*domain.Project](ctx, ref.cacheService, cacheKey, projectFetcher)
+		out, err = cache.GetTyped[*domain.Project](ctx, ref.cacheService, projectReadCacheKey(userID, id), projectFetcher)
 		if err != nil {
 			return nil, o11y.RecordError(ctx, span, start, err, ref.metrics, attrs)
 		}
@@ -379,10 +376,7 @@ func (ref *ProjectsService) LinkUsers(ctx context.Context, input *domain.LinkUse
 	if ref.cacheService != nil {
 		slog.DebugContext(ctx, "invalidate cache", "project.id", input.ProjectID.String())
 
-		cacheKey := cache.Identifier{
-			Type: "project",
-			ID:   input.ProjectID.String(),
-		}
+		cacheKey := projectCacheKey(input.ProjectID)
 		if err := ref.cacheService.Invalidate(ctx, cacheKey); err != nil {
 			slog.WarnContext(ctx, "failed to invalidate cache", slog.Any("error", err), "project.id", input.ProjectID.String())
 		}
@@ -415,10 +409,7 @@ func (ref *ProjectsService) UnlinkUsers(ctx context.Context, input *domain.Unlin
 	if ref.cacheService != nil {
 		slog.DebugContext(ctx, "invalidate cache", "project.id", input.ProjectID.String())
 
-		cacheKey := cache.Identifier{
-			Type: "project",
-			ID:   input.ProjectID.String(),
-		}
+		cacheKey := projectCacheKey(input.ProjectID)
 		if err := ref.cacheService.Invalidate(ctx, cacheKey); err != nil {
 			slog.WarnContext(ctx, "failed to invalidate cache", slog.Any("error", err), "project.id", input.ProjectID.String())
 		}
