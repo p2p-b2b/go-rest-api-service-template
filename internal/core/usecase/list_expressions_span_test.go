@@ -57,26 +57,36 @@ func TestAListsExpressionsReachTheSpanAfterTheyAreValidated(t *testing.T) {
 				continue
 			}
 
+			// The input's own Validate, as a statement of the function's
+			// body: not a Validate of another value, not one in a closure or
+			// a branch that may not run.
 			var validated, attribute token.Pos
+
+			for _, stmt := range fn.Body.List {
+				var call ast.Expr
+
+				switch st := stmt.(type) {
+				case *ast.IfStmt:
+					if assign, ok := st.Init.(*ast.AssignStmt); ok && len(assign.Rhs) == 1 {
+						call = assign.Rhs[0]
+					}
+				case *ast.ExprStmt:
+					call = st.X
+				}
+
+				if isInputValidate(call) && validated == token.NoPos {
+					validated = stmt.Pos()
+				}
+			}
 
 			ast.Inspect(fn.Body, func(n ast.Node) bool {
 				call, ok := n.(*ast.CallExpr)
-				if !ok {
+				if !ok || attribute != token.NoPos {
 					return true
 				}
 
-				f, ok := call.Fun.(*ast.SelectorExpr)
-				if !ok {
-					return true
-				}
-
-				switch {
-				case f.Sel.Name == "Validate" && validated == token.NoPos:
-					validated = call.Pos()
-				case f.Sel.Name == "String" && attribute == token.NoPos && len(call.Args) > 0:
-					if lit, ok := call.Args[0].(*ast.BasicLit); ok && (lit.Value == `"sort"` || lit.Value == `"filter"` || lit.Value == `"fields"`) {
-						attribute = call.Pos()
-					}
+				if f, ok := call.Fun.(*ast.SelectorExpr); ok && f.Sel.Name == "String" && len(call.Args) > 0 && isExpressionKey(call.Args[0]) {
+					attribute = call.Pos()
 				}
 
 				return true
@@ -98,6 +108,36 @@ func TestAListsExpressionsReachTheSpanAfterTheyAreValidated(t *testing.T) {
 	if found < 6 {
 		t.Errorf("found %d lists that put their expressions on a span, want at least 6: the guard is reading nothing", found)
 	}
+}
+
+// isInputValidate reports whether expr is a call of input.Validate().
+func isInputValidate(expr ast.Expr) bool {
+	call, ok := expr.(*ast.CallExpr)
+	if !ok {
+		return false
+	}
+
+	f, ok := call.Fun.(*ast.SelectorExpr)
+	if !ok || f.Sel.Name != "Validate" {
+		return false
+	}
+
+	receiver, ok := f.X.(*ast.Ident)
+
+	return ok && receiver.Name == "input"
+}
+
+// isExpressionKey reports whether an attribute's key is one of the three
+// list expressions, spelled as a literal or as the domain's field name.
+func isExpressionKey(key ast.Expr) bool {
+	switch k := key.(type) {
+	case *ast.BasicLit:
+		return k.Value == `"sort"` || k.Value == `"filter"` || k.Value == `"fields"`
+	case *ast.SelectorExpr:
+		return k.Sel.Name == "FieldSort" || k.Sel.Name == "FieldFilter" || k.Sel.Name == "FieldFields"
+	}
+
+	return false
 }
 
 // selectingNothing is a projects repository a refused list must not reach.
