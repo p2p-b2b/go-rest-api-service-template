@@ -206,6 +206,11 @@ Since `v0.0.3`.
 
 ### Upgrade notes
 
+- **Four 400 bodies that quoted Postgres say a fixed sentence**: "the
+  request refers to a field that does not exist", "a value has the wrong
+  type for its field", "the request contains a byte sequence that is not
+  valid text", "the request could not be read by the database". A client
+  that matched Postgres's words matches these. (#172)
 - **A refused list expression's message changes.** A list's 400 for a
   `sort`, `filter` or `fields` the parser refuses says, after its
   `validation error in field '<sort|filter|fields>':` prefix, `'x' is not a
@@ -367,6 +372,18 @@ Since `v0.0.3`.
 
 ### Fixed
 
+- **A filter Postgres refuses is a 400, in our words, and no driver text
+  is in a body.** A filter of the wrong type for its field (`GET
+  /users?filter=id = 'nope'`, `disabled = 'maybe'`, `id = 1`, an invalid
+  date or time zone, a pattern that is not one) passed the parser, which
+  does not know column types, and Postgres's refusal was answered 500, on
+  every list. It is a 400: "a value does not fit the type of the field it is
+  compared with", or "a pattern is not a valid regular expression or LIKE
+  pattern". And the four refusals that were already a 400 (an unquoted word
+  read as a column, a text field used as a boolean, bad bytes, a malformed
+  message) quoted Postgres, the statement's aliases included ("column
+  usrs.yes does not exist"); each says a fixed sentence now.
+  ([#172](https://github.com/slashdevops/go-rest-api-service-template/pull/172))
 - **A refused list expression is answered in our words, under one code.**
   A list's 400 for a `sort`, `filter` or `fields` it could not parse copied
   the qfv parser's error ("error on field 'x': field not allowed for

@@ -491,11 +491,11 @@ func (ref *ProductsRepository) SelectByProjectID(ctx context.Context, projectID,
 
 	rows, err := ref.db.Query(ctx, query, projectID, userID)
 	if err != nil {
-		return nil, o11y.RecordError(ctx, span, start, ref.handlePgError(err, input), ref.metrics, attrs)
+		return nil, o11y.RecordError(ctx, span, start, ref.handlePgError(filterRefusal(filterQuery, query, err), input), ref.metrics, attrs)
 	}
 	defer rows.Close()
 
-	return ref.collectPage(ctx, span, start, attrs, rows, input, tokenDirection, "SelectByProjectID")
+	return ref.collectPage(ctx, span, start, attrs, rows, input, tokenDirection, "SelectByProjectID", filterQuery, query)
 }
 
 // Select returns a page of the products of the caller's projects: every
@@ -608,11 +608,11 @@ func (ref *ProductsRepository) Select(ctx context.Context, input *domain.SelectP
 
 	rows, err := ref.db.Query(ctx, query, input.CallerID)
 	if err != nil {
-		return nil, o11y.RecordError(ctx, span, start, ref.handlePgError(err, input), ref.metrics, attrs)
+		return nil, o11y.RecordError(ctx, span, start, ref.handlePgError(filterRefusal(filterQuery, query, err), input), ref.metrics, attrs)
 	}
 	defer rows.Close()
 
-	return ref.collectPage(ctx, span, start, attrs, rows, input, tokenDirection, "Select")
+	return ref.collectPage(ctx, span, start, attrs, rows, input, tokenDirection, "Select", filterQuery, query)
 }
 
 // collectPage scans a result set into a page and computes its tokens.
@@ -630,6 +630,9 @@ func (ref *ProductsRepository) collectPage(
 	input *domain.SelectProductsInput,
 	tokenDirection domain.TokenDirection,
 	action string,
+	// filterQuery and query are the list's filter clause and statement, for
+	// filterRefusal: Postgres can refuse a filter while the rows are read.
+	filterQuery, query string,
 ) (*domain.SelectProductsOutput, error) {
 	var fetchedItems []domain.Product
 
@@ -657,7 +660,7 @@ func (ref *ProductsRepository) collectPage(
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, o11y.RecordError(ctx, span, start, ref.handlePgError(err, input), ref.metrics, attrs)
+		return nil, o11y.RecordError(ctx, span, start, ref.handlePgError(filterRefusal(filterQuery, query, err), input), ref.metrics, attrs)
 	}
 
 	hasMore := len(fetchedItems) > input.Paginator.Limit
@@ -809,13 +812,13 @@ func (ref *ProductsRepository) handlePgError(err error, input any) error {
 		case "23503": // Foreign key violation: the project in the path is gone
 			return &domain.ProjectNotFoundError{}
 		case "22021": // Invalid byte sequence for encoding
-			return &domain.InvalidByteSequenceError{Message: pgErr.Message}
+			return &domain.InvalidByteSequenceError{Message: pgInvalidByteSequence}
 		case "08P01": // Invalid message format
-			return &domain.InvalidMessageFormatError{Message: pgErr.Message}
+			return &domain.InvalidMessageFormatError{Message: pgInvalidMessageFormat}
 		case "42703": // Undefined column
-			return &domain.UndefinedColumnError{Message: pgErr.Message}
+			return &domain.UndefinedColumnError{Message: pgUndefinedColumn}
 		case "42804": // Datatype mismatch
-			return &domain.DatatypeMismatchError{Message: pgErr.Message}
+			return &domain.DatatypeMismatchError{Message: pgDatatypeMismatch}
 		}
 	}
 
