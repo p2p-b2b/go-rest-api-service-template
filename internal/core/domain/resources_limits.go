@@ -234,9 +234,11 @@ func (ref *SelectResourcesLimitsInput) Validate() error {
 	// Validate paginator
 	errs.Add(ref.Paginator.Validate())
 
-	parseSortExpression(&errs, ResourcesLimitsSortParser, ref.Sort, "INVALID_SORT_FIELD")
-	parseFilterExpression(&errs, ResourcesLimitsFilterParser, ref.Filter, "INVALID_FILTER_FIELD")
-	parseFieldsExpression(&errs, ResourcesLimitsFieldsParser, ref.Fields, "INVALID_FIELDS_FIELD")
+	validateListExpressions(&errs, listExpressions{
+		sort: ref.Sort, sortParser: ResourcesLimitsSortParser, sortFields: ResourcesLimitsSortFields,
+		filter: ref.Filter, filterParser: ResourcesLimitsFilterParser, filterFields: ResourcesLimitsFilterFields,
+		fields: ref.Fields, fieldsParser: ResourcesLimitsFieldsParser, partialFields: ResourcesLimitsPartialFields,
+	})
 
 	if errs.HasErrors() {
 		return &errs

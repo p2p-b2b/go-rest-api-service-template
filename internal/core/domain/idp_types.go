@@ -95,9 +95,11 @@ func (ref *SelectIDPTypesInput) Validate() error {
 	// Validate paginator
 	errs.Add(ref.Paginator.Validate())
 
-	parseSortExpression(&errs, IDPTypesSortParser, ref.Sort, "INVALID_SORT_FIELD")
-	parseFilterExpression(&errs, IDPTypesFilterParser, ref.Filter, "INVALID_FILTER_FIELD")
-	parseFieldsExpression(&errs, IDPTypesFieldsParser, ref.Fields, "INVALID_FIELD")
+	validateListExpressions(&errs, listExpressions{
+		sort: ref.Sort, sortParser: IDPTypesSortParser, sortFields: IDPTypesSortFields,
+		filter: ref.Filter, filterParser: IDPTypesFilterParser, filterFields: IDPTypesFilterFields,
+		fields: ref.Fields, fieldsParser: IDPTypesFieldsParser, partialFields: IDPTypesPartialFields,
+	})
 
 	if errs.HasErrors() {
 		return &errs

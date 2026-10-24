@@ -291,9 +291,11 @@ func (ref *SelectIDPsInput) Validate() error {
 		errs.Add(err)
 	}
 
-	parseSortExpression(&errs, IDPsSortParser, ref.Sort, "INVALID_SORT_FIELD")
-	parseFilterExpression(&errs, IDPsFilterParser, ref.Filter, "INVALID_FILTER_FIELD")
-	parseFieldsExpression(&errs, IDPsFieldsParser, ref.Fields, "INVALID_FIELD")
+	validateListExpressions(&errs, listExpressions{
+		sort: ref.Sort, sortParser: IDPsSortParser, sortFields: IDPsSortFields,
+		filter: ref.Filter, filterParser: IDPsFilterParser, filterFields: IDPsFilterFields,
+		fields: ref.Fields, fieldsParser: IDPsFieldsParser, partialFields: IDPsPartialFields,
+	})
 
 	if errs.HasErrors() {
 		return &errs

@@ -47,9 +47,11 @@ func (ref *SelectResourcesInput) Validate() error {
 		errs.Add(err)
 	}
 
-	parseSortExpression(&errs, ResourcesSortParser, ref.Sort, "INVALID_SORT_FIELD")
-	parseFilterExpression(&errs, ResourcesFilterParser, ref.Filter, "INVALID_FILTER_FIELD")
-	parseFieldsExpression(&errs, ResourcesFieldsParser, ref.Fields, "INVALID_FIELD")
+	validateListExpressions(&errs, listExpressions{
+		sort: ref.Sort, sortParser: ResourcesSortParser, sortFields: ResourcesSortFields,
+		filter: ref.Filter, filterParser: ResourcesFilterParser, filterFields: ResourcesFilterFields,
+		fields: ref.Fields, fieldsParser: ResourcesFieldsParser, partialFields: ResourcesPartialFields,
+	})
 
 	if errs.HasErrors() {
 		return &errs

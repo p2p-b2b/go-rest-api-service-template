@@ -1,13 +1,52 @@
 package domain
 
 import (
+	"errors"
+	"fmt"
+	"regexp"
+	"slices"
+
 	"github.com/slashdevops/qfv"
 )
 
-// The three functions below are the only callers of the qfv parsers
-// (TestListExpressionsAreParsedInOnePlace). A list input hands them its
-// sort, its filter and its fields, and each records what is wrong with the
-// expression, under the code that input has always used.
+// ListExpressionCode is the one code a refused sort, filter or fields
+// expression carries. The ValidationError's Field (sort, filter, fields) says
+// which parameter it was.
+const ListExpressionCode = "INVALID_EXPRESSION"
+
+// listExpressions is one list request's three expression parameters, with
+// the parsers that judge them and the allow-lists those parsers were built
+// from. The allow-lists are here because the wording below is decided from
+// them, not from the parser's error text.
+type listExpressions struct {
+	sortParser   *qfv.SortParser
+	filterParser *qfv.FilterParser
+	fieldsParser *qfv.FieldsParser
+
+	sort, filter, fields string
+
+	sortFields, filterFields, partialFields []string
+}
+
+// validateListExpressions parses the three expressions and records one
+// ValidationError per parameter that does not parse. It is the only caller
+// of the qfv parsers (TestListExpressionsAreParsedInOnePlace).
+//
+// # Our wording, not the library's
+//
+// Every list validator copied the qfv error into the response ("error on
+// field 'x': field not allowed for sorting"), under seven codes for the
+// same failure (INVALID_SORT_FIELD, INVALID_FILTER_FIELD, INVALID_FIELD,
+// INVALID_FIELDS_FIELD, and the projects list's INVALID_SORT,
+// INVALID_FILTER, INVALID_FIELDS). That published a dependency's prose as the API
+// contract: a qfv release could reword every 400 of every list endpoint.
+// The message is now ours: it names the field when the expression refers to
+// a field this list does not accept, and otherwise says what the expression
+// must look like.
+//
+// The field is named only when it is a plain identifier missing from the
+// allow-list we hold, so the decision does not depend on the library's
+// message text, and nothing but a short identifier is echoed back.
 //
 // # An expression over its length is not parsed
 //
@@ -28,43 +67,39 @@ import (
 // length is refused as TOO_LONG, once, and no parser sees it. No input
 // checks the length for itself any more: there is one place to get it
 // right.
+func validateListExpressions(errs *ValidationErrors, in listExpressions) {
+	in.sort = boundedExpression(errs, in.sort, FieldSort, ValidateSortExpression)
+	in.filter = boundedExpression(errs, in.filter, FieldFilter, ValidateFilterExpression)
+	in.fields = boundedExpression(errs, in.fields, FieldFields, ValidateFieldsExpression)
 
-func parseSortExpression(errs *ValidationErrors, parser *qfv.SortParser, expression, code string) {
-	expression = boundedExpression(errs, expression, FieldSort, ValidateSortExpression)
-	if expression == "" {
-		return
+	if in.sort != "" {
+		if _, err := in.sortParser.Parse(in.sort); err != nil {
+			errs.Add(listExpressionError(FieldSort, err, in.sortFields,
+				"'%s' is not a sortable field",
+				"must be a comma-separated list of 'field asc' or 'field desc'"))
+		}
 	}
 
-	if _, err := parser.Parse(expression); err != nil {
-		errs.AddError(FieldSort, err.Error(), code)
-	}
-}
-
-func parseFilterExpression(errs *ValidationErrors, parser *qfv.FilterParser, expression, code string) {
-	expression = boundedExpression(errs, expression, FieldFilter, ValidateFilterExpression)
-	if expression == "" {
-		return
+	if in.filter != "" {
+		if _, err := in.filterParser.Parse(in.filter); err != nil {
+			errs.Add(listExpressionError(FieldFilter, err, in.filterFields,
+				"'%s' is not a filterable field",
+				"is not a valid filter expression"))
+		}
 	}
 
-	if _, err := parser.Parse(expression); err != nil {
-		errs.AddError(FieldFilter, err.Error(), code)
-	}
-}
-
-func parseFieldsExpression(errs *ValidationErrors, parser *qfv.FieldsParser, expression, code string) {
-	expression = boundedExpression(errs, expression, FieldFields, ValidateFieldsExpression)
-	if expression == "" {
-		return
-	}
-
-	if _, err := parser.Parse(expression); err != nil {
-		errs.AddError(FieldFields, err.Error(), code)
+	if in.fields != "" {
+		if _, err := in.fieldsParser.Parse(in.fields); err != nil {
+			errs.Add(listExpressionError(FieldFields, err, in.partialFields,
+				"'%s' is not a selectable field",
+				"must be a comma-separated list of field names"))
+		}
 	}
 }
 
 // boundedExpression returns the expression a parser may be given: the
-// expression itself, or nothing when it is empty or over its length, which
-// it records.
+// expression itself, or nothing when it is over its length, which is
+// recorded.
 func boundedExpression(errs *ValidationErrors, expression, field string, check func(expression, field string) error) string {
 	if err := check(expression, field); err != nil {
 		errs.Add(err)
@@ -73,4 +108,46 @@ func boundedExpression(errs *ValidationErrors, expression, field string, check f
 	}
 
 	return expression
+}
+
+// listIdentifier is what may be echoed back as a field name: short, and
+// nothing a client could use to smuggle markup or control characters into a
+// response or a log line.
+var listIdentifier = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_.]{0,63}$`)
+
+func listExpressionError(field string, err error, allowed []string, unknownFormat, invalid string) *ValidationError {
+	for _, name := range qfvFieldNames(err) {
+		if listIdentifier.MatchString(name) && !slices.Contains(allowed, name) {
+			return &ValidationError{Field: field, Message: fmt.Sprintf(unknownFormat, name), Code: ListExpressionCode}
+		}
+	}
+
+	return &ValidationError{Field: field, Message: invalid, Code: ListExpressionCode}
+}
+
+// qfvFieldNames returns the Field of every qfv error in err, in order. The
+// filter parser joins several errors; the sort and fields parsers return one.
+func qfvFieldNames(err error) []string {
+	if joined, ok := err.(interface{ Unwrap() []error }); ok {
+		var names []string
+		for _, e := range joined.Unwrap() {
+			names = append(names, qfvFieldNames(e)...)
+		}
+
+		return names
+	}
+
+	if e, ok := errors.AsType[*qfv.QFVSortError](err); ok {
+		return []string{e.Field}
+	}
+
+	if e, ok := errors.AsType[*qfv.QFVFilterError](err); ok {
+		return []string{e.Field}
+	}
+
+	if e, ok := errors.AsType[*qfv.QFVFieldsError](err); ok {
+		return []string{e.Field}
+	}
+
+	return nil
 }
