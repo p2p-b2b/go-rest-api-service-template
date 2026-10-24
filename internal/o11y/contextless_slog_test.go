@@ -18,12 +18,20 @@ import (
 // those lines to belong to. Requiring a context there would mean inventing
 // context.Background() at the call site, which carries no span and would turn a
 // real rule into a ritual.
+//
+// The three after respond were missing from it, and each logged without its
+// context on every request it refused: the identity providers' adapter (a
+// sign-in's exchange, its token's checks, ten lines at WARN), the token
+// verifier, and the middleware's validator.
 var requestPathPackages = []string{
 	filepath.Join("internal", "core", "usecase"),
 	filepath.Join("internal", "adapter", "driven", "repositorypg"),
 	filepath.Join("internal", "adapter", "driving", "http", "handler"),
 	filepath.Join("internal", "adapter", "driving", "http", "middleware"),
 	filepath.Join("internal", "adapter", "driving", "http", "respond"),
+	filepath.Join("internal", "adapter", "driven", "oauthidp"),
+	filepath.Join("internal", "adapter", "driven", "tokenjwt"),
+	filepath.Join("internal", "adapter", "driving", "http", "jwtvalidator"),
 }
 
 // contextlessSlogExemptions names the FUNCTIONS that legitimately log without a

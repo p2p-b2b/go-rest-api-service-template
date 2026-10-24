@@ -91,7 +91,7 @@ func TestValidateToken(t *testing.T) {
 
 func TestValidateJTI(t *testing.T) {
 	t.Run("accepts_a_uuid", func(t *testing.T) {
-		assert.NoError(t, validateJTI(validatorClaims()))
+		assert.NoError(t, validateJTI(t.Context(), validatorClaims()))
 	})
 
 	for name, jti := range map[string]any{
@@ -108,7 +108,7 @@ func TestValidateJTI(t *testing.T) {
 				claims["jti"] = jti
 			}
 
-			assert.Error(t, validateJTI(claims))
+			assert.Error(t, validateJTI(t.Context(), claims))
 		})
 	}
 }

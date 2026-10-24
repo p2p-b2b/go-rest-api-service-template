@@ -561,6 +561,14 @@ file-level exemption would silently cover every call added to that file
 afterwards. `internal/app` is out of scope entirely: its logging is startup and
 shutdown, where no span exists and a context would have to be invented.
 
+Its packages are listed by hand, and three that a request passes through were
+missing: the identity providers' adapter (`oauthidp`, ten lines at WARN on a
+failed sign-in, a second line for a failure the access line already reports,
+and none of them reachable from its trace), the token verifier (`tokenjwt`)
+and the middleware's validator (`jwtvalidator`). On `main`'s code the extended
+list found seventeen lines. The adapter's are DEBUG now, with the provider's
+id: the detail of a failure, never its report.
+
 ### 3. Both sinks have to carry the ids
 
 The bridge stamps `trace_id` and `span_id` on exported records. Nothing does

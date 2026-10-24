@@ -110,7 +110,7 @@ func (ref *AuthnIDPsHandler) RegisterRoutes(mux *http.ServeMux, protected ...mid
 //	@Failure		404		{object}	payload.HTTPMessage			"Unknown or disabled identity provider"
 //	@Failure		429		{object}	payload.HTTPMessage			"Too many requests"
 //	@Failure		500		{object}	payload.HTTPMessage			"Internal server error"
-//	@Failure		503		{object}	payload.HTTPMessage			"The identity provider is not reachable"
+//	@Failure		503		{object}	payload.HTTPMessage			"The identity provider is not reachable, or not configured for sign-in"
 //	@Router			/auth/idp/{idp_id}/login [get]
 func (ref *AuthnIDPsHandler) login(w http.ResponseWriter, r *http.Request) {
 	ref.start(w, r, "login", domain.IDPEventTypeLogin)
@@ -129,7 +129,7 @@ func (ref *AuthnIDPsHandler) login(w http.ResponseWriter, r *http.Request) {
 //	@Failure		404		{object}	payload.HTTPMessage			"Unknown or disabled identity provider"
 //	@Failure		429		{object}	payload.HTTPMessage			"Too many requests"
 //	@Failure		500		{object}	payload.HTTPMessage			"Internal server error"
-//	@Failure		503		{object}	payload.HTTPMessage			"The identity provider is not reachable"
+//	@Failure		503		{object}	payload.HTTPMessage			"The identity provider is not reachable, or not configured for sign-in"
 //	@Router			/auth/idp/{idp_id}/register [get]
 func (ref *AuthnIDPsHandler) registerUser(w http.ResponseWriter, r *http.Request) {
 	ref.start(w, r, "registerUser", domain.IDPEventTypeRegister)
@@ -150,7 +150,7 @@ func (ref *AuthnIDPsHandler) registerUser(w http.ResponseWriter, r *http.Request
 //	@Failure		404		{object}	payload.HTTPMessage			"Unknown or disabled identity provider"
 //	@Failure		429		{object}	payload.HTTPMessage			"Too many requests"
 //	@Failure		500		{object}	payload.HTTPMessage			"Internal server error"
-//	@Failure		503		{object}	payload.HTTPMessage			"The identity provider is not reachable"
+//	@Failure		503		{object}	payload.HTTPMessage			"The identity provider is not reachable, or not configured for sign-in"
 //	@Router			/auth/idp/{idp_id}/link [get]
 //	@Security		AccessToken
 func (ref *AuthnIDPsHandler) link(w http.ResponseWriter, r *http.Request) {
@@ -230,7 +230,7 @@ func (ref *AuthnIDPsHandler) start(w http.ResponseWriter, r *http.Request, actio
 //	@Failure		409		{object}	payload.HTTPMessage			"The identity is already linked to an account, or registration is closed: the user limit has been reached"
 //	@Failure		429		{object}	payload.HTTPMessage			"Too many requests"
 //	@Failure		500		{object}	payload.HTTPMessage			"Internal server error"
-//	@Failure		503		{object}	payload.HTTPMessage			"The identity provider is not reachable, or its answer cannot be used (it rejects this service, or returns no valid identity)"
+//	@Failure		503		{object}	payload.HTTPMessage			"The identity provider is not reachable, not configured for sign-in, or its answer cannot be used (it rejects this service, or returns no valid identity)"
 //	@Router			/auth/idp/{idp_id}/callback [get]
 func (ref *AuthnIDPsHandler) callback(w http.ResponseWriter, r *http.Request) {
 	startedAt := time.Now()
@@ -502,6 +502,11 @@ func (ref *AuthnIDPsHandler) writeStartError(w http.ResponseWriter, r *http.Requ
 		// unreachable provider fell to the default arm and was answered 500,
 		// where the routes document a 503.
 		respond.WriteJSONMessage(w, r, http.StatusServiceUnavailable, e.Error())
+	case isType[*domain.InvalidAuthnServiceError](err):
+		// A provider row the service cannot sign in with. The callback's
+		// sentence: this route is public, and what is wrong with the row is
+		// the operator's to read in the log. It was a 400 that named the row.
+		respond.WriteJSONMessage(w, r, http.StatusServiceUnavailable, signInUnavailableMessage)
 	case isType[*domain.ValidationErrors](err), isType[*domain.InvalidInputError](err), isType[*domain.InvalidIdentityProvidersError](err):
 		respond.WriteJSONMessage(w, r, http.StatusBadRequest, e.Error())
 	default:

@@ -280,7 +280,7 @@ func (s *Signer) Sign(_ context.Context, claims domain.JWTClaims) (string, error
 // claims mean something, having been written on every token and read on none;
 // WithExpirationRequired refuses a token that simply omits exp instead of
 // treating "no deadline" as "not expired".
-func (s *Signer) Verify(_ context.Context, token string) (map[string]any, error) {
+func (s *Signer) Verify(ctx context.Context, token string) (map[string]any, error) {
 	parsed, err := jwt.Parse(
 		token, s.keyFunc,
 		jwt.WithValidMethods([]string{jwt.SigningMethodES256.Alg()}),
@@ -289,7 +289,7 @@ func (s *Signer) Verify(_ context.Context, token string) (map[string]any, error)
 		jwt.WithExpirationRequired(),
 	)
 	if err != nil {
-		return nil, mapJWTError(err)
+		return nil, mapJWTError(ctx, err)
 	}
 
 	if !parsed.Valid {
@@ -332,13 +332,13 @@ func (s *Signer) keyFunc(t *jwt.Token) (any, error) {
 // token was not accepted, which is all they can act on; an operator gets the
 // reason. See the package comment for why the library's own text must not
 // become part of the API contract.
-func mapJWTError(err error) error {
+func mapJWTError(ctx context.Context, err error) error {
 	// A domain error raised by keyFunc has already said its piece.
 	if invalid, ok := errors.AsType[*domain.InvalidJWTError](err); ok {
 		return invalid
 	}
 
-	slog.Debug("tokenjwt.Verify: token rejected", "error", err)
+	slog.DebugContext(ctx, "tokenjwt.Verify: token rejected", "error", err)
 
 	switch {
 	case errors.Is(err, jwt.ErrTokenExpired):

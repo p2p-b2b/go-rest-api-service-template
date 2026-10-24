@@ -697,3 +697,31 @@ func TestIDPAnAbandonedCallbackSpendsTheState(t *testing.T) {
 		t.Error("a spent state was spent again without a word")
 	}
 }
+
+// failingSigner cannot sign: the service's own failure.
+type failingSigner struct {
+	fakeSigner
+	err error
+}
+
+func (f failingSigner) Sign(context.Context, domain.JWTClaims) (string, error) { return "", f.err }
+
+// A state the service cannot sign is its own failure, carried with its
+// cause: a 500 through the status table. It was a 400 for the caller, who
+// had sent nothing wrong, after a line of its own at ERROR.
+func TestAStateThatCannotBeSignedIsTheServicesFailure(t *testing.T) {
+	t.Parallel()
+
+	f := newIDPFixture(t, nil)
+	cause := errors.New("the signing key is gone")
+	f.svc.tokenSigner = failingSigner{err: cause}
+
+	_, err := f.svc.GetLoginURL(t.Context(), f.idp.ID, domain.IDPEventTypeLogin, uuid.Nil())
+	if !errors.Is(err, cause) {
+		t.Fatalf("GetLoginURL answered %v, want the signer's failure", err)
+	}
+
+	if _, isRefusal := errors.AsType[*domain.InvalidIdentityProvidersError](err); isRefusal {
+		t.Errorf("the service's failure is answered as the caller's: %v", err)
+	}
+}

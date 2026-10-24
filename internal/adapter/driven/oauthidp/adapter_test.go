@@ -377,6 +377,42 @@ func TestKindDecidesNotTheName(t *testing.T) {
 	}
 }
 
+// A provider row this service cannot sign in with is the service's side,
+// in its words: a 503 that names nothing. It was a 400 naming the provider,
+// on the public routes that start a sign-in and take its callback.
+func TestAProviderThatCannotBeUsedIsTheServicesSide(t *testing.T) {
+	t.Parallel()
+
+	const name = "Company SSO"
+
+	for shape, spoil := range map[string]func(*domain.IDP){
+		"no_client_secret": func(idp *domain.IDP) { idp.ClientSecret = "" },
+		"no_issuer":        func(idp *domain.IDP) { idp.IssuerURL = "" },
+		"an_unknown_kind":  func(idp *domain.IDP) { idp.IDPType.Kind = "saml" },
+	} {
+		t.Run(shape, func(t *testing.T) {
+			t.Parallel()
+
+			idp := oidcIDP("http://127.0.0.1:1", name)
+			spoil(idp)
+
+			_, startErr := newProvider(t).AuthCodeURL(t.Context(), idp, oauth.AuthRequest{State: "s", Nonce: "n", CodeVerifier: "v"})
+			_, exchangeErr := newProvider(t).Exchange(t.Context(), idp, "code", oauth.AuthRequest{Nonce: "n", CodeVerifier: "v"})
+
+			for step, err := range map[string]error{"start": startErr, "exchange": exchangeErr} {
+				refused, ok := errors.AsType[*domain.InvalidAuthnServiceError](err)
+				if !ok {
+					t.Fatalf("%s: got %T (%v), want the service's side", step, err, err)
+				}
+
+				if refused.Message != domain.IDPNotConfiguredMessage || strings.Contains(err.Error(), name) {
+					t.Errorf("%s: answered %q, want %q and no provider name", step, err, domain.IDPNotConfiguredMessage)
+				}
+			}
+		})
+	}
+}
+
 // New refuses a client without a timeout: the token exchange used to run on
 // http.DefaultClient, which has none.
 func TestNewRequiresATimeout(t *testing.T) {

@@ -242,9 +242,10 @@ func (ref *AuthnIDPsService) GetLoginURL(ctx context.Context, idpID uuid.UUID, e
 		Data:          sealed,
 	})
 	if err != nil {
-		slog.ErrorContext(ctx, "could not sign the state", "error", err)
-
-		return "", o11y.RecordError(ctx, span, start, &domain.InvalidIdentityProvidersError{Message: "failed to create the sign-in state"}, ref.metrics, attrs)
+		// The service's own failure, a 500 with its cause on the access
+		// line. It was a 400, after a line of its own at ERROR: the caller
+		// had sent nothing wrong, and one failure was written twice.
+		return "", o11y.RecordError(ctx, span, start, fmt.Errorf("could not sign the state: %w", err), ref.metrics, attrs)
 	}
 
 	req.State = state

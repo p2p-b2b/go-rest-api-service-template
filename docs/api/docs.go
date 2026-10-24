@@ -136,7 +136,7 @@ const docTemplate = `{
                         }
                     },
                     "503": {
-                        "description": "The identity provider is not reachable, or its answer cannot be used (it rejects this service, or returns no valid identity)",
+                        "description": "The identity provider is not reachable, not configured for sign-in, or its answer cannot be used (it rejects this service, or returns no valid identity)",
                         "schema": {
                             "$ref": "#/definitions/payload.HTTPMessage"
                         }
@@ -214,7 +214,7 @@ const docTemplate = `{
                         }
                     },
                     "503": {
-                        "description": "The identity provider is not reachable",
+                        "description": "The identity provider is not reachable, or not configured for sign-in",
                         "schema": {
                             "$ref": "#/definitions/payload.HTTPMessage"
                         }
@@ -275,7 +275,7 @@ const docTemplate = `{
                         }
                     },
                     "503": {
-                        "description": "The identity provider is not reachable",
+                        "description": "The identity provider is not reachable, or not configured for sign-in",
                         "schema": {
                             "$ref": "#/definitions/payload.HTTPMessage"
                         }
@@ -336,7 +336,7 @@ const docTemplate = `{
                         }
                     },
                     "503": {
-                        "description": "The identity provider is not reachable",
+                        "description": "The identity provider is not reachable, or not configured for sign-in",
                         "schema": {
                             "$ref": "#/definitions/payload.HTTPMessage"
                         }

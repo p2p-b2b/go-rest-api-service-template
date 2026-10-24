@@ -133,3 +133,10 @@ type IDPProtectedError struct {
 func (e *IDPProtectedError) Error() string {
 	return (&BaseProtectedError{Entity: "identity provider", Action: e.Action, Message: e.Message}).Error()
 }
+
+// IDPNotConfiguredMessage is the reason of an InvalidAuthnServiceError for a
+// provider row the service cannot sign in with: no client, no callback, an
+// OpenID Connect provider with no issuer, a kind it does not know. The API
+// refuses each of these when the row is written, so it names a row written
+// some other way, and it is the service's side.
+const IDPNotConfiguredMessage = "the identity provider is not configured for sign-in"

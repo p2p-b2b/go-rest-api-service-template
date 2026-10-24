@@ -6377,7 +6377,7 @@ Build the authorization URL for a sign-in. The caller sends the browser there; t
 | [404](#01988e60-89e5-72ab-adb4-3eef95d1afd3-404) | Not Found | Unknown or disabled identity provider |  | [schema](#01988e60-89e5-72ab-adb4-3eef95d1afd3-404-schema) |
 | [429](#01988e60-89e5-72ab-adb4-3eef95d1afd3-429) | Too Many Requests | Too many requests |  | [schema](#01988e60-89e5-72ab-adb4-3eef95d1afd3-429-schema) |
 | [500](#01988e60-89e5-72ab-adb4-3eef95d1afd3-500) | Internal Server Error | Internal server error |  | [schema](#01988e60-89e5-72ab-adb4-3eef95d1afd3-500-schema) |
-| [503](#01988e60-89e5-72ab-adb4-3eef95d1afd3-503) | Service Unavailable | The identity provider is not reachable |  | [schema](#01988e60-89e5-72ab-adb4-3eef95d1afd3-503-schema) |
+| [503](#01988e60-89e5-72ab-adb4-3eef95d1afd3-503) | Service Unavailable | The identity provider is not reachable, or not configured for sign-in |  | [schema](#01988e60-89e5-72ab-adb4-3eef95d1afd3-503-schema) |
 
 #### Responses
 
@@ -6427,7 +6427,7 @@ Status: Internal Server Error
 
 [PayloadHTTPMessage](#payload-http-message)
 
-##### <span id="01988e60-89e5-72ab-adb4-3eef95d1afd3-503"></span> 503 - The identity provider is not reachable
+##### <span id="01988e60-89e5-72ab-adb4-3eef95d1afd3-503"></span> 503 - The identity provider is not reachable, or not configured for sign-in
 Status: Service Unavailable
 
 ###### <span id="01988e60-89e5-72ab-adb4-3eef95d1afd3-503-schema"></span> Schema
@@ -6466,7 +6466,7 @@ Called by the frontend callback route with the state and code from the provider,
 | [409](#01988e60-89e5-72ee-9db4-db5cd7535717-409) | Conflict | The identity is already linked to an account, or registration is closed: the user limit has been reached |  | [schema](#01988e60-89e5-72ee-9db4-db5cd7535717-409-schema) |
 | [429](#01988e60-89e5-72ee-9db4-db5cd7535717-429) | Too Many Requests | Too many requests |  | [schema](#01988e60-89e5-72ee-9db4-db5cd7535717-429-schema) |
 | [500](#01988e60-89e5-72ee-9db4-db5cd7535717-500) | Internal Server Error | Internal server error |  | [schema](#01988e60-89e5-72ee-9db4-db5cd7535717-500-schema) |
-| [503](#01988e60-89e5-72ee-9db4-db5cd7535717-503) | Service Unavailable | The identity provider is not reachable, or its answer cannot be used (it rejects this service, or returns no valid identity) |  | [schema](#01988e60-89e5-72ee-9db4-db5cd7535717-503-schema) |
+| [503](#01988e60-89e5-72ee-9db4-db5cd7535717-503) | Service Unavailable | The identity provider is not reachable, not configured for sign-in, or its answer cannot be used (it rejects this service, or returns no valid identity) |  | [schema](#01988e60-89e5-72ee-9db4-db5cd7535717-503-schema) |
 
 #### Responses
 
@@ -6534,7 +6534,7 @@ Status: Internal Server Error
 
 [PayloadHTTPMessage](#payload-http-message)
 
-##### <span id="01988e60-89e5-72ee-9db4-db5cd7535717-503"></span> 503 - The identity provider is not reachable, or its answer cannot be used (it rejects this service, or returns no valid identity)
+##### <span id="01988e60-89e5-72ee-9db4-db5cd7535717-503"></span> 503 - The identity provider is not reachable, not configured for sign-in, or its answer cannot be used (it rejects this service, or returns no valid identity)
 Status: Service Unavailable
 
 ###### <span id="01988e60-89e5-72ee-9db4-db5cd7535717-503-schema"></span> Schema
@@ -6568,7 +6568,7 @@ Build the authorization URL for a registration. Same flow as a login; the callba
 | [404](#019894ba-6014-79cf-bff4-6668484cc7e3-404) | Not Found | Unknown or disabled identity provider |  | [schema](#019894ba-6014-79cf-bff4-6668484cc7e3-404-schema) |
 | [429](#019894ba-6014-79cf-bff4-6668484cc7e3-429) | Too Many Requests | Too many requests |  | [schema](#019894ba-6014-79cf-bff4-6668484cc7e3-429-schema) |
 | [500](#019894ba-6014-79cf-bff4-6668484cc7e3-500) | Internal Server Error | Internal server error |  | [schema](#019894ba-6014-79cf-bff4-6668484cc7e3-500-schema) |
-| [503](#019894ba-6014-79cf-bff4-6668484cc7e3-503) | Service Unavailable | The identity provider is not reachable |  | [schema](#019894ba-6014-79cf-bff4-6668484cc7e3-503-schema) |
+| [503](#019894ba-6014-79cf-bff4-6668484cc7e3-503) | Service Unavailable | The identity provider is not reachable, or not configured for sign-in |  | [schema](#019894ba-6014-79cf-bff4-6668484cc7e3-503-schema) |
 
 #### Responses
 
@@ -6618,7 +6618,7 @@ Status: Internal Server Error
 
 [PayloadHTTPMessage](#payload-http-message)
 
-##### <span id="019894ba-6014-79cf-bff4-6668484cc7e3-503"></span> 503 - The identity provider is not reachable
+##### <span id="019894ba-6014-79cf-bff4-6668484cc7e3-503"></span> 503 - The identity provider is not reachable, or not configured for sign-in
 Status: Service Unavailable
 
 ###### <span id="019894ba-6014-79cf-bff4-6668484cc7e3-503-schema"></span> Schema
@@ -9183,7 +9183,7 @@ Build the authorization URL for linking a provider identity to the signed-in acc
 | [404](#01a07319-1d32-7bd2-8ba0-f7da9aaaed0a-404) | Not Found | Unknown or disabled identity provider |  | [schema](#01a07319-1d32-7bd2-8ba0-f7da9aaaed0a-404-schema) |
 | [429](#01a07319-1d32-7bd2-8ba0-f7da9aaaed0a-429) | Too Many Requests | Too many requests |  | [schema](#01a07319-1d32-7bd2-8ba0-f7da9aaaed0a-429-schema) |
 | [500](#01a07319-1d32-7bd2-8ba0-f7da9aaaed0a-500) | Internal Server Error | Internal server error |  | [schema](#01a07319-1d32-7bd2-8ba0-f7da9aaaed0a-500-schema) |
-| [503](#01a07319-1d32-7bd2-8ba0-f7da9aaaed0a-503) | Service Unavailable | The identity provider is not reachable |  | [schema](#01a07319-1d32-7bd2-8ba0-f7da9aaaed0a-503-schema) |
+| [503](#01a07319-1d32-7bd2-8ba0-f7da9aaaed0a-503) | Service Unavailable | The identity provider is not reachable, or not configured for sign-in |  | [schema](#01a07319-1d32-7bd2-8ba0-f7da9aaaed0a-503-schema) |
 
 #### Responses
 
@@ -9251,7 +9251,7 @@ Status: Internal Server Error
 
 [PayloadHTTPMessage](#payload-http-message)
 
-##### <span id="01a07319-1d32-7bd2-8ba0-f7da9aaaed0a-503"></span> 503 - The identity provider is not reachable
+##### <span id="01a07319-1d32-7bd2-8ba0-f7da9aaaed0a-503"></span> 503 - The identity provider is not reachable, or not configured for sign-in
 Status: Service Unavailable
 
 ###### <span id="01a07319-1d32-7bd2-8ba0-f7da9aaaed0a-503-schema"></span> Schema

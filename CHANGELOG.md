@@ -372,6 +372,17 @@ Since `v0.0.3`.
 
 ### Fixed
 
+- **A sign-in logs in its request, and a provider that cannot be used is
+  the service's side.** Seventeen log lines on the request path took no
+  context (the identity providers' adapter, the token verifier, the
+  middleware's validator): no `trace_id`, and for a failed sign-in a second
+  line at WARN for a failure the access line already reports. They take the
+  request's context, the adapter's at DEBUG with the provider's id. A
+  provider row the service cannot sign in with (no client, no issuer for an
+  OpenID Connect provider, an unknown kind: only a row written by hand)
+  answered the public start routes 400 naming the provider; it is a 503 in
+  the callback's sentence. A state the service cannot sign is a 500, not a
+  400. ([#173](https://github.com/slashdevops/go-rest-api-service-template/pull/173))
 - **A filter Postgres refuses is a 400, in our words, and no driver text
   is in a body.** A filter of the wrong type for its field (`GET
   /users?filter=id = 'nope'`, `disabled = 'maybe'`, `id = 1`, an invalid
