@@ -194,15 +194,16 @@ flowchart TD
   such handler should answer through `respond.WriteError`, so that the status
   and the outcome come from the same table. Every `WriteInternalError` call
   of the handlers (136) was read against what its use-case returns, and six
-  sites an error of the table reaches were answered 500:
+  sites an error of the table reaches were wrong, five of them a 500:
   - an administrator's policy update to a grant no endpoint serves (the
     create's 404);
   - a role linked to a policy that is not there, which the grant guard reads
     to learn what it grants (404);
   - an identity unlinked from an account that was deleted meanwhile (404);
   - the identity-provider callback of a link whose account was deleted (404);
-  - and the system's user limit reached at a self-registration, or at a
-    first sign-in through a provider (409).
+  - and the system's user limit reached at a self-registration (409), or at
+    a first sign-in through a provider, which answered 409 already, in the
+    limit error's own words.
 
   The first three answer through `respond.WriteError` now. The other three
   are public routes, and the errors' own text names the account's id, or the
@@ -210,10 +211,16 @@ flowchart TD
   "registration is closed: the user limit has been reached" for the limit.
   `handler/table_status_test.go` holds each site to "a refusal is answered
   below 500, a failure at 500 or above". The other sites are a response that
-  could not be encoded, a payload mapper, or the subject read from the
-  context, which no refusal reaches; a default arm stays a bare 500 where no
-  error of the table reaches it, because on a public route `WriteError`
-  would print the text of whatever 4xx arrives there next.
+  could not be encoded, a payload mapper, the subject read from the context,
+  or a use-case that returns no error of the table once the handler has
+  validated its input; a default arm stays a bare 500 there, because on a
+  public route `WriteError` would print the text of whatever 4xx arrives
+  there next. One way in is left, and it is not these handlers': an address
+  with a quoted local part (`"a b"@example.com`) passes the handler's check
+  and is normalised to a form (`a b@example.com`) that the use-case's own
+  check of the same rule refuses, so registration, recovery, verification
+  and the users routes answer that refusal 500. It is fixed in the
+  address's validation, on its own.
 
 An error ratio is therefore the failed calls over all calls:
 

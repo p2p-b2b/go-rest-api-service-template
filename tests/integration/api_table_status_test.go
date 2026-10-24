@@ -3,6 +3,7 @@
 package integration
 
 import (
+	"context"
 	"io"
 	"net/http"
 	"testing"
@@ -33,6 +34,17 @@ func TestARefusalTheTableKnowsIsNotA500(t *testing.T) {
 	require.Equal(t, http.StatusCreated, created.StatusCode)
 
 	policyID := createTestPolicyForRoleTest(t, admin.AccessToken, "table-status-")
+
+	t.Cleanup(func() {
+		for _, endpoint := range []*apiEndpoint{
+			newAPIEndpoint(http.MethodDelete, "/roles/{role_id}").RewriteSlugs(roleID.String()),
+			newAPIEndpoint(http.MethodDelete, "/policies/{policy_id}").RewriteSlugs(policyID.String()),
+		} {
+			if resp, err := sendHTTPRequest(t, context.Background(), endpoint, nil, header); err == nil {
+				resp.Body.Close()
+			}
+		}
+	})
 
 	t.Run("a_policy_update_to_a_grant_no_endpoint_serves_is_a_404", func(t *testing.T) {
 		resp, err := sendHTTPRequest(t, ctx, newAPIEndpoint(http.MethodPut, "/policies/{policy_id}").RewriteSlugs(policyID.String()),

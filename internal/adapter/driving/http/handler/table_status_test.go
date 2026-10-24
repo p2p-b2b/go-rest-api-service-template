@@ -206,7 +206,8 @@ func TestUnlinkingAnIdentityAnswersThroughTheTable(t *testing.T) {
 		err  error
 		want int
 	}{
-		// The account was deleted while its access token is still accepted.
+		// The account was deleted between the middleware's check of its
+		// standing and the unlink.
 		{name: "a_user_that_is_gone", err: &domain.UserNotFoundError{Message: "User not found"}, want: http.StatusNotFound},
 		{name: "a_fault", err: errors.New("the database is away"), want: http.StatusInternalServerError},
 		// The arm that was there stays as it was.
